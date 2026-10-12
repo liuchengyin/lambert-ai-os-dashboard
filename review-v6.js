@@ -1,4 +1,4 @@
-// Daily Review V6: Goal + Reality paired, Reflection separate
+// Daily Review V6: Goal + Reality stacked, Reflection parallel
 (function(){
   const section=document.getElementById('review');
   if(!section)return;
@@ -32,37 +32,41 @@
         <div class="review-v6-datebar"><button id="rv6Prev" title="前一天">←</button><input id="rv6Date" type="date"><button id="rv6Today">今天</button><button id="rv6Next" title="后一天">→</button></div>
       </div>
 
-      <div class="review-v6-pair">
-        <section class="review-v6-card review-v6-goal">
-          <div class="review-v6-card-head"><div><span>01</span><h3>目标</h3></div><small>我要完成什么</small></div>
-          <label>目标<textarea id="rv6Goal" placeholder="今天最重要的结果是什么？"></textarea></label>
-          <div class="review-v6-grid2">
-            <label>完成标准<textarea id="rv6Standard" placeholder="做到什么程度算完成？"></textarea></label>
-            <label>时间<input id="rv6Deadline" type="datetime-local"></label>
-          </div>
-          <label>交付物<textarea id="rv6Deliverable" placeholder="最终要产出什么：文档、方案、结果、文件……"></textarea></label>
-        </section>
+      <div class="review-v6-workspace">
+        <div class="review-v6-planstack">
+          <section class="review-v6-card review-v6-goal">
+            <div class="review-v6-card-head"><div><span>01</span><h3>目标</h3></div><small>我要完成什么</small></div>
+            <label>目标<textarea id="rv6Goal" placeholder="今天最重要的结果是什么？"></textarea></label>
+            <div class="review-v6-grid2">
+              <label>完成标准<textarea id="rv6Standard" placeholder="做到什么程度算完成？"></textarea></label>
+              <label>时间<input id="rv6Deadline" type="datetime-local"></label>
+            </div>
+            <label>交付物<textarea id="rv6Deliverable" placeholder="最终要产出什么：文档、方案、结果、文件……"></textarea></label>
+          </section>
 
-        <section class="review-v6-card review-v6-reality">
-          <div class="review-v6-card-head"><div><span>02</span><h3>现实</h3></div><small>实际完成到哪里</small></div>
-          <label>目标完成度
-            <div class="review-v6-completion-row"><input id="rv6Completion" type="range" min="0" max="100" step="5"><strong id="rv6CompletionValue">0%</strong></div>
-          </label>
-          <label>交付情况<textarea id="rv6Delivery" placeholder="限定时间内，实际交付到了什么程度？交付了什么？"></textarea></label>
-          <div class="review-v6-reality-note" id="rv6RealityNote">把“完成了多少”和“实际交付了什么”分开记录。</div>
+          <section class="review-v6-card review-v6-reality">
+            <div class="review-v6-card-head"><div><span>02</span><h3>现实</h3></div><small>实际完成到哪里</small></div>
+            <label>目标完成度
+              <div class="review-v6-completion-row"><input id="rv6Completion" type="range" min="0" max="100" step="5"><strong id="rv6CompletionValue">0%</strong></div>
+            </label>
+            <label>交付情况<textarea id="rv6Delivery" placeholder="限定时间内，实际交付到了什么程度？交付了什么？"></textarea></label>
+            <div class="review-v6-reality-note" id="rv6RealityNote">把“完成了多少”和“实际交付了什么”分开记录。</div>
+          </section>
+        </div>
+
+        <section class="review-v6-card review-v6-reflection">
+          <div class="review-v6-card-head"><div><span>03</span><h3>差距改进</h3></div><small>把经验变成下一次动作</small></div>
+          <div class="review-v6-reflection-grid">
+            <label>差距<textarea id="rv6Gap" placeholder="目标与现实之间差在哪里？"></textarea></label>
+            <label>原因<textarea id="rv6Reason" placeholder="为什么会产生这个差距？"></textarea></label>
+            <label class="review-v6-restart">重新来过<textarea id="rv6Restart" placeholder="如果今天重新来一次，我会怎么安排？"></textarea></label>
+          </div>
         </section>
       </div>
 
-      <section class="review-v6-card review-v6-reflection">
-        <div class="review-v6-card-head"><div><span>03</span><h3>差距改进</h3></div><small>把经验变成下一次动作</small></div>
-        <div class="review-v6-reflection-grid">
-          <label>差距<textarea id="rv6Gap" placeholder="目标与现实之间差在哪里？"></textarea></label>
-          <label>原因<textarea id="rv6Reason" placeholder="为什么会产生这个差距？"></textarea></label>
-          <label class="review-v6-restart">重新来过<textarea id="rv6Restart" placeholder="如果今天重新来一次，我会怎么安排？"></textarea></label>
-        </div>
-      </section>
-
-      <div class="review-v6-actions"><button id="rv6Save" class="task-primary-btn">保存当天</button><button id="rv6Archive">归档当天</button><span id="rv6Status"></span></div>
+      <div class="review-v6-actions-panel">
+        <div class="review-v6-actions"><button id="rv6Save" class="task-primary-btn">保存当天</button><button id="rv6Archive">归档当天</button><span id="rv6Status"></span></div>
+      </div>
 
       <section class="review-v6-history card"><div class="row"><h3>历史记录</h3><span class="meta">点击日期切换查看</span></div><div id="rv6History"></div></section>
     </div>`;
@@ -102,7 +106,6 @@
   $('rv6Date').onchange=e=>{save(true);load(e.target.value||dateKey())};
   fields.forEach(id=>$(id)?.addEventListener('change',()=>save(true)));
 
-  // app.js calls loadReview when switching tabs; replace it with the V6 loader.
   window.loadReview=key=>load(key||selected);
   load(selected);
 })();
