@@ -1,44 +1,46 @@
-/* iTab-inspired common links launcher V3 · wallpaper + glass */
+/* iTab-inspired common links launcher V4 · wallpaper first, floating icons */
 #knowledge{position:relative;isolation:isolate;min-height:calc(100vh - 24px);border-radius:24px;overflow:hidden;background:
-  linear-gradient(135deg,rgba(214,231,255,.38),rgba(255,228,235,.26) 46%,rgba(225,240,255,.34)),
+  linear-gradient(135deg,rgba(214,231,255,.18),rgba(255,228,235,.12) 46%,rgba(225,240,255,.16)),
   var(--knowledge-wallpaper,linear-gradient(135deg,#dfe9f3 0%,#f8eef2 44%,#d9eaf7 100%));
 background-size:cover;background-position:center;background-attachment:fixed}
-#knowledge:before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.18));backdrop-filter:saturate(1.08)}
+#knowledge:before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.08));backdrop-filter:saturate(1.04)}
 #knowledge .knowledge-page{max-width:1180px;margin:0 auto;padding:22px 20px 64px;position:relative}
 #knowledge .knowledge-head{align-items:center;margin-bottom:32px;padding:0 4px}
-#knowledge .knowledge-head h2{font-size:20px;font-weight:700;letter-spacing:-.02em;color:#243041;text-shadow:0 1px 10px rgba(255,255,255,.52)}
+#knowledge .knowledge-head h2{font-size:20px;font-weight:700;letter-spacing:-.02em;color:#243041;text-shadow:0 1px 10px rgba(255,255,255,.6)}
 #knowledge .knowledge-head p{display:none}
 #knowledge .knowledge-head-actions{display:flex;align-items:center;gap:8px}
-#knowledge .knowledge-wallpaper-btn,#knowledge .knowledge-lock{height:38px;border-radius:13px;background:rgba(255,255,255,.46);border:1px solid rgba(255,255,255,.62);color:#536070;backdrop-filter:blur(18px) saturate(1.25);-webkit-backdrop-filter:blur(18px) saturate(1.25)}
+#knowledge .knowledge-wallpaper-btn,#knowledge .knowledge-lock{height:38px;border-radius:13px;background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.48);color:#536070;backdrop-filter:blur(14px) saturate(1.18);-webkit-backdrop-filter:blur(14px) saturate(1.18)}
 #knowledge .knowledge-wallpaper-btn{padding:0 13px;font-size:12px}
 #knowledge .knowledge-lock{width:38px;font-size:16px;display:grid;place-items:center}
-#knowledge .knowledge-searchbar{width:min(740px,80vw);margin:6px auto 42px;padding:8px 9px 8px 20px;border-radius:28px;background:rgba(255,255,255,.50);border:1px solid rgba(255,255,255,.66);box-shadow:none!important;backdrop-filter:blur(24px) saturate(1.32);-webkit-backdrop-filter:blur(24px) saturate(1.32)}
+#knowledge .knowledge-searchbar{width:min(740px,80vw);margin:6px auto 44px;padding:8px 9px 8px 20px;border-radius:28px;background:rgba(255,255,255,.28);border:1px solid rgba(255,255,255,.52);box-shadow:none!important;backdrop-filter:blur(16px) saturate(1.18);-webkit-backdrop-filter:blur(16px) saturate(1.18)}
 #knowledge .knowledge-searchbar:before{content:'⌕';display:grid;place-items:center;color:#667085;font-size:20px;margin-right:4px}
 #knowledge .knowledge-searchbar{grid-template-columns:auto 1fr auto}
 #knowledge .knowledge-searchbar input{font-size:15px;padding:10px 4px;border:0!important;background:transparent!important;color:#263244}
-#knowledge .knowledge-searchbar input::placeholder{color:rgba(71,84,103,.66)}
-#knowledge .knowledge-searchbar button{border-radius:20px;padding:9px 17px;background:rgba(23,31,44,.82);color:#fff;border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(12px)}
+#knowledge .knowledge-searchbar input::placeholder{color:rgba(71,84,103,.72)}
+#knowledge .knowledge-searchbar button{border-radius:20px;padding:9px 17px;background:rgba(23,31,44,.72);color:#fff;border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)}
 #knowledge .knowledge-editbar{justify-content:center;margin:-22px 0 30px;color:#536070}
-#knowledge .knowledge-editbar button{background:rgba(255,255,255,.48)!important;border:1px solid rgba(255,255,255,.58)!important;backdrop-filter:blur(16px)}
-#knowledge .knowledge-group{padding:18px 16px 20px!important;margin:0 0 22px!important;background:rgba(255,255,255,.22)!important;border:1px solid rgba(255,255,255,.34)!important;border-radius:22px!important;box-shadow:none!important;backdrop-filter:blur(18px) saturate(1.18);-webkit-backdrop-filter:blur(18px) saturate(1.18)}
-#knowledge .knowledge-group-head{padding:0 6px;margin-bottom:16px}
-#knowledge .knowledge-group-head h3{font-size:13px;font-weight:700;color:#445164;letter-spacing:.01em;text-shadow:0 1px 8px rgba(255,255,255,.42)}
+#knowledge .knowledge-editbar button{background:rgba(255,255,255,.30)!important;border:1px solid rgba(255,255,255,.46)!important;backdrop-filter:blur(12px)}
+
+/* Group container intentionally has no panel background: wallpaper stays visible */
+#knowledge .knowledge-group{padding:0 4px!important;margin:0 0 34px!important;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+#knowledge .knowledge-group-head{padding:0 6px;margin-bottom:14px}
+#knowledge .knowledge-group-head h3{font-size:13px;font-weight:700;color:#334155;letter-spacing:.01em;text-shadow:0 1px 10px rgba(255,255,255,.82)}
 #knowledge .knowledge-group-title-wrap>span:not(.knowledge-drag-handle){display:none}
-#knowledge .knowledge-grid{display:grid;grid-template-columns:repeat(8,minmax(78px,1fr));gap:22px 14px}
+#knowledge .knowledge-grid{display:grid;grid-template-columns:repeat(8,minmax(78px,1fr));gap:24px 14px}
 #knowledge .knowledge-link-card,#knowledge .knowledge-add-tile{background:transparent!important;border:0!important;box-shadow:none!important;min-height:112px;position:relative}
 #knowledge .knowledge-link-card>a,#knowledge .knowledge-add-tile{display:flex;flex-direction:column;align-items:center;gap:9px;padding:4px;text-decoration:none;color:#344054}
-#knowledge .knowledge-link-icon,#knowledge .knowledge-add-icon{width:66px;height:66px;border-radius:19px;background:rgba(255,255,255,.52);border:1px solid rgba(255,255,255,.66);display:grid;place-items:center;overflow:hidden;transition:transform .16s ease,background .16s ease,border-color .16s ease;backdrop-filter:blur(16px) saturate(1.3);-webkit-backdrop-filter:blur(16px) saturate(1.3)}
-#knowledge .knowledge-link-icon img{width:41px;height:41px;object-fit:contain;filter:drop-shadow(0 2px 7px rgba(20,30,45,.10))}
-#knowledge .knowledge-link-card:hover .knowledge-link-icon,#knowledge .knowledge-add-tile:hover .knowledge-add-icon{transform:translateY(-3px) scale(1.045);background:rgba(255,255,255,.68);border-color:rgba(255,255,255,.84)}
-#knowledge .knowledge-link-card strong,#knowledge .knowledge-add-tile span{font-size:12px;font-weight:650;line-height:1.35;max-width:94px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#253247;text-shadow:0 1px 7px rgba(255,255,255,.65)}
+#knowledge .knowledge-link-icon,#knowledge .knowledge-add-icon{width:68px;height:68px;border-radius:20px;background:rgba(255,255,255,.24);border:1px solid rgba(255,255,255,.44);display:grid;place-items:center;overflow:hidden;transition:transform .16s ease,background .16s ease,border-color .16s ease;backdrop-filter:blur(10px) saturate(1.16);-webkit-backdrop-filter:blur(10px) saturate(1.16)}
+#knowledge .knowledge-link-icon img{width:42px;height:42px;object-fit:contain;filter:drop-shadow(0 2px 7px rgba(20,30,45,.10))}
+#knowledge .knowledge-link-card:hover .knowledge-link-icon,#knowledge .knowledge-add-tile:hover .knowledge-add-icon{transform:translateY(-3px) scale(1.045);background:rgba(255,255,255,.38);border-color:rgba(255,255,255,.70)}
+#knowledge .knowledge-link-card strong,#knowledge .knowledge-add-tile span{font-size:12px;font-weight:650;line-height:1.35;max-width:94px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1f2937;text-shadow:0 1px 8px rgba(255,255,255,.90)}
 #knowledge .knowledge-link-card p{display:none!important}
 #knowledge .knowledge-add-tile{appearance:none;cursor:pointer;color:#667085;font-family:inherit}
-#knowledge .knowledge-add-icon{font-size:27px;font-weight:300;color:#64748b;border-style:dashed;background:rgba(255,255,255,.30)}
+#knowledge .knowledge-add-icon{font-size:27px;font-weight:300;color:#475569;border-style:dashed;background:rgba(255,255,255,.14)}
 #knowledge .knowledge-card-actions{top:-4px;right:1px}
-#knowledge .knowledge-card-actions button,#knowledge .knowledge-group-actions button{background:rgba(255,255,255,.52)!important;border:1px solid rgba(255,255,255,.66)!important;color:#536070!important;backdrop-filter:blur(12px)}
+#knowledge .knowledge-card-actions button,#knowledge .knowledge-group-actions button{background:rgba(255,255,255,.34)!important;border:1px solid rgba(255,255,255,.52)!important;color:#475569!important;backdrop-filter:blur(10px)}
 #knowledge .knowledge-card-actions button{padding:4px 6px;font-size:10px;border-radius:7px}
 #knowledge .knowledge-group-actions button{font-size:11px;padding:6px 9px;border-radius:8px}
-#knowledge .knowledge-empty{grid-column:1/-1;text-align:left;color:#667085;padding:14px 8px;font-size:12px}
+#knowledge .knowledge-empty{grid-column:1/-1;text-align:left;color:#475569;padding:8px 6px;font-size:12px;text-shadow:0 1px 8px rgba(255,255,255,.78)}
 #knowledge dialog{backdrop-filter:blur(20px)}
 @media(max-width:1120px){#knowledge .knowledge-grid{grid-template-columns:repeat(6,minmax(76px,1fr))}}
 @media(max-width:860px){#knowledge .knowledge-grid{grid-template-columns:repeat(5,minmax(72px,1fr))}#knowledge .knowledge-searchbar{width:90%}}
