@@ -22,24 +22,24 @@
 
 <section id="home" class="view activeView">
 <div class="grid3">
-<div class="card"><h3>今日 Top 3</h3><div id="top3"></div><button id="editTop3">编辑 Top 3</button></div>
-<div class="card"><h3>当前主线</h3><b class="big">Lambert AI OS</b><p>先完成看板，再接 Notion / 飞书真实数据。</p></div>
+<div class="card"><h3>今日 Top 3</h3><div id="top3"></div><button id="editTop3">维护 Top 3</button></div>
+<div class="card"><h3>当前主线</h3><div id="currentMainline"></div></div>
 <div class="card"><h3>快捷入口</h3><div id="quickLinks" class="links"></div></div>
 </div>
 <div class="grid2">
-<div class="card"><h3>最近项目</h3><div id="homeProjects"></div></div>
-<div class="card"><h3>今日任务</h3><div id="homeTasks"></div></div>
+<div class="card"><div class="row"><h3>最近项目</h3><button id="homeManageProjects">维护项目</button></div><div id="homeProjects"></div></div>
+<div class="card"><div class="row"><h3>今日任务</h3><button id="homeManageTasks">维护任务</button></div><div id="homeTasks"></div></div>
 </div>
 </section>
 
 <section id="projects" class="view">
-<div class="head"><div><h2>项目看板</h2><p>项目由你自己维护，后面再接 Notion / 飞书。</p></div><button id="addProject">+ 新建项目</button></div>
+<div class="head"><div><h2>项目看板</h2><p>你维护什么，这里就展示什么。</p></div><button id="addProject">+ 维护项目</button></div>
 <div id="projectBoard" class="board"></div>
 <div class="card embed"><div class="row"><h3>Notion / 飞书项目页</h3><a id="projectOpen" target="_blank">打开原页面</a></div><iframe id="projectFrame"></iframe><div id="projectEmpty">先在“链接设置”里填项目看板链接。</div></div>
 </section>
 
 <section id="tasks" class="view">
-<div class="head"><div><h2>任务看板</h2><p>先用本地任务板；之后可替换成飞书多维表格或 Notion Tasks。</p></div><button id="addTask">+ 新建任务</button></div>
+<div class="head"><div><h2>任务看板</h2><p>任务由你维护，首页和看板同步展示。</p></div><button id="addTask">+ 维护任务</button></div>
 <div id="taskBoard" class="board"></div>
 <div class="card embed"><div class="row"><h3>Notion / 飞书任务页</h3><a id="taskOpen" target="_blank">打开原页面</a></div><iframe id="taskFrame"></iframe><div id="taskEmpty">先在“链接设置”里填任务看板链接。</div></div>
 </section>
@@ -81,8 +81,8 @@
 <h3 id="dlgTitle"></h3>
 <label>名称<input id="dlgName"></label>
 <label>状态<select id="dlgStatus"><option>待开始</option><option>进行中</option><option>已完成</option></select></label>
-<label>补充<input id="dlgExtra"></label>
-<div class="dlgActions"><button value="cancel">取消</button><button id="dlgSave" value="default">保存</button></div>
+<label>补充<input id="dlgExtra" placeholder="如：下一步、日期、说明"></label>
+<div class="dlgActions"><button value="cancel">取消</button><button id="dlgDelete" type="button" style="display:none">删除</button><button id="dlgSave" value="default">保存</button></div>
 </form></dialog>
 
 <script src="app.js"></script>
