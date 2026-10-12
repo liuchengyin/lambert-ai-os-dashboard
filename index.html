@@ -45,15 +45,61 @@
 </section>
 
 <section id="review" class="view">
-<div class="head"><div><h2>每日复盘</h2><p>只保留：目标、实际、差距、原因、下一步。</p></div></div>
-<div class="card formgrid">
-<label>今天最重要的结果<textarea id="r_goal"></textarea></label>
-<label>实际完成<textarea id="r_actual"></textarea></label>
-<label>最大差距<textarea id="r_gap"></textarea></label>
-<label>主要原因<textarea id="r_reason"></textarea></label>
-<label class="full">明天第一步<textarea id="r_next"></textarea></label>
-<div class="full"><button id="saveReview">保存到本机</button><span id="reviewNote"></span></div>
+<div class="review-toolbar">
+  <div>
+    <h2>每日复盘</h2>
+    <p>按日期记录目标 → 复盘 → 归档。</p>
+  </div>
+  <div class="date-switcher">
+    <button id="reviewPrev" title="前一天">←</button>
+    <input id="reviewDate" type="date">
+    <button id="reviewToday">今天</button>
+    <button id="reviewNext" title="后一天">→</button>
+  </div>
 </div>
+
+<div class="review-layout">
+  <div class="review-editor">
+    <div class="card review-section">
+      <div class="section-kicker">01 · 今日目标</div>
+      <label>目标<textarea id="rv_goal" placeholder="今天最重要的结果是什么？"></textarea></label>
+      <div class="review-two-col">
+        <label>完成标准<textarea id="rv_standard" placeholder="做到什么程度算完成？"></textarea></label>
+        <label>截止时间<input id="rv_deadline" type="time"></label>
+      </div>
+    </div>
+
+    <div class="card review-section">
+      <div class="section-kicker">02 · 今日复盘</div>
+      <label>完成度
+        <select id="rv_completion">
+          <option value="">未填写</option>
+          <option value="0">0%</option><option value="25">25%</option><option value="50">50%</option>
+          <option value="75">75%</option><option value="90">90%</option><option value="100">100%</option>
+        </select>
+      </label>
+      <label>差距<textarea id="rv_gap" placeholder="目标和实际差在哪里？"></textarea></label>
+      <label>反思：重来如何<textarea id="rv_restart" placeholder="如果今天重来一次，我会怎么安排？"></textarea></label>
+    </div>
+
+    <div class="review-actions">
+      <button id="saveDailyReview">保存</button>
+      <button id="archiveDailyReview" class="archive-btn">归档当天</button>
+      <span id="dailyReviewNote"></span>
+    </div>
+  </div>
+
+  <aside class="review-snapshot card">
+    <div class="row"><h3>填写好的部分</h3><span id="reviewArchiveBadge" class="archive-badge"></span></div>
+    <div id="reviewSnapshot"></div>
+  </aside>
+</div>
+
+<div class="card review-archive-card">
+  <div class="row"><h3>归档</h3><span class="meta">点击日期即可切换查看</span></div>
+  <div id="reviewArchiveList" class="archive-list"></div>
+</div>
+
 <div class="card embed"><div class="row"><h3>Notion / 飞书复盘页</h3><a id="reviewOpen" target="_blank">打开原页面</a></div><iframe id="reviewFrame"></iframe><div id="reviewEmpty">先在“链接设置”里填复盘页面链接。</div></div>
 </section>
 
