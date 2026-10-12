@@ -33,9 +33,43 @@
 </section>
 
 <section id="projects" class="view">
-<div class="head"><div><h2>项目看板</h2><p>你维护什么，这里就展示什么。</p></div><button id="addProject">+ 维护项目</button></div>
-<div id="projectBoard" class="board"></div>
-<div class="card embed"><div class="row"><h3>Notion / 飞书项目页</h3><a id="projectOpen" target="_blank">打开原页面</a></div><iframe id="projectFrame"></iframe><div id="projectEmpty">先在“链接设置”里填项目看板链接。</div></div>
+<div class="project-page-head">
+  <div><h2>项目看板</h2><p>把项目当作阶段性目标：明确交付标准，再拆成关联任务推进。</p></div>
+  <div class="project-storage-pill">个人项目 · 暂不协作</div>
+</div>
+
+<div class="card project-compose">
+  <div class="section-kicker">项目添加</div>
+  <div class="project-compose-grid">
+    <label class="project-name-field">项目名称<input id="projectNameInput" placeholder="例如：10 月完成物流岗位求职准备"></label>
+    <label>状态<select id="projectStatusInput"><option>待开始</option><option>进行中</option><option>已完成</option></select></label>
+    <label>截止日期<input id="projectDueInput" type="date"></label>
+    <label class="project-standard-field">完成交付标准（可衡量）<textarea id="projectStandardInput" placeholder="例如：完成 3 个面试案例稿 + 10 次模拟面试 + 获得 1 个目标 Offer"></textarea></label>
+    <div class="project-task-field">
+      <span class="project-field-label">关联任务</span>
+      <details class="project-task-picker" id="projectTaskPicker">
+        <summary id="projectTaskSummary">选择关联任务</summary>
+        <div id="projectTaskOptions" class="project-task-options"></div>
+      </details>
+    </div>
+  </div>
+  <div class="project-compose-actions"><button id="addProject" class="task-primary-btn">添加项目</button></div>
+</div>
+
+<div class="project-board-toolbar">
+  <div><strong>项目看板</strong><span class="meta">状态推进 + 任务联动</span></div>
+  <div id="projectSummary" class="task-summary"></div>
+</div>
+<div id="projectBoard" class="project-board"></div>
+
+<div class="card task-persistence-card">
+  <div class="row">
+    <div><h3>项目资料入口</h3><p class="task-storage-copy">工作台负责阶段目标和推进；Notion / 飞书可继续作为项目资料与长期记录入口。</p></div>
+    <a id="projectOpen" target="_blank">打开项目库</a>
+  </div>
+  <div id="projectEmpty" class="meta">先在“链接设置”里填项目看板链接。</div>
+</div>
+<iframe id="projectFrame" style="display:none"></iframe>
 </section>
 
 <section id="tasks" class="view">
@@ -43,13 +77,9 @@
   <div><h2>任务看板</h2><p>经典 Todo 流程：写入 → 待开始 → 进行中 → 已完成。</p></div>
   <div class="task-storage-pill" id="taskStorageState">当前保存：浏览器本机</div>
 </div>
-
 <div class="card task-compose">
   <div class="section-kicker">写入模块</div>
-  <div class="task-compose-main">
-    <input id="taskTitleInput" class="task-title-input" placeholder="输入一个明确的任务，例如：完成物流版简历第 1 版" autocomplete="off">
-    <button id="quickAddTask" class="task-primary-btn">添加任务</button>
-  </div>
+  <div class="task-compose-main"><input id="taskTitleInput" class="task-title-input" placeholder="输入一个明确的任务，例如：完成物流版简历第 1 版" autocomplete="off"><button id="quickAddTask" class="task-primary-btn">添加任务</button></div>
   <div class="task-compose-meta">
     <label>所属项目<select id="taskProjectInput"><option value="">无项目</option></select></label>
     <label>优先级<select id="taskPriorityInput"><option value="P1">P1 · 重要</option><option value="P2" selected>P2 · 普通</option><option value="P3">P3 · 低</option></select></label>
@@ -57,126 +87,45 @@
     <label class="task-note-field">备注<input id="taskNoteInput" placeholder="下一步 / 完成标准 / 补充说明"></label>
   </div>
 </div>
-
-<div class="task-filterbar">
-  <div class="task-filter-group">
-    <button class="task-filter active" data-filter="all">全部</button>
-    <button class="task-filter" data-filter="today">今天</button>
-    <button class="task-filter" data-filter="p1">P1</button>
-  </div>
-  <div class="task-summary" id="taskSummary"></div>
-</div>
-
+<div class="task-filterbar"><div class="task-filter-group"><button class="task-filter active" data-filter="all">全部</button><button class="task-filter" data-filter="today">今天</button><button class="task-filter" data-filter="p1">P1</button></div><div class="task-summary" id="taskSummary"></div></div>
 <div id="taskBoard" class="task-board"></div>
-
-<div class="card task-persistence-card">
-  <div class="row">
-    <div>
-      <h3>长期保存</h3>
-      <p class="task-storage-copy">工作台负责填写与推进；Notion / 飞书作为长期任务库。当前版本先保存在浏览器，本页已保留任务库入口，下一步再接真实写入 API。</p>
-    </div>
-    <a id="taskOpen" target="_blank">打开任务库</a>
-  </div>
-  <div id="taskEmpty" class="meta">先在“链接设置”里填 Notion 或飞书任务库链接。</div>
-</div>
+<div class="card task-persistence-card"><div class="row"><div><h3>长期保存</h3><p class="task-storage-copy">工作台负责填写与推进；Notion / 飞书作为长期任务库。当前版本先保存在浏览器，本页已保留任务库入口，下一步再接真实写入 API。</p></div><a id="taskOpen" target="_blank">打开任务库</a></div><div id="taskEmpty" class="meta">先在“链接设置”里填 Notion 或飞书任务库链接。</div></div>
 </section>
 
 <section id="review" class="view">
-<div class="review-toolbar">
-  <div>
-    <h2>每日复盘</h2>
-    <p>按日期记录目标 → 复盘 → 归档。</p>
-  </div>
-  <div class="date-switcher">
-    <button id="reviewPrev" title="前一天">←</button>
-    <input id="reviewDate" type="date">
-    <button id="reviewToday">今天</button>
-    <button id="reviewNext" title="后一天">→</button>
-  </div>
-</div>
-
+<div class="review-toolbar"><div><h2>每日复盘</h2><p>按日期记录目标 → 复盘 → 归档。</p></div><div class="date-switcher"><button id="reviewPrev" title="前一天">←</button><input id="reviewDate" type="date"><button id="reviewToday">今天</button><button id="reviewNext" title="后一天">→</button></div></div>
 <div class="review-layout">
   <div class="review-editor">
-    <div class="card review-section">
-      <div class="section-kicker">01 · 今日目标</div>
-      <label>目标<textarea id="rv_goal" placeholder="今天最重要的结果是什么？"></textarea></label>
-      <div class="review-two-col">
-        <label>完成标准<textarea id="rv_standard" placeholder="做到什么程度算完成？"></textarea></label>
-        <label>截止时间<input id="rv_deadline" type="time"></label>
-      </div>
-    </div>
-
-    <div class="card review-section">
-      <div class="section-kicker">02 · 今日复盘</div>
-      <label>完成度
-        <select id="rv_completion">
-          <option value="">未填写</option>
-          <option value="0">0%</option><option value="25">25%</option><option value="50">50%</option>
-          <option value="75">75%</option><option value="90">90%</option><option value="100">100%</option>
-        </select>
-      </label>
-      <label>差距<textarea id="rv_gap" placeholder="目标和实际差在哪里？"></textarea></label>
-      <label>反思：重来如何<textarea id="rv_restart" placeholder="如果今天重来一次，我会怎么安排？"></textarea></label>
-    </div>
-
-    <div class="review-actions">
-      <button id="saveDailyReview">保存</button>
-      <button id="archiveDailyReview" class="archive-btn">归档当天</button>
-      <span id="dailyReviewNote"></span>
-    </div>
+    <div class="card review-section"><div class="section-kicker">01 · 今日目标</div><label>目标<textarea id="rv_goal" placeholder="今天最重要的结果是什么？"></textarea></label><div class="review-two-col"><label>完成标准<textarea id="rv_standard" placeholder="做到什么程度算完成？"></textarea></label><label>截止时间<input id="rv_deadline" type="time"></label></div></div>
+    <div class="card review-section"><div class="section-kicker">02 · 今日复盘</div><label>完成度<select id="rv_completion"><option value="">未填写</option><option value="0">0%</option><option value="25">25%</option><option value="50">50%</option><option value="75">75%</option><option value="90">90%</option><option value="100">100%</option></select></label><label>差距<textarea id="rv_gap" placeholder="目标和实际差在哪里？"></textarea></label><label>反思：重来如何<textarea id="rv_restart" placeholder="如果今天重来一次，我会怎么安排？"></textarea></label></div>
+    <div class="review-actions"><button id="saveDailyReview">保存</button><button id="archiveDailyReview" class="archive-btn">归档当天</button><span id="dailyReviewNote"></span></div>
   </div>
-
-  <aside class="review-snapshot card">
-    <div class="row"><h3>填写好的部分</h3><span id="reviewArchiveBadge" class="archive-badge"></span></div>
-    <div id="reviewSnapshot"></div>
-  </aside>
+  <aside class="review-snapshot card"><div class="row"><h3>填写好的部分</h3><span id="reviewArchiveBadge" class="archive-badge"></span></div><div id="reviewSnapshot"></div></aside>
 </div>
-
-<div class="card review-archive-card">
-  <div class="row"><h3>归档</h3><span class="meta">点击日期即可切换查看</span></div>
-  <div id="reviewArchiveList" class="archive-list"></div>
-</div>
-
+<div class="card review-archive-card"><div class="row"><h3>归档</h3><span class="meta">点击日期即可切换查看</span></div><div id="reviewArchiveList" class="archive-list"></div></div>
 <div class="card embed"><div class="row"><h3>Notion / 飞书复盘页</h3><a id="reviewOpen" target="_blank">打开原页面</a></div><iframe id="reviewFrame"></iframe><div id="reviewEmpty">先在“链接设置”里填复盘页面链接。</div></div>
 </section>
 
-<section id="knowledge" class="view">
-<div class="grid2">
-<div class="card"><h3>知识入口</h3><div id="knowledgeLinks" class="links"></div></div>
-<div class="card"><h3>后续再接 AI 整理</h3><p>① 全库盘点</p><p>② 高频主题</p><p>③ 重复/零散诊断</p><p>④ AI 问答 + 来源</p></div>
-</div>
-</section>
-
-<section id="settings" class="view">
-<div class="card formgrid">
-<label>Notion 首页<input id="notionHome" type="url"></label>
-<label>飞书首页<input id="feishuHome" type="url"></label>
-<label>项目看板链接<input id="projectUrl" type="url"></label>
-<label>任务看板链接<input id="taskUrl" type="url"></label>
-<label>每日复盘链接<input id="reviewUrl" type="url"></label>
-<div class="full"><button id="saveSettings">保存设置</button><span id="settingsNote"></span></div>
-</div>
-</section>
+<section id="knowledge" class="view"><div class="grid2"><div class="card"><h3>知识入口</h3><div id="knowledgeLinks" class="links"></div></div><div class="card"><h3>后续再接 AI 整理</h3><p>① 全库盘点</p><p>② 高频主题</p><p>③ 重复/零散诊断</p><p>④ AI 问答 + 来源</p></div></div></section>
+<section id="settings" class="view"><div class="card formgrid"><label>Notion 首页<input id="notionHome" type="url"></label><label>飞书首页<input id="feishuHome" type="url"></label><label>项目看板链接<input id="projectUrl" type="url"></label><label>任务看板链接<input id="taskUrl" type="url"></label><label>每日复盘链接<input id="reviewUrl" type="url"></label><div class="full"><button id="saveSettings">保存设置</button><span id="settingsNote"></span></div></div></section>
 </main>
 </div>
 
-<dialog id="dlg"><form method="dialog">
-<h3 id="dlgTitle"></h3>
-<label>名称<input id="dlgName"></label>
-<label>状态<select id="dlgStatus"><option>待开始</option><option>进行中</option><option>已完成</option></select></label>
-<label>补充<input id="dlgExtra" placeholder="如：下一步、日期、说明"></label>
-<div class="dlgActions"><button value="cancel">取消</button><button id="dlgDelete" type="button" style="display:none">删除</button><button id="dlgSave" value="default">保存</button></div>
+<!-- 保留旧项目弹窗节点，兼容基础脚本；新版项目逻辑由 project-v2.js 接管 -->
+<dialog id="dlg"><form method="dialog"><h3 id="dlgTitle"></h3><label>名称<input id="dlgName"></label><label>状态<select id="dlgStatus"><option>待开始</option><option>进行中</option><option>已完成</option></select></label><label>补充<input id="dlgExtra"></label><div class="dlgActions"><button value="cancel">取消</button><button id="dlgDelete" type="button" style="display:none">删除</button><button id="dlgSave" value="default">保存</button></div></form></dialog>
+
+<dialog id="projectEditDlg"><form method="dialog">
+<h3>编辑项目</h3>
+<label>项目名称<input id="projectEditName"></label>
+<label>状态<select id="projectEditStatus"><option>待开始</option><option>进行中</option><option>已完成</option></select></label>
+<label>截止日期<input id="projectEditDue" type="date"></label>
+<label>完成交付标准（可衡量）<textarea id="projectEditStandard"></textarea></label>
+<div class="project-task-field"><span class="project-field-label">关联任务</span><div id="projectEditTaskOptions" class="project-task-options project-edit-task-options"></div></div>
+<div class="dlgActions"><button value="cancel">取消</button><button id="projectDeleteBtn" type="button">删除</button><button id="projectEditSave" value="default">保存</button></div>
 </form></dialog>
 
-<dialog id="taskEditDlg"><form method="dialog">
-<h3>编辑任务</h3>
-<label>任务<input id="taskEditTitle"></label>
-<label>所属项目<select id="taskEditProject"><option value="">无项目</option></select></label>
-<label>优先级<select id="taskEditPriority"><option value="P1">P1 · 重要</option><option value="P2">P2 · 普通</option><option value="P3">P3 · 低</option></select></label>
-<label>截止日期<input id="taskEditDue" type="date"></label>
-<label>备注<input id="taskEditNote"></label>
-<div class="dlgActions"><button value="cancel">取消</button><button id="taskDeleteBtn" type="button">删除</button><button id="taskEditSave" value="default">保存</button></div>
-</form></dialog>
+<dialog id="taskEditDlg"><form method="dialog"><h3>编辑任务</h3><label>任务<input id="taskEditTitle"></label><label>所属项目<select id="taskEditProject"><option value="">无项目</option></select></label><label>优先级<select id="taskEditPriority"><option value="P1">P1 · 重要</option><option value="P2">P2 · 普通</option><option value="P3">P3 · 低</option></select></label><label>截止日期<input id="taskEditDue" type="date"></label><label>备注<input id="taskEditNote"></label><div class="dlgActions"><button value="cancel">取消</button><button id="taskDeleteBtn" type="button">删除</button><button id="taskEditSave" value="default">保存</button></div></form></dialog>
 
 <script src="app.js"></script>
+<script src="project-v2.js"></script>
 </body></html>
