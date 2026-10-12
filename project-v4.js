@@ -72,4 +72,7 @@
   if(!document.querySelector('script[src="review-v6.js"]')){
     const s=document.createElement('script');s.src='review-v6.js';document.body.appendChild(s)
   }
+  if(!document.querySelector('link[href="theme-linear.css"]')){
+    const t=document.createElement('link');t.rel='stylesheet';t.href='theme-linear.css';document.head.appendChild(t)
+  }
 })();
