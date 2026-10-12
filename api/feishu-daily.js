@@ -64,7 +64,7 @@ async function uploadMarkdown(token,title,markdown){
 }
 
 async function importMarkdown(token,fileToken,title){
-  const created=await jsonCall('/drive/v1/import_tasks',token,{method:'POST',body:{file_extension:'md',file_token:fileToken,type:'docx',file_name:safeName(title)}});
+  const created=await jsonCall('/drive/v1/import_tasks',token,{method:'POST',body:{file_extension:'md',file_token:fileToken,type:'docx',file_name:safeName(title),point:{mount_type:1,mount_key:''}}});
   const ticket=created?.data?.ticket;
   if(!ticket) throw new Error('飞书未返回导入任务 ticket');
   for(let i=0;i<24;i++){
