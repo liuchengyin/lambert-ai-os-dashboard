@@ -2,6 +2,8 @@
 (function(){
   const projectStatuses=["待开始","进行中","已完成"];
   let projectEditIndex=-1;
+  let createSelected=new Set();
+  let editSelected=new Set();
 
   function makeProjectId(){return `project_${Date.now()}_${Math.random().toString(36).slice(2,8)}`}
   function makeInlineTaskId(){return `task_${Date.now()}_${Math.random().toString(36).slice(2,8)}`}
@@ -41,37 +43,33 @@
     const s=q.trim().toLowerCase();
     return [t.title,t.project,t.status,t.priority,t.note].some(v=>String(v||"").toLowerCase().includes(s))
   }
-  function buildTaskOptions(container,selectedIds=[],query=""){
+  function buildTaskOptions(container,selectedSet,query="",onToggle){
     container.innerHTML="";
-    const selected=new Set(selectedIds);
     const rows=sortTasks(state.tasks).filter(t=>taskMatches(t,query));
     if(!rows.length){container.innerHTML=`<div class="meta project-task-empty">${state.tasks.length?"没有匹配任务":"还没有任务，可直接在上方新建。"}</div>`;return}
     rows.forEach(t=>{
       const row=document.createElement("label");row.className="project-task-option";
-      const cb=document.createElement("input");cb.type="checkbox";cb.value=t.id;cb.checked=selected.has(t.id);
+      const cb=document.createElement("input");cb.type="checkbox";cb.value=t.id;cb.checked=selectedSet.has(t.id);
+      cb.onchange=()=>onToggle(t.id,cb.checked);
       const text=document.createElement("span");
       text.innerHTML=`<strong>${escapeHtml(t.title)}</strong><small>${escapeHtml(t.status)} · ${escapeHtml(t.priority)}${t.due?" · "+escapeHtml(t.due):""}${t.project?" · "+escapeHtml(t.project):""}</small>`;
       row.append(cb,text);container.appendChild(row)
     })
   }
-  function selectedIds(container){return [...container.querySelectorAll('input[type="checkbox"]:checked')].map(x=>x.value)}
   function updateCreateSummary(){
-    const ids=selectedIds($("projectTaskOptions"));
-    $("projectTaskSummary").textContent=ids.length?`已选 ${ids.length} 个任务`:`选择关联任务`;
+    $("projectTaskSummary").textContent=createSelected.size?`已选 ${createSelected.size} 个任务`:`选择关联任务`
   }
-  function renderCreateTaskPicker(selectedOverride=null){
-    const container=$("projectTaskOptions");
-    const keep=selectedOverride||selectedIds(container);
-    buildTaskOptions(container,keep,$("projectTaskSearch")?.value||"");
-    container.querySelectorAll('input[type="checkbox"]').forEach(x=>x.onchange=updateCreateSummary);
+  function renderCreateTaskPicker(){
+    buildTaskOptions($("projectTaskOptions"),createSelected,$("projectTaskSearch")?.value||"",(id,checked)=>{
+      checked?createSelected.add(id):createSelected.delete(id);updateCreateSummary()
+    });
     updateCreateSummary()
   }
-  function renderEditTaskPicker(selectedOverride=null){
+  function renderEditTaskPicker(){
     if(projectEditIndex<0)return;
-    const container=$("projectEditTaskOptions"),p=state.projects[projectEditIndex];
-    const keep=selectedOverride||selectedIds(container);
-    const base=keep.length?keep:projectTasks(p).map(t=>t.id);
-    buildTaskOptions(container,base,$("projectEditTaskSearch")?.value||"")
+    buildTaskOptions($("projectEditTaskOptions"),editSelected,$("projectEditTaskSearch")?.value||"",(id,checked)=>{
+      checked?editSelected.add(id):editSelected.delete(id)
+    })
   }
 
   function createInlineTask(title,projectName=""){
@@ -80,19 +78,19 @@
     state.tasks.unshift(task);set("tasks",state.tasks);return task
   }
 
-  $("projectTaskSearch").addEventListener("input",()=>renderCreateTaskPicker());
-  $("projectEditTaskSearch").addEventListener("input",()=>renderEditTaskPicker());
+  $("projectTaskSearch").addEventListener("input",renderCreateTaskPicker);
+  $("projectEditTaskSearch").addEventListener("input",renderEditTaskPicker);
 
   $("projectCreateTaskBtn").onclick=()=>{
     const input=$("projectNewTaskTitle"),task=createInlineTask(input.value,"");if(!task){input.focus();return}
-    input.value="";const selected=selectedIds($("projectTaskOptions"));selected.push(task.id);renderCreateTaskPicker(selected);renderTaskBoard();renderHome();input.focus()
+    input.value="";createSelected.add(task.id);renderCreateTaskPicker();renderTaskBoard();renderHome();input.focus()
   };
   $("projectNewTaskTitle").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("projectCreateTaskBtn").click()}});
 
   $("projectEditCreateTaskBtn").onclick=()=>{
     if(projectEditIndex<0)return;
     const p=state.projects[projectEditIndex],input=$("projectEditNewTaskTitle"),task=createInlineTask(input.value,p.name);if(!task){input.focus();return}
-    input.value="";const selected=selectedIds($("projectEditTaskOptions"));selected.push(task.id);renderEditTaskPicker(selected);renderTaskBoard();renderHome();renderProjectBoard();renderProjectDashboard();input.focus()
+    input.value="";editSelected.add(task.id);renderEditTaskPicker();renderTaskBoard();renderHome();renderProjectBoard();renderProjectDashboard();input.focus()
   };
   $("projectEditNewTaskTitle").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("projectEditCreateTaskBtn").click()}});
 
@@ -106,21 +104,20 @@
 
   function clearProjectForm(){
     $("projectNameInput").value="";$("projectStatusInput").value="待开始";$("projectDueInput").value="";$("projectStandardInput").value="";
-    $("projectTaskSearch").value="";$("projectNewTaskTitle").value="";$("projectTaskPicker").open=false;renderCreateTaskPicker([])
+    $("projectTaskSearch").value="";$("projectNewTaskTitle").value="";$("projectTaskPicker").open=false;createSelected=new Set();renderCreateTaskPicker()
   }
   function addProjectFromForm(){
     const name=$("projectNameInput").value.trim();if(!name){$("projectNameInput").focus();return}
     if(state.projects.some(p=>p.name===name)){alert("已经有同名项目，请换一个项目名称。");return}
     const p={id:makeProjectId(),name,status:$("projectStatusInput").value,due:$("projectDueInput").value,standard:$("projectStandardInput").value.trim(),createdAt:new Date().toISOString()};
-    const ids=selectedIds($("projectTaskOptions"));state.projects.unshift(p);assignTasksToProject(name,ids);clearProjectForm();$("projectComposeDetails").open=false;persistProjects()
+    state.projects.unshift(p);assignTasksToProject(name,[...createSelected]);clearProjectForm();$("projectComposeDetails").open=false;persistProjects()
   }
 
   function renderProjectDashboard(){
     const el=$("projectDashboard");if(!el)return;
     const total=state.projects.length,doing=state.projects.filter(p=>p.status==="进行中").length,done=state.projects.filter(p=>p.status==="已完成").length,overdue=state.projects.filter(isOverdue).length;
     const totalTaskCount=state.projects.reduce((n,p)=>n+projectProgress(p).total,0),doneTaskCount=state.projects.reduce((n,p)=>n+projectProgress(p).done,0);
-    const taskPct=totalTaskCount?Math.round(doneTaskCount/totalTaskCount*100):0;
-    const projectPct=total?Math.round(done/total*100):0;
+    const taskPct=totalTaskCount?Math.round(doneTaskCount/totalTaskCount*100):0,projectPct=total?Math.round(done/total*100):0;
     el.innerHTML=`
       <div class="project-metric project-metric-total"><span>项目总数</span><strong>${total}</strong><small>阶段目标</small></div>
       <div class="project-metric project-metric-doing"><span>进行中</span><strong>${doing}</strong><small>当前推进</small></div>
@@ -175,15 +172,14 @@
   function openProjectEditor(index){
     projectEditIndex=index;const p=state.projects[index];
     $("projectEditName").value=p.name;$("projectEditStatus").value=p.status;$("projectEditDue").value=p.due||"";$("projectEditStandard").value=p.standard||"";$("projectEditTaskSearch").value="";$("projectEditNewTaskTitle").value="";
-    buildTaskOptions($("projectEditTaskOptions"),projectTasks(p).map(t=>t.id),"");$("projectEditDlg").showModal()
+    editSelected=new Set(projectTasks(p).map(t=>t.id));renderEditTaskPicker();$("projectEditDlg").showModal()
   }
   $("projectEditSave").onclick=e=>{
     e.preventDefault();if(projectEditIndex<0)return;
     const old=state.projects[projectEditIndex],oldName=old.name,newName=$("projectEditName").value.trim();if(!newName)return;
     if(state.projects.some((p,i)=>i!==projectEditIndex&&p.name===newName)){alert("已经有同名项目，请换一个项目名称。");return}
-    const ids=selectedIds($("projectEditTaskOptions"));
     state.projects[projectEditIndex]={...old,name:newName,status:$("projectEditStatus").value,due:$("projectEditDue").value,standard:$("projectEditStandard").value.trim()};
-    assignTasksToProject(newName,ids,oldName);$("projectEditDlg").close();persistProjects()
+    assignTasksToProject(newName,[...editSelected],oldName);$("projectEditDlg").close();persistProjects()
   };
   $("projectDeleteBtn").onclick=()=>{
     if(projectEditIndex<0)return;const p=state.projects[projectEditIndex],linked=projectTasks(p).length;
