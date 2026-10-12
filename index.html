@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lambert AI OS</title><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="shell">
+<aside>
+<h2>Lambert AI OS</h2><small>个人工作台 · MVP</small>
+<nav>
+<button data-v="home" class="active">总览</button>
+<button data-v="projects">项目看板</button>
+<button data-v="tasks">任务看板</button>
+<button data-v="review">每日复盘</button>
+<button data-v="knowledge">知识入口</button>
+<button data-v="settings">链接设置</button>
+</nav>
+</aside>
+<main>
+<header><div><small>Lambert Personal Dashboard</small><h1>先把工作台用起来</h1></div><div id="today"></div></header>
+
+<section id="home" class="view activeView">
+<div class="grid3">
+<div class="card"><h3>今日 Top 3</h3><div id="top3"></div><button id="editTop3">编辑 Top 3</button></div>
+<div class="card"><h3>当前主线</h3><b class="big">Lambert AI OS</b><p>先完成看板，再接 Notion / 飞书真实数据。</p></div>
+<div class="card"><h3>快捷入口</h3><div id="quickLinks" class="links"></div></div>
+</div>
+<div class="grid2">
+<div class="card"><h3>最近项目</h3><div id="homeProjects"></div></div>
+<div class="card"><h3>今日任务</h3><div id="homeTasks"></div></div>
+</div>
+</section>
+
+<section id="projects" class="view">
+<div class="head"><div><h2>项目看板</h2><p>项目由你自己维护，后面再接 Notion / 飞书。</p></div><button id="addProject">+ 新建项目</button></div>
+<div id="projectBoard" class="board"></div>
+<div class="card embed"><div class="row"><h3>Notion / 飞书项目页</h3><a id="projectOpen" target="_blank">打开原页面</a></div><iframe id="projectFrame"></iframe><div id="projectEmpty">先在“链接设置”里填项目看板链接。</div></div>
+</section>
+
+<section id="tasks" class="view">
+<div class="head"><div><h2>任务看板</h2><p>先用本地任务板；之后可替换成飞书多维表格或 Notion Tasks。</p></div><button id="addTask">+ 新建任务</button></div>
+<div id="taskBoard" class="board"></div>
+<div class="card embed"><div class="row"><h3>Notion / 飞书任务页</h3><a id="taskOpen" target="_blank">打开原页面</a></div><iframe id="taskFrame"></iframe><div id="taskEmpty">先在“链接设置”里填任务看板链接。</div></div>
+</section>
+
+<section id="review" class="view">
+<div class="head"><div><h2>每日复盘</h2><p>只保留：目标、实际、差距、原因、下一步。</p></div></div>
+<div class="card formgrid">
+<label>今天最重要的结果<textarea id="r_goal"></textarea></label>
+<label>实际完成<textarea id="r_actual"></textarea></label>
+<label>最大差距<textarea id="r_gap"></textarea></label>
+<label>主要原因<textarea id="r_reason"></textarea></label>
+<label class="full">明天第一步<textarea id="r_next"></textarea></label>
+<div class="full"><button id="saveReview">保存到本机</button><span id="reviewNote"></span></div>
+</div>
+<div class="card embed"><div class="row"><h3>Notion / 飞书复盘页</h3><a id="reviewOpen" target="_blank">打开原页面</a></div><iframe id="reviewFrame"></iframe><div id="reviewEmpty">先在“链接设置”里填复盘页面链接。</div></div>
+</section>
+
+<section id="knowledge" class="view">
+<div class="grid2">
+<div class="card"><h3>知识入口</h3><div id="knowledgeLinks" class="links"></div></div>
+<div class="card"><h3>后续再接 AI 整理</h3><p>① 全库盘点</p><p>② 高频主题</p><p>③ 重复/零散诊断</p><p>④ AI 问答 + 来源</p></div>
+</div>
+</section>
+
+<section id="settings" class="view">
+<div class="card formgrid">
+<label>Notion 首页<input id="notionHome" type="url"></label>
+<label>飞书首页<input id="feishuHome" type="url"></label>
+<label>项目看板链接<input id="projectUrl" type="url"></label>
+<label>任务看板链接<input id="taskUrl" type="url"></label>
+<label>每日复盘链接<input id="reviewUrl" type="url"></label>
+<div class="full"><button id="saveSettings">保存设置</button><span id="settingsNote"></span></div>
+</div>
+</section>
+</main>
+</div>
+
+<dialog id="dlg"><form method="dialog">
+<h3 id="dlgTitle"></h3>
+<label>名称<input id="dlgName"></label>
+<label>状态<select id="dlgStatus"><option>待开始</option><option>进行中</option><option>已完成</option></select></label>
+<label>补充<input id="dlgExtra"></label>
+<div class="dlgActions"><button value="cancel">取消</button><button id="dlgSave" value="default">保存</button></div>
+</form></dialog>
+
+<script src="app.js"></script>
+</body></html>
