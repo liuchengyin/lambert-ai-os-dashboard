@@ -63,3 +63,13 @@
   };
   $('ptcTitle').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();$('ptcSave').click()}})
 })();
+
+// Load Daily Review V6 without changing the legacy HTML scaffold.
+(function(){
+  if(!document.querySelector('link[href="review-v6.css"]')){
+    const l=document.createElement('link');l.rel='stylesheet';l.href='review-v6.css';document.head.appendChild(l)
+  }
+  if(!document.querySelector('script[src="review-v6.js"]')){
+    const s=document.createElement('script');s.src='review-v6.js';document.body.appendChild(s)
+  }
+})();
