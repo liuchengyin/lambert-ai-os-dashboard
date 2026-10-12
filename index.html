@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Lambert AI OS</title><link rel="stylesheet" href="styles.css">
+<title>Lambert AI OS</title><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="project-v3.css">
 </head>
 <body>
 <div class="shell">
@@ -34,33 +34,44 @@
 
 <section id="projects" class="view">
 <div class="project-page-head">
-  <div><h2>项目看板</h2><p>把项目当作阶段性目标：明确交付标准，再拆成关联任务推进。</p></div>
+  <div><h2>项目看板</h2><p>项目 = 阶段性目标。先看整体推进，再补充项目和任务。</p></div>
   <div class="project-storage-pill">个人项目 · 暂不协作</div>
 </div>
 
-<div class="card project-compose">
-  <div class="section-kicker">项目添加</div>
-  <div class="project-compose-grid">
-    <label class="project-name-field">项目名称<input id="projectNameInput" placeholder="例如：10 月完成物流岗位求职准备"></label>
-    <label>状态<select id="projectStatusInput"><option>待开始</option><option>进行中</option><option>已完成</option></select></label>
-    <label>截止日期<input id="projectDueInput" type="date"></label>
-    <label class="project-standard-field">完成交付标准（可衡量）<textarea id="projectStandardInput" placeholder="例如：完成 3 个面试案例稿 + 10 次模拟面试 + 获得 1 个目标 Offer"></textarea></label>
-    <div class="project-task-field">
-      <span class="project-field-label">关联任务</span>
-      <details class="project-task-picker" id="projectTaskPicker">
-        <summary id="projectTaskSummary">选择关联任务</summary>
-        <div id="projectTaskOptions" class="project-task-options"></div>
-      </details>
-    </div>
-  </div>
-  <div class="project-compose-actions"><button id="addProject" class="task-primary-btn">添加项目</button></div>
-</div>
+<div id="projectDashboard" class="project-dashboard"></div>
 
 <div class="project-board-toolbar">
-  <div><strong>项目看板</strong><span class="meta">状态推进 + 任务联动</span></div>
+  <div><strong>项目看板</strong><span class="meta">按状态推进</span></div>
   <div id="projectSummary" class="task-summary"></div>
 </div>
 <div id="projectBoard" class="project-board"></div>
+
+<details id="projectComposeDetails" class="card project-compose project-compose-collapsible">
+  <summary><span><strong>添加项目</strong><small>展开后填写项目字段</small></span><span class="project-compose-toggle">展开 / 收起</span></summary>
+  <div class="project-compose-body">
+    <div class="project-compose-grid">
+      <label class="project-name-field">项目名称<input id="projectNameInput" placeholder="例如：10 月完成物流岗位求职准备"></label>
+      <label>状态<select id="projectStatusInput"><option>待开始</option><option>进行中</option><option>已完成</option></select></label>
+      <label>截止日期<input id="projectDueInput" type="date"></label>
+      <label class="project-standard-field">完成交付标准（可衡量）<textarea id="projectStandardInput" placeholder="例如：完成 3 个面试案例稿 + 10 次模拟面试 + 获得 1 个目标 Offer"></textarea></label>
+      <div class="project-task-field">
+        <span class="project-field-label">关联任务</span>
+        <details class="project-task-picker" id="projectTaskPicker">
+          <summary id="projectTaskSummary">选择关联任务</summary>
+          <div class="project-task-picker-inner">
+            <input id="projectTaskSearch" class="project-task-search" placeholder="搜索任务名称">
+            <div class="project-inline-task-create">
+              <input id="projectNewTaskTitle" placeholder="直接新建任务并自动关联">
+              <button id="projectCreateTaskBtn" type="button">+ 新建任务</button>
+            </div>
+            <div id="projectTaskOptions" class="project-task-options"></div>
+          </div>
+        </details>
+      </div>
+    </div>
+    <div class="project-compose-actions"><button id="addProject" class="task-primary-btn">添加项目</button></div>
+  </div>
+</details>
 
 <div class="card task-persistence-card">
   <div class="row">
@@ -111,7 +122,6 @@
 </main>
 </div>
 
-<!-- 保留旧项目弹窗节点，兼容基础脚本；新版项目逻辑由 project-v2.js 接管 -->
 <dialog id="dlg"><form method="dialog"><h3 id="dlgTitle"></h3><label>名称<input id="dlgName"></label><label>状态<select id="dlgStatus"><option>待开始</option><option>进行中</option><option>已完成</option></select></label><label>补充<input id="dlgExtra"></label><div class="dlgActions"><button value="cancel">取消</button><button id="dlgDelete" type="button" style="display:none">删除</button><button id="dlgSave" value="default">保存</button></div></form></dialog>
 
 <dialog id="projectEditDlg"><form method="dialog">
@@ -120,12 +130,12 @@
 <label>状态<select id="projectEditStatus"><option>待开始</option><option>进行中</option><option>已完成</option></select></label>
 <label>截止日期<input id="projectEditDue" type="date"></label>
 <label>完成交付标准（可衡量）<textarea id="projectEditStandard"></textarea></label>
-<div class="project-task-field"><span class="project-field-label">关联任务</span><div id="projectEditTaskOptions" class="project-task-options project-edit-task-options"></div></div>
+<div class="project-task-field"><span class="project-field-label">关联任务</span><input id="projectEditTaskSearch" class="project-task-search" placeholder="搜索任务名称"><div class="project-inline-task-create"><input id="projectEditNewTaskTitle" placeholder="直接新建任务并自动关联"><button id="projectEditCreateTaskBtn" type="button">+ 新建任务</button></div><div id="projectEditTaskOptions" class="project-task-options project-edit-task-options"></div></div>
 <div class="dlgActions"><button value="cancel">取消</button><button id="projectDeleteBtn" type="button">删除</button><button id="projectEditSave" value="default">保存</button></div>
 </form></dialog>
 
 <dialog id="taskEditDlg"><form method="dialog"><h3>编辑任务</h3><label>任务<input id="taskEditTitle"></label><label>所属项目<select id="taskEditProject"><option value="">无项目</option></select></label><label>优先级<select id="taskEditPriority"><option value="P1">P1 · 重要</option><option value="P2">P2 · 普通</option><option value="P3">P3 · 低</option></select></label><label>截止日期<input id="taskEditDue" type="date"></label><label>备注<input id="taskEditNote"></label><div class="dlgActions"><button value="cancel">取消</button><button id="taskDeleteBtn" type="button">删除</button><button id="taskEditSave" value="default">保存</button></div></form></dialog>
 
 <script src="app.js"></script>
-<script src="project-v2.js"></script>
+<script src="project-v3.js"></script>
 </body></html>
