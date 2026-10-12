@@ -1,9 +1,9 @@
-// Common links dashboard: iTab-style launcher + editable groups
+// Common links dashboard: iTab-style launcher + editable groups + wallpaper
 (function(){
   const section=document.getElementById('knowledge');if(!section)return;
-  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261012-2';document.head.appendChild(l)}
+  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261012-3';document.head.appendChild(l)}
   const navBtn=document.querySelector('nav button[data-v="knowledge"]');if(navBtn)navBtn.textContent='常用链接';
-  const STORAGE='knowledge_link_library_v1',LOCK='knowledge_link_locked_v1';
+  const STORAGE='knowledge_link_library_v1',LOCK='knowledge_link_locked_v1',WALL='knowledge_wallpaper_v1';
   const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
   const esc=v=>String(v||'').replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
   const id=()=>`link_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,gid=()=>`group_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
@@ -19,16 +19,20 @@
   groups=groups.map(g=>({...g,links:(g.links||[]).map(l=>({...l,icon:l.icon||''}))}));
 
   section.innerHTML=`<div class="knowledge-page">
-    <div class="knowledge-head"><div><h2>常用链接</h2><p>个人快捷启动台</p></div><button id="knowledgeLock" class="knowledge-lock"></button></div>
+    <div class="knowledge-head"><div><h2>常用链接</h2><p>个人快捷启动台</p></div><div class="knowledge-head-actions"><button id="knowledgeWallpaper" class="knowledge-wallpaper-btn" type="button">壁纸</button><button id="knowledgeLock" class="knowledge-lock"></button></div></div>
     <div class="knowledge-searchbar"><input id="knowledgeSearch" placeholder="搜索常用网站"><button id="knowledgeQuickAdd" type="button">添加链接</button></div>
     <div id="knowledgeEditBar" class="knowledge-editbar"><button id="knowledgeAddGroup" type="button">+ 添加分组</button><span>编辑模式：可改名、拖动分组、编辑链接</span></div>
     <div id="knowledgeGroups"></div>
     <div id="knowledgeLinks" style="display:none"></div>
   </div>`;
 
-  const lockBtn=document.getElementById('knowledgeLock'),search=document.getElementById('knowledgeSearch'),root=document.getElementById('knowledgeGroups'),editBar=document.getElementById('knowledgeEditBar'),quickBtn=document.getElementById('knowledgeQuickAdd');
+  const lockBtn=document.getElementById('knowledgeLock'),wallBtn=document.getElementById('knowledgeWallpaper'),search=document.getElementById('knowledgeSearch'),root=document.getElementById('knowledgeGroups'),editBar=document.getElementById('knowledgeEditBar'),quickBtn=document.getElementById('knowledgeQuickAdd');
+  const applyWallpaper=url=>{if(url){section.style.setProperty('--knowledge-wallpaper',`url("${url.replace(/"/g,'\\"')}")`)}else section.style.removeProperty('--knowledge-wallpaper')};
+  applyWallpaper(get(WALL,''));
+
   const dlg=document.createElement('dialog');dlg.id='knowledgeLinkDlg';dlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3 id="kDlgTitle">添加链接</h3><label>链接地址<input id="kUrl" type="url" placeholder="https://example.com"></label><div class="knowledge-icon-row"><div class="knowledge-icon-preview"><img id="kIconPreview" alt=""></div><label class="knowledge-icon-input">图标链接（可选）<input id="kIcon" placeholder="留空自动识别网站图标"></label><button id="kAutoIcon" type="button">自动识别</button></div><label>名称<input id="kTitle" placeholder="可不填，自动使用网站域名"></label><label>说明<input id="kDesc" placeholder="一句话说明用途"></label><label>分组<select id="kGroup"></select></label><div class="dlgActions"><button value="cancel">取消</button><button id="kSave" type="button" class="task-primary-btn">保存</button></div></form>`;document.body.appendChild(dlg);
   const groupDlg=document.createElement('dialog');groupDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>添加分组</h3><label>分组名称<input id="kgName" placeholder="例如：工具 / 工作 / 学习"></label><div class="dlgActions"><button value="cancel">取消</button><button id="kgSave" type="button" class="task-primary-btn">保存</button></div></form>`;document.body.appendChild(groupDlg);
+  const wallDlg=document.createElement('dialog');wallDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>设置壁纸</h3><label>图片链接<input id="kwUrl" type="url" placeholder="https://.../wallpaper.jpg"></label><div class="dlgActions"><button id="kwClear" type="button">恢复默认</button><button value="cancel">取消</button><button id="kwSave" type="button" class="task-primary-btn">应用</button></div></form>`;document.body.appendChild(wallDlg);
 
   function safeUrl(raw){let v=(raw||'').trim();if(!v)return '';if(!/^https?:\/\//i.test(v))v='https://'+v;try{return new URL(v).href}catch{return ''}}
   function host(url){try{return new URL(url).hostname.replace(/^www\./,'')}catch{return '网站'}}
@@ -55,7 +59,11 @@
     });
     if(!root.children.length)root.innerHTML='<div class="knowledge-empty-large">没有匹配结果。</div>'
   }
-  lockBtn.onclick=()=>{locked=!locked;set(LOCK,locked);updateLock();render()};search.oninput=e=>{query=e.target.value;render()};quickBtn.onclick=()=>openLinkDlg(groups[0]?.id);search.addEventListener('keydown',e=>{if(e.key==='Enter'&&!locked){e.preventDefault();quickBtn.click()}});
+  lockBtn.onclick=()=>{locked=!locked;set(LOCK,locked);updateLock();render()};
+  wallBtn.onclick=()=>{document.getElementById('kwUrl').value=get(WALL,'');wallDlg.showModal()};
+  document.getElementById('kwSave').onclick=()=>{const url=safeUrl(document.getElementById('kwUrl').value);if(!url){document.getElementById('kwUrl').focus();return}set(WALL,url);applyWallpaper(url);wallDlg.close()};
+  document.getElementById('kwClear').onclick=()=>{localStorage.removeItem(WALL);applyWallpaper('');wallDlg.close()};
+  search.oninput=e=>{query=e.target.value;render()};quickBtn.onclick=()=>openLinkDlg(groups[0]?.id);search.addEventListener('keydown',e=>{if(e.key==='Enter'&&!locked){e.preventDefault();quickBtn.click()}});
   document.getElementById('knowledgeAddGroup').onclick=()=>{document.getElementById('kgName').value='';groupDlg.showModal();setTimeout(()=>document.getElementById('kgName').focus(),20)};document.getElementById('kgSave').onclick=()=>{const name=document.getElementById('kgName').value.trim();if(!name)return;groups.push({id:gid(),name,links:[]});persist();groupDlg.close();render()};document.getElementById('kUrl').addEventListener('input',updateIconPreview);document.getElementById('kIcon').addEventListener('input',updateIconPreview);document.getElementById('kAutoIcon').onclick=()=>{document.getElementById('kIcon').value='';updateIconPreview()};
   document.getElementById('kSave').onclick=()=>{const url=safeUrl(document.getElementById('kUrl').value);if(!url){document.getElementById('kUrl').focus();return}const groupId=document.getElementById('kGroup').value,title=document.getElementById('kTitle').value.trim()||host(url),desc=document.getElementById('kDesc').value.trim(),icon=document.getElementById('kIcon').value.trim();if(editing){const oldGroup=groups.find(g=>g.id===editing.groupId),link=oldGroup?.links.find(l=>l.id===editing.linkId);if(link){oldGroup.links=oldGroup.links.filter(x=>x.id!==link.id);groups.find(g=>g.id===groupId)?.links.unshift({...link,title,url,desc,icon})}}else groups.find(g=>g.id===groupId)?.links.unshift({id:id(),title,url,desc,icon});persist();dlg.close();search.value='';query='';render()};
   updateLock();render();
