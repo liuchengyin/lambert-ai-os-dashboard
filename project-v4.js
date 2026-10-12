@@ -75,4 +75,10 @@
   if(!document.querySelector('link[href="theme-linear.css"]')){
     const t=document.createElement('link');t.rel='stylesheet';t.href='theme-linear.css';document.head.appendChild(t)
   }
+  if(!document.querySelector('link[href="daily-modules.css"]')){
+    const d=document.createElement('link');d.rel='stylesheet';d.href='daily-modules.css';document.head.appendChild(d)
+  }
+  if(!document.querySelector('script[src="daily-modules.js"]')){
+    const s=document.createElement('script');s.src='daily-modules.js';document.body.appendChild(s)
+  }
 })();
