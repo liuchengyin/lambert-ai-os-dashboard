@@ -72,7 +72,6 @@ async function importMarkdown(token,fileToken,title){
     const data=await jsonCall(`/drive/v1/import_tasks/${encodeURIComponent(ticket)}`,token,{method:'GET'});
     const result=data?.data?.result;
     if(!result) continue;
-    // Feishu currently documents 0 as success for completed import results.
     if(result.token&&result.url) return {token:result.token,url:result.url,type:result.type||'docx',extra:result.extra||[]};
     if(result.job_status!==undefined&&Number(result.job_status)<0) throw new Error(result.job_error_msg||'飞书 Markdown 导入失败');
   }
@@ -127,8 +126,9 @@ export default async function handler(req,res){
   try{
     const token=await tenantToken(appId,appSecret);
     const node=await resolveWikiNode(token,targetWikiToken);
-    const md=`# ${title}\n\n${markdown}`;
-    const fileToken=await uploadMarkdown(token,title,md);
+    // The document title is already supplied as file_name. Do not inject it as
+    // a Markdown H1 as that would duplicate the title inside the Feishu body.
+    const fileToken=await uploadMarkdown(token,title,markdown);
     const imported=await importMarkdown(token,fileToken,title);
     const wikiToken=await moveIntoWiki(token,node,imported);
     const url=`https://my.feishu.cn/wiki/${wikiToken}`;
