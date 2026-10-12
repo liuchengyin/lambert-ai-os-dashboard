@@ -1,6 +1,7 @@
 // Common links dashboard: editable blocks + drag reorder + link icons
 (function(){
   const section=document.getElementById('knowledge');if(!section)return;
+  const navBtn=document.querySelector('nav button[data-v="knowledge"]');if(navBtn)navBtn.textContent='常用链接';
   const STORAGE='knowledge_link_library_v1';
   const LOCK='knowledge_link_locked_v1';
   const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
