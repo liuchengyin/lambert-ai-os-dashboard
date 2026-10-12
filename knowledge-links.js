@@ -1,11 +1,11 @@
 // Common links dashboard: iTab-style launcher + editable groups + wallpaper
 (function(){
   const section=document.getElementById('knowledge');if(!section)return;
-  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261012-3';document.head.appendChild(l)}
+  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261012-4';document.head.appendChild(l)}
   const navBtn=document.querySelector('nav button[data-v="knowledge"]');if(navBtn)navBtn.textContent='常用链接';
   const STORAGE='knowledge_link_library_v1',LOCK='knowledge_link_locked_v1',WALL='knowledge_wallpaper_v1';
   const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-  const esc=v=>String(v||'').replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
+  const esc=v=>String(v||'').replace(/[&<>'\"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
   const id=()=>`link_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,gid=()=>`group_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
   const defaults=[
     {id:'g_tools',name:'工具',links:[
@@ -27,7 +27,7 @@
   </div>`;
 
   const lockBtn=document.getElementById('knowledgeLock'),wallBtn=document.getElementById('knowledgeWallpaper'),search=document.getElementById('knowledgeSearch'),root=document.getElementById('knowledgeGroups'),editBar=document.getElementById('knowledgeEditBar'),quickBtn=document.getElementById('knowledgeQuickAdd');
-  const applyWallpaper=url=>{if(url){section.style.setProperty('--knowledge-wallpaper',`url("${url.replace(/"/g,'\\"')}")`)}else section.style.removeProperty('--knowledge-wallpaper')};
+  const applyWallpaper=url=>{if(url){section.style.setProperty('--knowledge-wallpaper',`url("${url.replace(/"/g,'\\\"')}")`)}else section.style.removeProperty('--knowledge-wallpaper')};
   applyWallpaper(get(WALL,''));
 
   const dlg=document.createElement('dialog');dlg.id='knowledgeLinkDlg';dlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3 id="kDlgTitle">添加链接</h3><label>链接地址<input id="kUrl" type="url" placeholder="https://example.com"></label><div class="knowledge-icon-row"><div class="knowledge-icon-preview"><img id="kIconPreview" alt=""></div><label class="knowledge-icon-input">图标链接（可选）<input id="kIcon" placeholder="留空自动识别网站图标"></label><button id="kAutoIcon" type="button">自动识别</button></div><label>名称<input id="kTitle" placeholder="可不填，自动使用网站域名"></label><label>说明<input id="kDesc" placeholder="一句话说明用途"></label><label>分组<select id="kGroup"></select></label><div class="dlgActions"><button value="cancel">取消</button><button id="kSave" type="button" class="task-primary-btn">保存</button></div></form>`;document.body.appendChild(dlg);
