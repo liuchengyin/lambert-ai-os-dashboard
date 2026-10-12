@@ -115,3 +115,9 @@
   };
   updateLock();render();
 })();
+
+// Load V5 overview/task enhancements last so they can safely override the MVP renderers.
+(function(){
+  if(!document.querySelector('link[href="dashboard-v5.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='dashboard-v5.css';document.head.appendChild(l)}
+  if(!document.querySelector('script[src="dashboard-v5.js"]')){const s=document.createElement('script');s.src='dashboard-v5.js';s.defer=false;document.body.appendChild(s)}
+})();
