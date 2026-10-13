@@ -90,4 +90,7 @@
   if(!document.querySelector('script[src="reading-extension-import.js"]')){
     const s=document.createElement('script');s.src='reading-extension-import.js';document.body.appendChild(s)
   }
+  if(!document.querySelector('script[src="reading-history-bridge.js"]')){
+    const s=document.createElement('script');s.src='reading-history-bridge.js';document.body.appendChild(s)
+  }
 })();
