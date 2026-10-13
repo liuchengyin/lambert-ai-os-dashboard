@@ -1,4 +1,4 @@
-// Reading Workspace V3: split-mode WeRead + embedded PDF/web + card notes + Feishu archive
+// Reading Workspace Stable V4 — fixed architecture: left reader, right card note, records below.
 (function(){
   const reading=document.getElementById('reading');
   if(!reading)return;
@@ -20,92 +20,76 @@
     '方法卡':['这个方法解决什么问题？','核心步骤是什么？','使用条件 / 边界是什么？','我的下一步实践是什么？']
   };
 
-  let state=get(STORE,{reader:{title:'',progress:'',mode:'weread',url:''},notes:[],currentId:''});
-  if(!state||typeof state!=='object')state={reader:{title:'',progress:'',mode:'weread',url:''},notes:[],currentId:''};
-  state.reader=state.reader||{title:'',progress:'',mode:'weread',url:''};
+  let state=get(STORE,{reader:{title:'',progress:'',mode:'pdf',url:''},notes:[],currentId:''});
+  if(!state||typeof state!=='object')state={reader:{title:'',progress:'',mode:'pdf',url:''},notes:[],currentId:''};
+  state.reader=state.reader||{title:'',progress:'',mode:'pdf',url:''};
+  if(state.reader.mode==='weread')state.reader.mode='pdf';
   state.notes=Array.isArray(state.notes)?state.notes:[];
 
-  if(!state.notes.length){
-    const legacy=get(LEGACY,{});
-    Object.entries(legacy||{}).forEach(([date,r])=>{
-      if(!r||!(r.source||r.excerpt||r.insight||r.action))return;
-      state.notes.push({id:uid(),date,type:'观念卡',title:r.source||'阅读笔记',thought:[r.insight,r.action].filter(Boolean).join('\n\n'),excerpt:r.excerpt||'',sourceTitle:r.source||'',progress:r.progress||'',savedAt:r.savedAt||'',feishuUrl:'',feishuDocumentToken:'',feishuWikiToken:''});
-    });
-    set(STORE,state);
-  }
-
   reading.innerHTML=`
-  <div class="reading-v2-page">
-    <div class="reading-v2-head">
-      <div><h2>每日阅读</h2><p>阅读占主屏，笔记只做加工。微信读书正常打开，PDF / 网页可直接嵌入。</p></div>
-      <div class="reading-v2-head-progress"><span>阅读进度</span><input id="rv2Progress" placeholder="例如：42% / 第 3 章 / P120"></div>
-    </div>
-
-    <div class="reading-v2-workspace">
-      <section class="reading-v2-reader">
-        <div class="reading-v2-readerbar">
-          <input id="rv2BookTitle" class="reading-v2-book-title" placeholder="当前书籍 / 阅读对象">
-          <select id="rv2Mode" title="阅读来源"><option value="weread">微信读书</option><option value="web">PDF / 网页</option></select>
-        </div>
-        <div id="rv2Loadbar" class="reading-v2-loadbar">
-          <input id="rv2Url" type="url" placeholder="PDF / 网页链接；微信读书可留空">
-          <button id="rv2Load" class="reading-v2-secondary">加载阅读</button>
-          <button id="rv2Open" class="reading-v2-secondary">新窗口打开</button>
-        </div>
-
-        <div class="reading-v2-frame-shell">
-          <div id="rv2WereadPanel" class="reading-v2-weread-panel">
-            <div class="reading-v2-weread-mark">微</div>
-            <h3>微信读书 · 分屏阅读</h3>
-            <p>微信读书不再强行嵌入。保持官方页面正常阅读，复制需要的原文，再回到右侧一键导入。</p>
-            <div class="reading-v2-weread-flow"><span>1 打开微信读书</span><i>→</i><span>2 复制原文</span><i>→</i><span>3 一键导入笔记</span></div>
-            <div class="reading-v2-weread-actions">
-              <button id="rv2OpenWeread" class="task-primary-btn">打开微信读书</button>
-              <button id="rv2SplitWeread" class="reading-v2-secondary">电脑分屏打开</button>
-            </div>
-            <small>手机会新开标签页；电脑优先尝试打开独立阅读窗口。不会使用插件或绕过微信风控。</small>
-          </div>
-          <div id="rv2ReaderPlaceholder" class="reading-v2-placeholder is-hidden">
-            <strong>PDF / 网页阅读区</strong><span>粘贴链接后点击“加载阅读”，或直接选择本地 PDF。</span>
-          </div>
-          <iframe id="rv2Frame" title="阅读内容" referrerpolicy="no-referrer" loading="eager"></iframe>
-        </div>
-      </section>
-
-      <section class="reading-v2-note">
-        <div class="reading-v2-note-head">
-          <div class="reading-v2-template-switch"><label>模板</label><select id="rv2Type"><option>观念卡</option><option>案例卡</option><option>方法卡</option></select></div>
-          <div class="reading-v2-note-head-actions"><select id="rv2History" title="历史笔记"><option value="">历史笔记</option></select><button id="rv2New" class="reading-v2-secondary">新建</button></div>
-        </div>
-
-        <div class="reading-v2-card-title-row"><strong id="rv2CardPrefix">观念卡：</strong><input id="rv2CardTitle" placeholder="给这张卡一个标题"></div>
-
-        <div class="reading-v2-thought-block">
-          <div class="reading-v2-section-title"><span>我的思考</span><small>按模板加工原文</small></div>
-          <div id="rv2Prompts" class="reading-v2-prompts"></div>
-          <textarea id="rv2Thought" placeholder="写下你的理解、判断和迁移……"></textarea>
-        </div>
-
-        <div class="reading-v2-divider"><span>原文</span></div>
-        <div class="reading-v2-clip-row"><span>把微信读书里复制的文字放到这里</span><button id="rv2Clipboard" class="reading-v2-secondary">从剪贴板导入</button></div>
-        <div class="reading-v2-source-block"><textarea id="rv2Excerpt" placeholder="原文 / 摘录"></textarea></div>
-
-        <div class="reading-v2-note-actions"><button id="rv2Save" class="task-primary-btn">保存笔记</button><button id="rv2Archive" class="reading-v2-archive">归档飞书</button><span id="rv2Status"></span></div>
-        <a id="rv2FeishuLink" class="reading-v2-feishu-link" href="${FEISHU_DAILY}" target="_blank">打开飞书归档位置</a>
-      </section>
-    </div>
-
-    <div class="reading-v2-functionbar">
-      <div><strong>阅读工具</strong><span>只保留高频动作</span></div>
-      <div class="reading-v2-function-actions">
-        <button id="rv2Weread" class="reading-v2-secondary">打开微信读书</button>
-        <button id="rv2Pdf" class="reading-v2-secondary">选择本地 PDF</button>
-        <input id="rv2PdfInput" type="file" accept="application/pdf" hidden>
-        <button id="rv2QuickCard" class="reading-v2-secondary">复制原文 → 新建卡</button>
-        <button id="rv2Fullscreen" class="reading-v2-secondary">阅读区全屏</button>
+    <div class="reading-stable-page">
+      <div class="reading-stable-head">
+        <div><h2>每日阅读</h2></div>
+        <label class="reading-progress-field"><span>阅读进度</span><input id="rv2Progress" placeholder="例如：42% / 第 3 章 / P120"></label>
       </div>
-    </div>
-  </div>`;
+
+      <div class="reading-stable-workspace">
+        <section class="reading-stable-reader">
+          <div class="reading-reader-toolbar">
+            <input id="rv2BookTitle" class="reading-book-input" placeholder="当前书籍 / 阅读对象">
+            <div class="reading-source-tabs" role="group" aria-label="阅读来源">
+              <button id="rv2PdfMode" type="button" data-mode="pdf">PDF</button>
+              <button id="rv2WebMode" type="button" data-mode="web">网页</button>
+            </div>
+          </div>
+          <div class="reading-url-row">
+            <input id="rv2Url" type="url" placeholder="粘贴 PDF / 网页链接">
+            <button id="rv2Load" class="reading-secondary">加载阅读</button>
+            <button id="rv2Open" class="reading-secondary">新窗口打开</button>
+          </div>
+          <div class="reading-frame-shell">
+            <div id="rv2ReaderPlaceholder" class="reading-reader-placeholder">
+              <strong>PDF / 网页阅读区</strong>
+              <span>粘贴链接后加载，或选择本地 PDF。</span>
+              <button id="rv2Pdf" class="reading-secondary">选择本地 PDF</button>
+              <input id="rv2PdfInput" type="file" accept="application/pdf" hidden>
+            </div>
+            <iframe id="rv2Frame" title="阅读内容" referrerpolicy="no-referrer" loading="eager"></iframe>
+          </div>
+        </section>
+
+        <section class="reading-stable-note">
+          <div class="reading-note-toolbar">
+            <label><span>模板</span><select id="rv2Type"><option>观念卡</option><option>案例卡</option><option>方法卡</option></select></label>
+            <button id="rv2New" class="reading-secondary">新建</button>
+          </div>
+
+          <div class="reading-card-title"><strong id="rv2CardPrefix">观念卡：</strong><input id="rv2CardTitle" placeholder="给这张卡一个标题"></div>
+
+          <label class="reading-editor-field"><span>我的思考</span><textarea id="rv2Thought" placeholder="写下你的理解、判断和迁移……"></textarea></label>
+
+          <div class="reading-divider"><span>原文</span></div>
+          <div class="reading-clip-row"><span>从阅读内容中摘录原文</span><button id="rv2Clipboard" class="reading-secondary">从剪贴板导入</button></div>
+          <label class="reading-editor-field reading-source-field"><textarea id="rv2Excerpt" placeholder="原文 / 摘录"></textarea></label>
+
+          <div class="reading-template-hint"><strong>模板提示</strong><div id="rv2Prompts"></div></div>
+
+          <div class="reading-note-actions">
+            <button id="rv2Save" class="task-primary-btn">保存笔记</button>
+            <button id="rv2Archive" class="reading-archive">归档飞书</button>
+            <span id="rv2Status"></span>
+          </div>
+          <a id="rv2FeishuLink" class="reading-feishu-link" href="${FEISHU_DAILY}" target="_blank">打开飞书归档位置</a>
+        </section>
+      </div>
+
+      <section class="reading-records">
+        <div class="reading-records-head"><div><h3>阅读记录</h3><span>已保存的卡片与历史阅读记录</span></div></div>
+        <div id="rv2Records" class="reading-records-grid"></div>
+      </section>
+    </div>`;
+
+  reading.classList.add('reading-stable-ready');
 
   let currentId=state.currentId||'';
   let localPdfUrl='';
@@ -115,37 +99,64 @@
   }
   function currentNote(){return state.notes.find(n=>n.id===currentId)||null}
   function persist(){state.currentId=currentId;set(STORE,state)}
-  function saveReader(){state.reader={title:$('rv2BookTitle').value.trim(),progress:$('rv2Progress').value.trim(),mode:$('rv2Mode').value,url:$('rv2Url').value.trim()};persist()}
+  function saveReader(){state.reader={title:$('rv2BookTitle').value.trim(),progress:$('rv2Progress').value.trim(),mode:document.querySelector('.reading-source-tabs button.active')?.dataset.mode||'pdf',url:$('rv2Url').value.trim()};persist()}
+  function setMode(mode){
+    const safe=mode==='web'?'web':'pdf';
+    document.querySelectorAll('.reading-source-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.mode===safe));
+    state.reader.mode=safe;persist();
+  }
   function renderPrompts(type){$('rv2Prompts').innerHTML=(templatePrompts[type]||[]).map((p,i)=>`<span>${i+1}. ${esc(p)}</span>`).join('');$('rv2CardPrefix').textContent=`${type}：`}
-  function renderHistory(){const sel=$('rv2History');const keep=sel.value;sel.innerHTML='<option value="">历史笔记</option>';[...state.notes].sort((a,b)=>(b.savedAt||b.date||'').localeCompare(a.savedAt||a.date||'')).forEach(n=>{const o=document.createElement('option');o.value=n.id;o.textContent=`${n.type}｜${n.title||n.sourceTitle||'未命名'}｜${n.date||''}`;sel.appendChild(o)});if([...sel.options].some(o=>o.value===keep))sel.value=keep}
-  function loadNote(id){let n=state.notes.find(x=>x.id===id);if(!n){n=blankNote();state.notes.unshift(n)}currentId=n.id;persist();$('rv2Type').value=n.type||'观念卡';$('rv2CardTitle').value=n.title||'';$('rv2Thought').value=n.thought||'';$('rv2Excerpt').value=n.excerpt||'';renderPrompts(n.type||'观念卡');$('rv2Status').textContent=n.savedAt?'已保存':'未保存';$('rv2Archive').textContent=n.feishuDocumentToken?'更新飞书':'归档飞书';$('rv2Archive').classList.toggle('is-archived',!!n.feishuDocumentToken);$('rv2FeishuLink').href=n.feishuUrl||FEISHU_DAILY;$('rv2FeishuLink').textContent=n.feishuUrl?'打开这张卡的飞书文档':'打开飞书归档位置';renderHistory()}
-  function readNote(){const old=currentNote()||blankNote($('rv2Type').value);return {...old,id:old.id,date:old.date||dateKey(),type:$('rv2Type').value,title:$('rv2CardTitle').value.trim(),thought:$('rv2Thought').value.trim(),excerpt:$('rv2Excerpt').value.trim(),sourceTitle:$('rv2BookTitle').value.trim(),progress:$('rv2Progress').value.trim(),savedAt:new Date().toISOString()}}
-  function saveNote(show=true){saveReader();const n=readNote();const idx=state.notes.findIndex(x=>x.id===n.id);if(idx>=0)state.notes[idx]=n;else state.notes.unshift(n);currentId=n.id;persist();renderHistory();if(show){$('rv2Status').textContent='已保存';setTimeout(()=>{if($('rv2Status'))$('rv2Status').textContent=''},1400)}return n}
-  function newNote(){if(currentNote())saveNote(false);const n=blankNote($('rv2Type').value);state.notes.unshift(n);currentId=n.id;persist();loadNote(n.id);$('rv2CardTitle').focus()}
 
-  function renderReaderMode(){
-    const weread=$('rv2Mode').value==='weread';
-    $('rv2WereadPanel').style.display=weread?'flex':'none';
-    $('rv2Loadbar').style.display=weread?'none':'grid';
-    if(weread){$('rv2Frame').classList.remove('is-loaded');$('rv2Frame').src='about:blank';$('rv2ReaderPlaceholder').classList.add('is-hidden')}
-    else if(!$('rv2Frame').classList.contains('is-loaded')){$('rv2ReaderPlaceholder').classList.remove('is-hidden')}
-    saveReader();
+  function legacyRows(){
+    const legacy=get(LEGACY,{});
+    return Object.entries(legacy||{}).filter(([,r])=>r&&(r.source||r.excerpt||r.insight||r.action)).map(([date,r])=>({kind:'legacy',date,sort:r.savedAt||date,title:r.source||'未命名阅读',progress:r.progress||'',excerpt:r.excerpt||'',thought:[r.insight,r.action].filter(Boolean).join('\n\n')}));
   }
+  function recordRows(){
+    const cards=state.notes.filter(n=>n&&(n.title||n.thought||n.excerpt||n.sourceTitle)).map(n=>({kind:'card',id:n.id,date:n.date||String(n.savedAt||'').slice(0,10),sort:n.savedAt||n.date||'',type:n.type||'观念卡',title:n.title||n.sourceTitle||'未命名',progress:n.progress||'',feishuUrl:n.feishuUrl||''}));
+    return [...cards,...legacyRows()].sort((a,b)=>String(b.sort||'').localeCompare(String(a.sort||''))).slice(0,80);
+  }
+  function renderRecords(){
+    const root=$('rv2Records');if(!root)return;root.innerHTML='';const rows=recordRows();
+    if(!rows.length){root.innerHTML='<div class="reading-record-empty">还没有阅读记录</div>';return}
+    rows.forEach(r=>{
+      const item=document.createElement('article');item.className='reading-record-item';
+      const label=r.kind==='card'?`${r.type}：${r.title}`:r.title;
+      const meta=`${r.date||''}${r.progress?' · '+r.progress:''}${r.feishuUrl?' · 已归档飞书':''}`;
+      if(r.feishuUrl){
+        item.innerHTML=`<a href="${esc(r.feishuUrl)}" target="_blank" rel="noopener"><strong>${esc(label)} ↗</strong><span>${esc(meta)}</span></a>`;
+      }else{
+        item.innerHTML=`<button type="button"><strong>${esc(label)}</strong><span>${esc(meta)}</span></button>`;
+        if(r.kind==='card')item.querySelector('button').onclick=()=>loadNote(r.id);
+      }
+      root.appendChild(item);
+    });
+  }
+  function loadNote(id){
+    const n=state.notes.find(x=>x.id===id);if(!n)return;
+    currentId=n.id;persist();$('rv2Type').value=n.type||'观念卡';$('rv2CardTitle').value=n.title||'';$('rv2Thought').value=n.thought||'';$('rv2Excerpt').value=n.excerpt||'';
+    if(n.sourceTitle)$('rv2BookTitle').value=n.sourceTitle;if(n.progress)$('rv2Progress').value=n.progress;
+    renderPrompts(n.type||'观念卡');$('rv2Status').textContent=n.savedAt?'已保存':'未保存';$('rv2Archive').textContent=n.feishuDocumentToken?'更新飞书':'归档飞书';$('rv2Archive').classList.toggle('is-archived',!!n.feishuDocumentToken);$('rv2FeishuLink').href=n.feishuUrl||FEISHU_DAILY;$('rv2FeishuLink').textContent=n.feishuUrl?'打开这张卡的飞书文档':'打开飞书归档位置';renderRecords();
+  }
+  function readNote(){const old=currentNote()||blankNote($('rv2Type').value);return {...old,id:old.id,date:old.date||dateKey(),type:$('rv2Type').value,title:$('rv2CardTitle').value.trim(),thought:$('rv2Thought').value.trim(),excerpt:$('rv2Excerpt').value.trim(),sourceTitle:$('rv2BookTitle').value.trim(),progress:$('rv2Progress').value.trim(),savedAt:new Date().toISOString()}}
+  function saveNote(show=true){
+    saveReader();const n=readNote();const idx=state.notes.findIndex(x=>x.id===n.id);if(idx>=0)state.notes[idx]=n;else state.notes.unshift(n);currentId=n.id;persist();renderRecords();
+    if(show){$('rv2Status').textContent='已保存';setTimeout(()=>{if($('rv2Status'))$('rv2Status').textContent=''},1400)}return n;
+  }
+  function newNote(){
+    const existing=currentNote();if(existing&&(existing.title||existing.thought||existing.excerpt))saveNote(false);
+    const n=blankNote($('rv2Type').value);state.notes.unshift(n);currentId=n.id;persist();loadNote(n.id);$('rv2CardTitle').focus();
+  }
+
   function readerUrl(){return $('rv2Url').value.trim()}
-  function loadReader(url){const u=url||readerUrl();if(!u){$('rv2Status').textContent='请先填写 PDF / 网页链接';return}const frame=$('rv2Frame');$('rv2Mode').value='web';$('rv2WereadPanel').style.display='none';$('rv2Loadbar').style.display='grid';$('rv2ReaderPlaceholder').classList.add('is-hidden');frame.src=u;frame.classList.add('is-loaded');saveReader()}
-  function openWeread(split=false){
-    const u=state.reader.url&&/weread\.qq\.com/i.test(state.reader.url)?state.reader.url:'https://weread.qq.com/';
-    if(split&&window.screen?.availWidth>900){const w=Math.round(screen.availWidth*.64),h=screen.availHeight;window.open(u,'weread_reader',`popup=yes,width=${w},height=${h},left=0,top=0,resizable=yes,scrollbars=yes`)}
-    else window.open(u,'_blank','noopener');
+  function loadReader(url){
+    const u=url||readerUrl();if(!u){$('rv2Status').textContent='请先填写 PDF / 网页链接';return}
+    const frame=$('rv2Frame');$('rv2ReaderPlaceholder').classList.add('hidden');frame.src=u;frame.classList.add('loaded');saveReader();
   }
-  async function importClipboard(makeNew=false){
-    if(makeNew)newNote();
+  async function importClipboard(){
     try{
       if(!navigator.clipboard?.readText)throw new Error('当前浏览器不支持直接读取剪贴板');
-      const text=(await navigator.clipboard.readText()).trim();
-      if(!text)throw new Error('剪贴板里没有文字');
-      const box=$('rv2Excerpt');box.value=box.value.trim()?`${box.value.trim()}\n\n${text}`:text;
-      $('rv2Status').textContent=makeNew?'已新建并导入原文':'已导入原文';box.focus();
+      const text=(await navigator.clipboard.readText()).trim();if(!text)throw new Error('剪贴板里没有文字');
+      const box=$('rv2Excerpt');box.value=box.value.trim()?`${box.value.trim()}\n\n${text}`:text;$('rv2Status').textContent='已导入原文';box.focus();
     }catch(e){$('rv2Status').textContent=`请手动粘贴：${e.message}`;$('rv2Excerpt').focus()}
   }
 
@@ -158,25 +169,20 @@
     try{
       const res=await fetch('/api/feishu-daily',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:n.date||dateKey(),title,markdown,targetWikiToken:TARGET_WIKI_TOKEN,documentToken:n.feishuDocumentToken||'',wikiToken:n.feishuWikiToken||''})});
       const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.message||`归档失败 (${res.status})`);
-      const idx=state.notes.findIndex(x=>x.id===n.id);state.notes[idx]={...n,feishuUrl:data.url||FEISHU_DAILY,feishuDocumentToken:data.documentToken||n.feishuDocumentToken||'',feishuWikiToken:data.wikiToken||n.feishuWikiToken||'',syncedAt:new Date().toISOString()};persist();loadNote(n.id);$('rv2Status').textContent=data.updated?'已更新飞书':'已归档飞书';
+      const idx=state.notes.findIndex(x=>x.id===n.id);state.notes[idx]={...n,feishuUrl:data.url||FEISHU_DAILY,feishuDocumentToken:data.documentToken||n.feishuDocumentToken||'',feishuWikiToken:data.wikiToken||n.feishuWikiToken||'',syncedAt:new Date().toISOString()};persist();loadNote(n.id);$('rv2Status').textContent=data.updated?'已更新飞书':'已归档飞书';renderRecords();
     }catch(e){$('rv2Status').textContent=`归档失败：${e.message}`}
     finally{btn.disabled=false;const fresh=currentNote();btn.textContent=fresh?.feishuDocumentToken?'更新飞书':'归档飞书'}
   }
 
   $('rv2Type').onchange=e=>{renderPrompts(e.target.value);const n=currentNote();if(n){n.type=e.target.value;persist()}};
-  $('rv2Save').onclick=()=>saveNote(true);$('rv2Archive').onclick=archiveNote;$('rv2New').onclick=newNote;
-  $('rv2History').onchange=e=>{if(e.target.value){if(currentNote())saveNote(false);loadNote(e.target.value)}};
+  $('rv2Save').onclick=()=>saveNote(true);$('rv2Archive').onclick=archiveNote;$('rv2New').onclick=newNote;$('rv2Clipboard').onclick=importClipboard;
+  $('rv2PdfMode').onclick=()=>setMode('pdf');$('rv2WebMode').onclick=()=>setMode('web');
   ['rv2BookTitle','rv2Progress','rv2Url'].forEach(id=>$(id).addEventListener('change',saveReader));
-  $('rv2Mode').onchange=renderReaderMode;
-  $('rv2Load').onclick=()=>loadReader();
-  $('rv2Open').onclick=()=>{const u=readerUrl();if(u)window.open(u,'_blank','noopener')};
-  $('rv2OpenWeread').onclick=()=>openWeread(false);$('rv2SplitWeread').onclick=()=>openWeread(true);$('rv2Weread').onclick=()=>openWeread(false);
-  $('rv2Clipboard').onclick=()=>importClipboard(false);$('rv2QuickCard').onclick=()=>importClipboard(true);
+  $('rv2Load').onclick=()=>loadReader();$('rv2Open').onclick=()=>{const u=readerUrl();if(u)window.open(u,'_blank','noopener')};
   $('rv2Pdf').onclick=()=>$('rv2PdfInput').click();
-  $('rv2PdfInput').onchange=e=>{const file=e.target.files?.[0];if(!file)return;if(localPdfUrl)URL.revokeObjectURL(localPdfUrl);localPdfUrl=URL.createObjectURL(file);$('rv2Mode').value='web';$('rv2Url').value='';$('rv2BookTitle').value=$('rv2BookTitle').value||file.name.replace(/\.pdf$/i,'');loadReader(localPdfUrl)};
-  $('rv2Fullscreen').onclick=()=>{const shell=document.querySelector('.reading-v2-frame-shell');if(document.fullscreenElement)document.exitFullscreen?.();else shell?.requestFullscreen?.()};
+  $('rv2PdfInput').onchange=e=>{const file=e.target.files?.[0];if(!file)return;if(localPdfUrl)URL.revokeObjectURL(localPdfUrl);localPdfUrl=URL.createObjectURL(file);setMode('pdf');$('rv2Url').value='';if(!$('rv2BookTitle').value)$('rv2BookTitle').value=file.name.replace(/\.pdf$/i,'');loadReader(localPdfUrl)};
 
-  $('rv2BookTitle').value=state.reader.title||'';$('rv2Progress').value=state.reader.progress||'';$('rv2Mode').value=state.reader.mode||'weread';$('rv2Url').value=state.reader.url||'';
-  renderReaderMode();
+  $('rv2BookTitle').value=state.reader.title||'';$('rv2Progress').value=state.reader.progress||'';$('rv2Url').value=state.reader.url||'';setMode(state.reader.mode||'pdf');
   if(currentId&&state.notes.some(n=>n.id===currentId))loadNote(currentId);else if(state.notes.length)loadNote(state.notes[0].id);else{const n=blankNote();state.notes.unshift(n);currentId=n.id;persist();loadNote(n.id)}
+  renderRecords();
 })();
