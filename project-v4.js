@@ -87,4 +87,7 @@
   if(!document.querySelector('script[src="reading-v2.js"]')){
     const s=document.createElement('script');s.src='reading-v2.js';document.body.appendChild(s)
   }
+  if(!document.querySelector('script[src="reading-extension-import.js"]')){
+    const s=document.createElement('script');s.src='reading-extension-import.js';document.body.appendChild(s)
+  }
 })();
