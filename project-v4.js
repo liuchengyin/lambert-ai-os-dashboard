@@ -96,4 +96,10 @@
   if(!document.querySelector('script[src="reading-history-bridge.js"]')){
     const s=document.createElement('script');s.src='reading-history-bridge.js';document.body.appendChild(s)
   }
+  if(!document.querySelector('link[href="writing-history-link.css"]')){
+    const l=document.createElement('link');l.rel='stylesheet';l.href='writing-history-link.css';document.head.appendChild(l)
+  }
+  if(!document.querySelector('script[src="writing-history-link.js"]')){
+    const s=document.createElement('script');s.src='writing-history-link.js';document.body.appendChild(s)
+  }
 })();
