@@ -1,7 +1,6 @@
 // Project board polish: remove redundant copy, make metrics navigable, keep header date live.
 (function(){
   const $=id=>document.getElementById(id);
-  const escSel=v=>window.CSS?.escape?CSS.escape(v):String(v).replace(/[^a-zA-Z0-9_-]/g,'\\$&');
 
   // Remove the two pieces of explanatory copy marked as unnecessary.
   const projectHead=document.querySelector('.project-page-head');
@@ -9,6 +8,17 @@
   if(projectHeadDesc) projectHeadDesc.remove();
   const boardToolbar=document.querySelector('.project-board-toolbar');
   boardToolbar?.querySelector('.meta')?.remove();
+
+  // Header date always follows the actual local date, including midnight / returning to the tab.
+  function refreshToday(){
+    const el=$('today');
+    if(!el)return;
+    el.textContent=new Date().toLocaleDateString('zh-CN',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  }
+  refreshToday();
+  setInterval(refreshToday,60*1000);
+  window.addEventListener('focus',refreshToday);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshToday()});
 
   function scrollToEl(el){
     if(!el)return;
