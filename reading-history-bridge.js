@@ -96,3 +96,13 @@
   });
   observer.observe(document.documentElement,{subtree:true,childList:true});
 })();
+
+// Load Task Board V6 refinements after the V5 renderer is ready.
+(function(){
+  if(!document.querySelector('link[href="task-board-v6.css"]')){
+    const l=document.createElement('link');l.rel='stylesheet';l.href='task-board-v6.css';document.head.appendChild(l);
+  }
+  if(!document.querySelector('script[src="task-board-v6.js"]')){
+    const s=document.createElement('script');s.src='task-board-v6.js';document.body.appendChild(s);
+  }
+})();
