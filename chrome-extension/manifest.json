@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Lambert 阅读卡片",
+  "version": "0.1.0",
+  "description": "在微信读书等网页右侧打开 Lambert 读书笔记侧栏，选中文字即可生成观念卡、案例卡或方法卡。",
+  "permissions": ["sidePanel", "contextMenus", "storage", "tabs"],
+  "host_permissions": [
+    "https://weread.qq.com/*",
+    "https://lambert-ai-os-dashboard.vercel.app/*"
+  ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "action": {
+    "default_title": "打开 Lambert 阅读笔记"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "icons": {
+    "16": "icon.svg",
+    "32": "icon.svg",
+    "48": "icon.svg",
+    "128": "icon.svg"
+  }
+}
