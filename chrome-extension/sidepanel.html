@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Lambert 阅读卡片</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <main class="panel">
+    <header class="panel-head">
+      <div>
+        <span class="eyebrow">Lambert AI OS</span>
+        <h1>阅读卡片</h1>
+      </div>
+      <button id="openDashboard" class="ghost">打开工作台</button>
+    </header>
+
+    <section class="source-card">
+      <div class="source-meta">
+        <span>当前阅读</span>
+        <strong id="sourceTitle">未识别页面</strong>
+      </div>
+      <input id="progress" placeholder="阅读进度，例如：42% / 第 3 章 / P120">
+    </section>
+
+    <section class="type-switch" aria-label="笔记模板">
+      <button data-type="观念卡" class="active">观念卡</button>
+      <button data-type="案例卡">案例卡</button>
+      <button data-type="方法卡">方法卡</button>
+    </section>
+
+    <section class="note-card">
+      <div class="title-row">
+        <strong id="typePrefix">观念卡：</strong>
+        <input id="title" placeholder="给这张卡一个标题">
+      </div>
+
+      <div class="block">
+        <div class="block-title"><span>我的思考</span><small>模板提示</small></div>
+        <div id="prompts" class="prompts"></div>
+        <textarea id="thought" placeholder="写下自己的理解、判断与迁移……"></textarea>
+      </div>
+
+      <div class="divider"><span>原文</span></div>
+
+      <div class="block source-block">
+        <textarea id="excerpt" placeholder="在微信读书中选中文字，右键加入卡片；也可以手动粘贴。"></textarea>
+      </div>
+    </section>
+
+    <footer class="actions">
+      <button id="saveDraft" class="secondary">保存草稿</button>
+      <button id="sendLambert" class="primary">发送到 Lambert</button>
+      <span id="status"></span>
+    </footer>
+  </main>
+  <script src="sidepanel.js"></script>
+</body>
+</html>
