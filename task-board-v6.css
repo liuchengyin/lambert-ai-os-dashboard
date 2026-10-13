@@ -1,0 +1,11 @@
+/* Task Board V6 */
+.matrix-preview{display:none!important}
+.task-v6-card{position:relative;padding:14px 14px 13px!important}
+.task-v6-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.task-v6-top .task-v5-title{flex:1;min-width:0;font-size:15px;line-height:1.45}
+.task-v6-countdown{flex:0 0 auto;font-size:11px;font-weight:700;color:#5f6b7a;background:#f2f5f8;border-radius:999px;padding:5px 8px;white-space:nowrap}
+.task-v6-countdown.overdue{color:#b33a3a;background:#fff0f0}
+.task-v6-card .task-v5-meta{align-items:center;margin-top:10px}
+.task-v6-card .task-v6-matrix{margin-left:auto;font-weight:700}
+.task-v6-card .task-v5-note{margin-top:9px}
+@media(max-width:700px){.task-v6-top{gap:8px}.task-v6-countdown{font-size:10px;padding:4px 7px}}
