@@ -1,58 +1,73 @@
-// Reading workspace V5 polish: remove WeRead UI from the workspace, keep PDF/Web, align controls, move prompts down.
+// Reading workspace fullscreen enhancement for Stable V4. Fixed architecture stays unchanged.
 (function(){
   const $=id=>document.getElementById(id);
 
-  function apply(){
-    const page=document.querySelector('#reading .reading-v2-page');
-    if(!page)return false;
+  function ensureFullscreenControl(){
+    const reader=document.querySelector('#reading .reading-stable-reader');
+    const toolbar=document.querySelector('#reading .reading-reader-toolbar');
+    if(!reader||!toolbar)return false;
 
-    // Remove explanatory copy.
-    document.querySelector('#reading .reading-v2-head p')?.remove();
+    let btn=$('rv2ReaderFullscreen');
+    if(!btn){
+      btn=document.createElement('button');
+      btn.id='rv2ReaderFullscreen';
+      btn.type='button';
+      btn.className='reading-secondary reading-fullscreen-btn';
+      btn.innerHTML='<span class="reading-fullscreen-icon">⛶</span><span class="reading-fullscreen-label">全屏阅读</span>';
+      toolbar.appendChild(btn);
+    }
 
-    // Replace the old source dropdown with two clear choices: PDF / 网页.
-    const mode=$('rv2Mode');
-    const readerbar=document.querySelector('#reading .reading-v2-readerbar');
-    if(mode&&readerbar&&!readerbar.querySelector('.reading-source-segments')){
-      mode.value='web';
-      mode.dispatchEvent(new Event('change',{bubbles:true}));
-      const seg=document.createElement('div');
-      seg.className='reading-source-segments';
-      seg.innerHTML='<button type="button" data-reading-source="pdf" class="active">PDF</button><button type="button" data-reading-source="web">网页</button>';
-      readerbar.appendChild(seg);
-      seg.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{
-        seg.querySelectorAll('button').forEach(x=>x.classList.toggle('active',x===btn));
-        const isPdf=btn.dataset.readingSource==='pdf';
-        const url=$('rv2Url');
-        if(url)url.placeholder=isPdf?'PDF 链接，或使用下方“选择本地 PDF”':'网页链接';
-        const placeholder=$('rv2ReaderPlaceholder');
-        if(placeholder){
-          const strong=placeholder.querySelector('strong');
-          const span=placeholder.querySelector('span');
-          if(strong)strong.textContent=isPdf?'PDF 阅读区':'网页阅读区';
-          if(span)span.textContent=isPdf?'粘贴 PDF 链接，或选择本地 PDF。':'粘贴网页链接后点击“加载阅读”。';
+    if(!btn.dataset.bound){
+      btn.dataset.bound='1';
+      btn.onclick=async()=>{
+        const active=document.fullscreenElement===reader||reader.classList.contains('is-reader-maximized');
+        if(active){
+          if(document.fullscreenElement) await document.exitFullscreen?.().catch(()=>{});
+          reader.classList.remove('is-reader-maximized');
+          syncState();
+          return;
+        }
+
+        try{
+          if(reader.requestFullscreen){
+            await reader.requestFullscreen();
+          }else{
+            reader.classList.add('is-reader-maximized');
+          }
+        }catch{
+          reader.classList.add('is-reader-maximized');
+        }
+        syncState();
+      };
+    }
+
+    function syncState(){
+      const active=document.fullscreenElement===reader||reader.classList.contains('is-reader-maximized');
+      btn.classList.toggle('active',active);
+      btn.querySelector('.reading-fullscreen-label').textContent=active?'退出全屏':'全屏阅读';
+      document.body.classList.toggle('reading-fullscreen-open',active);
+    }
+
+    if(!reader.dataset.fullscreenBound){
+      reader.dataset.fullscreenBound='1';
+      document.addEventListener('fullscreenchange',()=>{
+        if(document.fullscreenElement!==reader)reader.classList.remove('is-reader-maximized');
+        syncState();
+      });
+      document.addEventListener('keydown',e=>{
+        if(e.key==='Escape'&&reader.classList.contains('is-reader-maximized')){
+          reader.classList.remove('is-reader-maximized');
+          syncState();
         }
       });
-      const url=$('rv2Url');if(url)url.placeholder='PDF 链接，或使用下方“选择本地 PDF”';
     }
 
-    // WeRead is handled by the Chrome side panel now, so retire the duplicate in-workbench panel/actions.
-    $('rv2WereadPanel')?.remove();
-    $('rv2Weread')?.remove();
-    $('rv2OpenWeread')?.remove();
-    $('rv2SplitWeread')?.remove();
-
-    // Keep the load bar visible for PDF/Web.
-    const loadbar=$('rv2Loadbar');if(loadbar)loadbar.style.display='grid';
-    const placeholder=$('rv2ReaderPlaceholder');if(placeholder)placeholder.classList.remove('is-hidden');
-
-    // Put template / history / new in one visual row through CSS, and move template prompts to the bottom of note content.
-    const prompts=$('rv2Prompts');
-    const sourceBlock=document.querySelector('#reading .reading-v2-source-block');
-    if(prompts&&sourceBlock&&prompts.previousElementSibling!==sourceBlock){
-      sourceBlock.insertAdjacentElement('afterend',prompts);
-    }
-
+    syncState();
     return true;
+  }
+
+  function apply(){
+    return ensureFullscreenControl();
   }
 
   let tries=0;
