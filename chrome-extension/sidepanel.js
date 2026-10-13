@@ -88,6 +88,13 @@ async function pushArchiveToLocal(d,feishu){
   await chrome.storage.local.set({lambertArchivedCards:next});
 }
 
+async function refreshOpenDashboards(){
+  try{
+    const tabs=await chrome.tabs.query({url:`${DASHBOARD}/*`});
+    await Promise.all(tabs.map(tab=>tab.id?chrome.tabs.sendMessage(tab.id,{type:'lambert-sync-reading'}).catch(()=>null):null));
+  }catch{}
+}
+
 function clearForNextCard(){
   $('title').value='';
   $('thought').value='';
@@ -134,6 +141,7 @@ async function archiveCard(){
     if(!res.ok||!data.ok)throw new Error(data.message||`归档失败 (${res.status})`);
 
     await pushArchiveToLocal(d,data);
+    await refreshOpenDashboards();
     clearForNextCard();
     $('status').textContent='已归档，继续下一张';
     $('status').classList.add('saved');
