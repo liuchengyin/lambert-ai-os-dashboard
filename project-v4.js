@@ -102,4 +102,13 @@
   if(!document.querySelector('script[src="writing-history-link.js"]')){
     const s=document.createElement('script');s.src='writing-history-link.js';document.body.appendChild(s)
   }
+  if(!document.querySelector('script[src="project-board-polish.js"]')){
+    const s=document.createElement('script');s.src='project-board-polish.js';document.body.appendChild(s)
+  }
+  if(!document.querySelector('link[href="ui-polish-v3.css"]')){
+    const l=document.createElement('link');l.rel='stylesheet';l.href='ui-polish-v3.css';document.head.appendChild(l)
+  }
+  if(!document.querySelector('script[src="ui-polish-v3.js"]')){
+    const s=document.createElement('script');s.src='ui-polish-v3.js';document.body.appendChild(s)
+  }
 })();
