@@ -38,7 +38,7 @@
   reading.innerHTML=`
   <div class="reading-v2-page">
     <div class="reading-v2-head">
-      <div><h2>每日阅读</h2><p>左侧阅读，右侧把原文加工成一张可复用的读书卡片。</p></div>
+      <div><h2>每日阅读</h2><p>左侧直接阅读，右侧随手形成读书笔记。</p></div>
       <div class="reading-v2-head-progress"><span>阅读进度</span><input id="rv2Progress" placeholder="例如：42% / 第 3 章 / P120"></div>
     </div>
 
@@ -50,15 +50,15 @@
         </div>
         <div class="reading-v2-loadbar">
           <input id="rv2Url" type="url" placeholder="粘贴微信读书 / PDF / 网页链接">
-          <button id="rv2Load" class="reading-v2-secondary">加载</button>
+          <button id="rv2Load" class="reading-v2-secondary">嵌入阅读</button>
           <button id="rv2Open" class="reading-v2-secondary">新窗口打开</button>
         </div>
         <div class="reading-v2-frame-shell">
           <div id="rv2ReaderPlaceholder" class="reading-v2-placeholder">
-            <strong>阅读区</strong>
-            <span>微信读书若限制网页嵌入，可用“新窗口打开”；PDF 链接或本地 PDF 可直接放在这里阅读。</span>
+            <strong>阅读内容</strong>
+            <span>这里就是阅读区。微信读书、网页或 PDF 会直接加载在这里；若微信自身禁止嵌入，再使用“新窗口打开”作为备用。</span>
           </div>
-          <iframe id="rv2Frame" title="阅读内容" referrerpolicy="no-referrer"></iframe>
+          <iframe id="rv2Frame" title="阅读内容" referrerpolicy="no-referrer" loading="eager"></iframe>
         </div>
       </section>
 
@@ -98,9 +98,9 @@
     </div>
 
     <div class="reading-v2-functionbar">
-      <div><strong>阅读工具</strong><span>保留为后续功能键区</span></div>
+      <div><strong>阅读工具</strong><span>预留功能区</span></div>
       <div class="reading-v2-function-actions">
-        <button id="rv2Weread" class="reading-v2-secondary">打开微信读书</button>
+        <button id="rv2Weread" class="reading-v2-secondary">嵌入微信读书</button>
         <button id="rv2Pdf" class="reading-v2-secondary">选择本地 PDF</button>
         <input id="rv2PdfInput" type="file" accept="application/pdf" hidden>
         <button id="rv2Fullscreen" class="reading-v2-secondary">阅读区全屏</button>
@@ -160,7 +160,11 @@
   }
   function loadReader(url){
     const u=url||readerUrl();if(!u)return;
-    $('rv2Frame').src=u;$('rv2Frame').classList.add('is-loaded');$('rv2ReaderPlaceholder').classList.add('is-hidden');saveReader();
+    const frame=$('rv2Frame');
+    frame.classList.add('is-loaded');
+    $('rv2ReaderPlaceholder').classList.add('is-hidden');
+    frame.src=u;
+    saveReader();
   }
 
   async function archiveNote(){
@@ -183,7 +187,7 @@
   ['rv2BookTitle','rv2Progress','rv2Mode','rv2Url'].forEach(id=>$(id).addEventListener('change',saveReader));
   $('rv2Load').onclick=()=>loadReader();
   $('rv2Open').onclick=()=>{const u=readerUrl();if(u)window.open(u,'_blank','noopener')};
-  $('rv2Weread').onclick=()=>window.open('https://weread.qq.com/','_blank','noopener');
+  $('rv2Weread').onclick=()=>{$('rv2Mode').value='weread';if(!$('rv2Url').value.trim())$('rv2Url').value='https://weread.qq.com/';loadReader()};
   $('rv2Pdf').onclick=()=>$('rv2PdfInput').click();
   $('rv2PdfInput').onchange=e=>{const file=e.target.files?.[0];if(!file)return;if(localPdfUrl)URL.revokeObjectURL(localPdfUrl);localPdfUrl=URL.createObjectURL(file);$('rv2Mode').value='web';$('rv2Url').value='';$('rv2BookTitle').value=$('rv2BookTitle').value||file.name.replace(/\.pdf$/i,'');loadReader(localPdfUrl)};
   $('rv2Fullscreen').onclick=()=>{const shell=document.querySelector('.reading-v2-frame-shell');if(document.fullscreenElement)document.exitFullscreen?.();else shell?.requestFullscreen?.()};
@@ -191,4 +195,8 @@
   $('rv2BookTitle').value=state.reader.title||'';$('rv2Progress').value=state.reader.progress||'';$('rv2Mode').value=state.reader.mode||'weread';$('rv2Url').value=state.reader.url||'';
   renderHistory();
   const first=state.notes.find(n=>n.id===currentId)||state.notes[0]||blankNote();if(!state.notes.some(n=>n.id===first.id))state.notes.unshift(first);currentId=first.id;persist();loadNote(currentId);
+
+  // Reading is the main area: restore the last reader automatically; first use defaults to WeRead in-frame.
+  const initialReader=state.reader.url||($('rv2Mode').value==='weread'?'https://weread.qq.com/':'');
+  if(initialReader)loadReader(initialReader);
 })();
