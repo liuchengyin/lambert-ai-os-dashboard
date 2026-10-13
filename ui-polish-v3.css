@@ -1,0 +1,58 @@
+/* UI polish V3 — latest screenshot adjustments */
+
+/* Task board: remove subtitle, restore a restrained left/bottom depth only on task cards. */
+.task-v5-head p{display:none!important}
+.task-v5-card{
+  box-shadow:-4px 7px 15px rgba(24,32,48,.10)!important;
+  border-bottom-color:#d9dee7!important;
+}
+.task-v5-card:hover{
+  transform:translateY(-3px)!important;
+  box-shadow:-5px 10px 20px rgba(24,32,48,.13)!important;
+}
+
+/* Project page: project material entry is retired. */
+#projects .task-persistence-card{display:none!important}
+
+/* Overview: mainline selector lives beneath its content card, not in the heading row. */
+#home .home-mainline-selector-row{margin-top:12px;display:flex;justify-content:flex-end}
+#home .home-mainline-selector-row .home-inline-select{width:100%;max-width:none}
+
+/* Daily review: increase information density through clearer type hierarchy. */
+.review-v6-head h2{font-size:28px!important;line-height:1.25}
+.review-v6-head p{font-size:15px!important;line-height:1.55}
+.review-v6-card-head h3{font-size:20px!important}
+.review-v6-card-head small{font-size:13px!important}
+.review-v6-card label{font-size:14px!important}
+.review-v6-card textarea,.review-v6-card input,.review-v6-card select{font-size:15px!important}
+.review-v6-reality-note{font-size:13px!important}
+.review-v6-completion-row strong{font-size:20px!important}
+
+/* Daily writing: remove explanatory copy and make the title match the module heading scale. */
+.daily-writing-v2 .daily-head p{display:none!important}
+.daily-writing-v2 .daily-head h2{font-size:28px!important;line-height:1.25}
+.daily-writing-v2 .daily-title{font-size:28px!important;line-height:1.25!important;padding-top:8px!important;padding-bottom:16px!important}
+
+/* Common links: group names become small self-contained modules over the wallpaper. */
+#knowledge .knowledge-group-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px!important;padding:0 6px!important}
+#knowledge .knowledge-group-title-wrap{display:flex;align-items:center;gap:7px;width:max-content}
+#knowledge .knowledge-group-head h3{
+  margin:0!important;
+  display:inline-flex!important;
+  align-items:center;
+  width:max-content;
+  min-height:30px;
+  padding:6px 12px!important;
+  border-radius:9px;
+  background:rgba(255,255,255,.50)!important;
+  border:1px solid rgba(255,255,255,.68)!important;
+  backdrop-filter:blur(12px) saturate(1.12);
+  -webkit-backdrop-filter:blur(12px) saturate(1.12);
+  font-size:12px!important;
+  font-weight:700!important;
+  color:#334155!important;
+  text-shadow:none!important;
+}
+
+/* Settings module retired. */
+nav button[data-v="settings"],#settings{display:none!important}
