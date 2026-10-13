@@ -81,4 +81,10 @@
   if(!document.querySelector('script[src="daily-modules.js"]')){
     const s=document.createElement('script');s.src='daily-modules.js';document.body.appendChild(s)
   }
+  if(!document.querySelector('link[href="reading-v2.css"]')){
+    const r=document.createElement('link');r.rel='stylesheet';r.href='reading-v2.css';document.head.appendChild(r)
+  }
+  if(!document.querySelector('script[src="reading-v2.js"]')){
+    const s=document.createElement('script');s.src='reading-v2.js';document.body.appendChild(s)
+  }
 })();
