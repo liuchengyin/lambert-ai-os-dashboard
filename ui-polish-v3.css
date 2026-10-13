@@ -1,5 +1,12 @@
 /* UI polish V3 — latest screenshot adjustments */
 
+/* Sidebar: darker navy, but softer than pure black. */
+.shell>aside{background:#18222d!important;color:#f8fafc!important;border-right:1px solid #24303d!important}
+.shell>aside h2{color:#fff!important}.shell>aside small{color:#a9b6c6!important}
+nav button{color:#bdc7d4!important}
+nav button:hover{background:#223141!important;color:#fff!important}
+nav button.active{background:#263747!important;color:#fff!important}
+
 /* Task board: remove subtitle, restore restrained left/bottom depth, and simplify task cards. */
 .task-v5-head p{display:none!important}
 .task-v5-card{
