@@ -29,6 +29,16 @@ nav button.active{background:#263747!important;color:#fff!important}
 .task-v5-matrix-corner.q4{background:var(--q4-bg);color:#65717d}
 .task-v5-actions{padding-right:110px}
 
+/* Notion-like task dragging: cards move in-place, columns softly react, no abrupt jump. */
+.task-v5-card[draggable="true"]{cursor:grab;will-change:transform,opacity}
+.task-v5-card[draggable="true"]:active{cursor:grabbing}
+.task-dragging .task-v5-card{transition:transform .14s ease,opacity .14s ease,border-color .14s ease!important}
+.task-v5-card.is-dragging{opacity:.35!important;transform:scale(.985)!important;box-shadow:none!important}
+.task-v5-card.is-dragging-ready{border-style:dashed!important}
+.task-v5-col{transition:background .16s ease,border-color .16s ease,transform .16s ease!important}
+.task-v5-col.is-drop-target{background:#f7f8fc!important;border-color:#cfd4de!important;transform:translateY(-1px)}
+.task-v5-body{min-height:90px;transition:min-height .14s ease}
+
 /* Project page: project material entry is retired. */
 #projects .task-persistence-card{display:none!important}
 
