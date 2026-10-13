@@ -90,6 +90,15 @@
     });
   }
 
+  function loadReadingPolish(){
+    if(!document.querySelector('link[href="reading-polish-v5.css"]')){
+      const l=document.createElement('link');l.rel='stylesheet';l.href='reading-polish-v5.css';document.head.appendChild(l)
+    }
+    if(!document.querySelector('script[src="reading-polish-v5.js"]')){
+      const s=document.createElement('script');s.src='reading-polish-v5.js';document.body.appendChild(s)
+    }
+  }
+
   function polish(){
     removeProjectMaterialEntry();
     removeSettingsModule();
@@ -97,13 +106,14 @@
     stripTaskSubtitle();
     stripWritingSubtitle();
     polishTaskCards();
+    loadReadingPolish();
   }
 
   polish();
   setTimeout(polish,100);
   setTimeout(polish,400);
 
-  const watchTargets=[$('home'),$('tasks'),$('projects'),$('writing'),document.querySelector('nav')].filter(Boolean);
+  const watchTargets=[$('home'),$('tasks'),$('projects'),$('writing'),$('reading'),document.querySelector('nav')].filter(Boolean);
   watchTargets.forEach(target=>{
     const obs=new MutationObserver(()=>requestAnimationFrame(polish));
     obs.observe(target,{childList:true,subtree:true});
