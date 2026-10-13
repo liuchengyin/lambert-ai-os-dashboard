@@ -2,6 +2,34 @@
 (function(){
   const $=id=>document.getElementById(id);
 
+  function ensurePdfSidebarCollapsed(){
+    const frame=$('rv2Frame');
+    if(!frame)return false;
+
+    const collapse=()=>{
+      const mode=document.querySelector('#reading .reading-source-tabs button.active')?.dataset.mode;
+      if(mode!=='pdf')return;
+      const src=frame.getAttribute('src')||'';
+      if(!src||src==='about:blank'||src.includes('navpanes=0'))return;
+      const join=src.includes('#')?'&':'#';
+      frame.src=`${src}${join}navpanes=0`;
+    };
+
+    if(!frame.dataset.pdfSidebarBound){
+      frame.dataset.pdfSidebarBound='1';
+      $('rv2Load')?.addEventListener('click',()=>setTimeout(collapse,60));
+      $('rv2PdfInput')?.addEventListener('change',()=>setTimeout(collapse,120));
+      $('rv2PdfMode')?.addEventListener('click',()=>setTimeout(collapse,60));
+      frame.addEventListener('load',()=>{
+        const src=frame.getAttribute('src')||'';
+        if(src&&src!=='about:blank'&&!src.includes('navpanes=0'))setTimeout(collapse,30);
+      });
+    }
+
+    setTimeout(collapse,80);
+    return true;
+  }
+
   function ensureFullscreenControl(){
     const reader=document.querySelector('#reading .reading-stable-reader');
     const toolbar=document.querySelector('#reading .reading-reader-toolbar');
@@ -67,7 +95,9 @@
   }
 
   function apply(){
-    return ensureFullscreenControl();
+    const fullscreenReady=ensureFullscreenControl();
+    ensurePdfSidebarCollapsed();
+    return fullscreenReady;
   }
 
   let tries=0;
