@@ -88,13 +88,6 @@ async function pushArchiveToLocal(d,feishu){
   await chrome.storage.local.set({lambertArchivedCards:next});
 }
 
-async function refreshOpenDashboards(){
-  try{
-    const tabs=await chrome.tabs.query({url:`${DASHBOARD}/*`});
-    await Promise.all(tabs.map(tab=>tab.id?chrome.tabs.sendMessage(tab.id,{type:'lambert-sync-reading'}).catch(()=>null):null));
-  }catch{}
-}
-
 function clearForNextCard(){
   $('title').value='';
   $('thought').value='';
@@ -123,25 +116,19 @@ async function archiveCard(){
   const btn=$('archiveCard');
   btn.disabled=true;
   btn.textContent='归档中…';
-  $('status').textContent='正在同步工作台和飞书…';
+  $('status').textContent='正在同步飞书…';
 
   try{
     const title=`${d.type}：${d.title||d.sourceTitle||'阅读笔记'}`;
     const res=await fetch(`${DASHBOARD}/api/feishu-daily`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        date:d.date,
-        title,
-        markdown:archiveMarkdown(d),
-        targetWikiToken:TARGET_WIKI_TOKEN
-      })
+      body:JSON.stringify({date:d.date,title,markdown:archiveMarkdown(d),targetWikiToken:TARGET_WIKI_TOKEN})
     });
     const data=await res.json().catch(()=>({}));
     if(!res.ok||!data.ok)throw new Error(data.message||`归档失败 (${res.status})`);
 
     await pushArchiveToLocal(d,data);
-    await refreshOpenDashboards();
     clearForNextCard();
     $('status').textContent='已归档，继续下一张';
     $('status').classList.add('saved');
