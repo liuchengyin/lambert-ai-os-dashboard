@@ -111,4 +111,7 @@
   if(!document.querySelector('script[src="ui-polish-v3.js"]')){
     const s=document.createElement('script');s.src='ui-polish-v3.js';document.body.appendChild(s)
   }
+  if(!document.querySelector('script[src="task-drag-v1.js"]')){
+    const s=document.createElement('script');s.src='task-drag-v1.js';document.body.appendChild(s)
+  }
 })();
