@@ -1,5 +1,10 @@
 // Import notes captured by the Lambert Chrome side panel into the Reading Workspace.
 (function(){
+  // Shared UI polish loader. This file already loads on every dashboard visit.
+  if(!document.querySelector('script[src="project-board-polish.js"]')){
+    const s=document.createElement('script');s.src='project-board-polish.js';document.body.appendChild(s)
+  }
+
   const params=new URLSearchParams(location.search);
   const shouldOpen=params.get('view')==='reading';
   const shouldImport=params.get('import')==='1';
