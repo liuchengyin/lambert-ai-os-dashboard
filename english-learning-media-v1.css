@@ -1,1 +1,39 @@
 #english .en-import{display:flex;flex-wrap:wrap;gap:9px;margin:16px 0 8px}#english .en-import label{display:flex;align-items:center;gap:7px;border:1px solid #e3e6ee;background:#f7f8fc;padding:10px;border-radius:10px;font-size:12px;cursor:pointer}#english .en-import input{max-width:145px;font-size:11px}#english .en-hint{font-size:12px;color:#7b8493;line-height:1.5}#english .en-media-modes,#english .en-rate,#english .en-cue-buttons{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}#english .en-media-modes button,#english .en-rate button,#english .en-cue-buttons button{background:#f2f4f8;color:#263348;border:1px solid #e3e6ee;border-radius:9px;padding:9px 12px}#english #englishMediaPlayer{display:block;width:100%;max-height:470px;background:#111827;border-radius:12px}#english audio#englishMediaPlayer{background:#f2f4f8;padding:10px 0}#english .en-media-empty{padding:44px 12px;text-align:center;background:#f6f7f9;color:#7b8493;border-radius:12px}#english .en-cue{background:#fafbfc;border:1px solid #e3e6ee;border-radius:12px;padding:14px;margin-top:12px}#english .en-cue small{color:#8792a2}#english .en-cue p{white-space:pre-wrap;line-height:1.65;font-size:17px;min-height:28px;margin:8px 0}#english .en-cue-buttons button{flex:1;min-width:94px}@media(max-width:620px){#english .en-import{flex-direction:column}#english .en-import label{justify-content:space-between}#english .en-cue-buttons{display:grid;grid-template-columns:1fr 1fr}#english .en-cue-buttons button{min-width:0}}
+
+/* English V1 learning steps, dictation, recording and phonetic lessons */
+#english .english-step{cursor:pointer;font-family:inherit}
+#english .en-step-footer{display:flex;justify-content:flex-end;margin-top:16px}
+#english .en-step-footer button,#english .en-primary-action,#english #enStamp{background:#242428;color:#fff;border:0;border-radius:10px;padding:11px 17px;font-weight:600}
+#english .en-learning-panel{border:1px solid #e5e8ee;border-radius:14px;padding:16px;margin-top:15px;background:#fff}
+#english .en-learning-panel h4,#english .en-phonetic-practice h4{margin:0 0 7px;font-size:17px}
+#english .en-learning-panel p{color:#667085;font-size:13px;line-height:1.6}
+#english .en-field{display:block;font-size:12px;font-weight:600;color:#475467;margin:12px 0}
+#english .en-field textarea,#english .en-field input,#english .en-phonetic-nav input{display:block;box-sizing:border-box;width:100%;border:1px solid #dfe3eb;border-radius:10px;padding:10px;font-size:14px;margin-top:6px;background:#fff;color:#172033;font-family:inherit}
+#english .en-field textarea{min-height:92px;resize:vertical}
+#english .en-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0}
+#english .en-actions button,#english .en-learning-panel>button,#english .en-phonetic-nav button{border:1px solid #dfe3eb;border-radius:9px;padding:9px 12px;background:#f6f8fb;color:#263348}
+#english button:disabled{opacity:.48;cursor:not-allowed}
+#english .en-diff{padding:12px;background:#f8fafc;border:1px solid #e5e8ee;border-radius:10px;line-height:1.8;font-size:13px}
+#english .en-diff .en-match{color:#23744d}
+#english .en-diff .en-mismatch{color:#b44444;background:#fff1f0;border-radius:3px;padding:2px}
+#english .en-favorite-list{display:grid;gap:10px;margin-top:12px}
+#english .en-favorite{padding:12px;background:#f9fafb;border:1px solid #e5e8ee;border-radius:10px}
+#english .en-favorite strong{display:block;line-height:1.5}
+#english .en-stamp{display:grid;gap:8px;text-align:center;border:2px double #475467;border-radius:16px;padding:22px 14px;margin:14px 0;color:#344054}
+#english .en-stamp strong{letter-spacing:.12em;font-size:18px}
+#english .en-stamp span{font-size:13px}
+#english .en-stamp b{font-size:17px}
+#english .en-phonetic-nav{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+#english .en-phonetic-nav label{display:flex;align-items:center;gap:7px;font-size:13px}
+#english .en-phonetic-nav input{width:72px;margin:0}
+#english .en-phonetic-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+#english .en-phonetic-details,#english .en-phonetic-practice{border:1px solid #e5e8ee;border-radius:13px;padding:15px;min-width:0}
+#english .en-phonetic-file{display:block;font-size:13px;margin:12px 0}
+#english .en-phonetic-file input{display:block;margin-top:8px;max-width:100%}
+#english #enPhoneticAudioHint{display:block;color:#8792a2;margin:8px 0}
+#english #enPhoneticAudio,#english #enPhoneticRecordingPlayback,#english #enRecordingPlayback{max-width:100%}
+#english .en-phonetic-words{display:grid;gap:6px;margin:12px 0}
+#english .en-phonetic-words div{border:1px solid #e5e8ee;border-radius:8px;padding:8px;font-size:14px}
+#english .en-phonetic-words span{font-size:12px;color:#8792a2}
+#english .en-primary-action{margin-top:12px}
+@media(max-width:760px){#english .en-phonetic-layout{grid-template-columns:1fr}#english .en-step-footer button{width:100%}#english .en-phonetic-nav button{flex:1}#english .en-learning-panel{padding:13px}}
