@@ -114,4 +114,7 @@
   if(!document.querySelector('script[src="task-drag-v1.js"]')){
     const s=document.createElement('script');s.src='task-drag-v1.js';document.body.appendChild(s)
   }
+  if(!document.querySelector('script[src="english-learning.js"]')){
+    const s=document.createElement('script');s.src='english-learning.js';document.body.appendChild(s)
+  }
 })();
