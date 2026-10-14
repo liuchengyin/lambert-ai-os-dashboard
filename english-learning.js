@@ -1,122 +1,116 @@
-// English Learning V1 · Stage 1: entry + home + Video/Phonetic tabs
+// Lambert AI OS · English Learning V1 · Phase 1
+// Scope: English Learning entry/home + Video Learning / Phonetics tabs only.
 (function(){
-  const section=document.getElementById('english');
-  if(!section)return;
+  const root=document.getElementById('english');
+  if(!root)return;
 
   const STORE='english_learning_v1';
-  const $=id=>document.getElementById(id);
-  const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
-  const get=()=>{try{return JSON.parse(localStorage.getItem(STORE))||null}catch{return null}};
-  const set=v=>localStorage.setItem(STORE,JSON.stringify(v));
-
-  const seed={
-    version:1,
-    activeTab:'video',
-    courses:[
-      {id:'peppa-s01e01',name:'Peppa Pig S01E01',title:'Muddy Puddles',type:'video',cover:'',lessonId:'peppa-s01e01',currentStep:1,completedSteps:[],duration:0,updatedAt:''},
-      {id:'lai-phonetic',name:'赖世雄美语音标',title:'Lesson 1',type:'phonetic',cover:'',lessonId:'lai-phonetic-01',lessonIndex:1,totalLessons:48,duration:0,updatedAt:''}
-    ],
+  const defaults={
+    view:'home',
+    video:{courseName:'Peppa Pig',lessonTitle:'S01E01 · Muddy Puddles',currentStep:1,completedSteps:[],duration:0},
+    phonetic:{courseName:'赖世雄美语音标',lessonTitle:'Lesson 01',symbol:'/iː/',currentLesson:1,totalLessons:48,duration:0},
     records:[]
   };
-
-  let state=get();
-  if(!state||typeof state!=='object')state=structuredClone(seed);
-  state.activeTab=state.activeTab==='phonetic'?'phonetic':'video';
-  state.courses=Array.isArray(state.courses)&&state.courses.length?state.courses:structuredClone(seed.courses);
+  const getState=()=>{try{return {...defaults,...(JSON.parse(localStorage.getItem(STORE))||{})}}catch{return {...defaults}}};
+  const saveState=s=>localStorage.setItem(STORE,JSON.stringify(s));
+  const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+  let state=getState();
+  state.video={...defaults.video,...(state.video||{})};
+  state.phonetic={...defaults.phonetic,...(state.phonetic||{})};
   state.records=Array.isArray(state.records)?state.records:[];
-  set(state);
+  saveState(state);
 
-  function persist(){set(state)}
-  function videoCourse(){return state.courses.find(x=>x.type==='video')||seed.courses[0]}
-  function phoneticCourse(){return state.courses.find(x=>x.type==='phonetic')||seed.courses[1]}
-  function recentRows(){return [...state.records].sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).slice(0,6)}
+  const stepNames=['看视频','反复精听','逐句学习','跟读 + 默写','句型造句','学习盖章'];
+  const videoPct=()=>Math.round(((state.video.completedSteps||[]).length/6)*100);
+  const phoneticPct=()=>Math.round(((Math.max(1,state.phonetic.currentLesson)-1)/state.phonetic.totalLessons)*100);
+  const durationLabel=min=>!min?'—':min<60?`${min} min`:`${Math.floor(min/60)}h ${min%60?`${min%60}min`:''}`.trim();
 
-  section.innerHTML=`
-    <div class="english-page">
-      <div class="english-head">
-        <div><span class="english-eyebrow">ENGLISH LEARNING</span><h2>英语学习</h2><p>视频学习与音标学习分开练，只统一进度、时间与记录。</p></div>
-        <div class="english-head-pill">V1 · Mobile First</div>
-      </div>
-
+  root.innerHTML=`<div class="english-page">
+    <div class="english-head">
+      <div><h2>英语学习</h2><p>简单、能用、形成学习闭环。视频学习与音标学习保持各自方法。</p></div>
       <div class="english-tabs" role="tablist">
-        <button class="english-tab" data-tab="video" type="button">视频学习</button>
-        <button class="english-tab" data-tab="phonetic" type="button">音标学习</button>
+        <button class="english-tab" data-view="video">视频学习</button>
+        <button class="english-tab" data-view="phonetic">音标学习</button>
       </div>
+    </div>
+    <div id="englishBody"></div>
+  </div>`;
 
-      <section class="english-continue card" id="englishContinue"></section>
+  const body=document.getElementById('englishBody');
 
-      <div class="english-entry-grid">
-        <button class="english-entry english-entry-video" data-open="video" type="button">
-          <span class="english-entry-icon">▶</span>
-          <span><strong>视频学习</strong><small>尚雯婕六步法 · 小猪佩奇优先</small></span>
-          <b>进入 →</b>
-        </button>
-        <button class="english-entry english-entry-phonetic" data-open="phonetic" type="button">
-          <span class="english-entry-icon">ɪ</span>
-          <span><strong>音标学习</strong><small>赖世雄 · 听 → 模仿 → 循环 → 完成</small></span>
-          <b>进入 →</b>
-        </button>
-      </div>
+  function renderHome(){
+    const v=state.video;
+    const recent=state.records.slice(0,5);
+    body.innerHTML=`<div class="english-home">
+      <section class="english-card english-continue">
+        <div>
+          <div class="english-kicker">今日继续学习</div>
+          <h3>${esc(v.courseName)} · ${esc(v.lessonTitle)}</h3>
+          <div class="english-progress-line"><i style="width:${videoPct()}%"></i></div>
+          <div class="english-meta">当前：${Math.min(Math.max(v.currentStep||1,1),6)} / 6 · ${esc(stepNames[(v.currentStep||1)-1]||stepNames[0])}</div>
+        </div>
+        <button class="english-primary" data-go="video">继续学习</button>
+      </section>
 
-      <section class="english-workspace card" id="englishWorkspace"></section>
+      <section class="english-section">
+        <div class="english-section-head"><h3>学习方式</h3></div>
+        <div class="english-entry-grid">
+          <button class="english-entry" data-go="video">
+            <strong>视频学习</strong>
+            <span>小猪佩奇、走遍美国、电影等。后续导入视频 / 音频 / SRT，固定使用尚雯婕六步法。</span>
+            <span class="english-entry-link">进入视频学习 →</span>
+          </button>
+          <button class="english-entry" data-go="phonetic">
+            <strong>音标学习</strong>
+            <span>赖世雄美语音标。听 → 模仿 → 循环 → 完成，不套视频学习六步法。</span>
+            <span class="english-entry-link">进入音标学习 →</span>
+          </button>
+        </div>
+      </section>
 
-      <section class="english-recent card">
-        <div class="english-section-head"><div><h3>最近学习</h3><p>只记录学习内容、日期与时长。</p></div></div>
-        <div id="englishRecent"></div>
+      <section class="english-card english-section">
+        <div class="english-section-head"><h3>最近学习</h3><span class="english-meta">学习记录</span></div>
+        <div class="english-recent">${recent.length?recent.map(r=>`<div class="english-recent-item"><span>${esc(r.date||'')}</span><strong>${esc(r.title||'学习记录')}</strong><span>${esc(durationLabel(r.duration||0))}</span></div>`).join(''):'<div class="english-empty">还没有学习记录。完成学习后会显示在这里。</div>'}</div>
       </section>
     </div>`;
-
-  function setTab(tab){
-    state.activeTab=tab==='phonetic'?'phonetic':'video';persist();render();
+    bindGo();
   }
 
-  function renderContinue(){
-    const isVideo=state.activeTab==='video';
-    const c=isVideo?videoCourse():phoneticCourse();
-    const progress=isVideo?`${Math.max(1,c.currentStep||1)} / 6`:`${c.lessonIndex||1} / ${c.totalLessons||48} 课`;
-    $('englishContinue').innerHTML=`
-      <div class="english-continue-copy"><span>今日继续学习</span><h3>${esc(c.name)}${c.title?` · ${esc(c.title)}`:''}</h3><p>${isVideo?'尚雯婕六步学习法':'赖世雄音标训练'} · 当前 ${progress}</p></div>
-      <button class="task-primary-btn" id="englishContinueBtn" type="button">继续学习</button>`;
-    $('englishContinueBtn').onclick=()=>setTab(isVideo?'video':'phonetic');
+  function renderVideo(){
+    const v=state.video;
+    body.innerHTML=`<div class="english-study-view">
+      <section class="english-card">
+        <div class="english-study-head">
+          <div><div class="english-kicker">视频学习</div><h3>${esc(v.courseName)} · ${esc(v.lessonTitle)}</h3><div class="english-meta">学习进度 ${Math.min(Math.max(v.currentStep||1,1),6)} / 6</div></div>
+          <div class="english-study-head-actions"><button class="english-secondary" data-go="home">← 学习首页</button></div>
+        </div>
+        <div class="english-step-row">${stepNames.map((name,i)=>{const n=i+1,done=(v.completedSteps||[]).includes(n),current=(v.currentStep||1)===n;return `<div class="english-step${done?' done':''}${current?' current':''}"><b>0${n}</b><span>${esc(name)}${done?' ✓':''}</span></div>`}).join('')}</div>
+      </section>
+      <section class="english-placeholder"><div><div class="english-kicker">Phase 1</div><h3>视频学习骨架完成</h3><p>下一阶段只做视频 / 音频 / SRT 本地导入。再下一阶段实现字幕时间轴驱动播放器。</p></div></section>
+    </div>`;
+    bindGo();
   }
 
-  function videoWorkspace(){
-    const c=videoCourse();
-    const steps=['看视频','反复精听','逐句学习','跟读 + 默写','句型造句','学习盖章'];
-    const current=Math.min(6,Math.max(1,c.currentStep||1));
-    return `
-      <div class="english-workspace-head"><div><span>VIDEO LEARNING</span><h3>${esc(c.name)} · ${esc(c.title||'')}</h3></div><strong>${current} / 6</strong></div>
-      <div class="english-stepper">${steps.map((s,i)=>`<div class="english-step ${i+1<current?'done':''} ${i+1===current?'current':''}"><i>${i+1<current?'✓':String(i+1).padStart(2,'0')}</i><span>${esc(s)}</span></div>`).join('')}</div>
-      <div class="english-stage-note"><strong>阶段 1 已搭好入口与流程骨架</strong><p>下一阶段接入本地视频 / 音频 / SRT 导入，再做“字幕时间轴 → 播放器”的核心驱动。</p></div>`;
+  function renderPhonetic(){
+    const p=state.phonetic;
+    body.innerHTML=`<div class="english-study-view">
+      <section class="english-card english-phonetic-card">
+        <div><div class="english-kicker">音标学习 · 赖世雄美语音标</div><h3>${esc(p.lessonTitle)} · ${esc(p.symbol)}</h3><div class="english-meta">听 → 模仿 → 循环 → 完成</div><div class="english-progress-line"><i style="width:${phoneticPct()}%"></i></div><div class="english-phonetic-progress">学习进度 ${p.currentLesson} / ${p.totalLessons} 课</div></div>
+        <button class="english-primary" type="button">开始学习</button>
+      </section>
+      <section class="english-placeholder"><div><div class="english-kicker">Phase 1</div><h3>音标学习骨架完成</h3><p>后续只增加老师示范、循环播放、跟读和完成记录。V1 不做 AI 发音评分。</p></div></section>
+      <button class="english-secondary english-home-back" data-go="home">← 学习首页</button>
+    </div>`;
+    bindGo();
   }
 
-  function phoneticWorkspace(){
-    const c=phoneticCourse();
-    return `
-      <div class="english-workspace-head"><div><span>PHONETIC LEARNING</span><h3>《${esc(c.name)}》</h3></div><strong>${c.lessonIndex||1} / ${c.totalLessons||48}</strong></div>
-      <div class="english-phonetic-preview">
-        <div class="english-phonetic-symbol">/ɪ/</div>
-        <div><span>继续学习</span><h4>${esc(c.title||'Lesson 1')}</h4><p>听 → 模仿 → 循环 → 完成</p></div>
-      </div>
-      <div class="english-stage-note"><strong>音标模块保持独立学习法</strong><p>本阶段只建立入口和进度骨架，不加入 AI 评分、波形分析或复杂识别。</p></div>`;
-  }
+  function bindGo(){root.querySelectorAll('[data-go]').forEach(btn=>btn.onclick=()=>switchView(btn.dataset.go))}
+  function renderTabs(){root.querySelectorAll('.english-tab').forEach(btn=>btn.classList.toggle('active',btn.dataset.view===state.view))}
+  function switchView(view){state.view=['home','video','phonetic'].includes(view)?view:'home';saveState(state);render()}
+  function render(){renderTabs();if(state.view==='video')renderVideo();else if(state.view==='phonetic')renderPhonetic();else renderHome()}
 
-  function renderWorkspace(){
-    $('englishWorkspace').innerHTML=state.activeTab==='video'?videoWorkspace():phoneticWorkspace();
-  }
-
-  function renderRecent(){
-    const rows=recentRows();
-    if(!rows.length){$('englishRecent').innerHTML='<div class="english-empty">还没有学习记录。完成一次学习后会显示在这里。</div>';return}
-    $('englishRecent').innerHTML=rows.map(r=>`<div class="english-recent-row"><div><strong>${esc(r.title||'英语学习')}</strong><span>${esc(r.type==='phonetic'?'音标学习':'视频学习')}</span></div><span>${esc(r.date||'')}</span><span>${Number(r.duration||0)} min</span></div>`).join('');
-  }
-
-  function render(){
-    document.querySelectorAll('.english-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===state.activeTab));
-    renderContinue();renderWorkspace();renderRecent();
-  }
-
-  document.querySelectorAll('.english-tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
-  document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>setTab(b.dataset.open));
+  root.querySelectorAll('.english-tab').forEach(btn=>btn.onclick=()=>switchView(btn.dataset.view));
+  const navBtn=document.querySelector('nav button[data-v="english"]');
+  if(navBtn)navBtn.addEventListener('click',()=>{state.view='home';saveState(state);render()});
   render();
 })();
