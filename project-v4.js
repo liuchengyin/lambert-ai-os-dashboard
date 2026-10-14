@@ -114,4 +114,24 @@
   if(!document.querySelector('script[src="task-drag-v1.js"]')){
     const s=document.createElement('script');s.src='task-drag-v1.js';document.body.appendChild(s)
   }
+
+  // English Learning is isolated and loaded as an additive module.
+  if(!document.querySelector('link[href="english-learning.css"]')){
+    const l=document.createElement('link');l.rel='stylesheet';l.href='english-learning.css';document.head.appendChild(l)
+  }
+  if(!document.getElementById('english')){
+    const section=document.createElement('section');section.id='english';section.className='view';
+    const knowledge=document.getElementById('knowledge');
+    if(knowledge)knowledge.parentNode.insertBefore(section,knowledge);else document.querySelector('main')?.appendChild(section)
+  }
+  const nav=document.querySelector('nav');
+  if(nav&&!nav.querySelector('button[data-v="english"]')){
+    const b=document.createElement('button');b.dataset.v='english';b.textContent='英语学习';
+    const knowledgeBtn=nav.querySelector('button[data-v="knowledge"]');
+    if(knowledgeBtn)nav.insertBefore(b,knowledgeBtn);else nav.appendChild(b);
+    b.onclick=()=>{if(typeof openView==='function')openView('english')}
+  }
+  if(!document.querySelector('script[src="english-learning.js"]')){
+    const s=document.createElement('script');s.src='english-learning.js';document.body.appendChild(s)
+  }
 })();
