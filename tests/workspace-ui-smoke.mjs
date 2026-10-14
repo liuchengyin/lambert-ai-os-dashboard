@@ -75,7 +75,7 @@ try{
   }
   await page.setViewportSize({width:390,height:844});
   await page.locator('nav button[data-v="review"]').click();
-  const mobileColumns=await page.locator('.review-v6-workspace').evaluate(e=>getComputedStyle(e).gridTemplateColumns.trim().split(/\\s+/).length);
+  const mobileColumns=await page.locator('.review-v6-workspace').evaluate(e=>getComputedStyle(e).gridTemplateColumns.trim().split(/\s+/).length);
   check('Review switches to one column on mobile',mobileColumns===1);
   const reviewOverflow=await page.locator('#review').evaluate(e=>e.scrollWidth-e.clientWidth);
   check('Mobile review has no horizontal overflow',reviewOverflow<=5);
