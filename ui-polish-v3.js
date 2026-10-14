@@ -99,6 +99,12 @@
     }
   }
 
+  function loadEnglishLearning(){
+    if(!document.querySelector('script[src="english-learning-bootstrap.js"]')){
+      const s=document.createElement('script');s.src='english-learning-bootstrap.js';document.body.appendChild(s)
+    }
+  }
+
   function polish(){
     removeProjectMaterialEntry();
     removeSettingsModule();
@@ -107,6 +113,7 @@
     stripWritingSubtitle();
     polishTaskCards();
     loadReadingPolish();
+    loadEnglishLearning();
   }
 
   polish();
