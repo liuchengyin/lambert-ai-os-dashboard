@@ -38,6 +38,16 @@ try {
   await page.waitForTimeout(300);
   const seeked=await page.locator('#englishMediaPlayer').evaluate(e=>e.currentTime);
   check('Play current sentence seeks to cue',seeked>=2.9&&seeked<4.1);
+  await page.locator('#englishMediaPlayer').evaluate(e=>{e.pause();e.currentTime=1.2});
+  await page.locator('#enSetA').click();
+  await page.locator('#englishMediaPlayer').evaluate(e=>{e.currentTime=1.8});
+  await page.locator('#enSetB').click();
+  await page.locator('#enToggleAB').click();
+  check('A-B loop can be enabled',(await page.locator('#enToggleAB').innerText()).includes('开'));
+  await page.locator('#englishMediaPlayer').evaluate(e=>{e.currentTime=2.1;e.dispatchEvent(new Event('timeupdate'))});
+  const looped=await page.locator('#englishMediaPlayer').evaluate(e=>e.currentTime);
+  check('A-B loop returns to A',Math.abs(looped-1.2)<0.3);
+  await page.locator('#enToggleAB').click();
   const listeningWav=createWav(6);
   await page.locator('#enImportaudio').setInputFiles({name:'listening.wav',mimeType:'audio/wav',buffer:listeningWav});
   await page.locator('#enVideoMode').click();
@@ -61,6 +71,8 @@ try {
   await page.locator('#enMarkStep').click();
   await page.locator('#enStamp').click();
   check('Completion stamp and record saved',(await getState()).records.length===1);
+  check('Stamp shows learner name',(await page.locator('.en-stamp').innerText()).includes('Lambert'));
+  check('Study duration is positive',(await getState()).records[0].duration>=1);
   await page.reload();
   await page.locator('nav button[data-v="english"]').click();
   check('Progress persists after refresh',(await getState()).courses.find(x=>x.type==='video').completedSteps.length===6);
