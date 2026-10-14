@@ -1,7 +1,7 @@
 // Task board drag V2: stable cross-column and in-column drag without DOM reparenting until drop.
 (function(){
   const KEY='task_drag_order_v1';
-  const BOARD=document.getElementById('taskBoard');
+  let BOARD=document.getElementById('taskBoard');
   if(!BOARD)return;
   let dragged=null,placeholder=null,origin=null,scheduled=false,dropped=false;
 
@@ -118,6 +118,8 @@
   }
   function bind(){
     if(dragged)return;
+    // Dashboard V5 replaces #taskBoard after this script is loaded; always rebind the live board.
+    BOARD=document.getElementById('taskBoard');if(!BOARD)return;
     applyOrder();
     BOARD.querySelectorAll('.task-v5-card').forEach(bindCard);
     BOARD.querySelectorAll('.task-v5-col').forEach(bindColumn);
@@ -128,6 +130,6 @@
     scheduled=true;
     requestAnimationFrame(()=>{scheduled=false;bind()});
   });
-  observer.observe(BOARD,{childList:true,subtree:true});
+  observer.observe(document.getElementById('tasks')||document.body,{childList:true,subtree:true});
   document.addEventListener('click',e=>{if(e.target.closest?.('[data-v="tasks"]'))setTimeout(bind,70)});
 })();
