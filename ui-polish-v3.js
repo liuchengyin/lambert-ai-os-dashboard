@@ -99,6 +99,15 @@
     }
   }
 
+  function loadEnglishLearning(){
+    if(!document.querySelector('link[href="english-learning-v1.css"]')){
+      const l=document.createElement('link');l.rel='stylesheet';l.href='english-learning-v1.css';document.head.appendChild(l)
+    }
+    if(!document.querySelector('script[src="english-learning.js"]')){
+      const s=document.createElement('script');s.src='english-learning.js';document.body.appendChild(s)
+    }
+  }
+
   function polish(){
     removeProjectMaterialEntry();
     removeSettingsModule();
@@ -107,6 +116,7 @@
     stripWritingSubtitle();
     polishTaskCards();
     loadReadingPolish();
+    loadEnglishLearning();
   }
 
   polish();
