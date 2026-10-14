@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f7f8fb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="description" content="小猪佩奇英语学习：本地视频、音频与 SRT 字幕精听。">
+  <title>Peppa English · 视频与音频</title>
+  <link rel="stylesheet" href="english-learning-v1.css">
+  <link rel="stylesheet" href="english-learning-media-v1.css">
+  <link rel="stylesheet" href="english-app-lite.css">
+</head>
+<body class="english-app-lite">
+  <header class="app-topbar">
+    <div class="app-brand"><span class="app-mark">E</span><div><strong>Peppa English</strong><small>视频 · 音频 · 精听</small></div></div>
+    <button id="appTogglePractice" type="button" aria-expanded="false" aria-controls="englishWorkspace">六步学习法 <span aria-hidden="true">⌄</span></button>
+  </header>
+  <nav class="app-hidden-nav" aria-hidden="true"><button data-v="english" type="button" tabindex="-1">英语学习</button></nav>
+  <main><section id="english" class="view activeView"></section></main>
+  <footer class="app-footer">本地学习 · 无需上传视频或音频。刷新后需重新选择媒体文件。</footer>
+  <script src="english-learning.js"></script>
+  <script>
+    (() => {
+      const videoTab = document.querySelector('.english-tab[data-tab="video"]');
+      if (videoTab && !videoTab.classList.contains('active')) videoTab.click();
+      const toggle = document.getElementById('appTogglePractice');
+      toggle.addEventListener('click', () => {
+        const opened = document.body.classList.toggle('app-show-practice');
+        toggle.setAttribute('aria-expanded', String(opened));
+        toggle.innerHTML = opened ? '收起六步法 <span aria-hidden="true">⌃</span>' : '六步学习法 <span aria-hidden="true">⌄</span>';
+      });
+    })();
+  </script>
+</body>
+</html>
