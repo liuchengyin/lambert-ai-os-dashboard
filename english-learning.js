@@ -26,6 +26,7 @@
   const STORE='english_learning_v1';
   const mediaFiles={video:null,audio:null};
   let cues=[],cueIndex=0,repeat=false,segmentEnd=null,mediaMode='video';
+  let showSubtitles=true,abStart=null,abEnd=null,abLoop=false;
   const stampTime=t=>{const p=t.replace(',','.').split(':');return (+p[0])*3600+(+p[1])*60+(+p[2]);};
   function parseSrt(source){
     return source.replace(/\r/g,'').replace(/^\uFEFF/,'').trim().split(/\n\s*\n/).map(block=>{
@@ -42,24 +43,35 @@
     showCue();
   }
   function showCue(){
-    const c=cues[cueIndex];const el=$('englishCue');if(el)el.textContent=c?c.text:'请导入 SRT 字幕';
+    const c=cues[cueIndex];const el=$('englishCue');if(el)el.textContent=showSubtitles?(c?c.text:'请导入 SRT 字幕'):'（字幕已隐藏）';
+    const overlay=$('enSubtitleOverlay');if(overlay){overlay.textContent=showSubtitles&&c?c.text:'';overlay.style.display=showSubtitles?'block':'none'}
     const n=$('englishCueCount');if(n)n.textContent=c?((cueIndex+1)+' / '+cues.length):'0 / 0';
+    const course=videoCourse();if(course.currentCueIndex!==cueIndex){course.currentCueIndex=cueIndex;persist()}
   }
   function renderMedia(){
     const host=$('englishMediaArea');if(!host)return;
     const file=mediaFiles[mediaMode],available=!!file;
     host.innerHTML='<div class="en-media-modes"><button id="enVideoMode">视频</button><button id="enAudioMode">纯音频</button></div>'+
-      (available?(mediaMode==='video'?'<video id="englishMediaPlayer" controls playsinline preload="metadata"></video>':'<audio id="englishMediaPlayer" controls preload="metadata"></audio>'):'<div class="en-media-empty">导入'+(mediaMode==='video'?'视频':'音频')+'后开始播放</div>')+
-      '<div class="en-rate">倍速：<button data-speed="0.5">0.5×</button><button data-speed="0.75">0.75×</button><button data-speed="1">1×</button></div>'+
+      (available?(mediaMode==='video'?'<div class="en-video-wrap"><video id="englishMediaPlayer" controls playsinline preload="metadata"></video><div id="enSubtitleOverlay" class="en-subtitle-overlay"></div></div>':'<audio id="englishMediaPlayer" controls preload="metadata"></audio>'):'<div class="en-media-empty">导入'+(mediaMode==='video'?'视频':'音频')+'后开始播放</div>')+
+      '<div class="en-rate">倍速：<button data-speed="0.5">0.5×</button><button data-speed="0.75">0.75×</button><button data-speed="1">1×</button><button id="enSubtitleToggle">字幕：'+(showSubtitles?'显示':'隐藏')+'</button></div>'+ 
+      '<div class="en-ab"><button id="enSetA">设置 A</button><button id="enSetB">设置 B</button><button id="enToggleAB">A-B 循环：'+(abLoop?'开':'关')+'</button><small id="enAbStatus"></small></div>'+
       '<div class="en-cue"><small id="englishCueCount"></small><p id="englishCue"></p><div class="en-cue-buttons"><button id="enPrev">上一句</button><button id="enPlay">播放本句</button><button id="enLoop">循环：'+(repeat?'开':'关')+'</button><button id="enNext">下一句</button></div></div>';
     $('enVideoMode').onclick=()=>{mediaMode='video';segmentEnd=null;renderMedia()};
     $('enAudioMode').onclick=()=>{mediaMode='audio';segmentEnd=null;renderMedia()};
-    $('enPrev').onclick=()=>jumpCue(cueIndex-1);$('enNext').onclick=()=>jumpCue(cueIndex+1);$('enPlay').onclick=()=>jumpCue(cueIndex);
+    $('enPrev').onclick=()=>{abLoop=false;jumpCue(cueIndex-1)};$('enNext').onclick=()=>{abLoop=false;jumpCue(cueIndex+1)};$('enPlay').onclick=()=>{abLoop=false;jumpCue(cueIndex)};
     $('enLoop').onclick=()=>{repeat=!repeat;$('enLoop').textContent='循环：'+(repeat?'开':'关');};
+    $('enSubtitleToggle').onclick=()=>{showSubtitles=!showSubtitles;$('enSubtitleToggle').textContent='字幕：'+(showSubtitles?'显示':'隐藏');showCue()};
+    const abStatus=$('enAbStatus');
+    const abText=()=>{if(abStatus)abStatus.textContent='A '+(abStart===null?'--':abStart.toFixed(1))+'s / B '+(abEnd===null?'--':abEnd.toFixed(1))+'s'};
+    $('enSetA').onclick=()=>{if(player){abStart=player.currentTime;abLoop=false;$('enToggleAB').textContent='A-B 循环：关';abText()}};
+    $('enSetB').onclick=()=>{if(player){abEnd=player.currentTime;abLoop=false;$('enToggleAB').textContent='A-B 循环：关';abText()}};
+    $('enToggleAB').onclick=()=>{if(abStart===null||abEnd===null||abEnd<=abStart){if(abStatus)abStatus.textContent='请先设置 A，再设置晚于 A 的 B';return}abLoop=!abLoop;segmentEnd=null;$('enToggleAB').textContent='A-B 循环：'+(abLoop?'开':'关');if(abLoop&&player){player.currentTime=abStart;player.play().catch(()=>{})}};
+    abText();
     const player=activePlayer();
     if(player){
       player.src=file.url;
       player.ontimeupdate=()=>{
+        if(abLoop&&abStart!==null&&abEnd!==null&&player.currentTime>=abEnd-.04){player.currentTime=abStart;player.play().catch(()=>{});return}
         if(segmentEnd!==null&&player.currentTime>=segmentEnd-.04){
           if(repeat){player.currentTime=cues[cueIndex].start;player.play().catch(()=>{})}
           else{segmentEnd=null;player.pause()}return;
@@ -86,7 +98,7 @@
     $('enImportSrt').onchange=async e=>{
       const file=e.target.files?.[0];if(!file)return;
       const parsed=parseSrt(await file.text());if(!parsed.length){alert('SRT 未解析到有效字幕，请检查时间格式');return;}
-      cues=parsed;cueIndex=0;repeat=false;segmentEnd=null;
+      cues=parsed;cueIndex=0;repeat=false;segmentEnd=null;abLoop=false;abStart=null;abEnd=null;
       videoCourse().subtitles=parsed;videoCourse().subtitleName=file.name;persist();renderMedia();
     };
   }
@@ -112,6 +124,7 @@
   state.courses=Array.isArray(state.courses)&&state.courses.length?state.courses:JSON.parse(JSON.stringify(seed.courses));
   state.records=Array.isArray(state.records)?state.records:[];
   cues=Array.isArray(state.courses.find(x=>x.type==='video')?.subtitles)?state.courses.find(x=>x.type==='video').subtitles:[];
+  cueIndex=Math.max(0,Math.min(cues.length-1,Number(state.courses.find(x=>x.type==='video')?.currentCueIndex)||0));
   set(state);
 
   function persist(){set(state)}
@@ -307,7 +320,7 @@
     const num=$('enPhoneticLesson');
     if(num)num.onchange=()=>changePhoneticLesson(num.value);
     for(const [id,field] of [['enPhoneticSymbol','symbol'],['enPhoneticNotes','notes'],['enPhoneticExamples','examples']]){
-      const el=$(id);if(el)el.oninput=()=>{l[field]=el.value;persist()};
+      const el=$(id);if(el)el.oninput=()=>{l[field]=el.value;persist();if(field==='examples'){const host=document.querySelector('#english .en-phonetic-words');if(host){host.innerHTML=l.examples.split(/\r?\n/).map(x=>x.trim()).filter(Boolean).map(x=>'<div>'+esc(x)+'</div>').join('')}}};
     }
     const input=$('enPhoneticAudioInput');
     if(input)input.onchange=()=>{
