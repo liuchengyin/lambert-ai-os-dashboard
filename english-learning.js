@@ -37,9 +37,13 @@
     }).filter(x=>x&&x.text).sort((a,b)=>a.start-b.start);
   }
   function activePlayer(){return $('englishMediaPlayer')}
+  function seekAndPlay(player,time){
+    const seek=()=>{try{player.currentTime=time;player.play().catch(()=>{})}catch(e){/* media not ready */}};
+    if(player.readyState!==undefined&&player.readyState<1){player.addEventListener('loadedmetadata',seek,{once:true})}else seek();
+  }
   function jumpCue(index){
     if(!cues.length)return;cueIndex=Math.max(0,Math.min(index,cues.length-1));
-    const m=activePlayer();if(m){m.currentTime=cues[cueIndex].start;segmentEnd=cues[cueIndex].end;m.play().catch(()=>{});}
+    const m=activePlayer();if(m){segmentEnd=cues[cueIndex].end;seekAndPlay(m,cues[cueIndex].start);}
     showCue();
   }
   function showCue(){
@@ -56,21 +60,23 @@
       '<div class="en-rate">倍速：<button data-speed="0.5">0.5×</button><button data-speed="0.75">0.75×</button><button data-speed="1">1×</button><button id="enSubtitleToggle">字幕：'+(showSubtitles?'显示':'隐藏')+'</button></div>'+ 
       '<div class="en-ab"><button id="enSetA">设置 A</button><button id="enSetB">设置 B</button><button id="enToggleAB">A-B 循环：'+(abLoop?'开':'关')+'</button><small id="enAbStatus"></small></div>'+
       '<div class="en-cue"><small id="englishCueCount"></small><p id="englishCue"></p><div class="en-cue-buttons"><button id="enPrev">上一句</button><button id="enPlay">播放本句</button><button id="enLoop">循环：'+(repeat?'开':'关')+'</button><button id="enNext">下一句</button></div></div>';
-    $('enVideoMode').onclick=()=>{mediaMode='video';segmentEnd=null;renderMedia()};
-    $('enAudioMode').onclick=()=>{mediaMode='audio';segmentEnd=null;renderMedia()};
+    $('enVideoMode').onclick=()=>{mediaMode='video';segmentEnd=null;abLoop=false;renderMedia()};
+    $('enAudioMode').onclick=()=>{mediaMode='audio';segmentEnd=null;abLoop=false;renderMedia()};
     $('enPrev').onclick=()=>{abLoop=false;jumpCue(cueIndex-1)};$('enNext').onclick=()=>{abLoop=false;jumpCue(cueIndex+1)};$('enPlay').onclick=()=>{abLoop=false;jumpCue(cueIndex)};
-    $('enLoop').onclick=()=>{repeat=!repeat;$('enLoop').textContent='循环：'+(repeat?'开':'关');};
+    $('enLoop').onclick=()=>{repeat=!repeat;if(repeat){abLoop=false;$('enToggleAB').textContent='A-B 循环：关'}$('enLoop').textContent='循环：'+(repeat?'开':'关');};
     $('enSubtitleToggle').onclick=()=>{showSubtitles=!showSubtitles;$('enSubtitleToggle').textContent='字幕：'+(showSubtitles?'显示':'隐藏');showCue()};
     const abStatus=$('enAbStatus');
     const abText=()=>{if(abStatus)abStatus.textContent='A '+(abStart===null?'--':abStart.toFixed(1))+'s / B '+(abEnd===null?'--':abEnd.toFixed(1))+'s'};
     $('enSetA').onclick=()=>{if(player){abStart=player.currentTime;abLoop=false;$('enToggleAB').textContent='A-B 循环：关';abText()}};
     $('enSetB').onclick=()=>{if(player){abEnd=player.currentTime;abLoop=false;$('enToggleAB').textContent='A-B 循环：关';abText()}};
-    $('enToggleAB').onclick=()=>{if(abStart===null||abEnd===null||abEnd<=abStart){if(abStatus)abStatus.textContent='请先设置 A，再设置晚于 A 的 B';return}abLoop=!abLoop;segmentEnd=null;$('enToggleAB').textContent='A-B 循环：'+(abLoop?'开':'关');if(abLoop&&player){player.currentTime=abStart;player.play().catch(()=>{})}};
+    $('enToggleAB').onclick=()=>{if(abStart===null||abEnd===null||abEnd<=abStart){if(abStatus)abStatus.textContent='请先设置 A，再设置晚于 A 的 B';return}abLoop=!abLoop;segmentEnd=null;if(abLoop){repeat=false;$('enLoop').textContent='循环：关'}$('enToggleAB').textContent='A-B 循环：'+(abLoop?'开':'关');if(abLoop&&player){player.currentTime=abStart;player.play().catch(()=>{})}};
     abText();
     const player=activePlayer();
     if(player){
       player.src=file.url;
       player.ontimeupdate=()=>{
+        const overlay=$('enSubtitleOverlay'),cue=cues[cueIndex];
+        if(overlay)overlay.textContent=showSubtitles&&cue&&player.currentTime>=cue.start&&player.currentTime<cue.end?cue.text:'';
         if(abLoop&&abStart!==null&&abEnd!==null&&player.currentTime>=abEnd-.04){player.currentTime=abStart;player.play().catch(()=>{});return}
         if(segmentEnd!==null&&player.currentTime>=segmentEnd-.04){
           if(repeat){player.currentTime=cues[cueIndex].start;player.play().catch(()=>{})}
