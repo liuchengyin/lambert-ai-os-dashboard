@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'index.html'
+      - 'english-app.html'
+      - 'manifest.webmanifest'
+      - 'brand/**'
       - 'project-v3.js'
       - 'project-v4.js'
       - 'task-drag-v1.js'

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Lambert AI OS app icon">
+<defs><linearGradient id="tile" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#e8edf5"/></linearGradient></defs>
+<rect width="512" height="512" rx="108" fill="url(#tile)"/>
+<g transform="translate(48 48) scale(3.25)">
+<title id="title">Lambert AI OS</title><desc id="desc">Metallic outer circle framing a rounded inner square with curved bevels.</desc>
+<defs>
+<linearGradient id="metal" x1=".08" y1=".14" x2=".94" y2=".84"><stop offset="0" stop-color="#070a0c"/><stop offset=".21" stop-color="#20262c"/><stop offset=".37" stop-color="#a8afb4"/><stop offset=".49" stop-color="#e3e8eb"/><stop offset=".62" stop-color="#303840"/><stop offset=".84" stop-color="#0b1014"/><stop offset="1" stop-color="#5d656b"/></linearGradient>
+<linearGradient id="top" x1=".12" y1=".75" x2=".9" y2=".18"><stop offset="0" stop-color="#050709"/><stop offset=".48" stop-color="#11161a"/><stop offset=".79" stop-color="#454d54"/><stop offset="1" stop-color="#dce3e7"/></linearGradient>
+<linearGradient id="right" x1=".16" y1=".14" x2=".82" y2=".91"><stop offset="0" stop-color="#aeb8be"/><stop offset=".19" stop-color="#e9edef"/><stop offset=".48" stop-color="#11171b"/><stop offset="1" stop-color="#060a0c"/></linearGradient>
+<linearGradient id="bottom" x1=".22" y1=".12" x2=".85" y2=".95"><stop offset="0" stop-color="#d1d8dc"/><stop offset=".18" stop-color="#42494e"/><stop offset=".6" stop-color="#101417"/><stop offset="1" stop-color="#41484e"/></linearGradient>
+<linearGradient id="left" x1=".05" y1=".23" x2=".94" y2=".8"><stop offset="0" stop-color="#06090b"/><stop offset=".38" stop-color="#2e363c"/><stop offset=".7" stop-color="#cdd5da"/><stop offset="1" stop-color="#f0f2f3"/></linearGradient>
+<clipPath id="circle"><circle cx="64" cy="64" r="50"/></clipPath>
+</defs>
+<g clip-path="url(#circle)">
+<circle cx="64" cy="64" r="50" fill="url(#metal)"/>
+<path d="M14 65 C14 36 36 14 64 14 C90 14 108 32 113 56 C106 44 98 41 86 41 H54 C44 41 41 48 41 56 L41 84 C41 100 45 108 56 114 C32 109 14 89 14 65Z" fill="url(#left)"/>
+<path d="M64 14 C92 14 114 36 114 64 C114 87 100 104 82 112 C90 102 88 94 88 82 V55 C88 46 82 41 73 41 H53 C46 41 42 44 41 52 C42 29 50 14 64 14Z" fill="url(#top)"/>
+<path d="M114 64 C114 92 92 114 64 114 C41 114 24 100 16 82 C26 90 34 88 46 88 H74 C83 88 88 82 88 73 V54 C88 46 84 42 77 41 C101 42 114 50 114 64Z" fill="url(#right)"/>
+<path d="M64 114 C36 114 14 92 14 64 C14 41 28 24 46 16 C38 26 40 34 40 46 V74 C40 83 46 88 55 88 H75 C82 88 86 84 88 76 C87 99 78 114 64 114Z" fill="url(#bottom)" opacity=".96"/>
+<path d="M41 54 C41 45 46 40 55 40 H86 C100 40 108 45 113 56" fill="none" stroke="#e4e8eb" stroke-opacity=".86" stroke-width="1.4"/>
+<path d="M87 74 C87 83 82 88 73 88 H54 C45 88 41 83 41 74" fill="none" stroke="#eef1f2" stroke-opacity=".67" stroke-width="1.1"/>
+<rect x="40.5" y="40.5" width="47" height="47" rx="11.5" fill="#fff"/>
+</g></g></svg>

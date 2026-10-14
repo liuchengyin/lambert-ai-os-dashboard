@@ -22,6 +22,16 @@ const check=(label,condition)=>{assert.ok(condition,label);console.log('PASS:',l
 const status=async id=>page.evaluate(id=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id===id)?.status,id);
 try{
   await page.goto(BASE,{waitUntil:'load'});
+  const brand=page.locator('.shell>aside .lambert-brand-icon');
+  check('Selected Lambert mark is visible in sidebar',await brand.isVisible());
+  check('Sidebar logo SVG has loaded',await brand.evaluate(e=>e.complete&&e.naturalWidth>0));
+  check('Browser favicon points to selected mark',await page.locator('link[rel="icon"]').getAttribute('href')==='brand/logo-mark.svg?v=20261014');
+  const favicon=await page.request.get(new URL('brand/logo-mark.svg',BASE).href);
+  check('Favicon SVG is served correctly',favicon.ok()&&(await favicon.text()).includes('<svg'));
+  const appIcon=await page.request.get(new URL('brand/app-icon.svg',BASE).href);
+  check('App icon is served correctly',appIcon.ok()&&(await appIcon.text()).includes('viewBox="0 0 512 512"'));
+  const manifest=await page.request.get(new URL('manifest.webmanifest',BASE).href);
+  check('PWA manifest references Lambert app icon',manifest.ok()&&(await manifest.json()).icons.some(i=>i.src==='/brand/app-icon.svg'));
   await page.locator('nav button[data-v="tasks"]').click();
   await page.locator('.task-v5-card[data-task-id="drag-a"]').waitFor({state:'visible'});
   await page.waitForFunction(()=>document.querySelector('.task-v5-card[data-task-id="drag-a"]')?.draggable===true);
@@ -69,6 +79,8 @@ try{
   check('Common links still available',await page.locator('nav button[data-v="knowledge"]').count()===1);
   // Keep reviewable visual snapshots from the same isolated demo data.
   mkdirSync('tests/screenshots',{recursive:true});
+  await page.locator('nav button[data-v="home"]').click();
+  await page.locator('.shell>aside').screenshot({path:'tests/screenshots/lambert-sidebar-logo.png'});
   for(const [view,name] of [['home','overview'],['projects','projects'],['tasks','tasks'],['review','review']]){
     await page.locator('nav button[data-v="'+view+'"]').click();
     await page.screenshot({path:'tests/screenshots/'+name+'-desktop.png',fullPage:true});
