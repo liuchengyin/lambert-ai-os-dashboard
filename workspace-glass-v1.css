@@ -108,3 +108,16 @@
 @media(prefers-reduced-motion:reduce){
   #tasks .task-v5-card{transition:none!important}
 }
+
+/* Existing Linear theme kept a 190px sidebar even under 680px, squeezing content.
+   Restore the mobile single-column shell while retaining all navigation entries. */
+@media(max-width:680px){
+  .shell{display:block!important}
+  .shell>aside{
+    position:relative!important;inset:auto!important;width:100%!important;height:auto!important;
+    padding:14px 14px 9px!important;border-right:0!important;border-bottom:1px solid #263442!important;
+  }
+  .shell>aside nav{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;overflow-x:auto!important;gap:6px!important;margin-top:12px!important;padding-bottom:4px!important}
+  .shell>aside nav button{white-space:nowrap!important;flex:0 0 auto!important}
+  main{margin-left:0!important;width:100%!important;max-width:none!important;padding:15px 12px 32px!important}
+}
