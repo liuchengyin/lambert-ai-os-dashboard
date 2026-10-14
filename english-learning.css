@@ -1,0 +1,53 @@
+/* Lambert AI OS · English Learning V1 · Phase 1 · mobile first */
+#english{max-width:1180px;margin:0 auto}
+.english-page{display:flex;flex-direction:column;gap:16px}
+.english-head{display:flex;flex-direction:column;gap:14px}
+.english-head h2{margin:0;font-size:26px;line-height:1.25;letter-spacing:-.02em}
+.english-head p{margin:5px 0 0;color:#71717a;font-size:13px;line-height:1.6}
+.english-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;background:#f1f2f4;border:1px solid #e3e5e8;border-radius:12px;width:100%}
+.english-tab{min-height:42px;border:0;background:transparent;color:#666b73;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:14px}
+.english-tab.active{background:#fff;color:#202124;border:1px solid #dfe2e6}
+.english-home,.english-study-view{display:flex;flex-direction:column;gap:16px}
+.english-card{background:#fff;border:1px solid #e4e6ea;border-radius:14px;padding:17px;box-shadow:none!important}
+.english-kicker{font-size:11px;color:#8b9098;margin-bottom:6px}
+.english-card h3,.english-section h3{margin:0;font-size:18px;line-height:1.4}
+.english-continue{display:grid;grid-template-columns:1fr;gap:14px;align-items:center}
+.english-progress-line{height:7px;background:#eceef1;border-radius:999px;overflow:hidden;margin:12px 0 8px}
+.english-progress-line i{display:block;height:100%;background:#5e5ce6;border-radius:999px}
+.english-meta{color:#71717a;font-size:12px;line-height:1.5}
+.english-primary,.english-secondary{min-height:42px;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}
+.english-primary{border:1px solid #242428;background:#242428;color:#fff}
+.english-secondary{border:1px solid #dddfe4;background:#fff;color:#444850}
+.english-entry-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:10px}
+.english-entry{background:#fff;border:1px solid #e4e6ea;border-radius:14px;padding:18px;text-align:left;cursor:pointer;min-height:150px}
+.english-entry strong{display:block;font-size:18px;margin-bottom:7px}
+.english-entry span{display:block;color:#71717a;font-size:13px;line-height:1.65}
+.english-entry .english-entry-link{margin-top:14px;color:#4f4dcf;font-weight:700}
+.english-section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.english-recent{display:flex;flex-direction:column;gap:2px}
+.english-recent-item{display:grid;grid-template-columns:72px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid #eceef1}
+.english-recent-item:last-child{border-bottom:0}
+.english-recent-item strong{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.english-recent-item span{font-size:11px;color:#8a8f98}
+.english-empty{padding:16px 0;color:#9a9ea5;font-size:12px}
+.english-study-head{display:flex;flex-direction:column;gap:12px}
+.english-study-head-actions{display:flex;gap:8px;flex-wrap:wrap}
+.english-step-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
+.english-step{display:flex;flex-direction:column;gap:3px;padding:10px;border:1px solid #e5e7eb;border-radius:9px;background:#fafafa;font-size:12px;color:#7a7f87}
+.english-step b{font-size:10px;color:#a1a6ad}
+.english-step.done{background:#eef8f2;color:#2f7a52;border-color:#d6eadc}
+.english-step.current{background:#f0efff;color:#5654c8;border-color:#dcdbff}
+.english-placeholder{display:grid;place-items:center;min-height:280px;text-align:center;background:#fff;border:1px solid #e4e6ea;border-radius:14px;padding:28px}
+.english-placeholder h3{margin:0 0 8px;font-size:19px}
+.english-placeholder p{margin:0;color:#71717a;line-height:1.7;max-width:560px;font-size:13px}
+.english-phonetic-card{display:grid;grid-template-columns:1fr;gap:14px;align-items:center}
+.english-phonetic-progress{margin-top:8px;color:#5654c8;font-size:13px;font-weight:700}
+.english-home-back{align-self:flex-start}
+@media(min-width:760px){
+  .english-head{flex-direction:row;align-items:flex-end;justify-content:space-between}
+  .english-tabs{width:max-content;min-width:250px}
+  .english-continue{grid-template-columns:minmax(0,1.5fr) minmax(190px,.5fr)}
+  .english-entry-grid{grid-template-columns:1fr 1fr}
+  .english-step-row{grid-template-columns:repeat(6,1fr)}
+  .english-phonetic-card{grid-template-columns:1fr auto}
+}
