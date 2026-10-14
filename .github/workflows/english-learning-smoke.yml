@@ -7,9 +7,6 @@ on:
       - 'english-learning-*.css'
       - 'tests/english-learning-smoke.mjs'
       - '.github/workflows/english-learning-smoke.yml'
-  push:
-    branches:
-      - feat/english-learning-v1-media
 permissions:
   contents: read
 jobs:
