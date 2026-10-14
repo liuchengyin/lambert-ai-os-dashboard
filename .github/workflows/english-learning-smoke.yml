@@ -9,6 +9,9 @@ on:
       - '.github/workflows/english-learning-smoke.yml'
 permissions:
   contents: read
+concurrency:
+  group: english-learning-v1-pr
+  cancel-in-progress: true
 jobs:
   chromium-smoke:
     runs-on: ubuntu-latest
