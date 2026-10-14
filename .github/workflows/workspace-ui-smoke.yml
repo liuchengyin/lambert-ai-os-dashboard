@@ -1,0 +1,43 @@
+name: Workspace UI Smoke
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'project-v3.js'
+      - 'project-v4.js'
+      - 'task-drag-v1.js'
+      - 'review-v6.js'
+      - 'workspace-glass-v1.css'
+      - 'review-layout-v7.css'
+      - 'tests/workspace-ui-smoke.mjs'
+      - '.github/workflows/workspace-ui-smoke.yml'
+permissions:
+  contents: read
+concurrency:
+  group: workspace-ui-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  chromium:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Run workspace UI regression
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 &
+          sleep 2
+          node tests/workspace-ui-smoke.mjs
+      - name: Upload failure screenshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-ui-failure
+          path: workspace-ui-smoke-failure.png
+          if-no-files-found: ignore
