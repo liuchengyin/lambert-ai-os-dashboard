@@ -45,3 +45,5 @@
 #english .en-ab button,#english #enSubtitleToggle{background:#f2f4f8;color:#263348;border:1px solid #e3e6ee;border-radius:9px;padding:9px 12px}
 #english .en-ab small{color:#8792a2}
 @media(max-width:620px){#english .en-subtitle-overlay{font-size:14px;bottom:48px}#english .en-ab button{flex:1}}
+
+#english .en-step-guide{margin:8px 0 12px;font-size:13px;color:#667085;line-height:1.6}#english .en-media-modes button.active{background:#242428;color:#fff;border-color:#242428}
