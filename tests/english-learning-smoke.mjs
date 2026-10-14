@@ -22,6 +22,7 @@ try {
   check('English navigation installed',navs.includes('english'));
   await page.locator('nav button[data-v="english"]').click();
   check('English view activated',await page.locator('#english').evaluate(e=>e.classList.contains('activeView')));
+  check('Lightweight video/audio app link is available',await page.locator('#english .english-lite-link').getAttribute('href')==='english-app.html');
   check('Both stylesheets loaded',await page.evaluate(()=>['english-learning-v1.css','english-learning-media-v1.css'].every(name=>[...document.styleSheets].some(s=>s.href?.includes(name)))));
   await page.locator('#enImportSrt').setInputFiles({name:'test.srt',mimeType:'text/plain',buffer:Buffer.from(srt)});
   await page.waitForFunction(()=>document.querySelector('#englishCueCount')?.textContent==='1 / 2');
