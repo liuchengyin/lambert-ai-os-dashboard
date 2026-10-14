@@ -25,7 +25,11 @@ try{
   const brand=page.locator('.shell>aside .lambert-brand-icon');
   check('Selected Lambert mark is visible in sidebar',await brand.isVisible());
   check('Sidebar logo SVG has loaded',await brand.evaluate(e=>e.complete&&e.naturalWidth>0));
-  check('Browser favicon points to selected mark',await page.locator('link[rel="icon"]').getAttribute('href')==='brand/logo-mark.svg?v=20261014');
+  check('Sidebar logo has no white background tile',await brand.evaluate(e=>getComputedStyle(e).backgroundColor==='rgba(0, 0, 0, 0)'&&getComputedStyle(e).borderTopWidth==='0px'));
+  const logoSvg=await page.request.get(new URL('brand/logo-mark.svg',BASE).href);
+  const logoText=await logoSvg.text();
+  check('Violet logo uses a pure white rounded-square center',logoSvg.ok()&&logoText.includes('rx="12" fill="#fff"')&&logoText.includes('#8c4df1'));
+  check('Browser favicon points to selected mark',await page.locator('link[rel="icon"]').getAttribute('href')==='brand/logo-mark.svg?v=purple-white-1');
   const favicon=await page.request.get(new URL('brand/logo-mark.svg',BASE).href);
   check('Favicon SVG is served correctly',favicon.ok()&&(await favicon.text()).includes('<svg'));
   const appIcon=await page.request.get(new URL('brand/app-icon.svg',BASE).href);
