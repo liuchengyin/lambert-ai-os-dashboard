@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Lambert AI OS · 个人工作台",
+  "short_name": "Lambert AI OS",
+  "description": "个人项目、任务、复盘、学习与知识管理工作台",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8f8fa",
+  "theme_color": "#17212c",
+  "icons": [
+    {
+      "src": "/brand/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
