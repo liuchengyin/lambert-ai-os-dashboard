@@ -144,7 +144,7 @@
     <div class="english-page">
       <div class="english-head">
         <div><span class="english-eyebrow">ENGLISH LEARNING</span><h2>英语学习</h2><p>视频学习与音标学习分开练，只统一进度、时间与记录。</p></div>
-        <div class="english-head-pill">V1 · Mobile First</div>
+        <div class="english-head-actions"><a class="english-lite-link" href="english-app.html" target="_blank" rel="noopener">打开简洁版播放器 ↗</a><div class="english-head-pill">V1 · Mobile First</div></div>
       </div>
 
       <div class="english-tabs" role="tablist">
