@@ -5,6 +5,8 @@ on:
       - 'index.html'
       - 'english-learning.js'
       - 'english-learning-*.css'
+      - 'english-app.html'
+      - 'english-app-lite.css'
       - 'tests/english-learning-smoke.mjs'
       - '.github/workflows/english-learning-smoke.yml'
 permissions:
