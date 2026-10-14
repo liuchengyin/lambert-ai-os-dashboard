@@ -39,8 +39,7 @@
       }
       if(!b.dataset.s1MobileBound){b.dataset.s1MobileBound='1';b.addEventListener('click',()=>{aside.classList.remove('s1-mobile-open');mobile.setAttribute('aria-expanded','false');mobile.textContent='☰ 菜单'})}
     });
-    // Keep unknown future modules reachable rather than hiding their entry.
-    [...nav.children].filter(x=>x.matches?.('button[data-v]')).forEach(b=>nav.appendChild(b));
+    // Unknown future module buttons remain in nav and are never deleted.
   }
   const observer=new MutationObserver(()=>{if(!pending){pending=true;queueMicrotask(organize)}});
   observer.observe(nav,{childList:true,subtree:true});
