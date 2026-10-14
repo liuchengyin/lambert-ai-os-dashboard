@@ -114,7 +114,7 @@
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
   const get=()=>{try{return JSON.parse(localStorage.getItem(STORE))||null}catch{return null}};
-  const set=v=>localStorage.setItem(STORE,JSON.stringify(v));
+  const set=v=>{try{localStorage.setItem(STORE,JSON.stringify(v));return true}catch(e){console.warn('English learning progress storage unavailable',e);return false}};
 
   const seed={
     version:1,
