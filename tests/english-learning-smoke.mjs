@@ -79,7 +79,8 @@ try {
   mp.on('pageerror',e=>errors.push('mobile:'+e.message));
   await mp.goto(BASE,{waitUntil:'load'});
   await mp.locator('nav button[data-v="english"]').click();
-  const width=await mp.locator('#english').evaluate(e=>({right:e.getBoundingClientRect().right,viewport:window.innerWidth,scroll:e.scrollWidth,client:e.clientWidth}));
+  const width=await mp.locator('#english').evaluate(e=>{const root=e.getBoundingClientRect();return {right:root.right,viewport:window.innerWidth,scroll:e.scrollWidth,client:e.clientWidth,offenders:[...e.querySelectorAll('*')].map(x=>({tag:x.tagName,id:x.id,cls:String(x.className).slice(0,70),right:Math.round(x.getBoundingClientRect().right),scroll:x.scrollWidth,client:x.clientWidth})).filter(x=>x.right>root.right+3).slice(0,15)}});
+  console.log('Mobile dimensions:',JSON.stringify(width));
   check('Mobile English content does not overflow its container',width.scroll<=width.client+4);
   await mobile.close();
   check('No uncaught browser JS errors',errors.length===0);
