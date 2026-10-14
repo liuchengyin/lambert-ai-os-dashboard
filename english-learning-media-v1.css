@@ -47,3 +47,14 @@
 @media(max-width:620px){#english .en-subtitle-overlay{font-size:14px;bottom:48px}#english .en-ab button{flex:1}}
 
 #english .en-step-guide{margin:8px 0 12px;font-size:13px;color:#667085;line-height:1.6}#english .en-media-modes button.active{background:#242428;color:#fff;border-color:#242428}
+
+
+/* Scoped mobile shell correction: theme-linear.css forces a desktop sidebar at <=900px.
+   Only adjust the shell while the English view is active; other modules stay unchanged. */
+@media(max-width:680px){
+  body:has(#english.activeView) .shell{display:block!important}
+  body:has(#english.activeView) .shell>aside{position:static!important;inset:auto!important;width:100%!important;height:auto!important}
+  body:has(#english.activeView) main{margin-left:0!important;width:100%!important;max-width:none!important;padding:18px 14px!important}
+  #english .english-page,#english .english-workspace,#english .english-entry-grid{min-width:0}
+  #english .english-stepper{max-width:100%}
+}
