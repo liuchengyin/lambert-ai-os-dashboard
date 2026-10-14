@@ -174,6 +174,13 @@
     $("projectEditName").value=p.name;$("projectEditStatus").value=p.status;$("projectEditDue").value=p.due||"";$("projectEditStandard").value=p.standard||"";$("projectEditTaskSearch").value="";$("projectEditNewTaskTitle").value="";
     editSelected=new Set(projectTasks(p).map(t=>t.id));renderEditTaskPicker();$("projectEditDlg").showModal()
   }
+  // Close means cancel: keep the original project and all linked tasks unchanged.
+  $("projectEditClose")?.addEventListener("click",()=>{
+    $("projectEditDlg").close();
+    projectEditIndex=-1;
+    editSelected=new Set();
+  });
+  $("projectEditDlg")?.addEventListener("close",()=>{projectEditIndex=-1;editSelected=new Set()});
   $("projectEditSave").onclick=e=>{
     e.preventDefault();if(projectEditIndex<0)return;
     const old=state.projects[projectEditIndex],oldName=old.name,newName=$("projectEditName").value.trim();if(!newName)return;
