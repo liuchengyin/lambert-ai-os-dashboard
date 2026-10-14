@@ -114,4 +114,11 @@
   if(!document.querySelector('script[src="task-drag-v1.js"]')){
     const s=document.createElement('script');s.src='task-drag-v1.js';document.body.appendChild(s)
   }
+  // Shared pastel background and a compact review layout, loaded after older themes.
+  if(!document.querySelector('link[href="workspace-glass-v1.css"]')){
+    const l=document.createElement('link');l.rel='stylesheet';l.href='workspace-glass-v1.css';document.head.appendChild(l)
+  }
+  if(!document.querySelector('link[href="review-layout-v7.css"]')){
+    const l=document.createElement('link');l.rel='stylesheet';l.href='review-layout-v7.css';document.head.appendChild(l)
+  }
 })();
