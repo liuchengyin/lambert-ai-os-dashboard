@@ -1,7 +1,27 @@
 // English Learning V1 · Stage 1: entry + home + Video/Phonetic tabs
 (function(){
-  const section=document.getElementById('english');
-  if(!section)return;
+  const main=document.querySelector('main');
+  const nav=document.querySelector('nav');
+  if(!main||!nav)return;
+
+  let navBtn=document.querySelector('nav button[data-v="english"]');
+  if(!navBtn){
+    navBtn=document.createElement('button');
+    navBtn.dataset.v='english';
+    navBtn.textContent='英语学习';
+    const knowledgeBtn=document.querySelector('nav button[data-v="knowledge"]');
+    if(knowledgeBtn)nav.insertBefore(navBtn,knowledgeBtn);else nav.appendChild(navBtn);
+  }
+  navBtn.onclick=()=>{if(typeof openView==='function')openView('english')};
+
+  let section=document.getElementById('english');
+  if(!section){
+    section=document.createElement('section');
+    section.id='english';
+    section.className='view';
+    const knowledge=document.getElementById('knowledge');
+    if(knowledge)main.insertBefore(section,knowledge);else main.appendChild(section);
+  }
 
   const STORE='english_learning_v1';
   const $=id=>document.getElementById(id);
