@@ -1,5 +1,6 @@
 import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
+import {mkdirSync} from 'node:fs';
 
 const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:8000/';
 const errors=[];
@@ -66,6 +67,19 @@ try{
     check(view+' uses shared pastel background',bg.includes('radial-gradient'));
   }
   check('Common links still available',await page.locator('nav button[data-v="knowledge"]').count()===1);
+  // Keep reviewable visual snapshots from the same isolated demo data.
+  mkdirSync('tests/screenshots',{recursive:true});
+  for(const [view,name] of [['home','overview'],['projects','projects'],['tasks','tasks'],['review','review']]){
+    await page.locator('nav button[data-v="'+view+'"]').click();
+    await page.screenshot({path:'tests/screenshots/'+name+'-desktop.png',fullPage:true});
+  }
+  await page.setViewportSize({width:390,height:844});
+  await page.locator('nav button[data-v="review"]').click();
+  const mobileColumns=await page.locator('.review-v6-workspace').evaluate(e=>getComputedStyle(e).gridTemplateColumns.trim().split(/\\s+/).length);
+  check('Review switches to one column on mobile',mobileColumns===1);
+  const reviewOverflow=await page.locator('#review').evaluate(e=>e.scrollWidth-e.clientWidth);
+  check('Mobile review has no horizontal overflow',reviewOverflow<=5);
+  await page.screenshot({path:'tests/screenshots/review-mobile.png',fullPage:true});
   check('No uncaught JavaScript errors',errors.length===0);
   console.log('Workspace UI smoke passed.');
 }catch(e){
