@@ -125,7 +125,7 @@
 <dialog id="dlg"><form method="dialog"><h3 id="dlgTitle"></h3><label>名称<input id="dlgName"></label><label>状态<select id="dlgStatus"><option>待开始</option><option>进行中</option><option>已完成</option></select></label><label>补充<input id="dlgExtra"></label><div class="dlgActions"><button value="cancel">取消</button><button id="dlgDelete" type="button" style="display:none">删除</button><button id="dlgSave" value="default">保存</button></div></form></dialog>
 
 <dialog id="projectEditDlg"><form method="dialog">
-<h3>编辑项目</h3>
+<div class="project-edit-dialog-head"><h3>编辑项目</h3><button id="projectEditClose" class="project-edit-close" type="button" aria-label="取消编辑并关闭窗口" title="取消编辑">×</button></div>
 <label>项目名称<input id="projectEditName"></label>
 <label>状态<select id="projectEditStatus"><option>待开始</option><option>进行中</option><option>已完成</option></select></label>
 <label>截止日期<input id="projectEditDue" type="date"></label>
