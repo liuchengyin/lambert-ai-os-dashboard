@@ -90,7 +90,7 @@
       videoCourse().subtitles=parsed;videoCourse().subtitleName=file.name;persist();renderMedia();
     };
   }
-  window.addEventListener('beforeunload',()=>Object.values(mediaFiles).forEach(f=>{if(f)URL.revokeObjectURL(f.url)}));
+  window.addEventListener('beforeunload',()=>{Object.values(mediaFiles).forEach(f=>{if(f)URL.revokeObjectURL(f.url)});if(recordUrl)URL.revokeObjectURL(recordUrl);recordStream?.getTracks().forEach(t=>t.stop())});
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
   const get=()=>{try{return JSON.parse(localStorage.getItem(STORE))||null}catch{return null}};
@@ -158,6 +158,111 @@
     state.activeTab=tab==='phonetic'?'phonetic':'video';persist();render();
   }
 
+
+  // V1 learning steps 4-6. Media is kept session-local; only text/progress is persisted.
+  let recordDevice=null,recordStream=null,recordUrl='',recordChunks=[];
+  const lessonStart=Date.now();
+  let originalShown=false;
+  function videoState(){
+    const c=videoCourse();
+    if(!Array.isArray(c.completedSteps))c.completedSteps=[];
+    if(!c.dictations||typeof c.dictations!=='object')c.dictations={};
+    if(!Array.isArray(c.favorites))c.favorites=[];
+    return c;
+  }
+  function markStep(){
+    const c=videoState(),n=Math.max(1,Math.min(6,c.currentStep||1));
+    if(!c.completedSteps.includes(n))c.completedSteps.push(n);
+    if(n<6)c.currentStep=n+1;
+    c.updatedAt=new Date().toISOString();persist();render();
+  }
+  function setStep(n){
+    const c=videoState();c.currentStep=Math.max(1,Math.min(6,n));
+    c.updatedAt=new Date().toISOString();persist();render();
+  }
+  function cueKey(){return String(cueIndex)}
+  function diffWords(actual,expected){
+    const a=actual.trim().split(/\s+/).filter(Boolean),b=expected.trim().split(/\s+/).filter(Boolean);
+    const norm=x=>x.toLowerCase().replace(/[.,!?;:'"“”]/g,'');
+    return b.map((word,i)=>'<span class="'+(norm(a[i]||'')===norm(word)?'en-match':'en-mismatch')+'">'+esc(word)+'</span>').join(' ');
+  }
+  function stepPanel(n){
+    const c=videoState(),cue=cues[cueIndex],key=cueKey();
+    if(n===4){
+      const value=c.dictations[key]||'';
+      return '<div class="en-learning-panel"><h4>04 · 跟读 + 默写</h4><p>先播放当前字幕句子，跟读录音，再输入你听到的内容。</p>'+
+        '<div class="en-actions"><button id="enRecord">开始录音</button><button id="enStopRecord" disabled>结束录音</button><audio id="enRecordingPlayback" controls style="display:none"></audio></div>'+
+        '<label class="en-field">我的默写<textarea id="enDictation" placeholder="输入你听到的英文句子">'+esc(value)+'</textarea></label>'+
+        '<div class="en-actions"><button id="enReveal">显示原文 / 对照</button></div>'+
+        '<div id="enDictationResult" class="en-diff" style="display:'+(originalShown?'block':'none')+'">'+
+        (cue?'<div>原文：'+esc(cue.text)+'</div><div>逐词对照：'+diffWords(value,cue.text)+'</div>':'请先导入 SRT 字幕')+'</div></div>';
+    }
+    if(n===5){
+      const items=c.favorites;
+      return '<div class="en-learning-panel"><h4>05 · 句型造句</h4><p>由你决定收藏哪些句子；造句不会由系统自动挑选。</p>'+
+        '<button id="enFavoriteCurrent" '+(!cue?'disabled':'')+'>☆ 收藏当前句子</button>'+
+        '<div class="en-favorite-list">'+(items.length?items.map((it,i)=>
+          '<div class="en-favorite"><strong>'+esc(it.text)+'</strong><label class="en-field">我的造句<input data-fav="'+i+'" value="'+esc(it.mySentence||'')+'" placeholder="用这个句型造一句话"></label></div>'
+        ).join(''):'<p>尚未收藏句子。先导入字幕，选择喜欢的句子并点击收藏。</p>')+'</div></div>';
+    }
+    if(n===6){
+      const ready=[1,2,3,4,5].every(x=>c.completedSteps.includes(x));
+      return '<div class="en-learning-panel en-stamp-panel"><h4>06 · 学习盖章</h4><p>完成前五步后，盖章并保存学习记录。</p>'+
+        '<div class="en-stamp"><strong>LEARNING COMPLETE</strong><span>'+esc(c.name)+' · '+esc(c.title)+'</span><b>'+esc(c.completedAt?new Date(c.completedAt).toLocaleDateString('zh-CN'):'待盖章')+'</b></div>'+
+        '<button id="enStamp" '+(!ready?'disabled':'')+'>'+(c.completedAt?'重新记录完成':'完成学习 · 盖章')+'</button>'+
+        (!ready?'<p>还需完成：'+[1,2,3,4,5].filter(x=>!c.completedSteps.includes(x)).join('、')+' 步</p>':'')+'</div>';
+    }
+    return '';
+  }
+  async function startRecording(){
+    const status=$('enRecord');if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){if(status)status.textContent='浏览器不支持录音';return;}
+    try{
+      recordStream=await navigator.mediaDevices.getUserMedia({audio:true});
+      recordChunks=[];recordDevice=new MediaRecorder(recordStream);
+      recordDevice.ondataavailable=e=>{if(e.data.size)recordChunks.push(e.data)};
+      recordDevice.onstop=()=>{
+        if(recordUrl)URL.revokeObjectURL(recordUrl);
+        recordUrl=URL.createObjectURL(new Blob(recordChunks,{type:recordDevice.mimeType||'audio/webm'}));
+        const playback=$('enRecordingPlayback');if(playback){playback.src=recordUrl;playback.style.display='block'}
+        recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;
+        if($('enRecord'))$('enRecord').disabled=false;
+        if($('enStopRecord'))$('enStopRecord').disabled=true;
+      };
+      recordDevice.start();if(status)status.disabled=true;
+      if($('enStopRecord'))$('enStopRecord').disabled=false;
+    }catch(e){if(status)status.textContent='麦克风不可用，请检查权限';recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;}
+  }
+  function stopRecording(){if(recordDevice?.state==='recording')recordDevice.stop()}
+  function bindStepPanel(){
+    const c=videoState(),step=c.currentStep||1;
+    const rec=$('enRecord'),stop=$('enStopRecord');
+    if(rec)rec.onclick=startRecording;
+    if(stop)stop.onclick=stopRecording;
+    const dict=$('enDictation');
+    if(dict)dict.oninput=()=>{
+      c.dictations[cueKey()]=dict.value;persist();
+      const result=$('enDictationResult');
+      if(result&&originalShown){const cue=cues[cueIndex];result.innerHTML=cue?'<div>原文：'+esc(cue.text)+'</div><div>逐词对照：'+diffWords(dict.value,cue.text)+'</div>':'请先导入字幕'}
+    };
+    const reveal=$('enReveal');
+    if(reveal)reveal.onclick=()=>{originalShown=!originalShown;const result=$('enDictationResult');if(result){result.style.display=originalShown?'block':'none';if(originalShown&&dict){const cue=cues[cueIndex];result.innerHTML=cue?'<div>原文：'+esc(cue.text)+'</div><div>逐词对照：'+diffWords(dict.value,cue.text)+'</div>':'请先导入字幕'}}};
+    const favorite=$('enFavoriteCurrent');
+    if(favorite)favorite.onclick=()=>{
+      const cue=cues[cueIndex];if(!cue)return;
+      if(!c.favorites.some(x=>x.text===cue.text))c.favorites.push({text:cue.text,mySentence:''});
+      persist();render();
+    };
+    document.querySelectorAll('[data-fav]').forEach(el=>el.oninput=()=>{const item=c.favorites[Number(el.dataset.fav)];if(item){item.mySentence=el.value;persist()}});
+    const stamp=$('enStamp');
+    if(stamp)stamp.onclick=()=>{
+      if(![1,2,3,4,5].every(x=>c.completedSteps.includes(x)))return;
+      const now=new Date();c.completedAt=now.toISOString();
+      if(!c.completedSteps.includes(6))c.completedSteps.push(6);
+      state.records.push({title:c.name+' · '+c.title,type:'video',date:now.toLocaleDateString('sv-SE'),duration:Math.floor((Date.now()-lessonStart)/60000),completed:true});
+      persist();render();
+    };
+  }
+
   function renderContinue(){
     const isVideo=state.activeTab==='video';
     const c=isVideo?videoCourse():phoneticCourse();
@@ -174,8 +279,8 @@
     const current=Math.min(6,Math.max(1,c.currentStep||1));
     return `
       <div class="english-workspace-head"><div><span>VIDEO LEARNING</span><h3>${esc(c.name)} · ${esc(c.title||'')}</h3></div><strong>${current} / 6</strong></div>
-      <div class="english-stepper">${steps.map((s,i)=>`<div class="english-step ${i+1<current?'done':''} ${i+1===current?'current':''}"><i>${i+1<current?'✓':String(i+1).padStart(2,'0')}</i><span>${esc(s)}</span></div>`).join('')}</div>
-      <div class="en-import"><label>导入视频<input id="enImportvideo" type="file" accept="video/*,.mov,.mp4"></label><label>导入音频<input id="enImportaudio" type="file" accept="audio/*,.mp3"></label><label>导入 SRT<input id="enImportSrt" type="file" accept=".srt"></label></div><p class="en-hint">本地视频和音频需在刷新后重新选择；字幕及学习进度保存在当前浏览器。</p><div id="englishMediaArea"></div>`;
+      <div class="english-stepper">${steps.map((s,i)=>`<button type="button" data-en-step="${i+1}" class="english-step ${c.completedSteps?.includes(i+1)?'done':''} ${i+1===current?'current':''}"><i>${c.completedSteps?.includes(i+1)?'✓':String(i+1).padStart(2,'0')}</i><span>${esc(s)}</span></button>`).join('')}</div>
+      <div class="en-import"><label>导入视频<input id="enImportvideo" type="file" accept="video/*,.mov,.mp4"></label><label>导入音频<input id="enImportaudio" type="file" accept="audio/*,.mp3"></label><label>导入 SRT<input id="enImportSrt" type="file" accept=".srt"></label></div><p class="en-hint">本地视频和音频需在刷新后重新选择；字幕及学习进度保存在当前浏览器。</p><div id="englishMediaArea"></div>${stepPanel(current)}<div class="en-step-footer"><button id="enMarkStep">${c.completedSteps?.includes(current)?'进入下一步':'完成本步并继续'}</button></div>`;
   }
 
   function phoneticWorkspace(){
@@ -191,7 +296,14 @@
 
   function renderWorkspace(){
     $('englishWorkspace').innerHTML=state.activeTab==='video'?videoWorkspace():phoneticWorkspace();
-    if(state.activeTab==='video'){bindMediaImports();renderMedia();}
+    if(state.activeTab==='video'){
+      bindMediaImports();renderMedia();bindStepPanel();
+      document.querySelectorAll('[data-en-step]').forEach(btn=>btn.onclick=()=>setStep(Number(btn.dataset.enStep)));
+      if($('enMarkStep'))$('enMarkStep').onclick=()=>{
+        const c=videoState();if(c.currentStep===6){if($('enStamp'))$('enStamp').click();return;}
+        if(c.completedSteps.includes(c.currentStep))setStep(c.currentStep+1);else markStep();
+      };
+    }
   }
 
   function renderRecent(){
