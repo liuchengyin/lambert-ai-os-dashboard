@@ -37,8 +37,13 @@ try {
   await page.waitForTimeout(300);
   const seeked=await page.locator('#englishMediaPlayer').evaluate(e=>e.currentTime);
   check('Play current sentence seeks to cue',seeked>=2.9&&seeked<4.1);
+  const listeningWav=createWav(6);
+  await page.locator('#enImportaudio').setInputFiles({name:'listening.wav',mimeType:'audio/wav',buffer:listeningWav});
+  await page.locator('#enVideoMode').click();
   await page.locator('#enMarkStep').click();
+  check('Step 2 defaults to pure audio',await page.locator('#englishMediaPlayer').evaluate(e=>e.tagName==='AUDIO'));
   await page.locator('#enMarkStep').click();
+  check('Step 3 returns to video',await page.locator('#englishMediaPlayer').evaluate(e=>e.tagName==='VIDEO'));
   await page.locator('#enMarkStep').click();
   check('Step 4 reached',(await getState()).courses.find(x=>x.type==='video').currentStep===4);
   await page.locator('#enDictation').fill('I am Peppa Pig');
