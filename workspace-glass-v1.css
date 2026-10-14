@@ -1,0 +1,110 @@
+/* Workspace glass theme V1
+   Based on the existing Common Links pastel wallpaper: same visual language, no data or module changes.
+   Only targets overview, projects, tasks, daily review, daily writing and daily reading. */
+:root{
+  --work-ink:#253448;
+  --work-muted:#718096;
+  --work-glass:rgba(255,255,255,.64);
+  --work-glass-solid:rgba(255,255,255,.88);
+  --work-line:rgba(255,255,255,.76);
+  --work-shadow:0 8px 28px rgba(64,82,117,.07);
+}
+#home,#projects,#tasks,#review,#writing,#reading{
+  position:relative;isolation:isolate;
+  min-height:calc(100vh - 126px);
+  border-radius:24px;
+  padding:25px 26px 38px;
+  background:
+    radial-gradient(ellipse at 9% 12%,rgba(217,231,252,.86),transparent 43%),
+    radial-gradient(ellipse at 43% 27%,rgba(255,231,236,.72),transparent 48%),
+    radial-gradient(ellipse at 95% 94%,rgba(208,230,253,.88),transparent 54%),
+    linear-gradient(135deg,#e4edf9 0%,#f9eef2 49%,#dfedfa 100%)!important;
+  background-attachment:fixed;
+  color:var(--work-ink);
+}
+#home:before,#projects:before,#tasks:before,#review:before,#writing:before,#reading:before{
+  content:'';position:absolute;inset:0;border-radius:inherit;z-index:-1;
+  background:linear-gradient(145deg,rgba(255,255,255,.08),rgba(255,255,255,.02));
+  pointer-events:none;
+}
+#home h2,#projects h2,#tasks h2,#review h2,#writing h2,#reading h2{color:#263346!important}
+#home .card,#projects .card,#tasks .card,#review .card,#writing .card,#reading .card,
+#home .home-v5-panel,#home .home-v5-card,
+#projects .project-metric,#projects .project-col,
+#tasks .task-v5-toolbar,#tasks .task-v5-col,
+#review .review-v6-card,#review .review-v6-history,
+#reading .reading-stable-workspace>*{
+  background:var(--work-glass)!important;
+  border:1px solid var(--work-line)!important;
+  border-radius:15px!important;
+  box-shadow:var(--work-shadow)!important;
+  backdrop-filter:blur(16px) saturate(1.13);
+  -webkit-backdrop-filter:blur(16px) saturate(1.13);
+}
+#home .home-mainline-card,#home .home-quadrant,#home .home-top3-item,#home .home-task-row,
+#projects .project-card,#tasks .task-v5-card,
+#writing .daily-writing-card,#reading .reading-card{
+  background:var(--work-glass-solid)!important;
+  border:1px solid rgba(227,233,244,.83)!important;
+  box-shadow:0 3px 11px rgba(56,74,106,.055)!important;
+}
+#projects .project-col,#tasks .task-v5-col{background:rgba(255,255,255,.34)!important;border-color:rgba(255,255,255,.7)!important}
+#projects .project-col.doing,#tasks .task-v5-col.doing{background:rgba(240,242,255,.45)!important}
+#projects .project-col.done,#tasks .task-v5-col.done{background:rgba(239,251,246,.45)!important}
+#projects .project-col-doing{background:rgba(240,242,255,.45)!important}
+#projects .project-col-done{background:rgba(239,251,246,.45)!important}
+#home .home-v5-panel:hover,#projects .project-card:hover,#tasks .task-v5-card:hover{
+  box-shadow:0 8px 22px rgba(57,77,113,.1)!important;
+}
+#projects .project-dashboard{gap:12px!important}
+#tasks .task-v5-toolbar{padding:17px!important}
+#tasks .task-v5-board{gap:14px!important}
+#tasks .task-v5-card{border-left-width:4px!important}
+#tasks .task-v5-card.q1{border-left-color:#d94b4b!important}
+#tasks .task-v5-card.q2{border-left-color:#5c71dc!important}
+#tasks .task-v5-card.q3{border-left-color:#c7852c!important}
+#tasks .task-v5-card.q4{border-left-color:#8893a0!important}
+#home input,#projects input,#tasks input,#review input,#writing input,#reading input,
+#home textarea,#projects textarea,#tasks textarea,#review textarea,#writing textarea,#reading textarea,
+#home select,#projects select,#tasks select,#review select,#writing select,#reading select{
+  background:rgba(255,255,255,.85)!important;
+  border-color:rgba(211,220,235,.85)!important;
+}
+#home .meta,#projects .meta,#tasks .meta,#review .meta,#writing .meta,#reading .meta{color:#6f7d90!important}
+/* Native drag visual: insertion guide remains in destination column until drop. */
+#tasks .task-v5-col.is-drop-target{
+  background:rgba(224,235,255,.7)!important;
+  border-color:rgba(112,139,207,.65)!important;
+  outline:2px solid rgba(123,147,214,.18);
+}
+#tasks .task-drop-placeholder{
+  margin:0 0 9px;
+  border:2px dashed rgba(91,112,198,.55);
+  border-radius:12px;
+  background:rgba(219,229,255,.48);
+  pointer-events:none;
+}
+#tasks .task-v5-card[draggable="true"]{cursor:grab}
+#tasks .task-v5-card.is-dragging{opacity:.34!important;transform:scale(.98)!important}
+#tasks .task-v5-body{min-height:105px}
+/* Project editor close: explicit cancel, independent of Save/Delete. */
+#projectEditDlg .project-edit-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:4px}
+#projectEditDlg .project-edit-dialog-head h3{margin:0}
+#projectEditDlg .project-edit-close{
+  width:36px;height:36px;display:grid;place-items:center;flex:0 0 36px;
+  padding:0;border:1px solid #e1e6ef;border-radius:10px;
+  background:#f4f6fa;color:#657386;font-size:27px;font-weight:400;line-height:1;
+}
+#projectEditDlg .project-edit-close:hover{background:#e9eef7;color:#1c2b40}
+#projectEditDlg .project-edit-close:focus-visible{outline:3px solid #98aff3;outline-offset:2px}
+/* Preserve full-width content on smaller screens without horizontal scrolling. */
+@media(max-width:1050px){
+  #home,#projects,#tasks,#review,#writing,#reading{padding:19px 18px 28px}
+}
+@media(max-width:700px){
+  #home,#projects,#tasks,#review,#writing,#reading{padding:15px 12px 25px;border-radius:16px}
+  #tasks .task-v5-board{gap:10px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #tasks .task-v5-card{transition:none!important}
+}
