@@ -6,10 +6,10 @@ const errors=[];
 const browser=await chromium.launch({headless:true});
 const ctx=await browser.newContext({viewport:{width:1440,height:960}});
 await ctx.addInitScript(()=>{
-  localStorage.setItem('projects',JSON.stringify([
+  if(!localStorage.getItem('projects'))localStorage.setItem('projects',JSON.stringify([
     {id:'project-test',name:'项目编辑取消测试',status:'进行中',due:'2026-10-20',standard:'保留原始完成标准',createdAt:'2026-10-10T08:00:00Z'}
   ]));
-  localStorage.setItem('tasks',JSON.stringify([
+  if(!localStorage.getItem('tasks'))localStorage.setItem('tasks',JSON.stringify([
     {id:'drag-a',title:'拖动测试 A',status:'待开始',project:'项目编辑取消测试',priority:'P2',matrix:'q2',due:'',note:'',createdAt:'2026-10-10T08:00:00Z'},
     {id:'drag-b',title:'拖动测试 B',status:'进行中',project:'项目编辑取消测试',priority:'P2',matrix:'q2',due:'',note:'',createdAt:'2026-10-10T08:01:00Z'},
     {id:'drag-c',title:'拖动测试 C',status:'进行中',project:'项目编辑取消测试',priority:'P2',matrix:'q2',due:'',note:'',createdAt:'2026-10-10T08:02:00Z'}
