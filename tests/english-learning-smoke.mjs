@@ -15,8 +15,9 @@ const srt = '1\r\n00:00:01,000 --> 00:00:02,000\r\nI am Peppa Pig.\r\n\r\n2\r\n0
 try {
   await page.goto(BASE,{waitUntil:'load'});
   await page.locator('nav button[data-v="english"]').waitFor({state:'visible'});
-  const original = ['home','projects','tasks','review','knowledge','settings'];
+  const original = ['home','projects','tasks','review','knowledge']; // settings is intentionally removed by existing ui-polish-v3
   const navs = await page.locator('nav button').evaluateAll(ns=>ns.map(n=>n.dataset.v));
+  console.log('Navigation after existing dashboard enhancements:',navs.join(', '));
   check('Existing dashboard navigation preserved', original.every(id=>navs.includes(id)));
   check('English navigation installed',navs.includes('english'));
   await page.locator('nav button[data-v="english"]').click();
