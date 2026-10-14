@@ -1,0 +1,37 @@
+name: English Learning V1 Smoke Test
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'english-learning.js'
+      - 'english-learning-*.css'
+      - 'tests/english-learning-smoke.mjs'
+      - '.github/workflows/english-learning-smoke.yml'
+  push:
+    branches:
+      - feat/english-learning-v1-media
+permissions:
+  contents: read
+jobs:
+  chromium-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install browser test dependency
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Generate local test video
+        run: |
+          mkdir -p tests/fixtures
+          if ! command -v ffmpeg >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y ffmpeg; fi
+          ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=blue:s=320x180:r=15 -f lavfi -i sine=frequency=440:sample_rate=44100 -t 6 -c:v libvpx -b:v 250k -c:a libvorbis -y tests/fixtures/english-smoke.webm
+      - name: Run local dashboard and Chromium smoke test
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 &
+          sleep 2
+          node tests/english-learning-smoke.mjs
