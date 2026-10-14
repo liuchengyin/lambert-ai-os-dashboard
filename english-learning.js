@@ -90,7 +90,7 @@
       videoCourse().subtitles=parsed;videoCourse().subtitleName=file.name;persist();renderMedia();
     };
   }
-  window.addEventListener('beforeunload',()=>{Object.values(mediaFiles).forEach(f=>{if(f)URL.revokeObjectURL(f.url)});if(recordUrl)URL.revokeObjectURL(recordUrl);recordStream?.getTracks().forEach(t=>t.stop())});
+  window.addEventListener('beforeunload',()=>{Object.values(mediaFiles).forEach(f=>{if(f)URL.revokeObjectURL(f.url)});if(recordUrl)URL.revokeObjectURL(recordUrl);if(phoneticAudio)URL.revokeObjectURL(phoneticAudio.url);recordStream?.getTracks().forEach(t=>t.stop())});
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
   const get=()=>{try{return JSON.parse(localStorage.getItem(STORE))||null}catch{return null}};
@@ -155,12 +155,13 @@
     </div>`;
 
   function setTab(tab){
-    state.activeTab=tab==='phonetic'?'phonetic':'video';persist();render();
+    stopRecording();state.activeTab=tab==='phonetic'?'phonetic':'video';persist();render();
   }
 
 
   // V1 learning steps 4-6. Media is kept session-local; only text/progress is persisted.
   let recordDevice=null,recordStream=null,recordUrl='',recordChunks=[];
+  let phoneticAudio=null,phoneticRepeatLeft=0;
   const lessonStart=Date.now();
   let originalShown=false;
   function videoState(){
@@ -177,7 +178,7 @@
     c.updatedAt=new Date().toISOString();persist();render();
   }
   function setStep(n){
-    const c=videoState();c.currentStep=Math.max(1,Math.min(6,n));
+    stopRecording();const c=videoState();c.currentStep=Math.max(1,Math.min(6,n));
     c.updatedAt=new Date().toISOString();persist();render();
   }
   function cueKey(){return String(cueIndex)}
@@ -214,8 +215,8 @@
     }
     return '';
   }
-  async function startRecording(){
-    const status=$('enRecord');if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){if(status)status.textContent='浏览器不支持录音';return;}
+  async function startRecording(prefix='en'){
+    const status=$(prefix+'Record');if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){if(status)status.textContent='浏览器不支持录音';return;}
     try{
       recordStream=await navigator.mediaDevices.getUserMedia({audio:true});
       recordChunks=[];recordDevice=new MediaRecorder(recordStream);
@@ -223,20 +224,20 @@
       recordDevice.onstop=()=>{
         if(recordUrl)URL.revokeObjectURL(recordUrl);
         recordUrl=URL.createObjectURL(new Blob(recordChunks,{type:recordDevice.mimeType||'audio/webm'}));
-        const playback=$('enRecordingPlayback');if(playback){playback.src=recordUrl;playback.style.display='block'}
+        const playback=$(prefix+'RecordingPlayback');if(playback){playback.src=recordUrl;playback.style.display='block'}
         recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;
-        if($('enRecord'))$('enRecord').disabled=false;
-        if($('enStopRecord'))$('enStopRecord').disabled=true;
+        if($(prefix+'Record'))$(prefix+'Record').disabled=false;
+        if($(prefix+'StopRecord'))$(prefix+'StopRecord').disabled=true;
       };
       recordDevice.start();if(status)status.disabled=true;
-      if($('enStopRecord'))$('enStopRecord').disabled=false;
+      if($(prefix+'StopRecord'))$(prefix+'StopRecord').disabled=false;
     }catch(e){if(status)status.textContent='麦克风不可用，请检查权限';recordStream?.getTracks().forEach(t=>t.stop());recordStream=null;}
   }
   function stopRecording(){if(recordDevice?.state==='recording')recordDevice.stop()}
   function bindStepPanel(){
     const c=videoState(),step=c.currentStep||1;
     const rec=$('enRecord'),stop=$('enStopRecord');
-    if(rec)rec.onclick=startRecording;
+    if(rec)rec.onclick=()=>startRecording('en');
     if(stop)stop.onclick=stopRecording;
     const dict=$('enDictation');
     if(dict)dict.oninput=()=>{
@@ -283,19 +284,93 @@
       <div class="en-import"><label>导入视频<input id="enImportvideo" type="file" accept="video/*,.mov,.mp4"></label><label>导入音频<input id="enImportaudio" type="file" accept="audio/*,.mp3"></label><label>导入 SRT<input id="enImportSrt" type="file" accept=".srt"></label></div><p class="en-hint">本地视频和音频需在刷新后重新选择；字幕及学习进度保存在当前浏览器。</p><div id="englishMediaArea"></div>${stepPanel(current)}<div class="en-step-footer"><button id="enMarkStep">${c.completedSteps?.includes(current)?'进入下一步':'完成本步并继续'}</button></div>`;
   }
 
-  function phoneticWorkspace(){
+
+  function phoneticState(){
     const c=phoneticCourse();
-    return `
-      <div class="english-workspace-head"><div><span>PHONETIC LEARNING</span><h3>《${esc(c.name)}》</h3></div><strong>${c.lessonIndex||1} / ${c.totalLessons||48}</strong></div>
-      <div class="english-phonetic-preview">
-        <div class="english-phonetic-symbol">/ɪ/</div>
-        <div><span>继续学习</span><h4>${esc(c.title||'Lesson 1')}</h4><p>听 → 模仿 → 循环 → 完成</p></div>
-      </div>
-      <div class="english-stage-note"><strong>音标模块保持独立学习法</strong><p>本阶段只建立入口和进度骨架，不加入 AI 评分、波形分析或复杂识别。</p></div>`;
+    if(!c.lessons||typeof c.lessons!=='object')c.lessons={};
+    if(!Array.isArray(c.completedLessons))c.completedLessons=[];
+    c.lessonIndex=Math.max(1,Math.min(c.totalLessons||48,c.lessonIndex||1));
+    const key=String(c.lessonIndex);
+    if(!c.lessons[key])c.lessons[key]={symbol:'',notes:'',examples:''};
+    return {course:c,lesson:c.lessons[key]};
+  }
+  function changePhoneticLesson(n){
+    stopRecording();
+    const c=phoneticState().course;
+    c.lessonIndex=Math.max(1,Math.min(c.totalLessons||48,Number(n)||1));
+    c.title='Lesson '+c.lessonIndex;
+    if(phoneticAudio){URL.revokeObjectURL(phoneticAudio.url);phoneticAudio=null}
+    phoneticRepeatLeft=0;persist();render();
+  }
+  function bindPhonetic(){
+    const {course:c,lesson:l}=phoneticState();
+    const num=$('enPhoneticLesson');
+    if(num)num.onchange=()=>changePhoneticLesson(num.value);
+    for(const [id,field] of [['enPhoneticSymbol','symbol'],['enPhoneticNotes','notes'],['enPhoneticExamples','examples']]){
+      const el=$(id);if(el)el.oninput=()=>{l[field]=el.value;persist()};
+    }
+    const input=$('enPhoneticAudioInput');
+    if(input)input.onchange=()=>{
+      const file=input.files?.[0];if(!file)return;
+      if(phoneticAudio)URL.revokeObjectURL(phoneticAudio.url);
+      phoneticAudio={url:URL.createObjectURL(file),name:file.name};
+      l.audioName=file.name;persist();renderPhoneticAudio();
+    };
+    const prev=$('enPhoneticPrev'),next=$('enPhoneticNext');
+    if(prev)prev.onclick=()=>changePhoneticLesson(c.lessonIndex-1);
+    if(next)next.onclick=()=>changePhoneticLesson(c.lessonIndex+1);
+    const done=$('enPhoneticDone');
+    if(done)done.onclick=()=>{
+      if(!c.completedLessons.includes(c.lessonIndex))c.completedLessons.push(c.lessonIndex);
+      const now=new Date();
+      state.records.push({title:c.name+' · Lesson '+c.lessonIndex,type:'phonetic',date:now.toLocaleDateString('sv-SE'),duration:Math.floor((Date.now()-lessonStart)/60000),completed:true});
+      if(c.lessonIndex<c.totalLessons)c.lessonIndex++;
+      c.title='Lesson '+c.lessonIndex;c.updatedAt=now.toISOString();
+      if(phoneticAudio){URL.revokeObjectURL(phoneticAudio.url);phoneticAudio=null}
+      persist();render();
+    };
+    const rec=$('enPhoneticRecord'),stop=$('enPhoneticStopRecord');
+    if(rec)rec.onclick=()=>startRecording('enPhonetic');
+    if(stop)stop.onclick=stopRecording;
+    renderPhoneticAudio();
+  }
+  function renderPhoneticAudio(){
+    const el=$('enPhoneticAudio'),hint=$('enPhoneticAudioHint');
+    if(!el)return;
+    if(phoneticAudio){el.src=phoneticAudio.url;el.style.display='block';if(hint)hint.textContent=phoneticAudio.name}
+    else{el.removeAttribute('src');el.style.display='none';if(hint)hint.textContent='请选择本课音频（刷新后需要重新导入）'}
+    const play5=$('enPhoneticRepeat5');
+    if(play5)play5.onclick=()=>{
+      if(!phoneticAudio)return;
+      phoneticRepeatLeft=5;el.currentTime=0;el.play().catch(()=>{});
+    };
+    el.onended=()=>{if(phoneticRepeatLeft>1){phoneticRepeatLeft--;el.currentTime=0;el.play().catch(()=>{})}else phoneticRepeatLeft=0};
+  }
+
+  function phoneticWorkspace(){
+    const {course:c,lesson:l}=phoneticState();
+    const completed=c.completedLessons.length;
+    const words=l.examples.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+    return '<div class="english-workspace-head"><div><span>PHONETIC LEARNING</span><h3>《'+esc(c.name)+'》</h3></div><strong>已学 '+completed+' / '+c.totalLessons+' 课</strong></div>'+
+      '<div class="en-phonetic-nav"><button id="enPhoneticPrev" type="button">← 上一课</button><label>Lesson <input id="enPhoneticLesson" type="number" min="1" max="'+c.totalLessons+'" value="'+c.lessonIndex+'"></label><button id="enPhoneticNext" type="button">下一课 →</button></div>'+
+      '<div class="en-phonetic-layout"><div class="en-phonetic-details">'+
+      '<label class="en-field">本课音标<input id="enPhoneticSymbol" placeholder="例如 /ɪ/" value="'+esc(l.symbol)+'"></label>'+
+      '<label class="en-field">发音说明（舌位、嘴型、重点）<textarea id="enPhoneticNotes" placeholder="按教材记录本课发音要点">'+esc(l.notes)+'</textarea></label>'+
+      '<label class="en-field">例词 / 例句（每行一条）<textarea id="enPhoneticExamples" placeholder="例如：sit /sɪt/&#10;big /bɪɡ/">'+esc(l.examples)+'</textarea></label>'+
+      '<p class="en-hint">音标和例词请根据你手中的《赖世雄美语音标》填写，不预设教材课次。</p></div>'+
+      '<div class="en-phonetic-practice"><h4>听 → 模仿 → 循环 → 完成</h4>'+
+      '<label class="en-phonetic-file">导入本课音频 <input id="enPhoneticAudioInput" type="file" accept="audio/*,.mp3,.m4a"></label>'+
+      '<small id="enPhoneticAudioHint"></small><audio id="enPhoneticAudio" controls preload="metadata" style="display:none"></audio>'+
+      '<div class="en-actions"><button id="enPhoneticRepeat5" type="button">▶ 循环 5 遍</button></div>'+
+      '<div class="en-phonetic-words">'+(words.length?words.map(w=>'<div>'+esc(w)+'</div>').join(''):'<span>填写例词后会显示在这里</span>')+'</div>'+
+      '<div class="en-actions"><button id="enPhoneticRecord" type="button">开始跟读录音</button><button id="enPhoneticStopRecord" type="button" disabled>结束录音</button></div>'+
+      '<audio id="enPhoneticRecordingPlayback" controls style="display:none"></audio>'+
+      '<button id="enPhoneticDone" class="en-primary-action" type="button">学会了 ✓ · 保存并进入下一课</button></div></div>';
   }
 
   function renderWorkspace(){
     $('englishWorkspace').innerHTML=state.activeTab==='video'?videoWorkspace():phoneticWorkspace();
+    if(state.activeTab==='phonetic')bindPhonetic();
     if(state.activeTab==='video'){
       bindMediaImports();renderMedia();bindStepPanel();
       document.querySelectorAll('[data-en-step]').forEach(btn=>btn.onclick=()=>setStep(Number(btn.dataset.enStep)));
