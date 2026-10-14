@@ -107,9 +107,9 @@
   };
 
   let state=get();
-  if(!state||typeof state!=='object')state=structuredClone(seed);
+  if(!state||typeof state!=='object')state=JSON.parse(JSON.stringify(seed));
   state.activeTab=state.activeTab==='phonetic'?'phonetic':'video';
-  state.courses=Array.isArray(state.courses)&&state.courses.length?state.courses:structuredClone(seed.courses);
+  state.courses=Array.isArray(state.courses)&&state.courses.length?state.courses:JSON.parse(JSON.stringify(seed.courses));
   state.records=Array.isArray(state.records)?state.records:[];
   cues=Array.isArray(state.courses.find(x=>x.type==='video')?.subtitles)?state.courses.find(x=>x.type==='video').subtitles:[];
   set(state);
