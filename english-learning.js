@@ -55,13 +55,15 @@
   function renderMedia(){
     const host=$('englishMediaArea');if(!host)return;
     const file=mediaFiles[mediaMode],available=!!file;
-    host.innerHTML='<div class="en-media-modes"><button id="enVideoMode">视频</button><button id="enAudioMode">纯音频</button></div>'+
+    const step=videoCourse().currentStep||1;
+    const guide={1:'先完整观看视频，可以显示或隐藏字幕。',2:'反复精听：优先纯音频，使用倍速或 A-B 循环。',3:'逐句学习：上一句、下一句、播放本句或循环。',4:'跟读和默写：播放当前句，再录音和输入英文。',5:'自主选择要收藏的句子，再用它造句。',6:'完成前五步后，保存学习记录并盖章。'};
+    host.innerHTML='<p class="en-step-guide">'+guide[step]+'</p><div class="en-media-modes"><button id="enVideoMode" class="'+(mediaMode==='video'?'active':'')+'">视频</button><button id="enAudioMode" class="'+(mediaMode==='audio'?'active':'')+'">纯音频</button></div>'+
       (available?(mediaMode==='video'?'<div class="en-video-wrap"><video id="englishMediaPlayer" controls playsinline preload="metadata"></video><div id="enSubtitleOverlay" class="en-subtitle-overlay"></div></div>':'<audio id="englishMediaPlayer" controls preload="metadata"></audio>'):'<div class="en-media-empty">导入'+(mediaMode==='video'?'视频':'音频')+'后开始播放</div>')+
       '<div class="en-rate">倍速：<button data-speed="0.5">0.5×</button><button data-speed="0.75">0.75×</button><button data-speed="1">1×</button><button id="enSubtitleToggle">字幕：'+(showSubtitles?'显示':'隐藏')+'</button></div>'+ 
       '<div class="en-ab"><button id="enSetA">设置 A</button><button id="enSetB">设置 B</button><button id="enToggleAB">A-B 循环：'+(abLoop?'开':'关')+'</button><small id="enAbStatus"></small></div>'+
       '<div class="en-cue"><small id="englishCueCount"></small><p id="englishCue"></p><div class="en-cue-buttons"><button id="enPrev">上一句</button><button id="enPlay">播放本句</button><button id="enLoop">循环：'+(repeat?'开':'关')+'</button><button id="enNext">下一句</button></div></div>';
-    $('enVideoMode').onclick=()=>{mediaMode='video';segmentEnd=null;abLoop=false;renderMedia()};
-    $('enAudioMode').onclick=()=>{mediaMode='audio';segmentEnd=null;abLoop=false;renderMedia()};
+    $('enVideoMode').onclick=()=>{mediaMode='video';segmentEnd=null;abLoop=false;repeat=false;renderMedia()};
+    $('enAudioMode').onclick=()=>{mediaMode='audio';segmentEnd=null;abLoop=false;repeat=false;renderMedia()};
     $('enPrev').onclick=()=>{abLoop=false;jumpCue(cueIndex-1)};$('enNext').onclick=()=>{abLoop=false;jumpCue(cueIndex+1)};$('enPlay').onclick=()=>{abLoop=false;jumpCue(cueIndex)};
     $('enLoop').onclick=()=>{repeat=!repeat;if(repeat){abLoop=false;$('enToggleAB').textContent='A-B 循环：关'}$('enLoop').textContent='循环：'+(repeat?'开':'关');};
     $('enSubtitleToggle').onclick=()=>{showSubtitles=!showSubtitles;$('enSubtitleToggle').textContent='字幕：'+(showSubtitles?'显示':'隐藏');showCue()};
@@ -190,14 +192,17 @@
     if(!Array.isArray(c.favorites))c.favorites=[];
     return c;
   }
+  function preferredMode(step){if(step===2)return 'audio';if(step===1||step===3)return 'video';return mediaMode}
   function markStep(){
     const c=videoState(),n=Math.max(1,Math.min(6,c.currentStep||1));
     if(!c.completedSteps.includes(n))c.completedSteps.push(n);
     if(n<6)c.currentStep=n+1;
+    mediaMode=preferredMode(c.currentStep);segmentEnd=null;abLoop=false;repeat=false;
     c.updatedAt=new Date().toISOString();persist();render();
   }
   function setStep(n){
     stopRecording();const c=videoState();c.currentStep=Math.max(1,Math.min(6,n));
+    mediaMode=preferredMode(c.currentStep);segmentEnd=null;abLoop=false;repeat=false;
     c.updatedAt=new Date().toISOString();persist();render();
   }
   function cueKey(){return String(cueIndex)}
