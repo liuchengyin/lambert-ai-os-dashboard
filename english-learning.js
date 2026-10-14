@@ -12,7 +12,7 @@
     const knowledgeBtn=document.querySelector('nav button[data-v="knowledge"]');
     if(knowledgeBtn)nav.insertBefore(navBtn,knowledgeBtn);else nav.appendChild(navBtn);
   }
-  navBtn.onclick=()=>{if(typeof openView==='function')openView('english')};
+  navBtn.onclick=()=>{if(typeof openView==='function')openView('english');resumeStudy()};
 
   let section=document.getElementById('english');
   if(!section){
@@ -176,14 +176,21 @@
     </div>`;
 
   function setTab(tab){
-    stopRecording();state.activeTab=tab==='phonetic'?'phonetic':'video';persist();render();
+    stopRecording();pauseStudy();state.activeTab=tab==='phonetic'?'phonetic':'video';
+    if(section.classList.contains('activeView'))resumeStudy();persist();render();
   }
 
 
   // V1 learning steps 4-6. Media is kept session-local; only text/progress is persisted.
   let recordDevice=null,recordStream=null,recordUrl='',recordChunks=[];
   let phoneticAudio=null,phoneticRepeatLeft=0;
-  const lessonStart=Date.now();
+  const studyElapsed={video:0,phonetic:0};
+  let activeSince=null;
+  function pauseStudy(){if(activeSince!==null){studyElapsed[state.activeTab]+=Date.now()-activeSince;activeSince=null}}
+  function resumeStudy(){if(activeSince===null&&!document.hidden)activeSince=Date.now()}
+  function studyMinutes(tab){return Math.max(1,Math.ceil((studyElapsed[tab]+(state.activeTab===tab&&activeSince!==null?Date.now()-activeSince:0))/60000))}
+  document.addEventListener('click',e=>{const b=e.target.closest?.('nav button[data-v]');if(b&&b.dataset.v!=='english')pauseStudy()});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseStudy();else if(section.classList.contains('activeView'))resumeStudy()});
   let originalShown=false;
   function videoState(){
     const c=videoCourse();
@@ -233,7 +240,7 @@
     if(n===6){
       const ready=[1,2,3,4,5].every(x=>c.completedSteps.includes(x));
       return '<div class="en-learning-panel en-stamp-panel"><h4>06 · 学习盖章</h4><p>完成前五步后，盖章并保存学习记录。</p>'+
-        '<div class="en-stamp"><strong>LEARNING COMPLETE</strong><span>'+esc(c.name)+' · '+esc(c.title)+'</span><b>'+esc(c.completedAt?new Date(c.completedAt).toLocaleDateString('zh-CN'):'待盖章')+'</b></div>'+
+        '<div class="en-stamp"><strong>LEARNING COMPLETE</strong><span>'+esc(c.name)+' · '+esc(c.title)+'</span><span>Lambert</span><b>'+esc(c.completedAt?new Date(c.completedAt).toLocaleDateString('zh-CN'):'待盖章')+'</b></div>'+
         '<button id="enStamp" '+(!ready?'disabled':'')+'>'+(c.completedAt?'重新记录完成':'完成学习 · 盖章')+'</button>'+
         (!ready?'<p>还需完成：'+[1,2,3,4,5].filter(x=>!c.completedSteps.includes(x)).join('、')+' 步</p>':'')+'</div>';
     }
@@ -283,7 +290,8 @@
       if(![1,2,3,4,5].every(x=>c.completedSteps.includes(x)))return;
       const now=new Date();c.completedAt=now.toISOString();
       if(!c.completedSteps.includes(6))c.completedSteps.push(6);
-      state.records.push({title:c.name+' · '+c.title,type:'video',date:now.toLocaleDateString('sv-SE'),duration:Math.floor((Date.now()-lessonStart)/60000),completed:true});
+      state.records.push({title:c.name+' · '+c.title,type:'video',date:now.toLocaleDateString('sv-SE'),duration:studyMinutes('video'),completed:true});
+      studyElapsed.video=0;if(activeSince!==null)activeSince=Date.now();
       persist();render();
     };
   }
@@ -347,10 +355,11 @@
     if(done)done.onclick=()=>{
       if(!c.completedLessons.includes(c.lessonIndex))c.completedLessons.push(c.lessonIndex);
       const now=new Date();
-      state.records.push({title:c.name+' · Lesson '+c.lessonIndex,type:'phonetic',date:now.toLocaleDateString('sv-SE'),duration:Math.floor((Date.now()-lessonStart)/60000),completed:true});
+      state.records.push({title:c.name+' · Lesson '+c.lessonIndex,type:'phonetic',date:now.toLocaleDateString('sv-SE'),duration:studyMinutes('phonetic'),completed:true});
       if(c.lessonIndex<c.totalLessons)c.lessonIndex++;
       c.title='Lesson '+c.lessonIndex;c.updatedAt=now.toISOString();
       if(phoneticAudio){URL.revokeObjectURL(phoneticAudio.url);phoneticAudio=null}
+      studyElapsed.phonetic=0;if(activeSince!==null)activeSince=Date.now();
       persist();render();
     };
     const rec=$('enPhoneticRecord'),stop=$('enPhoneticStopRecord');
