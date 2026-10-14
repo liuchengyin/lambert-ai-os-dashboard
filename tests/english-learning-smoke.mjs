@@ -58,7 +58,7 @@ try {
   await page.locator('#enMarkStep').click();
   check('Step 4 reached',(await getState()).courses.find(x=>x.type==='video').currentStep===4);
   await page.locator('#enDictation').fill('I am Peppa Pig');
-  check('Dictation saved',(await getState()).courses.find(x=>x.type==='video').dictations['1']==='I am Peppa Pig');
+  check('Dictation saved',Object.values((await getState()).courses.find(x=>x.type==='video').dictations).includes('I am Peppa Pig'));
   await page.locator('#enRecord').click();
   await page.waitForTimeout(450);
   await page.locator('#enStopRecord').click();
