@@ -34,6 +34,13 @@ jobs:
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
           node tests/workspace-ui-smoke.mjs
+      - name: Upload visual previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: workspace-ui-preview
+          path: tests/screenshots/*.png
+          if-no-files-found: ignore
       - name: Upload failure screenshot
         if: failure()
         uses: actions/upload-artifact@v4
