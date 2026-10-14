@@ -95,6 +95,28 @@ try {
   console.log('Mobile dimensions:',JSON.stringify(width));
   check('Mobile English content does not overflow its container',width.scroll<=width.client+4);
   await mobile.close();
+  // Lightweight app reuses the same six-step engine but defaults to video/audio only.
+  const liteCtx=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:2});
+  const lite=await liteCtx.newPage();
+  lite.on('pageerror',e=>errors.push('lite-app:'+e.message));
+  await lite.goto(new URL('english-app.html',BASE).toString(),{waitUntil:'load'});
+  check('Lite app opens video/audio workspace',await lite.locator('#englishMediaArea').isVisible());
+  check('Lite app hides dashboard and phonetic navigation',await lite.locator('.english-tabs').isHidden());
+  check('Lite app hides advanced six steps by default',await lite.locator('.english-stepper').isHidden());
+  await lite.locator('#enImportSrt').setInputFiles({name:'peppa.srt',mimeType:'text/plain',buffer:Buffer.from(srt)});
+  await lite.waitForFunction(()=>document.querySelector('#englishCueCount')?.textContent==='1 / 2');
+  await lite.locator('#enImportvideo').setInputFiles({name:'peppa.webm',mimeType:'video/webm',buffer:video});
+  await lite.waitForFunction(()=>document.querySelector('#englishMediaPlayer')?.readyState>=1);
+  check('Lite app can play imported video',await lite.locator('#englishMediaPlayer').evaluate(e=>e.tagName==='VIDEO'));
+  await lite.locator('#enImportaudio').setInputFiles({name:'peppa.wav',mimeType:'audio/wav',buffer:createWav(6)});
+  check('Lite app can switch to imported audio',await lite.locator('#englishMediaPlayer').evaluate(e=>e.tagName==='AUDIO'));
+  await lite.locator('#appTogglePractice').click();
+  check('Lite app exposes reused six-step flow on demand',await lite.locator('.english-stepper').isVisible());
+  await lite.locator('#appTogglePractice').click();
+  check('Lite app can collapse advanced flow',await lite.locator('.english-stepper').isHidden());
+  const liteWidth=await lite.locator('#english').evaluate(e=>({scroll:e.scrollWidth,client:e.clientWidth}));
+  check('Lite app mobile viewport does not overflow',liteWidth.scroll<=liteWidth.client+4);
+  await liteCtx.close();
   check('No uncaught browser JS errors',errors.length===0);
   console.log('SMOKE TEST PASSED');
 } finally {await browser.close()}
