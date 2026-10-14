@@ -1,0 +1,49 @@
+/* Lightweight mobile English entry. Reuses the existing six-step engine unchanged. */
+:root{color-scheme:light;--bg:#f7f8fb}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#f7f8fb;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+.app-topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:790px;margin:auto;padding:12px 18px;background:rgba(247,248,251,.95);backdrop-filter:blur(12px);border-bottom:1px solid #e8ebf1}
+.app-brand{display:flex;align-items:center;gap:10px;min-width:0}
+.app-brand>div{display:grid;gap:2px}
+.app-brand strong{font-size:16px;letter-spacing:-.02em}
+.app-brand small{font-size:11px;color:#7b8493}
+.app-mark{display:grid;place-items:center;flex:0 0 36px;width:36px;height:36px;border-radius:11px;background:#252a3c;color:white;font-weight:700}
+#appTogglePractice{flex:0 0 auto;padding:9px 12px;border:1px solid #dfe4ed;border-radius:10px;background:white;color:#3d4656;font-size:12px}
+.app-hidden-nav{display:none}
+main{width:min(100%,790px);margin:auto;padding:16px 18px 30px}
+#english{display:block!important;width:100%;min-width:0}
+#english .english-page{padding:0}
+#english .english-head,#english .english-tabs,#english .english-continue,#english .english-entry-grid,#english .english-recent{display:none!important}
+#english .english-workspace{display:flex!important;flex-direction:column;gap:0;margin:0!important;padding:16px!important;border:1px solid #e6e9ef;border-radius:16px;background:white;box-shadow:0 4px 22px rgba(20,31,55,.035)}
+#english .english-workspace-head{order:0;margin-bottom:4px}
+#english .english-workspace-head strong{display:none}
+#english .en-import{order:1;margin-top:12px}
+#english .en-hint{order:2}
+#english #englishMediaArea{order:3;min-width:0}
+#english .english-stepper{order:4;margin-top:20px}
+#english .en-learning-panel{order:5}
+#english .en-step-footer{order:6}
+#english .english-stepper,#english .en-learning-panel,#english .en-step-footer{display:none!important}
+body.app-show-practice #english .english-stepper{display:flex!important}
+body.app-show-practice #english .en-learning-panel{display:block!important}
+body.app-show-practice #english .en-step-footer{display:flex!important}
+#english .en-media-modes{display:grid;grid-template-columns:1fr 1fr}
+#english .en-media-modes button{padding:12px}
+#english .en-import label{flex:1;min-width:170px}
+#english .en-import input{max-width:160px}
+#english .en-video-wrap video{aspect-ratio:16/9;object-fit:contain}
+#english .en-cue p{font-size:18px}
+#english .en-ab{margin:8px 0}
+.app-footer{max-width:790px;margin:0 auto;padding:0 18px 28px;text-align:center;color:#98a2b3;font-size:11px;line-height:1.5}
+@media(max-width:680px){
+  .app-topbar{padding:12px 14px}
+  main{padding:10px 12px 24px!important}
+  #english .english-workspace{padding:12px!important;border-radius:13px}
+  #english .en-import{display:grid;grid-template-columns:1fr;gap:8px}
+  #english .en-import label{min-width:0}
+  #english .en-import input{width:145px}
+  #english .en-cue p{font-size:16px}
+  #english .en-rate button,#english .en-ab button{font-size:12px;padding:8px}
+}
