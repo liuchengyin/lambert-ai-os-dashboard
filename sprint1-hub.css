@@ -170,3 +170,21 @@
 .shell>aside .s1-sidebar-toggle:focus-visible{
   outline:2px solid #9e81c6!important;outline-offset:1px!important;border-radius:3px!important;
 }
+
+/* Sprint 1.3 · consistent navigation type scale, matching legacy sidebar labels */
+.shell>aside nav.s1-nav .s1-nav-heading{
+  font-size:15px!important;
+  font-weight:610!important;
+  line-height:1.45!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+}
+.shell>aside nav.s1-nav button[data-v]{
+  font-size:15px!important;
+  font-weight:610!important;
+  line-height:1.45!important;
+}
+@media(max-width:680px){
+  .shell>aside nav.s1-nav .s1-nav-heading,
+  .shell>aside nav.s1-nav button[data-v]{font-size:15px!important}
+}
