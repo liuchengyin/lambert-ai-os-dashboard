@@ -50,7 +50,7 @@ try{
   await page.locator('nav button[data-v="tasks"]').click();
   await page.locator('.task-v5-card[data-task-id="drag-a"]').waitFor({state:'visible'});
   await page.waitForFunction(()=>document.querySelector('.task-v5-card[data-task-id="drag-a"]')?.draggable===true);
-  check('Task cards are draggable',await page.locator('[data-task-id="drag-a"]').getAttribute('draggable')==='true');
+  check('Task cards are draggable',await page.locator('.task-v5-card[data-task-id="drag-a"]').evaluate(e=>e.draggable===true));
   await page.locator('[data-task-id="drag-a"]').dragTo(page.locator('.task-v5-col.doing'),{targetPosition:{x:160,y:220}});
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a')?.status==='进行中');
   check('Cross-column drag persists new status',await status('drag-a')==='进行中');
