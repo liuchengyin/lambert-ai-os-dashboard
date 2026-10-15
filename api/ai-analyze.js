@@ -51,6 +51,7 @@ export default async function handler(req,res){
   if(!ready())return send(res,503,{ok:false,code:'not_configured',message:'AI 服务尚未启用或安全配置未完成'});
   if(Number(req.headers['content-length']||0)>24000)return send(res,413,{ok:false,code:'too_large'});
   const body=req.body||{};
+  if(JSON.stringify(body).length>24000)return send(res,413,{ok:false,code:'too_large'});
   const ip=String(req.headers['x-forwarded-for']||'unknown').split(',')[0].trim().slice(0,90);
   const fingerprint=crypto.createHash('sha256').update(ip).digest('hex').slice(0,24);
   try{
@@ -68,7 +69,7 @@ export default async function handler(req,res){
     if(!session(req))return send(res,401,{ok:false,code:'auth_required'});
     if(body.action==='status')return send(res,200,{ok:true,authenticated:true});
     if(body.action!=='analyze')return send(res,400,{ok:false,code:'invalid_action'});
-    if(!await gate('ai:minute:'+fingerprint,3,60)||!await gate('ai:day:'+fingerprint+':'+new Date().toISOString().slice(0,10),15,90000))
+    if(!await gate('ai:minute:'+fingerprint,3,60)||!await gate('ai:day:'+fingerprint+':'+new Date().toISOString().slice(0,10),15,90000)||!await gate('ai:global:'+new Date().toISOString().slice(0,10),40,90000))
       return send(res,429,{ok:false,code:'rate_limited',message:'调用次数已达安全限制'});
     if(!Array.isArray(body.tasks)||!Array.isArray(body.projects)||body.tasks.length>30||body.projects.length>15||!Array.isArray(body.top3Ids)||body.top3Ids.length>3)
       return send(res,400,{ok:false,code:'invalid_payload'});
