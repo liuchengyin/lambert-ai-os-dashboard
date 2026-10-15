@@ -38,6 +38,7 @@ try{
   }));
   check('Sidebar group heading is legible',navFonts.heading>=13);
   check('Sidebar page labels are enlarged',navFonts.item>=14.5);
+  check('Group headings match navigation item font size',Math.abs(navFonts.heading-navFonts.item)<0.1);
   const expandedWidth=await page.locator('.shell>aside').evaluate(e=>e.getBoundingClientRect().width);
   const expandedMainWidth=await page.locator('main').evaluate(e=>e.getBoundingClientRect().width);
   check('Desktop collapse control is visible',await page.locator('#s1SidebarToggle').isVisible());
