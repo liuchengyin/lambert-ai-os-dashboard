@@ -24,6 +24,11 @@ try{
   await page.goto(BASE,{waitUntil:'load'});
   await page.locator('#home .s1-head').waitFor({state:'visible'});
   check('Sprint 1 today hub loads',await page.locator('#home .s1-metrics .s1-metric').count()===4);
+  await page.locator('#aiDailyCard').waitFor({state:'visible'});
+  check('AI daily advisor is visible without replacing task panels',await page.locator('#aiDailyCard').count()===1);
+  check('AI requires consent before sending task data',await page.locator('#aiDailyCard').innerText().then(t=>t.includes('同意发送任务摘要')));
+  check('AI script does not overwrite task storage on initial load',await page.evaluate(()=>JSON.parse(localStorage.getItem('tasks')).some(t=>t.id==='drag-a')));
+
   check('Sprint 1 uses real task data',await page.locator('#home .s1-task').count()>0);
   check('Sprint 1 shows project and review panels',await page.locator('#home .s1-projects').count()===1&&await page.locator('#home #s1Review').count()===1);
   await page.waitForFunction(()=>document.querySelectorAll('nav .s1-nav-group').length===3);
