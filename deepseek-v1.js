@@ -89,37 +89,42 @@
     try{return await loginPending}finally{loginPending=null}
   }
   async function performLogin(){
-    const pass=await new Promise(resolve=>{
-      const dialog=node('dialog','ai-login-dialog');
-      const form=node('form');form.method='dialog';
-      form.append(node('h3','','AI 安全登录'));
-      form.append(node('p','','请输入 Vercel 配置的个人 AI 访问密码（不是 DeepSeek API Key）。'));
+    return new Promise(resolve=>{
+      const dialog=node('dialog','ai-login-dialog'),form=node('form');
+      form.method='dialog';
+      form.append(node('h3','','AI 安全登录'),node('p','','请输入 Vercel 配置的个人 AI 访问密码（不是 DeepSeek API Key）。'));
       const input=node('input');input.type='password';input.autocomplete='current-password';input.required=true;input.maxLength=256;input.setAttribute('aria-label','AI 访问密码');
-      form.append(input);
+      const error=node('p','ai-login-error');error.setAttribute('role','alert');
+      let pending=false;
       const actions=node('div','ai-login-actions');
-      const cancel=button('取消',()=>dialog.close('cancel'));cancel.value='cancel';
-      const confirm=button('登录',()=>{if(input.value)dialog.close('ok')},'ai-primary');
-      actions.append(cancel,confirm);form.append(actions);dialog.append(form);document.body.append(dialog);
-      form.addEventListener('submit',e=>{e.preventDefault();if(input.value)dialog.close('ok')});
-      dialog.addEventListener('close',()=>{const v=dialog.returnValue==='ok'?input.value:'';input.value='';dialog.remove();resolve(v)},{once:true});
+      const cancel=button('取消',()=>dialog.close('cancel'));
+      const confirm=button('登录',submitLogin,'ai-primary');
+      actions.append(cancel,confirm);form.append(input,error,actions);dialog.append(form);document.body.append(dialog);
+      form.addEventListener('submit',e=>{e.preventDefault();submitLogin()});
+      async function submitLogin(){
+        if(pending||!form.reportValidity())return;
+        pending=true;confirm.disabled=true;confirm.textContent='登录中…';error.textContent='';
+        try{
+          const out=await call({action:'login',password:input.value});
+          if(!dialog.isConnected)return;
+          if(out.ok){dialog.close('ok');return}
+          const messages={
+            not_configured:'AI 服务端配置未完成（503），请检查 Preview 环境变量。',
+            wrong_password:'访问密码不匹配（401），请输入 AI_ACCESS_PASSWORD，不是 API Key。',
+            rate_limited:'登录尝试次数过多（429），请等待一小时后重试。',
+            temporarily_unavailable:'登录服务暂不可用（503），请检查服务配置与网络。',
+            rate_store_unavailable:'限流数据库连接失败（503），请检查 Upstash REST URL 和 Token。',
+            origin:'请求来源校验失败（403），请从当前 Preview 地址打开网页。',
+            invalid_response:'服务端未返回有效 JSON，请检查部署及网络。'
+          };
+          error.textContent=messages[out.code]||('AI 登录失败（HTTP '+out.status+'，'+(out.code||'unknown')+'）。');
+          draw(error.textContent);input.focus();input.select();
+        }catch{if(dialog.isConnected)error.textContent='连接失败，请检查网络后重试。'}
+        finally{pending=false;if(dialog.isConnected){confirm.disabled=false;confirm.textContent='登录'}}
+      }
+      dialog.addEventListener('close',()=>{const ok=dialog.returnValue==='ok';input.value='';dialog.remove();resolve(ok)},{once:true});
       dialog.showModal();input.focus();
     });
-    if(!pass)return false;
-    const out=await call({action:'login',password:pass});
-    if(!out.ok){
-      const messages={
-        not_configured:'AI 服务端配置未完成（503），请检查 Preview 环境变量。',
-        wrong_password:'AI 访问密码不匹配（401）。请使用 AI_ACCESS_PASSWORD，不是 API Key。',
-        rate_limited:'登录尝试次数过多（429），请等待一小时后重试。',
-        temporarily_unavailable:'登录服务暂不可用（503）。请优先检查 Upstash REST URL、Token 和网络连接。',
-        rate_store_unavailable:'限流数据库连接失败（503）。请检查 Preview 的 Upstash REST URL、Token；登录未完成。',
-        origin:'登录请求来源校验失败（403），请从当前 Preview 地址打开网页。',
-        invalid_response:'服务端未返回有效 JSON，请检查部署及网络。'
-      };
-      draw(messages[out.code]||('AI 登录失败（HTTP '+out.status+'，'+(out.code||'unknown')+'）。'));
-      return false
-    }
-    return true;
   }
   async function analyze(manual=false){
     if(busy||get(CONSENT,false)!==true)return;
@@ -158,7 +163,7 @@
     observer.observe(document.querySelector('main')||document.body,{childList:true,subtree:true});
   }
   function errorMessage(out){
-    return ({busy:'已有 AI 请求正在处理，请稍后重试。',too_large:'消息与任务摘要过长，请缩短对话或开始新对话。',not_configured:'服务端 AI 功能尚未启用，请检查 Preview 配置。',rate_limited:'已达到安全调用上限，请稍后重试。',rate_store_unavailable:'限流数据库连接失败，请检查 Upstash 配置。',provider_unavailable:'DeepSeek 调用失败，请检查服务额度、模型和网络。',invalid_model_output:'模型返回格式异常，请稍后重试。',invalid_payload:'请求内容不符合要求，请缩短消息后重试。',origin:'请求来源校验失败，请从当前 Preview 地址打开。',auth_required:'需要先登录 AI 服务。'})[out.code]||'AI 暂时不可用，原始任务不受影响。';
+    return ({busy:'已有 AI 请求正在处理，请稍后重试。',too_large:'消息与任务摘要过长，请缩短对话或开始新对话。',not_configured:'服务端 AI 功能尚未启用，请检查 Preview 配置。',rate_limited:'已达到安全调用上限，请稍后重试。',rate_store_unavailable:'限流数据库连接失败，请检查 Upstash 配置。',provider_auth:'DeepSeek 密钥校验失败，请检查 Preview 的 API Key。',provider_quota:'DeepSeek 额度不足，请检查平台余额。',provider_rate_limited:'DeepSeek 当前请求较多，请稍后重试。',provider_timeout:'DeepSeek 响应超时，请稍后重试。',provider_unavailable:'DeepSeek 调用失败，请检查服务、模型和网络。',invalid_model_output:'模型返回格式异常，请稍后重试。',invalid_payload:'请求内容不符合要求，请缩短消息后重试。',origin:'请求来源校验失败，请从当前 Preview 地址打开。',auth_required:'需要先登录 AI 服务。'})[out.code]||'AI 暂时不可用，原始任务不受影响。';
   }
   window.LambertAI={call,login,snapshot,errorMessage,analyze,hasConsent:()=>get(CONSENT,false)===true,markChanged:()=>draw('任务已新增，正在更新分析建议。')};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();

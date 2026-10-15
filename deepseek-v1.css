@@ -23,6 +23,9 @@
 .ai-login-actions{display:flex;gap:10px;justify-content:flex-end}
 .ai-login-actions button{padding:9px 16px;border-radius:9px;cursor:pointer}
 .ai-login-actions .ai-primary{background:#7d53c7;border:0;color:white}
+.ai-login-dialog .ai-login-error{color:#a4475c;overflow-wrap:anywhere}
+.ai-login-error:empty{display:none}
+.ai-login-actions button:disabled{opacity:.55;cursor:wait}
 
 .ai-task-result{margin:0 0 16px;padding:13px 16px;background:rgba(255,255,255,.72);border:1px solid #ebe5f3;border-radius:12px;color:#443954;font-size:13px;line-height:1.6}
 .ai-task-result p{margin:6px 0;color:#766e88}
@@ -40,6 +43,7 @@
 #home .ai-chat-assistant{background:#f7f8fa;margin-right:28px;color:#41364e}
 #home .ai-chat-examples{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
 #home .ai-chat-examples button{font-size:11px!important;text-align:left;white-space:normal;line-height:1.5}
+#home .ai-chat-examples[hidden]{display:none}
 #home .ai-chat-form textarea,#home .ai-draft-field input,#home .ai-draft-field textarea,#home .ai-draft-field select{font:inherit;font-size:13px;color:#3c3450;background:#fff;border:1px solid #ddd5e8;border-radius:9px;padding:10px 12px;width:100%;min-width:0;max-width:100%}
 #home .ai-chat-form textarea{resize:vertical;min-height:86px;line-height:1.65}
 #home .ai-chat-panel :is(input,textarea,select,button):focus-visible{outline:2px solid #8c64c9;outline-offset:3px}
@@ -53,4 +57,5 @@
 #home .ai-draft-field{display:grid;gap:5px;font-size:12px;color:#776b86}
 #home .ai-draft-field textarea{min-height:58px;resize:vertical}
 #home .ai-draft-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}
-@media(max-width:700px){#home .ai-chat-panel{padding:16px}#home .ai-chat-actions{justify-content:space-between}#home .ai-chat-actions .ai-note{flex-basis:100%}#home .ai-chat-message{margin-left:0;margin-right:0}#home .ai-chat-examples{display:grid}#home .ai-chat-form textarea,#home .ai-draft-field input,#home .ai-draft-field textarea,#home .ai-draft-field select{font-size:16px}}
+#home .ai-draft-remove{justify-self:start;border:0;background:none;color:#8c748f;padding:3px 0;font-size:11px;cursor:pointer}
+@media(max-width:700px){#home .ai-chat-panel{padding:16px}#home .ai-chat-actions{justify-content:space-between}#home .ai-chat-actions .ai-note{flex-basis:100%}#home .ai-chat-message{margin-left:0;margin-right:0}#home .ai-chat-examples{display:grid}#home .ai-draft-row{grid-template-columns:1fr}#home .ai-chat-form textarea,#home .ai-draft-field input,#home .ai-draft-field textarea,#home .ai-draft-field select{font-size:16px}}

@@ -5,7 +5,7 @@ import {chatInput,chatOutput} from '../lib/ai-chat-contract.js';
 const originalFetch=globalThis.fetch,originalEnv={...process.env},store=new Map();
 Object.assign(process.env,{AI_ENABLED:'true',DEEPSEEK_API_KEY:'fake-key',AI_ACCESS_PASSWORD:'fake-password',AI_SESSION_SECRET:'x'.repeat(48),UPSTASH_REDIS_REST_URL:'https://redis.test',UPSTASH_REDIS_REST_TOKEN:'fake-token'});
 let modelCalls=0,redisDown=false,modelData={reply:'已整理好草稿，确认后创建。',projects:[{name:'英语学习',due:'2026-10-18',standard:'本周听说两次'}],tasks:[{title:'听力十分钟',project:'英语学习',priority:'P2',due:'2026-10-17',note:'先听一遍'}]};
-let releaseModel=null,delayModel=false;
+let releaseModel=null,delayModel=false,providerStatus=200,providerNetworkFailure=false;
 globalThis.fetch=async(url,options)=>{
   if(String(url)==='https://redis.test'){
     if(redisDown)throw Error('private redis credentials must never escape');
@@ -26,8 +26,9 @@ globalThis.fetch=async(url,options)=>{
   assert.ok(payload.messages[0].content.includes('用户确认前全部只是草稿'));
   assert.equal(data.history[0].content,'我想练习听力');
   assert.equal('note' in (data.tasks[0]||{}),false);
+  if(providerNetworkFailure)throw Error('provider network detail and fake-key');
   if(delayModel)await new Promise(resolve=>releaseModel=resolve);
-  return {ok:true,json:async()=>({choices:[{message:{content:JSON.stringify(modelData)}}]})};
+  return {ok:providerStatus===200,status:providerStatus,json:async()=>({choices:[{message:{content:JSON.stringify(modelData)}}]})};
 };
 async function invoke(body,cookie=''){
   const req={method:'POST',body,headers:{host:'test.example',origin:'https://test.example','x-forwarded-for':'192.0.2.1',cookie}};
@@ -46,12 +47,15 @@ try{
   r=await invoke(body,cookie);assert.equal(r.statusCode,200);assert.equal(modelCalls,1);
   assert.equal(r.body.result.tasks[0].project,'英语学习');assert.ok(r.body.requestId);
   assert.equal(r.body.result.projects[0].due,'2026-10-18');
+  assert.equal(r.headers['X-AI-Request-Id'],r.body.requestId);
   assert.equal(JSON.stringify(r.body).includes('fake-key'),false);
   console.log('PASS: authenticated chat with no existing tasks generates a bounded draft, no secrets');
   const cleaned=chatOutput({reply:'建议',projects:[null,{name:'已有项目'},{name:'第三个被截断'}],tasks:[null,{title:'测试',project:'未知项目',priority:'urgent',due:'2026-02-30'}]},[{name:'已有项目'}]);
   assert.equal(cleaned.projects.length,0);assert.equal(cleaned.tasks.length,1);assert.equal(cleaned.tasks[0].project,'');assert.equal(cleaned.tasks[0].due,'');assert.equal(cleaned.tasks[0].priority,'P2');
   assert.equal(chatOutput({reply:'文本但缺少结构'},[]),null);
   assert.equal(chatOutput({reply:'x',projects:[],tasks:Array.from({length:20},(_,i)=>({title:'task'+i}))},[]).tasks.length,8);
+  const times=chatOutput({reply:'x',projects:[],tasks:[{title:'a',due:'2026-10-17T20:30'},{title:'b',due:'2026-10-17T25:00'},{title:'c',due:'2026-02-30T20:00'}]},[]).tasks;
+  assert.equal(times[0].due,'2026-10-17T20:30');assert.equal(times[1].due,'');assert.equal(times[2].due,'');
   console.log('PASS: invalid dates, foreign project links, malformed output and oversized drafts sanitized');
   store.clear();modelData=null;r=await invoke(body,cookie);assert.equal(r.statusCode,502);assert.equal(r.body.code,'invalid_model_output');
   store.clear();delayModel=true;
@@ -61,6 +65,11 @@ try{
   r=await invoke(body,cookie);assert.equal(r.body.code,'busy');assert.equal(modelCalls,count);
   releaseModel();await first;delayModel=false;assert.equal(store.has('ai:concurrent'),false);
   console.log('PASS: concurrent paid calls blocked and lock released on invalid model output');
+  for(const [status,code] of [[401,'provider_auth'],[402,'provider_quota'],[429,'provider_rate_limited'],[500,'provider_unavailable']]){
+    store.clear();providerStatus=status;r=await invoke(body,cookie);assert.equal(r.body.code,code);assert.equal(store.has('ai:concurrent'),false);
+  }
+  providerStatus=200;providerNetworkFailure=true;store.clear();r=await invoke(body,cookie);assert.equal(r.body.code,'provider_unavailable');assert.equal(JSON.stringify(r.body).includes('fake-key'),false);providerNetworkFailure=false;
+  console.log('PASS: provider authentication, balance, rate limit and network failures are distinguished');
   redisDown=true;r=await invoke({action:'login',password:'fake-password'});assert.equal(r.body.code,'rate_store_unavailable');assert.equal(JSON.stringify(r.body).includes('credentials'),false);
   console.log('PASS: Redis outage is classified without exposing private details');
   console.log('Chat API regression passed.');

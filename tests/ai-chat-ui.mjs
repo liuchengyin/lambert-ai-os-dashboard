@@ -15,7 +15,8 @@ await page.route('**/api/ai-analyze',async route=>{
   if(body.action==='chat'){
     if(mode==='network')return route.abort();
     await new Promise(resolve=>setTimeout(resolve,80));
-    return route.fulfill({json:{ok:true,requestId:'test-request-'+(++seq),result:mode==='answer'?{reply:'先完成保留旧任务，花五分钟写下第一步。',projects:[],tasks:[]}:{reply:'<img src=x onerror=alert(1)> 草稿已准备好',projects:[{name:'英语练习',due:'',standard:'每次十分钟'}],tasks:[{title:'听力练习',priority:'P2',project:'英语练习',due:'',note:'先听一遍'}]}}});
+    const project=mode==='reserved'?'Lambert AI OS':mode==='fresh'?'容量测试项目':'英语练习',title=mode==='reserved'?'看板 V2 上线':mode==='fresh'?'保存失败后重试':'听力练习';
+    return route.fulfill({json:{ok:true,requestId:'test-request-'+(++seq),result:mode==='answer'?{reply:'先完成保留旧任务，花五分钟写下第一步。',projects:[],tasks:[]}:{reply:'<img src=x onerror=alert(1)> 草稿已准备好',projects:[{name:project,due:'',standard:'每次十分钟'}],tasks:[{title,priority:'P2',project,due:'',note:'先听一遍'}]}}});
   }
   return route.fulfill({json:{ok:true,result:{summary:'任务建议',focus:[],alerts:[]}}});
 });
@@ -31,22 +32,29 @@ try{
   check('Draft never changes original data before review',JSON.stringify(await rows('tasks'))===JSON.stringify(initial));
   check('Model text cannot execute markup',await page.locator('#aiChatPanel img').count()===0);
   check('No local private notes sent',!JSON.stringify(requests[0]).includes('保留私密备注'));
+  await page.getByRole('button',{name:'从草稿移除此任务'}).click();
+  check('Remove unwanted draft task without touching business data',(await page.locator('.ai-chat-draft h4').innerText()).includes('0 个任务')&&JSON.stringify(await rows('tasks'))===JSON.stringify(initial));
   await page.locator('.ai-chat-draft').getByRole('button',{name:'取消草稿'}).click();
   check('Cancel leaves tasks untouched',JSON.stringify(await rows('tasks'))===JSON.stringify(initial));
   await submit('创建英语练习项目和听力练习');await page.locator('.ai-chat-draft h4').waitFor();
   const firstTask=page.locator('.ai-draft-item').filter({has:page.getByText('任务名称',{exact:true})}).first();
   await firstTask.getByLabel('任务名称').fill('精听小猪佩奇十分钟');
-  await firstTask.getByLabel('截止日期').fill('2026-10-18');
+  await firstTask.getByLabel('截止时间').fill('2026-10-18T20:00');
   await firstTask.getByLabel('优先级').selectOption('P1');
+  mkdirSync('tests/screenshots',{recursive:true});
+  await page.locator('#aiChatPanel').screenshot({path:'tests/screenshots/ai-chat-draft-desktop.png'});
+  await page.setViewportSize({width:390,height:844});
+  await page.locator('#aiChatPanel').screenshot({path:'tests/screenshots/ai-chat-draft-mobile.png'});
+  await page.setViewportSize({width:1366,height:900});
   await page.getByRole('button',{name:'确认创建',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('已创建 1 个项目、1 个任务'));
   let tasks=await rows('tasks');const created=tasks.find(t=>t.title==='精听小猪佩奇十分钟');
-  check('Reviewed edits saved with project association',created?.priority==='P1'&&created.due==='2026-10-18T23:59'&&created.project==='英语练习'&&created.matrix==='q2');
+  check('Reviewed edits saved with project association',created?.priority==='P1'&&created.due==='2026-10-18T20:00'&&created.project==='英语练习'&&created.matrix==='q2');
   check('Old task and private note preserved',JSON.stringify(tasks.find(t=>t.id==='old-task'))===JSON.stringify(initial[0]));
   check('Project saved once', (await rows('projects')).filter(p=>p.name==='英语练习').length===1);
   check('Creation automatically refreshes AI analysis',requests.some(x=>x.action==='analyze'&&x.tasks.some(t=>t.title==='精听小猪佩奇十分钟')));
   await page.locator('#aiChatPanel').getByRole('button',{name:'查看任务',exact:true}).click();
-  await page.getByText('精听小猪佩奇十分钟',{exact:true}).first().waitFor({state:'visible'});
+  await page.locator('#tasks').getByText('精听小猪佩奇十分钟',{exact:true}).first().waitFor({state:'visible'});
   check('Task board updated immediately',true);
   await page.locator('nav button[data-v="home"]').click();
   await page.locator('#aiChatInput').waitFor({state:'visible'});
@@ -57,8 +65,8 @@ try{
   check('Analysis-only chat has no create action',await page.getByRole('button',{name:'确认创建',exact:true}).count()===0);
   mode='network';await submit('连接失败保留这段话');await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('连接失败'));
   check('Network failure retains input',await page.locator('#aiChatInput').inputValue()==='连接失败保留这段话');
-  mode='create';await submit('创建项目和任务');await page.locator('.ai-chat-draft h4').waitFor();
-  const beforeFailure=await rows('tasks');
+  mode='fresh';await submit('创建项目和任务');await page.locator('.ai-chat-draft h4').waitFor();
+  const beforeFailure=await rows('tasks'),projectsBeforeFailure=await rows('projects');
   await page.evaluate(()=>{
     const original=Storage.prototype.setItem;
     window.restoreStorage=()=>Storage.prototype.setItem=original;
@@ -67,8 +75,20 @@ try{
   await page.getByRole('button',{name:'确认创建',exact:true}).click();
   check('Storage failure leaves draft for retry',await page.getByRole('button',{name:'确认创建',exact:true}).isVisible());
   check('Storage failure preserves original task data',JSON.stringify(await rows('tasks'))===JSON.stringify(beforeFailure));
+  check('Partial storage failure restores the original project data',JSON.stringify(await rows('projects'))===JSON.stringify(projectsBeforeFailure));
   await page.evaluate(()=>window.restoreStorage());
-  await page.getByRole('button',{name:'取消草稿'}).click();
+  await page.getByRole('button',{name:'确认创建',exact:true}).click();
+  check('Retry creates exactly one project and task',(await rows('projects')).filter(p=>p.name==='容量测试项目').length===1&&(await rows('tasks')).filter(t=>t.title==='保存失败后重试').length===1);
+  await submit('再次创建同名项目和任务');await page.locator('.ai-chat-draft h4').waitFor();
+  await page.getByRole('button',{name:'确认创建',exact:true}).click();
+  check('Repeated plan skips existing names',(await rows('projects')).filter(p=>p.name==='容量测试项目').length===1&&(await rows('tasks')).filter(t=>t.title==='保存失败后重试').length===1);
+  mode='reserved';await submit('创建 Lambert AI OS 项目和看板 V2 上线任务');await page.locator('.ai-chat-draft h4').waitFor();
+  await page.getByRole('button',{name:'确认创建',exact:true}).click();
+  const reservedTask=(await rows('tasks')).find(t=>t.title==='看板 V2 上线');
+  await page.reload();await page.locator('#aiChatInput').waitFor();
+  check('Real entries named like old demos survive refresh',(await rows('projects')).some(p=>p.name==='Lambert AI OS')&&(await rows('tasks')).some(t=>t.title==='看板 V2 上线'));
+  check('AI request marker survives task normalization',(await rows('tasks')).find(t=>t.id===reservedTask.id)?.aiRequestId===reservedTask.aiRequestId);
+  mode='create';
   // Simulate a different tab writing after this page has loaded.
   await submit('创建一个新任务');await page.locator('.ai-chat-draft h4').waitFor();
   await page.evaluate(()=>{const t=JSON.parse(localStorage.getItem('tasks'));t.push({id:'other-tab',title:'其他页的新任务'});localStorage.setItem('tasks',JSON.stringify(t))});
@@ -84,4 +104,8 @@ try{
   await page.locator('#aiChatPanel').screenshot({path:'tests/screenshots/ai-chat-desktop.png'});
   check('No uncaught browser errors',errors.length===0);
   console.log('Chat UI regression passed.');
+}catch(error){
+  mkdirSync('tests/screenshots',{recursive:true});
+  await page.screenshot({path:'tests/screenshots/ai-chat-failure.png',fullPage:true});
+  console.error('Browser errors:',errors);throw error;
 }finally{await browser.close()}

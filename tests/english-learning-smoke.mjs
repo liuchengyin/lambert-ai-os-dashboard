@@ -30,6 +30,7 @@ try {
   const video=readFileSync('tests/fixtures/english-smoke.webm');
   await page.locator('#enImportvideo').setInputFiles({name:'english-smoke.webm',mimeType:'video/webm',buffer:video});
   await page.waitForFunction(()=>document.querySelector('#englishMediaPlayer')?.readyState>=1);
+  check('Imported media filename is visible',(await page.locator('#enMediaStatus').innerText()).includes('english-smoke.webm'));
   await page.locator('#enNext').click();
   await page.waitForFunction(()=>Math.abs(document.querySelector('#englishMediaPlayer')?.currentTime-3)<0.65);
   check('Next subtitle seeks to second cue',true);
@@ -50,8 +51,11 @@ try {
   check('A-B loop returns to A',Math.abs(looped-1.2)<0.3);
   await page.locator('#enToggleAB').click();
   const listeningWav=createWav(6);
+  await page.locator('[data-speed="0.75"]').click();
   await page.locator('#enImportaudio').setInputFiles({name:'listening.wav',mimeType:'audio/wav',buffer:listeningWav});
   await page.locator('#enVideoMode').click();
+  check('Playback speed survives video/audio switch',await page.locator('#englishMediaPlayer').evaluate(e=>e.playbackRate===0.75));
+  await page.locator('[data-speed="1"]').click();
   await page.locator('#enMarkStep').click();
   check('Step 2 defaults to pure audio',await page.locator('#englishMediaPlayer').evaluate(e=>e.tagName==='AUDIO'));
   await page.locator('#enMarkStep').click();

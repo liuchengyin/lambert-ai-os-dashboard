@@ -48,6 +48,8 @@ function sameOrigin(req){
   try{const u=new URL(origin);return u.protocol==='https:'&&u.host===host}catch{return false}
 }
 export default async function handler(req,res){
+  const requestId=crypto.randomUUID(),started=Date.now();
+  res.setHeader('X-AI-Request-Id',requestId);
   res.setHeader('Cache-Control','no-store');
   res.setHeader('Content-Type','application/json; charset=utf-8');
   if(req.method!=='POST')return send(res,405,{ok:false,code:'method'});
@@ -60,6 +62,11 @@ export default async function handler(req,res){
   const ip=String(req.headers['x-forwarded-for']||'unknown').split(',')[0].trim().slice(0,90);
   const fingerprint=crypto.createHash('sha256').update(ip).digest('hex').slice(0,24);
   let lockToken='';
+  async function unlock(){
+    if(!lockToken)return;
+    const token=lockToken;lockToken='';
+    try{await redis(['EVAL','if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',1,'ai:concurrent',token])}catch{/* TTL clears it if the rate store is unavailable. */}
+  }
   try{
     if(body.action==='login'){
       if(!await gate('ai:login:'+fingerprint,8,3600))return send(res,429,{ok:false,code:'rate_limited'});
@@ -99,20 +106,31 @@ export default async function handler(req,res){
         ]}),signal:controller.signal
       });
       if(response.ok)json=await response.json();
-    }catch{throw new DependencyError('provider_unavailable')}finally{clearTimeout(timer)}
-    if(!response.ok)return send(res,502,{ok:false,code:'provider_unavailable'});
+    }catch(error){throw new DependencyError(controller.signal.aborted?'provider_timeout':'provider_unavailable')}finally{clearTimeout(timer)}
+    if(!response.ok){
+      const code=({401:'provider_auth',402:'provider_quota',429:'provider_rate_limited'})[response.status]||'provider_unavailable';
+      console.warn('lambert_ai_dependency',JSON.stringify({requestId,code,status:response.status,elapsedMs:Date.now()-started}));
+      return send(res,502,{ok:false,code,requestId});
+    }
     let result;try{result=JSON.parse(json.choices?.[0]?.message?.content||'')}catch{return send(res,502,{ok:false,code:'invalid_model_output'})}
     if(chat){
       const draft=chatOutput(result,projects);
       if(!draft)return send(res,502,{ok:false,code:'invalid_model_output'});
-      return send(res,200,{ok:true,result:draft,requestId:crypto.randomUUID(),generatedAt:new Date().toISOString()});
+      // Release before replying so immediate post-creation analysis can acquire the lock.
+      await unlock();
+      return send(res,200,{ok:true,result:draft,requestId,generatedAt:new Date().toISOString()});
     }
     if(!result||typeof result!=='object')return send(res,502,{ok:false,code:'invalid_model_output'});
     const focus=(Array.isArray(result.focus)?result.focus:[]).filter(x=>ids.has(x?.taskId)).slice(0,3).map(x=>({taskId:x.taskId,why:text(x.why,65),nextAction:text(x.nextAction,100)}));
     const alerts=(Array.isArray(result.alerts)?result.alerts:[]).filter(x=>!x?.taskId||ids.has(x.taskId)).slice(0,3).map(x=>({taskId:ids.has(x.taskId)?x.taskId:'',severity:x.severity==='high'?'high':'medium',reason:text(x.reason,70)}));
+    await unlock();
     return send(res,200,{ok:true,result:{summary:text(result.summary,100),focus,alerts,observations:(Array.isArray(result.observations)?result.observations:[]).slice(0,2).map(x=>text(x,65))},generatedAt:new Date().toISOString()});
-  }catch(err){return send(res,503,{ok:false,code:err instanceof DependencyError?err.code:'temporarily_unavailable',message:'AI 暂时不可用，原始任务数据不受影响'})}
+  }catch(err){
+    const code=err instanceof DependencyError?err.code:'temporarily_unavailable';
+    console.warn('lambert_ai_dependency',JSON.stringify({requestId,code,elapsedMs:Date.now()-started}));
+    return send(res,503,{ok:false,code,requestId,message:'AI 暂时不可用，原始任务数据不受影响'});
+  }
   finally{
-    if(lockToken)try{await redis(['EVAL','if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',1,'ai:concurrent',lockToken])}catch{/* The lock expires automatically if Redis becomes unavailable. */}
+    await unlock();
   }
 }

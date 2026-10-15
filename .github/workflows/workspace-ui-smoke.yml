@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - 'index.html'
+      - 'app.js'
       - 'deepseek-v1.js'
       - 'deepseek-v1.css'
       - 'api/ai-analyze.js'
@@ -10,6 +11,7 @@ on:
       - 'lib/ai-chat-contract.js'
       - 'tests/ai-chat-api.mjs'
       - 'tests/ai-chat-ui.mjs'
+      - 'tests/ai-login-ui.mjs'
       - 'tests/deepseek-api-smoke.mjs'
       - 'tests/deepseek-ui-smoke.mjs'
       - 'dashboard-v5.js'
@@ -55,6 +57,7 @@ jobs:
           node tests/workspace-ui-smoke.mjs
           node tests/deepseek-ui-smoke.mjs
           node tests/ai-chat-ui.mjs
+          node tests/ai-login-ui.mjs
       - name: Upload visual previews
         if: always()
         uses: actions/upload-artifact@v4
