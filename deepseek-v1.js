@@ -60,7 +60,7 @@
       return;
     }
     if(!result){
-      card.append(node('p','ai-note',notice||'尚无分析结果。首次分析需要先完成安全登录和 API 配置。'));
+      if(!notice)card.append(node('p','ai-note','尚无分析结果。首次分析需要先完成安全登录和 API 配置。'));
       card.append(button('关闭 AI 自动分析',()=>{set(CONSENT,false);draw()},'ai-quiet'));
       return;
     }
@@ -100,7 +100,18 @@
     });
     if(!pass)return false;
     const out=await call({action:'login',password:pass});
-    if(!out.ok){draw(out.code==='not_configured'?'AI 尚未完成服务端安全配置':'登录失败或已达到安全限制');return false}
+    if(!out.ok){
+      const messages={
+        not_configured:'AI 服务端配置未完成（503），请检查 Preview 环境变量。',
+        wrong_password:'AI 访问密码不匹配（401）。请使用 AI_ACCESS_PASSWORD，不是 API Key。',
+        rate_limited:'登录尝试次数过多（429），请等待一小时后重试。',
+        temporarily_unavailable:'登录服务暂不可用（503）。请优先检查 Upstash REST URL、Token 和网络连接。',
+        origin:'登录请求来源校验失败（403），请从当前 Preview 地址打开网页。',
+        invalid_response:'服务端未返回有效 JSON，请检查部署及网络。'
+      };
+      draw(messages[out.code]||('AI 登录失败（HTTP '+out.status+'，'+(out.code||'unknown')+'）。'));
+      return false
+    }
     return true;
   }
   async function analyze(manual=false){
