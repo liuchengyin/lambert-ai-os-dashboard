@@ -1,0 +1,15 @@
+/* AI advisor is visually subordinate to the existing daily dashboard. */
+#home .ai-daily-card{margin:0 0 18px;padding:18px 22px;background:rgba(255,255,255,.76);border:1px solid rgba(139,108,206,.16);border-radius:17px;box-shadow:0 4px 18px rgba(62,46,110,.04)}
+#home .ai-card-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px;color:#342b52;font-size:16px}
+#home .ai-note{font-size:13px;color:#7b7990;margin:8px 0 12px;line-height:1.65}
+#home .ai-summary{font-size:14px;color:#3b3652;font-weight:620;line-height:1.65;margin:8px 0 12px}
+#home .ai-focus{display:grid;grid-template-columns:minmax(140px,1fr) minmax(100px,1.2fr) minmax(130px,1.3fr);gap:14px;padding:10px 0;border-top:1px solid #eeebf4;align-items:start;font-size:13px;color:#67627b}
+#home .ai-focus strong{color:#38304f;font-size:13px}
+#home .ai-focus small{font-size:12px;color:#7859aa}
+#home .ai-alert{font-size:12px;color:#a06468;margin:7px 0}
+#home .ai-footer{font-size:11px;color:#9692a3;margin-top:11px}
+#home .ai-secondary,.ai-task-action .ai-secondary{background:transparent!important;border:1px solid #d9cee9!important;color:#7856af!important;border-radius:9px!important;padding:7px 12px!important;font-size:12px!important;box-shadow:none!important;cursor:pointer}
+#home .ai-primary{background:#7d53c7!important;color:white!important;border:0!important;border-radius:9px!important;padding:9px 13px!important;cursor:pointer}
+#home .ai-quiet{display:block;background:none!important;border:0!important;color:#9a92ac!important;font-size:11px!important;margin:10px 0 0;padding:2px!important;cursor:pointer}
+.ai-task-action{margin:0 0 12px;display:flex;justify-content:flex-end}
+@media(max-width:700px){#home .ai-focus{grid-template-columns:1fr;gap:4px}#home .ai-daily-card{padding:16px}}
