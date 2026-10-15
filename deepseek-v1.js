@@ -41,7 +41,7 @@
     if(notice)card.append(node('p','ai-note',notice));
     if(get(CONSENT,false)!==true){
       card.append(node('p','ai-note','启用后，每天首次打开工作台自动分析任务，也可手动刷新。任务摘要会发送给 DeepSeek；不会上传复盘或笔记。'));
-      card.append(button('同意发送任务摘要并启用',()=>{set(CONSENT,true);draw();autoAnalyze()},'ai-primary'));
+      card.append(button('同意发送任务摘要并启用',async()=>{set(CONSENT,true);draw();if(await login())analyze(true)},'ai-primary'));
       return;
     }
     if(!result){
