@@ -49,6 +49,7 @@ try{
   check('PWA manifest references Lambert app icon',manifest.ok()&&(await manifest.json()).icons.some(i=>i.src==='/brand/app-icon.svg'));
   await page.locator('nav button[data-v="tasks"]').click();
   await page.locator('.task-v5-card[data-task-id="drag-a"]').waitFor({state:'visible'});
+  await page.waitForTimeout(350); // dashboard renders task cards asynchronously after navigation
   await page.waitForFunction(()=>document.querySelector('.task-v5-card[data-task-id="drag-a"]')?.draggable===true);
   check('Task cards are draggable',await page.locator('.task-v5-card[data-task-id="drag-a"]').evaluate(e=>e.draggable===true));
   await page.locator('[data-task-id="drag-a"]').dragTo(page.locator('.task-v5-col.doing'),{targetPosition:{x:160,y:220}});
