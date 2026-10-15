@@ -7,6 +7,7 @@ on:
       - 'deepseek-v1.css'
       - 'api/ai-analyze.js'
       - 'tests/deepseek-api-smoke.mjs'
+      - 'tests/deepseek-ui-smoke.mjs'
       - 'dashboard-v5.js'
       - 'sprint1-navigation.js'
       - 'sprint1-hub.css'
@@ -46,6 +47,7 @@ jobs:
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
           node tests/workspace-ui-smoke.mjs
+          node tests/deepseek-ui-smoke.mjs
       - name: Upload visual previews
         if: always()
         uses: actions/upload-artifact@v4
