@@ -30,9 +30,24 @@
       action.append(button('✦ AI 分析任务',()=>analyze(true),'ai-secondary'));
       taskHead.insertAdjacentElement('afterend',action);
     }
+    if(tasks?.querySelector('#aiTaskAction')&&!tasks.querySelector('#aiTaskResult')){
+      const panel=node('section','ai-task-result');panel.id='aiTaskResult';
+      tasks.querySelector('#aiTaskAction').insertAdjacentElement('afterend',panel);
+      renderTaskResult();
+    }
+  }
+  function renderTaskResult(){
+    const el=$('aiTaskResult');if(!el)return;
+    el.replaceChildren();
+    if(notice)el.append(node('p','ai-note',notice));
+    if(!result){el.append(node('p','ai-note','AI 建议将在这里显示；需先在首页授权并登录。'));return}
+    el.append(node('strong','',result.summary||'任务分析完成'));
+    const titles=new Map(snapshot().tasks.map(t=>[t.id,t.title]));
+    (result.focus||[]).forEach(x=>el.append(node('p','', (titles.get(x.taskId)||'任务')+'：'+(x.nextAction||x.why||''))));
   }
   function draw(message){
     if(typeof message==='string')notice=message;
+    renderTaskResult();
     const card=$('aiDailyCard');if(!card)return;
     card.replaceChildren();
     const title=node('div','ai-card-heading');title.append(node('strong','', '✦ AI 今日参谋'));
