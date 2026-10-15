@@ -147,3 +147,26 @@
   .shell>aside nav.s1-nav .s1-nav-heading{font-size:13px!important}
   .shell>aside nav.s1-nav button[data-v]{font-size:15px!important;min-height:46px!important}
 }
+
+/* Sprint 1.2 · remove redundant title; quiet chevron-only sidebar control */
+.shell>main>header.s1-date-header{
+  display:flex!important;align-items:center!important;justify-content:flex-end!important;
+  min-height:25px!important;margin-bottom:15px!important;padding-bottom:11px!important;
+}
+.shell>main>header.s1-date-header #today{
+  font-size:13px!important;font-weight:500!important;color:#85899a!important;
+}
+.shell>aside .s1-sidebar-toggle{
+  right:-12px!important;top:50%!important;
+  width:25px!important;height:44px!important;padding:0!important;
+  border:0!important;border-radius:0!important;background:transparent!important;
+  box-shadow:none!important;color:#a38ebd!important;font-size:23px!important;
+  font-weight:400!important;opacity:.75!important;
+}
+.shell>aside .s1-sidebar-toggle:hover{
+  background:transparent!important;box-shadow:none!important;
+  color:#815db6!important;opacity:1!important;
+}
+.shell>aside .s1-sidebar-toggle:focus-visible{
+  outline:2px solid #9e81c6!important;outline-offset:1px!important;border-radius:3px!important;
+}
