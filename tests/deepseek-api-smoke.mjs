@@ -6,6 +6,7 @@ const previousFetch=globalThis.fetch;
 const original={...process.env};
 const redis=new Map();
 let providerCalls=0;
+let modelOverride;
 const fakeResponse=(data,status=200)=>({ok:status>=200&&status<300,status,async json(){return data}});
 globalThis.fetch=async(url,opts)=>{
   const target=String(url);
@@ -33,10 +34,10 @@ globalThis.fetch=async(url,opts)=>{
     assert.equal(data.tasks.length,1);
     assert.equal(data.tasks[0].title,'真实任务');
     assert.equal('note' in data.tasks[0],false,'do not send private task notes');
-    return fakeResponse({choices:[{message:{content:JSON.stringify({
+    return fakeResponse({choices:[{message:{content:JSON.stringify(modelOverride===undefined?{
       summary:'先完成真实任务',focus:[{taskId:'t-1',why:'优先级高',nextAction:'先做5分钟'},{taskId:'fabricated',why:'虚构',nextAction:'不应出现'}],
       alerts:[{taskId:'t-1',severity:'high',reason:'今日截止'}],observations:['今天先聚焦']
-    })}}]});
+    }:modelOverride)}}]});
   }
   throw Error('unexpected fetch target '+target);
 };
@@ -74,6 +75,13 @@ try{
   await invoke(body,{headers:{cookie}});
   r=await invoke(body,{headers:{cookie}});
   check('Persistent rate limit blocks excess paid calls',r.statusCode===429&&providerCalls===3);
+  for(const invalid of [null,[],{}, {summary:'有摘要但缺少数组'}]){
+    redis.clear();modelOverride=invalid;r=await invoke(body,{headers:{cookie}});
+    check('Malformed analysis output rejected: '+JSON.stringify(invalid),r.statusCode===502&&r.body.code==='invalid_model_output'&&!redis.has('ai:concurrent'));
+  }
+  redis.clear();modelOverride={summary:'空提醒已过滤',focus:[],alerts:[null,'bad',{reason:'有效提醒',severity:'high'}],observations:[]};
+  r=await invoke(body,{headers:{cookie}});
+  check('Null and primitive alerts cannot break analysis',r.statusCode===200&&r.body.result.alerts.length===1&&r.body.result.alerts[0].reason==='有效提醒');
   console.log('DeepSeek API smoke passed.');
 }finally{
   globalThis.fetch=previousFetch;

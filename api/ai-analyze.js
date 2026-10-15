@@ -112,7 +112,7 @@ export default async function handler(req,res){
       console.warn('lambert_ai_dependency',JSON.stringify({requestId,code,status:response.status,elapsedMs:Date.now()-started}));
       return send(res,502,{ok:false,code,requestId});
     }
-    let result;try{result=JSON.parse(json.choices?.[0]?.message?.content||'')}catch{return send(res,502,{ok:false,code:'invalid_model_output'})}
+    let result;try{result=JSON.parse(json?.choices?.[0]?.message?.content||'')}catch{return send(res,502,{ok:false,code:'invalid_model_output'})}
     if(chat){
       const draft=chatOutput(result,projects);
       if(!draft)return send(res,502,{ok:false,code:'invalid_model_output'});
@@ -120,9 +120,9 @@ export default async function handler(req,res){
       await unlock();
       return send(res,200,{ok:true,result:draft,requestId,generatedAt:new Date().toISOString()});
     }
-    if(!result||typeof result!=='object')return send(res,502,{ok:false,code:'invalid_model_output'});
+    if(!result||Array.isArray(result)||typeof result!=='object'||!text(result.summary,100)||!Array.isArray(result.focus)||!Array.isArray(result.alerts)||!Array.isArray(result.observations))return send(res,502,{ok:false,code:'invalid_model_output'});
     const focus=(Array.isArray(result.focus)?result.focus:[]).filter(x=>ids.has(x?.taskId)).slice(0,3).map(x=>({taskId:x.taskId,why:text(x.why,65),nextAction:text(x.nextAction,100)}));
-    const alerts=(Array.isArray(result.alerts)?result.alerts:[]).filter(x=>!x?.taskId||ids.has(x.taskId)).slice(0,3).map(x=>({taskId:ids.has(x.taskId)?x.taskId:'',severity:x.severity==='high'?'high':'medium',reason:text(x.reason,70)}));
+    const alerts=result.alerts.filter(x=>x&&typeof x==='object'&&(!x.taskId||ids.has(x.taskId))).slice(0,3).map(x=>({taskId:ids.has(x.taskId)?x.taskId:'',severity:x.severity==='high'?'high':'medium',reason:text(x.reason,70)}));
     await unlock();
     return send(res,200,{ok:true,result:{summary:text(result.summary,100),focus,alerts,observations:(Array.isArray(result.observations)?result.observations:[]).slice(0,2).map(x=>text(x,65))},generatedAt:new Date().toISOString()});
   }catch(err){

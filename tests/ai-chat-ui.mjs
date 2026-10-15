@@ -5,12 +5,12 @@ const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:8000/';
 const browser=await chromium.launch({headless:true});
 const ctx=await browser.newContext({viewport:{width:1366,height:900}});
 await ctx.addInitScript(()=>{
-  if(!localStorage.getItem('tasks'))localStorage.setItem('tasks',JSON.stringify([{id:'old-task',title:'保留旧任务',status:'待开始',priority:'P2',project:'',due:'',note:'保留私密备注',createdAt:'2026-10-10T00:00:00Z'}]));
+  if(!localStorage.getItem('tasks'))localStorage.setItem('tasks',JSON.stringify([{id:'old-task',title:'保留旧任务',status:'待开始',priority:'P2',matrix:'q3',project:'',due:'',note:'保留私密备注',sourceTag:'保留扩展字段',createdAt:'2026-10-10T00:00:00Z'}]));
   localStorage.setItem('ai_consent_v1','true');localStorage.setItem('ai_auto_day_v1',JSON.stringify(new Date().toLocaleDateString('sv-SE')));
 });
 const page=await ctx.newPage(),errors=[],requests=[];let seq=0,mode='create';
 page.on('pageerror',e=>errors.push(e.message));
-await page.route('**/api/ai-analyze',async route=>{
+const handleRequest=async route=>{
   const body=route.request().postDataJSON();requests.push(body);
   if(body.action==='chat'){
     if(mode==='network')return route.abort();
@@ -19,7 +19,8 @@ await page.route('**/api/ai-analyze',async route=>{
     return route.fulfill({json:{ok:true,requestId:'test-request-'+(++seq),result:mode==='answer'?{reply:'先完成保留旧任务，花五分钟写下第一步。',projects:[],tasks:[]}:{reply:'<img src=x onerror=alert(1)> 草稿已准备好',projects:[{name:project,due:'',standard:'每次十分钟'}],tasks:[{title,priority:'P2',project,due:'',note:'先听一遍'}]}}});
   }
   return route.fulfill({json:{ok:true,result:{summary:'任务建议',focus:[],alerts:[]}}});
-});
+};
+await page.route('**/api/ai-analyze',handleRequest);
 const check=(label,value)=>{assert.ok(value,label);console.log('PASS:',label)};
 const submit=async text=>{await page.locator('#aiChatInput').fill(text);await page.locator('#aiChatPanel').getByRole('button',{name:'发送',exact:true}).click()};
 const rows=key=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
@@ -61,6 +62,8 @@ try{
   check('Returning home keeps the conversation',await page.locator('.ai-chat-message').count()>=2);
   await page.reload();await page.locator('#aiChatInput').waitFor();
   check('New task persists on refresh',(await rows('tasks')).some(t=>t.title==='精听小猪佩奇十分钟'));
+  const oldAfterRefresh=(await rows('tasks')).find(t=>t.id==='old-task');
+  check('Existing matrix and custom fields survive refresh',oldAfterRefresh.matrix==='q3'&&oldAfterRefresh.sourceTag==='保留扩展字段');
   mode='answer';await submit('分析现在的任务');await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('回复已生成'));
   check('Analysis-only chat has no create action',await page.getByRole('button',{name:'确认创建',exact:true}).count()===0);
   mode='network';await submit('连接失败保留这段话');await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('连接失败'));
@@ -103,6 +106,15 @@ try{
   await page.setViewportSize({width:1366,height:900});
   await page.locator('#aiChatPanel').screenshot({path:'tests/screenshots/ai-chat-desktop.png'});
   check('No uncaught browser errors',errors.length===0);
+  const emptyContext=await browser.newContext();
+  await emptyContext.addInitScript(()=>{localStorage.setItem('ai_consent_v1','true');localStorage.setItem('ai_auto_day_v1',JSON.stringify(new Date().toLocaleDateString('sv-SE')))});
+  const emptyPage=await emptyContext.newPage();await emptyPage.route('**/api/ai-analyze',handleRequest);
+  await emptyPage.goto(BASE);await emptyPage.locator('#aiChatInput').fill('从空白工作台创建英语练习项目和任务');
+  await emptyPage.locator('#aiChatPanel').getByRole('button',{name:'发送',exact:true}).click();
+  await emptyPage.locator('.ai-chat-draft h4').waitFor();
+  await emptyPage.getByRole('button',{name:'确认创建',exact:true}).click();
+  check('Empty workspace can create its first project and task',await emptyPage.evaluate(()=>JSON.parse(localStorage.getItem('projects')).length===1&&JSON.parse(localStorage.getItem('tasks')).length===1));
+  await emptyContext.close();
   console.log('Chat UI regression passed.');
 }catch(error){
   mkdirSync('tests/screenshots',{recursive:true});

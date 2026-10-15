@@ -17,6 +17,7 @@
   function field(label,value,onChange,type='text'){
     const wrap=el('label','ai-draft-field');wrap.append(el('span','',label));
     const control=el(type==='textarea'?'textarea':'input');if(type!=='textarea')control.type=type;
+    if(type==='textarea')control.maxLength=300;
     control.value=value||'';control.addEventListener('input',()=>onChange(control.value));wrap.append(control);return wrap;
   }
   function showDraft(){
@@ -83,13 +84,13 @@
       state.projects=nextProjects;state.tasks=nextTasks;
       committed.add(requestId);proposal=null;showDraft();
       // Use current renderers: refreshAll still targets inputs removed by Dashboard V5.
-      renderTaskBoard();renderProjectBoard();renderHome();document.dispatchEvent(new Event('lambert:plan-created'));api().markChanged();
+      renderTaskBoard();renderProjectBoard();renderHome();document.dispatchEvent(new Event('lambert:plan-created'));
       // Creating a reviewed plan should feed straight into the existing daily analysis.
-      if(newTasks.length&&api().hasConsent())api().analyze(false);
+      if(newTasks.length||newProjects.length){api().markChanged();if(api().hasConsent())api().analyze(false)}
       feedback('已创建 '+newProjects.length+' 个项目、'+newTasks.length+' 个任务。已有同名条目已跳过。');
       const actions=el('div','ai-chat-actions');
       actions.append(button('查看任务',()=>openView('tasks')),button('查看项目',()=>openView('projects')),button('分析更新后的任务',()=>{document.querySelector('#aiDailyCard .ai-secondary')?.click();document.getElementById('aiDailyCard')?.scrollIntoView({behavior:'smooth',block:'start'})}));draft.append(actions);
-    }catch{feedback('保存失败，草稿已保留。请检查浏览器存储空间后重试。')}
+    }catch{feedback(committed.has(requestId)?'数据已保存，但页面未能刷新。请刷新后查看任务和项目。':'保存失败，草稿已保留。请检查浏览器存储空间后重试。')}
     finally{committing=false}
   }
   async function submit(){
