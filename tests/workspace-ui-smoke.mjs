@@ -43,7 +43,7 @@ try{
   check('Desktop collapse control is visible',await page.locator('#s1SidebarToggle').isVisible());
   await page.locator('#s1SidebarToggle').click();
   check('Sidebar collapses to compact icon rail',await page.locator('.shell>aside').evaluate(e=>e.getBoundingClientRect().width<=80));
-  check('Main workspace expands with collapsed rail',await page.locator('main').evaluate(e=>e.getBoundingClientRect().width>expandedMainWidth+90));
+  check('Main workspace expands with collapsed rail',await page.locator('main').evaluate((e,w)=>e.getBoundingClientRect().width>w+90,expandedMainWidth));
   check('Collapsed rail preserves every module icon',await page.locator('nav button[data-v] .s1-nav-icon').count()>=8);
   await page.locator('nav button[data-v="tasks"]').click();
   check('Collapsed sidebar navigation remains functional',await page.locator('#tasks').isVisible());
