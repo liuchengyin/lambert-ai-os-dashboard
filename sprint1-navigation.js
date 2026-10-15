@@ -26,7 +26,7 @@
     desktopToggle.setAttribute('aria-expanded',String(!collapsed));
     desktopToggle.setAttribute('aria-label',collapsed?'展开左侧菜单栏':'收起左侧菜单栏');
     desktopToggle.title=collapsed?'展开左侧菜单栏':'收起左侧菜单栏';
-    desktopToggle.textContent=collapsed?'›':'‹';
+    desktopToggle.textContent=collapsed?'>':'<';
   };
   desktopToggle.addEventListener('click',()=>{
     const next=!document.body.classList.contains('s1-sidebar-collapsed');
