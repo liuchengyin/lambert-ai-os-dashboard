@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 
-const MODEL=process.env.DEEPSEEK_MODEL||'deepseek-chat';
+const MODEL=process.env.DEEPSEEK_MODEL==='deepseek-v4-pro'?'deepseek-v4-pro':'deepseek-flash';
 const COOKIE='lambert_ai_session';
 const ready=()=>process.env.AI_ENABLED==='true'&&['DEEPSEEK_API_KEY','AI_ACCESS_PASSWORD','AI_SESSION_SECRET','UPSTASH_REDIS_REST_URL','UPSTASH_REDIS_REST_TOKEN'].every(k=>!!process.env[k])&&process.env.AI_SESSION_SECRET.length>=32;
 const send=(res,code,data)=>res.status(code).json(data);
@@ -82,7 +82,7 @@ export default async function handler(req,res){
     try{
       response=await fetch('https://api.deepseek.com/chat/completions',{
         method:'POST',headers:{Authorization:'Bearer '+process.env.DEEPSEEK_API_KEY,'Content-Type':'application/json'},
-        body:JSON.stringify({model:MODEL,temperature:0.3,max_tokens:950,response_format:{type:'json_object'},messages:[
+        body:JSON.stringify({model:MODEL,thinking:{type:'disabled'},temperature:0.3,max_tokens:1200,response_format:{type:'json_object'},messages:[
           {role:'system',content:'你是个人工作台的任务参谋。只依据输入的真实任务和项目进行分析。返回合法 JSON 对象：{"summary":"不超过60字","focus":[{"taskId":"输入中存在的ID","why":"不超过65字","nextAction":"5-10分钟可执行动作"}],"alerts":[{"taskId":"可选输入ID","severity":"high或medium","reason":"不超过70字"}],"observations":["不超过65字"]}。focus最多3项，alerts最多3项，observations最多2项。优先用户手动指定的top3Ids，不可编造任务、日期或承诺。不输出markdown。'},
           {role:'user',content:JSON.stringify(input)}
         ]}),signal:controller.signal
