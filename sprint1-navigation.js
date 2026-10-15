@@ -3,14 +3,38 @@
   const aside=document.querySelector('.shell>aside'),nav=aside?.querySelector('nav');
   if(!nav)return;
   nav.classList.add('s1-nav');
+  nav.id='s1PrimaryNav';
   const groups=[
-    {id:'work',title:'工作区',pages:['home','projects','tasks','review']},
+    {id:'work',title:'执行区',pages:['home','projects','tasks','review']},
     {id:'growth',title:'成长区',pages:['writing','reading','english']},
     {id:'tools',title:'工具区',pages:['knowledge','settings']}
   ];
   const names={home:'今日总览',projects:'项目看板',tasks:'任务中心',review:'每日复盘',writing:'每日记录',reading:'每日阅读',english:'英语学习',knowledge:'常用链接',settings:'设置'};
   const icons={home:'⌂',projects:'▦',tasks:'☑',review:'◷',writing:'✎',reading:'▤',english:'◎',knowledge:'↗',settings:'⚙'};
   const stored=(()=>{try{return JSON.parse(localStorage.getItem('s1_nav_groups_v1'))||{}}catch{return {}}})();
+  // Desktop compact rail: persist only presentation state, never alter module data.
+  const COLLAPSE_KEY='s1_sidebar_collapsed_v1';
+  const readCollapsed=()=>{try{return localStorage.getItem(COLLAPSE_KEY)==='true'}catch{return false}};
+  const saveCollapsed=value=>{try{localStorage.setItem(COLLAPSE_KEY,String(value))}catch{}};
+  const desktopToggle=document.createElement('button');
+  desktopToggle.type='button';
+  desktopToggle.id='s1SidebarToggle';
+  desktopToggle.className='s1-sidebar-toggle';
+  desktopToggle.setAttribute('aria-controls','s1PrimaryNav');
+  const applyCollapsed=collapsed=>{
+    document.body.classList.toggle('s1-sidebar-collapsed',collapsed);
+    desktopToggle.setAttribute('aria-expanded',String(!collapsed));
+    desktopToggle.setAttribute('aria-label',collapsed?'展开左侧菜单栏':'收起左侧菜单栏');
+    desktopToggle.title=collapsed?'展开左侧菜单栏':'收起左侧菜单栏';
+    desktopToggle.textContent=collapsed?'›':'‹';
+  };
+  desktopToggle.addEventListener('click',()=>{
+    const next=!document.body.classList.contains('s1-sidebar-collapsed');
+    applyCollapsed(next);
+    saveCollapsed(next);
+  });
+  aside.appendChild(desktopToggle);
+  applyCollapsed(readCollapsed());
   const nodes={};
   groups.forEach(g=>{
     const section=document.createElement('section');section.className='s1-nav-group';section.dataset.group=g.id;
@@ -33,6 +57,7 @@
       const id=b.dataset.v,g=groups.find(x=>x.pages.includes(id));
       if(!g)return;
       if(b.parentElement!==nodes[g.id])nodes[g.id].appendChild(b);
+      if(names[id])b.title=names[id];
       if(names[id]&&b.dataset.s1Label!==id){
         b.textContent=names[id];b.dataset.s1Label=id;
         const mark=document.createElement('span');mark.className='s1-nav-icon';mark.setAttribute('aria-hidden','true');mark.textContent=icons[id]||'·';b.prepend(mark);
