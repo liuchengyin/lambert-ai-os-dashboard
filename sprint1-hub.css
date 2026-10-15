@@ -80,3 +80,70 @@
   .shell>aside.s1-mobile-open nav.s1-nav{display:flex!important}
   .shell>aside nav.s1-nav .s1-nav-group{width:100%}
 }
+
+/* Sprint 1.1 · execution navigation, legible labels, Feishu-inspired compact rail */
+.shell>aside nav.s1-nav .s1-nav-heading{
+  font-size:13px!important;font-weight:750!important;letter-spacing:.075em!important;
+  color:#a7b5c8!important;padding:11px 13px 9px!important;
+}
+.shell>aside nav.s1-nav .s1-nav-arrow{font-size:17px!important}
+.shell>aside nav.s1-nav button[data-v]{
+  font-size:15px!important;font-weight:610!important;line-height:1.45!important;
+  min-height:46px!important;padding:11px 13px!important;gap:12px!important;
+}
+.shell>aside nav.s1-nav .s1-nav-icon{font-size:19px!important;width:22px!important;flex:0 0 22px}
+.shell>aside nav.s1-nav{gap:17px!important}
+.shell>aside .s1-sidebar-toggle{
+  display:flex!important;position:absolute;right:-13px;top:50%;z-index:60;
+  width:27px;height:52px;padding:0!important;align-items:center;justify-content:center;
+  transform:translateY(-50%)!important;border:1px solid #dcd3ec!important;
+  border-radius:12px!important;background:#fff!important;color:#7554b1!important;
+  box-shadow:0 3px 14px rgba(32,23,55,.16)!important;font-size:25px!important;
+  line-height:1!important;cursor:pointer;
+}
+.shell>aside .s1-sidebar-toggle:hover{
+  background:#f4efff!important;color:#58339b!important;transform:translateY(-50%)!important;
+}
+.shell>aside .s1-sidebar-toggle:focus-visible{outline:3px solid #a77de5;outline-offset:2px}
+@media(min-width:681px){
+  body.s1-sidebar-collapsed .shell>aside{
+    width:72px!important;padding:24px 11px!important;overflow:visible!important;
+  }
+  body.s1-sidebar-collapsed main{
+    margin-left:72px!important;width:calc(100% - 72px)!important;
+  }
+  body.s1-sidebar-collapsed .shell>aside .lambert-brand{
+    justify-content:center!important;gap:0!important;margin-bottom:12px!important;
+  }
+  body.s1-sidebar-collapsed .shell>aside .lambert-brand-icon{
+    width:44px!important;height:44px!important;flex:0 0 44px!important;
+  }
+  body.s1-sidebar-collapsed .shell>aside .lambert-brand-copy{display:none!important}
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav{
+    align-items:center!important;gap:8px!important;margin-top:23px!important;
+    max-height:calc(100vh - 105px)!important;overflow-y:auto!important;
+    scrollbar-width:none!important;
+  }
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav::-webkit-scrollbar{display:none}
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav .s1-nav-group{width:100%!important}
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav .s1-nav-heading{display:none!important}
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav .s1-nav-items,
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav .s1-nav-items[hidden]{
+    display:flex!important;align-items:center!important;gap:5px!important;
+  }
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav button[data-v]{
+    width:48px!important;height:48px!important;min-height:48px!important;
+    padding:0!important;justify-content:center!important;gap:0!important;
+    font-size:0!important;line-height:0!important;white-space:nowrap!important;
+    overflow:hidden!important;
+  }
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav .s1-nav-icon{
+    width:25px!important;flex:0 0 25px!important;font-size:22px!important;line-height:1!important;
+  }
+}
+@media(max-width:680px){
+  .shell>aside .s1-sidebar-toggle{display:none!important}
+  body.s1-sidebar-collapsed .shell>aside .lambert-brand-copy{display:flex!important}
+  .shell>aside nav.s1-nav .s1-nav-heading{font-size:13px!important}
+  .shell>aside nav.s1-nav button[data-v]{font-size:15px!important;min-height:46px!important}
+}
