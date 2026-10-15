@@ -69,10 +69,10 @@ export default async function handler(req,res){
     if(!session(req))return send(res,401,{ok:false,code:'auth_required'});
     if(body.action==='status')return send(res,200,{ok:true,authenticated:true});
     if(body.action!=='analyze')return send(res,400,{ok:false,code:'invalid_action'});
-    if(!await gate('ai:minute:'+fingerprint,3,60)||!await gate('ai:day:'+fingerprint+':'+new Date().toISOString().slice(0,10),15,90000)||!await gate('ai:global:'+new Date().toISOString().slice(0,10),40,90000))
-      return send(res,429,{ok:false,code:'rate_limited',message:'调用次数已达安全限制'});
     if(!Array.isArray(body.tasks)||!Array.isArray(body.projects)||body.tasks.length>30||body.projects.length>15||!Array.isArray(body.top3Ids)||body.top3Ids.length>3)
       return send(res,400,{ok:false,code:'invalid_payload'});
+    if(!await gate('ai:minute:'+fingerprint,3,60)||!await gate('ai:day:'+fingerprint+':'+new Date().toISOString().slice(0,10),15,90000)||!await gate('ai:global:'+new Date().toISOString().slice(0,10),40,90000))
+      return send(res,429,{ok:false,code:'rate_limited',message:'调用次数已达安全限制'});
     const tasks=body.tasks.map(cleanTask).filter(Boolean),projects=body.projects.map(cleanProject).filter(Boolean);
     if(!tasks.length)return send(res,200,{ok:true,result:{summary:'当前没有待分析的任务。',focus:[],alerts:[],observations:[]}});
     const ids=new Set(tasks.map(t=>t.id));
