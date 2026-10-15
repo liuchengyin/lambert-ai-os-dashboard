@@ -36,6 +36,9 @@ const check=(name,ok)=>{assert.ok(ok,name);console.log('PASS:',name)};
 try{
   await page.goto(BASE,{waitUntil:'load'});
   await page.locator('#aiDailyCard').waitFor({state:'visible'});
+  // The existing app adds createdAt/defaults during startup; compare AI behavior to that baseline.
+  const baselineTasks=await page.evaluate(()=>JSON.parse(localStorage.getItem('tasks')));
+  check('Existing task content survives application startup',originalTasks.every(t=>baselineTasks.some(row=>row.id===t.id&&row.title===t.title&&row.note===t.note)));
   check('AI is opt-in, no calls before consent',requests.length===0);
   await page.getByRole('button',{name:'同意发送任务摘要并启用'}).click();
   check('Masked AI login dialog appears',await page.locator('.ai-login-dialog input[type=password]').isVisible());
@@ -48,7 +51,7 @@ try{
   check('Top 3 preserved in request',payload.top3Ids[0]==='ai-t1');
   check('DeepSeek result appears in home',await page.locator('#aiDailyCard').innerText().then(x=>x.includes('今天先处理 SLA')));
   check('AI content rendered as text (not executable HTML)',await page.locator('#aiDailyCard img').count()===0);
-  check('Original tasks and notes unchanged',await page.evaluate(tasks=>JSON.stringify(JSON.parse(localStorage.getItem('tasks')))===JSON.stringify(tasks),originalTasks));
+  check('Original tasks and notes unchanged',await page.evaluate(tasks=>JSON.stringify(JSON.parse(localStorage.getItem('tasks')))===JSON.stringify(tasks),baselineTasks));
   await page.reload({waitUntil:'load'});
   await page.locator('#aiDailyCard .ai-summary').waitFor({state:'visible'});
   check('Same-day reload uses cache without another API call',requests.filter(x=>x.action==='analyze').length===1);

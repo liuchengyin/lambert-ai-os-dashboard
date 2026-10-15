@@ -80,6 +80,8 @@
       state.projects=nextProjects;state.tasks=nextTasks;
       committed.add(requestId);proposal=null;showDraft();
       refreshAll();api().markChanged();
+      // Creating a reviewed plan should feed straight into the existing daily analysis.
+      if(newTasks.length&&api().hasConsent())api().analyze(false);
       feedback('已创建 '+newProjects.length+' 个项目、'+newTasks.length+' 个任务。已有同名条目已跳过。');
       const actions=el('div','ai-chat-actions');
       actions.append(button('查看任务',()=>openView('tasks')),button('查看项目',()=>openView('projects')),button('分析更新后的任务',()=>{document.querySelector('#aiDailyCard .ai-secondary')?.click();document.getElementById('aiDailyCard')?.scrollIntoView({behavior:'smooth',block:'start'})}));draft.append(actions);

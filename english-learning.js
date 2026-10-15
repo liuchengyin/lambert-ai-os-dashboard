@@ -51,9 +51,22 @@
     const overlay=$('enSubtitleOverlay');if(overlay){overlay.textContent=showSubtitles&&c?c.text:'';overlay.style.display=showSubtitles?'block':'none'}
     const n=$('englishCueCount');if(n)n.textContent=c?((cueIndex+1)+' / '+cues.length):'0 / 0';
     const course=videoCourse();if(course.currentCueIndex!==cueIndex){course.currentCueIndex=cueIndex;persist()}
+    syncDictationCue();
+  }
+  function syncDictationCue(){
+    const dict=$('enDictation');if(!dict)return;
+    const key=String(cueIndex);
+    if(dict.dataset.cueKey!==key){
+      // Save input before changing its binding, including composition/IME text.
+      if(dict.dataset.cueKey!==undefined){videoState().dictations[dict.dataset.cueKey]=dict.value;persist()}
+      dict.dataset.cueKey=key;dict.value=videoState().dictations[key]||'';
+    }
+    const result=$('enDictationResult'),cue=cues[cueIndex];
+    if(result&&originalShown)result.innerHTML=cue?'<div>原文：'+esc(cue.text)+'</div><div>逐词对照：'+diffWords(dict.value,cue.text)+'</div>':'请先导入字幕';
   }
   function renderMedia(){
     const host=$('englishMediaArea');if(!host)return;
+    const previous=activePlayer();if(previous)previous.pause();
     const file=mediaFiles[mediaMode],available=!!file;
     const step=videoCourse().currentStep||1;
     const guide={1:'先完整观看视频，可以显示或隐藏字幕。',2:'反复精听：优先纯音频，使用倍速或 A-B 循环。',3:'逐句学习：上一句、下一句、播放本句或循环。',4:'跟读和默写：播放当前句，再录音和输入英文。',5:'自主选择要收藏的句子，再用它造句。',6:'完成前五步后，保存学习记录并盖章。'};
@@ -76,6 +89,8 @@
     const player=activePlayer();
     if(player){
       player.src=file.url;
+      // Restoring a subtitle or switching video/audio keeps the current learning sentence.
+      if(cues[cueIndex])player.addEventListener('loadedmetadata',()=>{player.currentTime=Math.min(cues[cueIndex].start,Number.isFinite(player.duration)?Math.max(0,player.duration-.01):cues[cueIndex].start)},{once:true});
       player.ontimeupdate=()=>{
         const overlay=$('enSubtitleOverlay'),cue=cues[cueIndex];
         if(overlay)overlay.textContent=showSubtitles&&cue&&player.currentTime>=cue.start&&player.currentTime<cue.end?cue.text:'';
@@ -271,8 +286,9 @@
     if(rec)rec.onclick=()=>startRecording('en');
     if(stop)stop.onclick=stopRecording;
     const dict=$('enDictation');
+    if(dict)dict.dataset.cueKey=cueKey();
     if(dict)dict.oninput=()=>{
-      c.dictations[cueKey()]=dict.value;persist();
+      c.dictations[dict.dataset.cueKey||cueKey()]=dict.value;persist();
       const result=$('enDictationResult');
       if(result&&originalShown){const cue=cues[cueIndex];result.innerHTML=cue?'<div>原文：'+esc(cue.text)+'</div><div>逐词对照：'+diffWords(dict.value,cue.text)+'</div>':'请先导入字幕'}
     };
