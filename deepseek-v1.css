@@ -13,3 +13,13 @@
 #home .ai-quiet{display:block;background:none!important;border:0!important;color:#9a92ac!important;font-size:11px!important;margin:10px 0 0;padding:2px!important;cursor:pointer}
 .ai-task-action{margin:0 0 12px;display:flex;justify-content:flex-end}
 @media(max-width:700px){#home .ai-focus{grid-template-columns:1fr;gap:4px}#home .ai-daily-card{padding:16px}}
+
+.ai-login-dialog{border:1px solid #e6ddf1;border-radius:15px;padding:24px;max-width:min(420px,calc(100vw - 32px));width:100%;background:#fff;color:#342b52;box-shadow:0 22px 70px rgba(26,20,45,.22)}
+.ai-login-dialog::backdrop{background:rgba(20,18,32,.42)}
+.ai-login-dialog form{display:grid;gap:13px}
+.ai-login-dialog h3{margin:0;font-size:19px}
+.ai-login-dialog p{margin:0;font-size:13px;line-height:1.7;color:#757084}
+.ai-login-dialog input{padding:11px;border:1px solid #d9cee9;border-radius:9px;width:100%;font-size:15px}
+.ai-login-actions{display:flex;gap:10px;justify-content:flex-end}
+.ai-login-actions button{padding:9px 16px;border-radius:9px;cursor:pointer}
+.ai-login-actions .ai-primary{background:#7d53c7;border:0;color:white}
