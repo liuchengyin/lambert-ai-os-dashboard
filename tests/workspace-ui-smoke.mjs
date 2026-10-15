@@ -106,7 +106,8 @@ try{
   await page.locator('.s1-mobile-nav-toggle').click();
   check('Mobile menu expands on demand',await page.locator('.shell>aside').evaluate(e=>e.classList.contains('s1-mobile-open')));
   await page.locator('.s1-mobile-nav-toggle').click();
-
+  check('Mobile menu collapses after toggle',await page.locator('.shell>aside').evaluate(e=>!e.classList.contains('s1-mobile-open')));
+  await page.locator('.s1-mobile-nav-toggle').click();
   await page.locator('nav button[data-v="review"]').click();
   const mobileColumns=await page.locator('.review-v6-workspace').evaluate(e=>getComputedStyle(e).gridTemplateColumns.trim().split(/\s+/).length);
   check('Review switches to one column on mobile',mobileColumns===1);
