@@ -10,7 +10,14 @@ const fakeResponse=(data,status=200)=>({ok:status>=200&&status<300,status,async 
 globalThis.fetch=async(url,opts)=>{
   const target=String(url);
   if(target.startsWith('https://redis.test')){
-    const [cmd,key,extra]=JSON.parse(opts.body);
+    const command=JSON.parse(opts.body),[cmd,key,extra]=command;
+    if(cmd==='SET'){if(redis.has(key))return fakeResponse({result:null});redis.set(key,extra);return fakeResponse({result:'OK'})}
+    if(cmd==='EVAL'){
+      const actualKey=command[3];
+      if(key.includes('INCR')){const n=(redis.get(actualKey)||0)+1;redis.set(actualKey,n);return fakeResponse({result:n})}
+      if(redis.get(actualKey)===command[4])redis.delete(actualKey);
+      return fakeResponse({result:1});
+    }
     if(cmd==='INCR'){const n=(redis.get(key)||0)+1;redis.set(key,n);return fakeResponse({result:n})}
     if(cmd==='EXPIRE')return fakeResponse({result:1});
     throw Error('unexpected redis command');

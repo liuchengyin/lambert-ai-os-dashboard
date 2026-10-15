@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import {CHAT_SYSTEM,chatInput,chatOutput} from '../lib/ai-chat-contract.js';
 
 const MODEL=process.env.DEEPSEEK_MODEL==='deepseek-v4-pro'?'deepseek-v4-pro':'deepseek-flash';
 const COOKIE='lambert_ai_session';
@@ -25,16 +26,19 @@ function cleanProject(p){
   const name=text(p.name,110);if(!name)return null;
   return {id:text(p.id,90),name,status:text(p.status,12),due:text(p.due,25)};
 }
+class DependencyError extends Error {constructor(code){super(code);this.code=code}}
 async function redis(command){
   const url=process.env.UPSTASH_REDIS_REST_URL.replace(/\/$/,'');
-  const response=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+process.env.UPSTASH_REDIS_REST_TOKEN,'Content-Type':'application/json'},body:JSON.stringify(command),signal:AbortSignal.timeout(3500)});
-  if(!response.ok)throw Error('redis');
-  const result=await response.json();if(result.error)throw Error('redis');
-  return result.result;
+  try{
+    const response=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+process.env.UPSTASH_REDIS_REST_TOKEN,'Content-Type':'application/json'},body:JSON.stringify(command),signal:AbortSignal.timeout(3500)});
+    if(!response.ok)throw Error('redis');
+    const result=await response.json();if(result.error)throw Error('redis');
+    return result.result;
+  }catch{throw new DependencyError('rate_store_unavailable')}
 }
 async function gate(key,limit,ttl){
-  const n=await redis(['INCR',key]);
-  if(n===1)await redis(['EXPIRE',key,ttl]);
+  // A network interruption between INCR and EXPIRE must not leave a permanent counter.
+  const n=await redis(['EVAL','local n=redis.call("INCR",KEYS[1]); if n==1 then redis.call("EXPIRE",KEYS[1],ARGV[1]) end; return n',1,key,ttl]);
   return Number(n)<=limit;
 }
 function sameOrigin(req){
@@ -50,10 +54,12 @@ export default async function handler(req,res){
   if(!sameOrigin(req))return send(res,403,{ok:false,code:'origin'});
   if(!ready())return send(res,503,{ok:false,code:'not_configured',message:'AI 服务尚未启用或安全配置未完成'});
   if(Number(req.headers['content-length']||0)>24000)return send(res,413,{ok:false,code:'too_large'});
-  const body=req.body||{};
-  if(JSON.stringify(body).length>24000)return send(res,413,{ok:false,code:'too_large'});
+  const body=req.body;
+  if(!body||Array.isArray(body)||typeof body!=='object')return send(res,400,{ok:false,code:'invalid_payload'});
+  if(Buffer.byteLength(JSON.stringify(body),'utf8')>24000)return send(res,413,{ok:false,code:'too_large'});
   const ip=String(req.headers['x-forwarded-for']||'unknown').split(',')[0].trim().slice(0,90);
   const fingerprint=crypto.createHash('sha256').update(ip).digest('hex').slice(0,24);
+  let lockToken='';
   try{
     if(body.action==='login'){
       if(!await gate('ai:login:'+fingerprint,8,3600))return send(res,429,{ok:false,code:'rate_limited'});
@@ -68,32 +74,45 @@ export default async function handler(req,res){
     }
     if(!session(req))return send(res,401,{ok:false,code:'auth_required'});
     if(body.action==='status')return send(res,200,{ok:true,authenticated:true});
-    if(body.action!=='analyze')return send(res,400,{ok:false,code:'invalid_action'});
+    if(!['analyze','chat'].includes(body.action))return send(res,400,{ok:false,code:'invalid_action'});
     if(!Array.isArray(body.tasks)||!Array.isArray(body.projects)||body.tasks.length>30||body.projects.length>15||!Array.isArray(body.top3Ids)||body.top3Ids.length>3)
       return send(res,400,{ok:false,code:'invalid_payload'});
+    const chat=body.action==='chat'?chatInput(body):null;
+    if(body.action==='chat'&&!chat)return send(res,400,{ok:false,code:'invalid_payload'});
+    const token=crypto.randomUUID();
+    if(await redis(['SET','ai:concurrent',token,'NX','EX',28])!=='OK')return send(res,429,{ok:false,code:'busy',message:'已有 AI 请求正在处理，请稍后重试'});
+    lockToken=token;
     if(!await gate('ai:minute:'+fingerprint,3,60)||!await gate('ai:day:'+fingerprint+':'+new Date().toISOString().slice(0,10),15,90000)||!await gate('ai:global:'+new Date().toISOString().slice(0,10),40,90000))
       return send(res,429,{ok:false,code:'rate_limited',message:'调用次数已达安全限制'});
     const tasks=body.tasks.map(cleanTask).filter(Boolean),projects=body.projects.map(cleanProject).filter(Boolean);
-    if(!tasks.length)return send(res,200,{ok:true,result:{summary:'当前没有待分析的任务。',focus:[],alerts:[],observations:[]}});
+    if(!tasks.length&&!chat)return send(res,200,{ok:true,result:{summary:'当前没有待分析的任务。',focus:[],alerts:[],observations:[]}});
     const ids=new Set(tasks.map(t=>t.id));
-    const input={date:text(body.localDate,10),tasks,projects,top3Ids:body.top3Ids.filter(x=>typeof x==='string'&&ids.has(x))};
+    const input={date:text(body.localDate,10),tasks,projects,top3Ids:body.top3Ids.filter(x=>typeof x==='string'&&ids.has(x)),...(chat||{})};
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),19000);
-    let response;
+    let response,json;
     try{
       response=await fetch('https://api.deepseek.com/chat/completions',{
         method:'POST',headers:{Authorization:'Bearer '+process.env.DEEPSEEK_API_KEY,'Content-Type':'application/json'},
-        body:JSON.stringify({model:MODEL,thinking:{type:'disabled'},temperature:0.3,max_tokens:1200,response_format:{type:'json_object'},messages:[
-          {role:'system',content:'你是个人工作台的任务参谋。只依据输入的真实任务和项目进行分析。返回合法 JSON 对象：{"summary":"不超过60字","focus":[{"taskId":"输入中存在的ID","why":"不超过65字","nextAction":"5-10分钟可执行动作"}],"alerts":[{"taskId":"可选输入ID","severity":"high或medium","reason":"不超过70字"}],"observations":["不超过65字"]}。focus最多3项，alerts最多3项，observations最多2项。优先用户手动指定的top3Ids，不可编造任务、日期或承诺。不输出markdown。'},
+        body:JSON.stringify({model:MODEL,thinking:{type:'disabled'},temperature:0.3,max_tokens:chat?2200:1200,response_format:{type:'json_object'},messages:[
+          {role:'system',content:chat?CHAT_SYSTEM:'你是个人工作台的任务参谋。只依据输入的真实任务和项目进行分析。返回合法 JSON 对象：{"summary":"不超过60字","focus":[{"taskId":"输入中存在的ID","why":"不超过65字","nextAction":"5-10分钟可执行动作"}],"alerts":[{"taskId":"可选输入ID","severity":"high或medium","reason":"不超过70字"}],"observations":["不超过65字"]}。focus最多3项，alerts最多3项，observations最多2项。优先用户手动指定的top3Ids，不可编造任务、日期或承诺。不输出markdown。'},
           {role:'user',content:JSON.stringify(input)}
         ]}),signal:controller.signal
       });
-    }finally{clearTimeout(timer)}
+      if(response.ok)json=await response.json();
+    }catch{throw new DependencyError('provider_unavailable')}finally{clearTimeout(timer)}
     if(!response.ok)return send(res,502,{ok:false,code:'provider_unavailable'});
-    const json=await response.json();
     let result;try{result=JSON.parse(json.choices?.[0]?.message?.content||'')}catch{return send(res,502,{ok:false,code:'invalid_model_output'})}
+    if(chat){
+      const draft=chatOutput(result,projects);
+      if(!draft)return send(res,502,{ok:false,code:'invalid_model_output'});
+      return send(res,200,{ok:true,result:draft,requestId:crypto.randomUUID(),generatedAt:new Date().toISOString()});
+    }
     if(!result||typeof result!=='object')return send(res,502,{ok:false,code:'invalid_model_output'});
     const focus=(Array.isArray(result.focus)?result.focus:[]).filter(x=>ids.has(x?.taskId)).slice(0,3).map(x=>({taskId:x.taskId,why:text(x.why,65),nextAction:text(x.nextAction,100)}));
     const alerts=(Array.isArray(result.alerts)?result.alerts:[]).filter(x=>!x?.taskId||ids.has(x.taskId)).slice(0,3).map(x=>({taskId:ids.has(x.taskId)?x.taskId:'',severity:x.severity==='high'?'high':'medium',reason:text(x.reason,70)}));
     return send(res,200,{ok:true,result:{summary:text(result.summary,100),focus,alerts,observations:(Array.isArray(result.observations)?result.observations:[]).slice(0,2).map(x=>text(x,65))},generatedAt:new Date().toISOString()});
-  }catch(err){return send(res,503,{ok:false,code:'temporarily_unavailable',message:'AI 暂时不可用，原始任务数据不受影响'})}
+  }catch(err){return send(res,503,{ok:false,code:err instanceof DependencyError?err.code:'temporarily_unavailable',message:'AI 暂时不可用，原始任务数据不受影响'})}
+  finally{
+    if(lockToken)try{await redis(['EVAL','if redis.call("GET",KEYS[1])==ARGV[1] then return redis.call("DEL",KEYS[1]) else return 0 end',1,'ai:concurrent',lockToken])}catch{/* The lock expires automatically if Redis becomes unavailable. */}
+  }
 }

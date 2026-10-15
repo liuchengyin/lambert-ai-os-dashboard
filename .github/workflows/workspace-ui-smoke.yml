@@ -6,6 +6,10 @@ on:
       - 'deepseek-v1.js'
       - 'deepseek-v1.css'
       - 'api/ai-analyze.js'
+      - 'ai-chat.js'
+      - 'lib/ai-chat-contract.js'
+      - 'tests/ai-chat-api.mjs'
+      - 'tests/ai-chat-ui.mjs'
       - 'tests/deepseek-api-smoke.mjs'
       - 'tests/deepseek-ui-smoke.mjs'
       - 'dashboard-v5.js'
@@ -41,13 +45,16 @@ jobs:
           npm install --no-save --no-package-lock playwright@1.56.0
           npx playwright install --with-deps chromium
       - name: Run DeepSeek API security smoke (mocked, no API key)
-        run: node tests/deepseek-api-smoke.mjs
+        run: |
+          node tests/deepseek-api-smoke.mjs
+          node tests/ai-chat-api.mjs
       - name: Run workspace UI regression
         run: |
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
           node tests/workspace-ui-smoke.mjs
           node tests/deepseek-ui-smoke.mjs
+          node tests/ai-chat-ui.mjs
       - name: Upload visual previews
         if: always()
         uses: actions/upload-artifact@v4

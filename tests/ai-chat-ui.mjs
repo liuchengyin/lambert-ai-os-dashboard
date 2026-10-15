@@ -1,0 +1,84 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+import {mkdirSync} from 'node:fs';
+const BASE=process.env.TEST_BASE_URL||'http://127.0.0.1:8000/';
+const browser=await chromium.launch({headless:true});
+const ctx=await browser.newContext({viewport:{width:1366,height:900}});
+await ctx.addInitScript(()=>{
+  if(!localStorage.getItem('tasks'))localStorage.setItem('tasks',JSON.stringify([{id:'old-task',title:'保留旧任务',status:'待开始',priority:'P2',project:'',due:'',note:'保留私密备注',createdAt:'2026-10-10T00:00:00Z'}]));
+  localStorage.setItem('ai_consent_v1','true');localStorage.setItem('ai_auto_day_v1',JSON.stringify(new Date().toLocaleDateString('sv-SE')));
+});
+const page=await ctx.newPage(),errors=[],requests=[];let seq=0,mode='create';
+page.on('pageerror',e=>errors.push(e.message));
+await page.route('**/api/ai-analyze',async route=>{
+  const body=route.request().postDataJSON();requests.push(body);
+  if(body.action==='chat'){
+    if(mode==='network')return route.abort();
+    await new Promise(resolve=>setTimeout(resolve,80));
+    return route.fulfill({json:{ok:true,requestId:'test-request-'+(++seq),result:mode==='answer'?{reply:'先完成保留旧任务，花五分钟写下第一步。',projects:[],tasks:[]}:{reply:'<img src=x onerror=alert(1)> 草稿已准备好',projects:[{name:'英语练习',due:'',standard:'每次十分钟'}],tasks:[{title:'听力练习',priority:'P2',project:'英语练习',due:'',note:'先听一遍'}]}}});
+  }
+  return route.fulfill({json:{ok:true,result:{summary:'任务建议',focus:[],alerts:[]}}});
+});
+const check=(label,value)=>{assert.ok(value,label);console.log('PASS:',label)};
+const submit=async text=>{await page.locator('#aiChatInput').fill(text);await page.locator('#aiChatPanel').getByRole('button',{name:'发送',exact:true}).click()};
+const rows=key=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
+try{
+  await page.goto(BASE);await page.locator('#aiChatInput').waitFor({state:'visible'});
+  const initial=await rows('tasks');
+  await submit('创建英语学习项目与听力任务');
+  check('Sending disables the button',await page.locator('#aiChatPanel').getByRole('button',{name:'发送',exact:true}).isDisabled());
+  await page.locator('.ai-chat-draft h4').waitFor();
+  check('Draft never changes original data before review',JSON.stringify(await rows('tasks'))===JSON.stringify(initial));
+  check('Model text cannot execute markup',await page.locator('#aiChatPanel img').count()===0);
+  check('No local private notes sent',!JSON.stringify(requests[0]).includes('保留私密备注'));
+  await page.locator('.ai-chat-draft').getByRole('button',{name:'取消草稿'}).click();
+  check('Cancel leaves tasks untouched',JSON.stringify(await rows('tasks'))===JSON.stringify(initial));
+  await submit('创建英语练习项目和听力练习');await page.locator('.ai-chat-draft h4').waitFor();
+  const firstTask=page.locator('.ai-draft-item').filter({has:page.getByText('任务名称',{exact:true})}).first();
+  await firstTask.getByLabel('任务名称').fill('精听小猪佩奇十分钟');
+  await firstTask.getByLabel('截止日期').fill('2026-10-18');
+  await firstTask.getByLabel('优先级').selectOption('P1');
+  await page.getByRole('button',{name:'确认创建',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('已创建 1 个项目、1 个任务'));
+  let tasks=await rows('tasks');const created=tasks.find(t=>t.title==='精听小猪佩奇十分钟');
+  check('Reviewed edits saved with project association',created?.priority==='P1'&&created.due==='2026-10-18'&&created.project==='英语练习');
+  check('Old task and private note preserved',JSON.stringify(tasks.find(t=>t.id==='old-task'))===JSON.stringify(initial[0]));
+  check('Project saved once', (await rows('projects')).filter(p=>p.name==='英语练习').length===1);
+  await page.locator('#aiChatPanel').getByRole('button',{name:'查看任务',exact:true}).click();
+  await page.getByText('精听小猪佩奇十分钟',{exact:true}).first().waitFor({state:'visible'});
+  check('Task board updated immediately',true);
+  await page.locator('nav button[data-v="home"]').click();
+  await page.reload();await page.locator('#aiChatInput').waitFor();
+  check('New task persists on refresh',(await rows('tasks')).some(t=>t.title==='精听小猪佩奇十分钟'));
+  mode='answer';await submit('分析现在的任务');await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('回复已生成'));
+  check('Analysis-only chat has no create action',await page.getByRole('button',{name:'确认创建',exact:true}).count()===0);
+  mode='network';await submit('连接失败保留这段话');await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('连接失败'));
+  check('Network failure retains input',await page.locator('#aiChatInput').inputValue()==='连接失败保留这段话');
+  mode='create';await submit('创建项目和任务');await page.locator('.ai-chat-draft h4').waitFor();
+  const beforeFailure=await rows('tasks');
+  await page.evaluate(()=>{
+    const original=Storage.prototype.setItem;
+    window.restoreStorage=()=>Storage.prototype.setItem=original;
+    Storage.prototype.setItem=function(k,v){if(k==='tasks')throw new DOMException('Quota exceeded','QuotaExceededError');return original.call(this,k,v)};
+  });
+  await page.getByRole('button',{name:'确认创建',exact:true}).click();
+  check('Storage failure leaves draft for retry',await page.getByRole('button',{name:'确认创建',exact:true}).isVisible());
+  check('Storage failure preserves original task data',JSON.stringify(await rows('tasks'))===JSON.stringify(beforeFailure));
+  await page.evaluate(()=>window.restoreStorage());
+  await page.getByRole('button',{name:'取消草稿'}).click();
+  // Simulate a different tab writing after this page has loaded.
+  await submit('创建一个新任务');await page.locator('.ai-chat-draft h4').waitFor();
+  await page.evaluate(()=>{const t=JSON.parse(localStorage.getItem('tasks'));t.push({id:'other-tab',title:'其他页的新任务'});localStorage.setItem('tasks',JSON.stringify(t))});
+  await page.getByRole('button',{name:'确认创建',exact:true}).click();
+  check('Cross-tab update is not overwritten',(await page.locator('.ai-chat-status').innerText()).includes('其他页面更新')&&(await rows('tasks')).some(t=>t.id==='other-tab'));
+  await page.getByRole('button',{name:'取消草稿'}).click();
+  await page.setViewportSize({width:390,height:844});
+  const dimensions=await page.locator('#aiChatPanel').evaluate(e=>({scroll:e.scrollWidth,client:e.clientWidth}));
+  check('Mobile chat has no horizontal overflow',dimensions.scroll<=dimensions.client+3);
+  mkdirSync('tests/screenshots',{recursive:true});
+  await page.locator('#aiChatPanel').screenshot({path:'tests/screenshots/ai-chat-mobile.png'});
+  await page.setViewportSize({width:1366,height:900});
+  await page.locator('#aiChatPanel').screenshot({path:'tests/screenshots/ai-chat-desktop.png'});
+  check('No uncaught browser errors',errors.length===0);
+  console.log('Chat UI regression passed.');
+}finally{await browser.close()}
