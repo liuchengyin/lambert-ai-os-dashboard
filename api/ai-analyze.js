@@ -80,7 +80,7 @@ export default async function handler(req,res){
     const chat=body.action==='chat'?chatInput(body):null;
     if(body.action==='chat'&&!chat)return send(res,400,{ok:false,code:'invalid_payload'});
     const token=crypto.randomUUID();
-    if(await redis(['SET','ai:concurrent',token,'NX','EX',28])!=='OK')return send(res,429,{ok:false,code:'busy',message:'已有 AI 请求正在处理，请稍后重试'});
+    if(await redis(['SET','ai:concurrent',token,'NX','EX',45])!=='OK')return send(res,429,{ok:false,code:'busy',message:'已有 AI 请求正在处理，请稍后重试'});
     lockToken=token;
     if(!await gate('ai:minute:'+fingerprint,3,60)||!await gate('ai:day:'+fingerprint+':'+new Date().toISOString().slice(0,10),15,90000)||!await gate('ai:global:'+new Date().toISOString().slice(0,10),40,90000))
       return send(res,429,{ok:false,code:'rate_limited',message:'调用次数已达安全限制'});

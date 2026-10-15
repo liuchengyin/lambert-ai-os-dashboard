@@ -41,13 +41,16 @@ try{
   await page.getByRole('button',{name:'确认创建',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('已创建 1 个项目、1 个任务'));
   let tasks=await rows('tasks');const created=tasks.find(t=>t.title==='精听小猪佩奇十分钟');
-  check('Reviewed edits saved with project association',created?.priority==='P1'&&created.due==='2026-10-18'&&created.project==='英语练习');
+  check('Reviewed edits saved with project association',created?.priority==='P1'&&created.due==='2026-10-18T23:59'&&created.project==='英语练习'&&created.matrix==='q2');
   check('Old task and private note preserved',JSON.stringify(tasks.find(t=>t.id==='old-task'))===JSON.stringify(initial[0]));
   check('Project saved once', (await rows('projects')).filter(p=>p.name==='英语练习').length===1);
+  check('Creation automatically refreshes AI analysis',requests.some(x=>x.action==='analyze'&&x.tasks.some(t=>t.title==='精听小猪佩奇十分钟')));
   await page.locator('#aiChatPanel').getByRole('button',{name:'查看任务',exact:true}).click();
   await page.getByText('精听小猪佩奇十分钟',{exact:true}).first().waitFor({state:'visible'});
   check('Task board updated immediately',true);
   await page.locator('nav button[data-v="home"]').click();
+  await page.locator('#aiChatInput').waitFor({state:'visible'});
+  check('Returning home keeps the conversation',await page.locator('.ai-chat-message').count()>=2);
   await page.reload();await page.locator('#aiChatInput').waitFor();
   check('New task persists on refresh',(await rows('tasks')).some(t=>t.title==='精听小猪佩奇十分钟'));
   mode='answer';await submit('分析现在的任务');await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('回复已生成'));

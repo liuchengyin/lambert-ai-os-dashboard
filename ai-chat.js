@@ -69,7 +69,7 @@
       for(const t of result.tasks){
         const title=t.title.trim().slice(0,140),project=names.has(t.project)?t.project:'';
         const key=JSON.stringify([title,project]);if(existing.has(key))continue;existing.add(key);
-        newTasks.push({id:'task_'+crypto.randomUUID(),title,project,status:'待开始',priority:t.priority,due:t.due,note:t.note.slice(0,300),createdAt,aiRequestId:requestId});
+        newTasks.push({id:'task_'+crypto.randomUUID(),title,project,status:'待开始',priority:t.priority,matrix:'q2',due:t.due?t.due+'T23:59':'',note:t.note.slice(0,300),createdAt,aiRequestId:requestId});
       }
       const nextProjects=[...newProjects,...projects],nextTasks=[...newTasks,...tasks];
       // Preserve both exact originals if the second localStorage write fails (e.g. quota).
@@ -79,7 +79,8 @@
       catch(error){if(newProjects.length){if(originalProjects===null)localStorage.removeItem('projects');else localStorage.setItem('projects',originalProjects)}throw error}
       state.projects=nextProjects;state.tasks=nextTasks;
       committed.add(requestId);proposal=null;showDraft();
-      refreshAll();api().markChanged();
+      // Use current renderers: refreshAll still targets inputs removed by Dashboard V5.
+      renderTaskBoard();renderProjectBoard();renderHome();document.dispatchEvent(new Event('lambert:plan-created'));api().markChanged();
       // Creating a reviewed plan should feed straight into the existing daily analysis.
       if(newTasks.length&&api().hasConsent())api().analyze(false);
       feedback('已创建 '+newProjects.length+' 个项目、'+newTasks.length+' 个任务。已有同名条目已跳过。');
@@ -115,6 +116,9 @@
   function mount(){
     if(document.getElementById('aiChatPanel'))return;
     const anchor=document.getElementById('aiDailyCard');if(!anchor)return;
+    // Dashboard rerenders replace home.innerHTML. Reattach the same node so an open
+    // conversation, unsent message or reviewed draft survives task/project changes.
+    if(panel){anchor.insertAdjacentElement('afterend',panel);return}
     panel=el('section','ai-chat-panel');panel.id='aiChatPanel';
     const head=el('div','ai-card-heading');head.append(el('strong','','和 DeepSeek 一起推进'));
     const clear=button('新对话',()=>{if(sending)return;if(proposal){feedback('请先确认或取消草稿，再开始新对话。');return}history=[];log.replaceChildren();feedback('已开始新对话，已有任务和项目不受影响。')});head.append(clear);panel.append(head);
@@ -129,5 +133,6 @@
     status=el('p','ai-chat-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');panel.append(status);
     draft=el('div','ai-chat-draft');panel.append(draft);anchor.insertAdjacentElement('afterend',panel);
   }
-  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',mount);else mount();
+  function start(){mount();new MutationObserver(mount).observe(document.querySelector('main')||document.body,{childList:true,subtree:true})}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();

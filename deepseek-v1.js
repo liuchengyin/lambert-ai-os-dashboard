@@ -79,7 +79,7 @@
     card.append(button('关闭 AI 自动分析',()=>{set(CONSENT,false);draw()},'ai-quiet'));
   }
   async function call(payload){
-    const r=await fetch('/api/ai-analyze',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(28000)});
+    const r=await fetch('/api/ai-analyze',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:AbortSignal.timeout(40000)});
     const j=await r.json().catch(()=>({ok:false,code:'invalid_response'}));
     return {status:r.status,...j};
   }
