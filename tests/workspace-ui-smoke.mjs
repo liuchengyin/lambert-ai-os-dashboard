@@ -28,6 +28,7 @@ try{
   check('Sprint 1 shows project and review panels',await page.locator('#home .s1-projects').count()===1&&await page.locator('#home #s1Review').count()===1);
   await page.waitForFunction(()=>document.querySelectorAll('nav .s1-nav-group').length===3);
   check('Navigation is grouped into work, growth and tools',await page.locator('nav .s1-nav-group').count()===3);
+  await page.waitForFunction(()=>document.querySelectorAll('nav button[data-v]').length>=9);
   check('Navigation keeps all existing page buttons',await page.locator('nav button[data-v]').count()>=9);
   await page.locator('#s1AddTask').click();
   check('Quick task creation opens existing task form',await page.locator('#tasks').isVisible()&&await page.locator('#taskAddDetails').evaluate(e=>e.open));
