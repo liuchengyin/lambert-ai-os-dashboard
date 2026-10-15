@@ -41,6 +41,14 @@ try{
   const expandedWidth=await page.locator('.shell>aside').evaluate(e=>e.getBoundingClientRect().width);
   const expandedMainWidth=await page.locator('main').evaluate(e=>e.getBoundingClientRect().width);
   check('Desktop collapse control is visible',await page.locator('#s1SidebarToggle').isVisible());
+
+  check('Redundant dashboard slogan is removed',await page.locator('main>header h1').count()===0);
+  check('Date remains visible in compact header',await page.locator('main>header #today').isVisible());
+  const toggleStyle=await page.locator('#s1SidebarToggle').evaluate(e=>{
+    const c=getComputedStyle(e);return {background:c.backgroundColor,border:c.borderTopWidth,shadow:c.boxShadow,label:e.textContent.trim()};
+  });
+  check('Sidebar toggle is plain chevron, without white tile',toggleStyle.label==='<'&&toggleStyle.background==='rgba(0, 0, 0, 0)'&&toggleStyle.border==='0px'&&toggleStyle.shadow==='none');
+
   await page.locator('#s1SidebarToggle').click();
   check('Sidebar collapses to compact icon rail',await page.locator('.shell>aside').evaluate(e=>e.getBoundingClientRect().width<=80));
   check('Main workspace expands with collapsed rail',await page.locator('main').evaluate((e,w)=>e.getBoundingClientRect().width>w+90,expandedMainWidth));
