@@ -23,3 +23,7 @@
 .ai-login-actions{display:flex;gap:10px;justify-content:flex-end}
 .ai-login-actions button{padding:9px 16px;border-radius:9px;cursor:pointer}
 .ai-login-actions .ai-primary{background:#7d53c7;border:0;color:white}
+
+.ai-task-result{margin:0 0 16px;padding:13px 16px;background:rgba(255,255,255,.72);border:1px solid #ebe5f3;border-radius:12px;color:#443954;font-size:13px;line-height:1.6}
+.ai-task-result p{margin:6px 0;color:#766e88}
+.ai-task-result .ai-note{font-size:12px}
