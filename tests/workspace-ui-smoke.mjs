@@ -30,6 +30,29 @@ try{
   check('Navigation is grouped into work, growth and tools',await page.locator('nav .s1-nav-group').count()===3);
 
   check('Navigation keeps all eight visible page buttons',await page.locator('nav button[data-v]').count()>=8);
+
+  check('Work group is renamed to Execution',await page.locator('nav .s1-nav-group[data-group="work"] .s1-nav-heading').innerText().then(v=>v.includes('执行区')));
+  const navFonts=await page.evaluate(()=>({
+    heading:parseFloat(getComputedStyle(document.querySelector('.s1-nav-heading')).fontSize),
+    item:parseFloat(getComputedStyle(document.querySelector('nav button[data-v="tasks"]')).fontSize)
+  }));
+  check('Sidebar group heading is legible',navFonts.heading>=13);
+  check('Sidebar page labels are enlarged',navFonts.item>=14.5);
+  const expandedWidth=await page.locator('.shell>aside').evaluate(e=>e.getBoundingClientRect().width);
+  const expandedMainWidth=await page.locator('main').evaluate(e=>e.getBoundingClientRect().width);
+  check('Desktop collapse control is visible',await page.locator('#s1SidebarToggle').isVisible());
+  await page.locator('#s1SidebarToggle').click();
+  check('Sidebar collapses to compact icon rail',await page.locator('.shell>aside').evaluate(e=>e.getBoundingClientRect().width<=80));
+  check('Main workspace expands with collapsed rail',await page.locator('main').evaluate(e=>e.getBoundingClientRect().width>expandedMainWidth+90));
+  check('Collapsed rail preserves every module icon',await page.locator('nav button[data-v] .s1-nav-icon').count()>=8);
+  await page.locator('nav button[data-v="tasks"]').click();
+  check('Collapsed sidebar navigation remains functional',await page.locator('#tasks').isVisible());
+  await page.reload({waitUntil:'load'});
+  await page.locator('#s1SidebarToggle').waitFor({state:'visible'});
+  check('Sidebar collapsed state persists after refresh',await page.locator('.shell>aside').evaluate(e=>e.getBoundingClientRect().width<=80));
+  await page.locator('#s1SidebarToggle').click();
+  check('Sidebar expands back to original width',await page.locator('.shell>aside').evaluate((e,w)=>Math.abs(e.getBoundingClientRect().width-w)<2,expandedWidth));
+
   await page.locator('#s1AddTask').click();
   check('Quick task creation opens existing task form',await page.locator('#tasks').isVisible()&&await page.locator('#taskAddDetails').evaluate(e=>e.open));
 
@@ -97,12 +120,16 @@ try{
   mkdirSync('tests/screenshots',{recursive:true});
   await page.locator('nav button[data-v="home"]').click();
   await page.locator('.shell>aside').screenshot({path:'tests/screenshots/lambert-sidebar-logo.png'});
+  await page.locator('#s1SidebarToggle').click();
+  await page.locator('.shell>aside').screenshot({path:'tests/screenshots/sidebar-collapsed.png'});
+  await page.locator('#s1SidebarToggle').click();
   for(const [view,name] of [['home','overview'],['projects','projects'],['tasks','tasks'],['review','review']]){
     await page.locator('nav button[data-v="'+view+'"]').click();
     await page.screenshot({path:'tests/screenshots/'+name+'-desktop.png',fullPage:true});
   }
   await page.setViewportSize({width:390,height:844});
   check('Mobile menu button is visible',await page.locator('.s1-mobile-nav-toggle').isVisible());
+  check('Desktop rail control stays hidden on mobile',await page.locator('#s1SidebarToggle').isHidden());
   await page.locator('.s1-mobile-nav-toggle').click();
   check('Mobile menu expands on demand',await page.locator('.shell>aside').evaluate(e=>e.classList.contains('s1-mobile-open')));
   await page.locator('.s1-mobile-nav-toggle').click();
