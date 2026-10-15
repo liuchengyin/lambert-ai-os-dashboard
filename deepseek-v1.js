@@ -6,7 +6,7 @@
   const get=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k))??fallback}catch{return fallback}};
   const set=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
   const date=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
-  let busy=false,booted=false,lastHash='',result=null,generatedAt='';
+  let busy=false,booted=false,lastHash='',result=null,generatedAt='',notice='';
   const node=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el};
   function snapshot(){
     const tasks=get('tasks',[]).filter(t=>t&&t.status!=='已完成'&&t.title).slice(0,200);
@@ -31,20 +31,21 @@
       taskHead.insertAdjacentElement('afterend',action);
     }
   }
-  function draw(message=''){
+  function draw(message){
+    if(typeof message==='string')notice=message;
     const card=$('aiDailyCard');if(!card)return;
     card.replaceChildren();
     const title=node('div','ai-card-heading');title.append(node('strong','', '✦ AI 今日参谋'));
     title.append(button(busy?'分析中…':'重新分析',()=>analyze(true),'ai-secondary'));
     card.append(title);
-    if(message)card.append(node('p','ai-note',message));
+    if(notice)card.append(node('p','ai-note',notice));
     if(get(CONSENT,false)!==true){
       card.append(node('p','ai-note','启用后，每天首次打开工作台自动分析任务，也可手动刷新。任务摘要会发送给 DeepSeek；不会上传复盘或笔记。'));
       card.append(button('同意发送任务摘要并启用',()=>{set(CONSENT,true);draw();autoAnalyze()},'ai-primary'));
       return;
     }
     if(!result){
-      card.append(node('p','ai-note',message||'尚无分析结果。首次分析需要先完成安全登录和 API 配置。'));
+      card.append(node('p','ai-note',notice||'尚无分析结果。首次分析需要先完成安全登录和 API 配置。'));
       card.append(button('关闭 AI 自动分析',()=>{set(CONSENT,false);draw()},'ai-quiet'));
       return;
     }
@@ -68,7 +69,20 @@
     return {status:r.status,...j};
   }
   async function login(){
-    const pass=window.prompt('AI 安全登录：请输入你在 Vercel 配置的个人 AI 访问密码（不要填写 DeepSeek API Key）');
+    const pass=await new Promise(resolve=>{
+      const dialog=node('dialog','ai-login-dialog');
+      const form=node('form');form.method='dialog';
+      form.append(node('h3','','AI 安全登录'));
+      form.append(node('p','','请输入 Vercel 配置的个人 AI 访问密码（不是 DeepSeek API Key）。'));
+      const input=node('input');input.type='password';input.autocomplete='current-password';input.required=true;input.maxLength=256;
+      form.append(input);
+      const actions=node('div','ai-login-actions');
+      const cancel=button('取消',()=>dialog.close('cancel'));cancel.value='cancel';
+      const confirm=button('登录',()=>{if(input.value)dialog.close('ok')},'ai-primary');
+      actions.append(cancel,confirm);form.append(actions);dialog.append(form);document.body.append(dialog);
+      dialog.addEventListener('close',()=>{const v=dialog.returnValue==='ok'?input.value:'';input.value='';dialog.remove();resolve(v)},{once:true});
+      dialog.showModal();input.focus();
+    });
     if(!pass)return false;
     const out=await call({action:'login',password:pass});
     if(!out.ok){draw(out.code==='not_configured'?'AI 尚未完成服务端安全配置':'登录失败或已达到安全限制');return false}
@@ -88,7 +102,7 @@
         busy=true;out=await call({action:'analyze',...snap});
       }
       if(!out.ok){draw(out.code==='not_configured'?'服务端 AI 功能尚未启用':out.code==='rate_limited'?'已达到安全调用上限，请稍后重试':'分析失败，原始任务不受影响');return}
-      result=out.result;generatedAt=out.generatedAt||new Date().toISOString();lastHash=fingerprint;
+      result=out.result;generatedAt=out.generatedAt||new Date().toISOString();lastHash=fingerprint;notice='';
       const previous=get(CACHE,{});
       previous[date()]={result,generatedAt,fingerprint};
       const keys=Object.keys(previous).sort().slice(-7),recent={};keys.forEach(k=>recent[k]=previous[k]);set(CACHE,recent);
