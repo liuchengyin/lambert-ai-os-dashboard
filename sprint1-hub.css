@@ -1,0 +1,190 @@
+/* Sprint 1 · daily hub and navigation. Keep existing purple brand, data, and module layouts. */
+:root{--s1-purple:#7047c9;--s1-ink:#222338;--s1-muted:#777b91;--s1-border:rgba(116,103,164,.12)}
+#home .s1-head,#home .s1-metrics,#home .s1-main{position:relative;z-index:1}
+#home .s1-head{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:0 0 24px}
+#home .s1-eyebrow,#home .s1-kicker{font-size:10px;font-weight:760;letter-spacing:.13em;color:#8d70c7}
+#home .s1-head h2{font-size:clamp(23px,2.4vw,32px);letter-spacing:-.035em;color:var(--s1-ink);margin:7px 0 5px;line-height:1.35}
+#home .s1-head p{font-size:13px;color:var(--s1-muted);margin:0}
+#home .s1-primary{border:0!important;border-radius:11px!important;padding:11px 18px!important;background:linear-gradient(120deg,#7145ca,#9266d8)!important;color:white!important;font-size:13px!important;font-weight:700!important;box-shadow:0 8px 18px rgba(109,70,194,.17)!important;white-space:nowrap}
+#home .s1-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+#home .s1-metric{background:rgba(255,255,255,.73);border:1px solid rgba(255,255,255,.85);border-radius:16px;box-shadow:0 5px 22px rgba(74,63,110,.045);padding:16px 18px;min-width:0}
+#home .s1-metric span,#home .s1-metric small{display:block;font-size:11px;color:#85889b}
+#home .s1-metric strong{display:block;font-size:28px;line-height:1.5;letter-spacing:-.04em;color:#27243c;font-weight:760}
+#home .s1-metric .s1-review-stat{font-size:21px;line-height:2}
+#home .s1-metric.s1-alert strong{color:#ba5265}
+#home .s1-main{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(310px,.9fr);gap:18px}
+#home .s1-left,#home .s1-right{display:flex;flex-direction:column;gap:18px;min-width:0}
+#home .s1-panel{padding:22px 23px;background:rgba(255,255,255,.77);border:1px solid rgba(255,255,255,.92);border-radius:18px;box-shadow:0 8px 28px rgba(64,61,111,.06)}
+#home .s1-panel-title{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:18px}
+#home .s1-panel-title h3{font-size:18px;line-height:1.4;margin:4px 0;color:#24243b;letter-spacing:-.025em}
+#home .s1-panel-title p{font-size:11px;margin:3px 0 0;color:#8c8da1}
+#home .s1-link{border:0!important;background:transparent!important;color:#7551b9!important;font-size:12px!important;font-weight:650!important;padding:4px 0!important;white-space:nowrap}
+#home .s1-tasks{display:flex;flex-direction:column;gap:9px}
+#home .s1-task{display:flex;align-items:center;gap:12px;padding:14px 13px;background:#fbfaff;border:1px solid #f0ebf9;border-radius:12px;cursor:pointer;transition:background .15s}
+#home .s1-task:hover,#home .s1-project:hover{background:#f5f0ff}
+#home .s1-check{display:grid;place-items:center;width:24px;height:24px;flex:0 0 24px;padding:0!important;border-radius:50%!important;background:white!important;color:transparent!important;border:1.5px solid #c9b7e6!important;transition:.15s}
+#home .s1-check:hover,#home .s1-check:focus-visible{background:#7950c8!important;color:white!important}
+#home .s1-task-info{min-width:0;flex:1}
+#home .s1-task-info strong{font-size:13px;color:#29273c;font-weight:680;line-height:1.5;display:block}
+#home .s1-sub{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;font-size:10px;color:#9091a4}
+#home .s1-chevron{font-size:21px;color:#b6a7cf}
+#home .s1-empty{padding:24px 10px;text-align:center;color:#9994ab;font-size:12px}
+#home .s1-notice{border-radius:11px;background:#f7f4fc;padding:13px 15px;color:#756a8b;font-size:12px}
+#home .s1-notice-alert{background:#fff2f4;color:#ae5266}
+#home .s1-alert-row{display:flex;align-items:center;gap:9px;padding:11px 3px;border-bottom:1px solid #f1eaf1;font-size:12px;cursor:pointer}
+#home .s1-alert-row span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#home .s1-alert-row small{color:#b76b78;font-size:10px;white-space:nowrap}
+#home .s1-alert-dot{width:6px;height:6px;background:#d36a7b;border-radius:50%}
+#home .s1-projects{display:flex;flex-direction:column;gap:7px}
+#home .s1-project{display:flex;align-items:center;gap:11px;padding:11px 8px;border-radius:10px;cursor:pointer}
+#home .s1-project-icon{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:10px;background:#f1ebfc;color:#895cd2;font-size:20px}
+#home .s1-project>div{flex:1;min-width:0}
+#home .s1-project strong,#home .s1-project small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#home .s1-project strong{font-size:12px;color:#353249}
+#home .s1-project small{font-size:10px;color:#9491a5;margin-top:3px}
+#home .s1-mainline{margin-top:13px;padding-top:13px;border-top:1px solid #f0eafa;display:flex;gap:12px;align-items:center}
+#home .s1-mainline label{font-size:11px;color:#77758c;white-space:nowrap}
+#home .s1-mainline select{flex:1;min-width:0;max-width:100%;background:#faf8ff!important;border:1px solid #ebe4f5!important;border-radius:9px!important;padding:7px!important;font-size:11px!important}
+#home .s1-review-pill{font-size:10px;border-radius:30px;padding:5px 9px;background:#f1eafa;color:#7a57b2}
+#home .s1-review-button{width:100%;border:1px solid #e7ddf6!important;background:linear-gradient(120deg,#f7f3ff,#f0e8fc)!important;border-radius:11px!important;color:#6444a2!important;font-size:13px!important;font-weight:680!important;display:flex;justify-content:space-between;align-items:center;padding:12px 14px!important}
+#home .s1-shortcuts{padding:17px 22px}
+#home .s1-shortcut-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#home .s1-shortcut-row button{font-size:11px!important;border-radius:9px!important;padding:8px 10px!important;border:1px solid #ece5f7!important;background:#faf8ff!important;color:#71618e!important}
+.shell>aside nav.s1-nav{display:flex!important;flex-direction:column!important;gap:14px!important;overflow-y:auto;overflow-x:hidden;max-height:calc(100vh - 145px);margin-top:20px!important;padding-bottom:20px}
+.shell>aside nav.s1-nav .s1-nav-group{display:block;min-width:0}
+.shell>aside nav.s1-nav .s1-nav-heading{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;font-size:10px;font-weight:750;letter-spacing:.13em;color:#8290a4;padding:9px 12px 7px}
+.shell>aside nav.s1-nav .s1-nav-arrow{font-size:14px;color:#77849c;transition:transform .15s}
+.shell>aside nav.s1-nav [aria-expanded="false"] .s1-nav-arrow{transform:rotate(-90deg)}
+.shell>aside nav.s1-nav .s1-nav-items{display:flex;flex-direction:column;gap:3px}
+.shell>aside nav.s1-nav .s1-nav-items[hidden]{display:none!important}
+.shell>aside nav.s1-nav button[data-v]{display:flex!important;align-items:center;gap:11px!important;text-align:left!important;min-height:40px!important;padding:10px 13px!important;border-radius:10px!important;font-size:12px!important;font-weight:600!important;color:#abb8c9!important;background:transparent!important;border:0!important}
+.shell>aside nav.s1-nav button[data-v]:hover{background:rgba(176,152,224,.12)!important;color:#fff!important;transform:none!important}
+.shell>aside nav.s1-nav button[data-v].active{background:linear-gradient(95deg,rgba(126,86,198,.33),rgba(126,86,198,.12))!important;color:#fff!important;box-shadow:inset 3px 0 #ac82f2!important}
+.shell>aside nav.s1-nav .s1-nav-icon{font-size:16px!important;width:20px;display:inline-flex;justify-content:center;color:#bda3e8}
+.shell>aside .s1-mobile-nav-toggle{display:none}
+@media(max-width:1060px){#home .s1-main{grid-template-columns:1fr}#home .s1-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:680px){
+  #home{padding:16px!important}
+  #home .s1-head{align-items:flex-start;gap:12px;margin-bottom:16px}
+  #home .s1-head h2{font-size:21px}
+  #home .s1-head p{font-size:11px}
+  #home .s1-primary{font-size:11px!important;padding:10px 11px!important}
+  #home .s1-metrics{gap:8px;margin-bottom:12px}
+  #home .s1-metric{padding:12px;border-radius:12px}
+  #home .s1-metric strong{font-size:22px}
+  #home .s1-metric .s1-review-stat{font-size:16px}
+  #home .s1-main,#home .s1-left,#home .s1-right{gap:12px}
+  #home .s1-panel{padding:17px;border-radius:14px}
+  .shell>aside .s1-mobile-nav-toggle{display:block!important;position:absolute;right:15px;top:17px;background:#2e2442!important;border:1px solid #6a538b!important;color:#e6d6ff!important;border-radius:9px!important;padding:8px 12px!important;font-size:12px!important}
+  .shell>aside nav.s1-nav{display:none!important;max-height:none;margin-top:14px!important;overflow:visible!important;gap:8px!important}
+  .shell>aside.s1-mobile-open nav.s1-nav{display:flex!important}
+  .shell>aside nav.s1-nav .s1-nav-group{width:100%}
+}
+
+/* Sprint 1.1 · execution navigation, legible labels, Feishu-inspired compact rail */
+.shell>aside nav.s1-nav .s1-nav-heading{
+  font-size:13px!important;font-weight:750!important;letter-spacing:.075em!important;
+  color:#a7b5c8!important;padding:11px 13px 9px!important;
+}
+.shell>aside nav.s1-nav .s1-nav-arrow{font-size:17px!important}
+.shell>aside nav.s1-nav button[data-v]{
+  font-size:15px!important;font-weight:610!important;line-height:1.45!important;
+  min-height:46px!important;padding:11px 13px!important;gap:12px!important;
+}
+.shell>aside nav.s1-nav .s1-nav-icon{font-size:19px!important;width:22px!important;flex:0 0 22px}
+.shell>aside nav.s1-nav{gap:17px!important}
+.shell>aside .s1-sidebar-toggle{
+  display:flex!important;position:absolute;right:-13px;top:50%;z-index:60;
+  width:27px;height:52px;padding:0!important;align-items:center;justify-content:center;
+  transform:translateY(-50%)!important;border:1px solid #dcd3ec!important;
+  border-radius:12px!important;background:#fff!important;color:#7554b1!important;
+  box-shadow:0 3px 14px rgba(32,23,55,.16)!important;font-size:25px!important;
+  line-height:1!important;cursor:pointer;
+}
+.shell>aside .s1-sidebar-toggle:hover{
+  background:#f4efff!important;color:#58339b!important;transform:translateY(-50%)!important;
+}
+.shell>aside .s1-sidebar-toggle:focus-visible{outline:3px solid #a77de5;outline-offset:2px}
+@media(min-width:681px){
+  body.s1-sidebar-collapsed .shell>aside{
+    width:72px!important;padding:24px 11px!important;overflow:visible!important;
+  }
+  body.s1-sidebar-collapsed main{
+    margin-left:72px!important;width:calc(100% - 72px)!important;
+  }
+  body.s1-sidebar-collapsed .shell>aside .lambert-brand{
+    justify-content:center!important;gap:0!important;margin-bottom:12px!important;
+  }
+  body.s1-sidebar-collapsed .shell>aside .lambert-brand-icon{
+    width:44px!important;height:44px!important;flex:0 0 44px!important;
+  }
+  body.s1-sidebar-collapsed .shell>aside .lambert-brand-copy{display:none!important}
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav{
+    align-items:center!important;gap:8px!important;margin-top:23px!important;
+    max-height:calc(100vh - 105px)!important;overflow-y:auto!important;
+    scrollbar-width:none!important;
+  }
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav::-webkit-scrollbar{display:none}
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav .s1-nav-group{width:100%!important}
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav .s1-nav-heading{display:none!important}
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav .s1-nav-items,
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav .s1-nav-items[hidden]{
+    display:flex!important;align-items:center!important;gap:5px!important;
+  }
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav button[data-v]{
+    width:48px!important;height:48px!important;min-height:48px!important;
+    padding:0!important;justify-content:center!important;gap:0!important;
+    font-size:0!important;line-height:0!important;white-space:nowrap!important;
+    overflow:hidden!important;
+  }
+  body.s1-sidebar-collapsed .shell>aside nav.s1-nav .s1-nav-icon{
+    width:25px!important;flex:0 0 25px!important;font-size:22px!important;line-height:1!important;
+  }
+}
+@media(max-width:680px){
+  .shell>aside .s1-sidebar-toggle{display:none!important}
+  body.s1-sidebar-collapsed .shell>aside .lambert-brand-copy{display:flex!important}
+  .shell>aside nav.s1-nav .s1-nav-heading{font-size:13px!important}
+  .shell>aside nav.s1-nav button[data-v]{font-size:15px!important;min-height:46px!important}
+}
+
+/* Sprint 1.2 · remove redundant title; quiet chevron-only sidebar control */
+.shell>main>header.s1-date-header{
+  display:flex!important;align-items:center!important;justify-content:flex-end!important;
+  min-height:25px!important;margin-bottom:15px!important;padding-bottom:11px!important;
+}
+.shell>main>header.s1-date-header #today{
+  font-size:13px!important;font-weight:500!important;color:#85899a!important;
+}
+.shell>aside .s1-sidebar-toggle{
+  right:-12px!important;top:50%!important;
+  width:25px!important;height:44px!important;padding:0!important;
+  border:0!important;border-radius:0!important;background:transparent!important;
+  box-shadow:none!important;color:#a38ebd!important;font-size:23px!important;
+  font-weight:400!important;opacity:.75!important;
+}
+.shell>aside .s1-sidebar-toggle:hover{
+  background:transparent!important;box-shadow:none!important;
+  color:#815db6!important;opacity:1!important;
+}
+.shell>aside .s1-sidebar-toggle:focus-visible{
+  outline:2px solid #9e81c6!important;outline-offset:1px!important;border-radius:3px!important;
+}
+
+/* Sprint 1.3 · consistent navigation type scale, matching legacy sidebar labels */
+.shell>aside nav.s1-nav .s1-nav-heading{
+  font-size:15px!important;
+  font-weight:610!important;
+  line-height:1.45!important;
+  letter-spacing:0!important;
+  text-transform:none!important;
+}
+.shell>aside nav.s1-nav button[data-v]{
+  font-size:15px!important;
+  font-weight:610!important;
+  line-height:1.45!important;
+}
+@media(max-width:680px){
+  .shell>aside nav.s1-nav .s1-nav-heading,
+  .shell>aside nav.s1-nav button[data-v]{font-size:15px!important}
+}

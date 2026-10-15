@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'index.html'
+      - 'dashboard-v5.js'
+      - 'sprint1-navigation.js'
+      - 'sprint1-hub.css'
       - 'english-app.html'
       - 'manifest.webmanifest'
       - 'brand/**'

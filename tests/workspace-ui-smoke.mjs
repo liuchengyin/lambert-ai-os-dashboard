@@ -17,11 +17,54 @@ await ctx.addInitScript(()=>{
   ]));
 });
 const page=await ctx.newPage();
-page.on('pageerror',e=>errors.push(e.message));
+page.on('pageerror',e=>errors.push(e.stack||e.message));
 const check=(label,condition)=>{assert.ok(condition,label);console.log('PASS:',label)};
 const status=async id=>page.evaluate(id=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id===id)?.status,id);
 try{
   await page.goto(BASE,{waitUntil:'load'});
+  await page.locator('#home .s1-head').waitFor({state:'visible'});
+  check('Sprint 1 today hub loads',await page.locator('#home .s1-metrics .s1-metric').count()===4);
+  check('Sprint 1 uses real task data',await page.locator('#home .s1-task').count()>0);
+  check('Sprint 1 shows project and review panels',await page.locator('#home .s1-projects').count()===1&&await page.locator('#home #s1Review').count()===1);
+  await page.waitForFunction(()=>document.querySelectorAll('nav .s1-nav-group').length===3);
+  check('Navigation is grouped into work, growth and tools',await page.locator('nav .s1-nav-group').count()===3);
+
+  check('Navigation keeps all eight visible page buttons',await page.locator('nav button[data-v]').count()>=8);
+
+  check('Work group is renamed to Execution',await page.locator('nav .s1-nav-group[data-group="work"] .s1-nav-heading').innerText().then(v=>v.includes('执行区')));
+  const navFonts=await page.evaluate(()=>({
+    heading:parseFloat(getComputedStyle(document.querySelector('.s1-nav-heading')).fontSize),
+    item:parseFloat(getComputedStyle(document.querySelector('nav button[data-v="tasks"]')).fontSize)
+  }));
+  check('Sidebar group heading is legible',navFonts.heading>=13);
+  check('Sidebar page labels are enlarged',navFonts.item>=14.5);
+  check('Group headings match navigation item font size',Math.abs(navFonts.heading-navFonts.item)<0.1);
+  const expandedWidth=await page.locator('.shell>aside').evaluate(e=>e.getBoundingClientRect().width);
+  const expandedMainWidth=await page.locator('main').evaluate(e=>e.getBoundingClientRect().width);
+  check('Desktop collapse control is visible',await page.locator('#s1SidebarToggle').isVisible());
+
+  check('Redundant dashboard slogan is removed',await page.locator('main>header h1').count()===0);
+  check('Date remains visible in compact header',await page.locator('main>header #today').isVisible());
+  const toggleStyle=await page.locator('#s1SidebarToggle').evaluate(e=>{
+    const c=getComputedStyle(e);return {background:c.backgroundColor,border:c.borderTopWidth,shadow:c.boxShadow,label:e.textContent.trim()};
+  });
+  check('Sidebar toggle is plain chevron, without white tile',toggleStyle.label==='<'&&toggleStyle.background==='rgba(0, 0, 0, 0)'&&toggleStyle.border==='0px'&&toggleStyle.shadow==='none');
+
+  await page.locator('#s1SidebarToggle').click();
+  check('Sidebar collapses to compact icon rail',await page.locator('.shell>aside').evaluate(e=>e.getBoundingClientRect().width<=80));
+  check('Main workspace expands with collapsed rail',await page.locator('main').evaluate((e,w)=>e.getBoundingClientRect().width>w+90,expandedMainWidth));
+  check('Collapsed rail preserves every module icon',await page.locator('nav button[data-v] .s1-nav-icon').count()>=8);
+  await page.locator('nav button[data-v="tasks"]').click();
+  check('Collapsed sidebar navigation remains functional',await page.locator('#tasks').isVisible());
+  await page.reload({waitUntil:'load'});
+  await page.locator('#s1SidebarToggle').waitFor({state:'visible'});
+  check('Sidebar collapsed state persists after refresh',await page.locator('.shell>aside').evaluate(e=>e.getBoundingClientRect().width<=80));
+  await page.locator('#s1SidebarToggle').click();
+  check('Sidebar expands back to original width',await page.locator('.shell>aside').evaluate((e,w)=>Math.abs(e.getBoundingClientRect().width-w)<2,expandedWidth));
+
+  await page.locator('#s1AddTask').click();
+  check('Quick task creation opens existing task form',await page.locator('#tasks').isVisible()&&await page.locator('#taskAddDetails').evaluate(e=>e.open));
+
   const brand=page.locator('.shell>aside .lambert-brand-icon');
   check('Selected Lambert mark is visible in sidebar',await brand.isVisible());
   check('Sidebar logo SVG has loaded',await brand.evaluate(e=>e.complete&&e.naturalWidth>0));
@@ -38,8 +81,9 @@ try{
   check('PWA manifest references Lambert app icon',manifest.ok()&&(await manifest.json()).icons.some(i=>i.src==='/brand/app-icon.svg'));
   await page.locator('nav button[data-v="tasks"]').click();
   await page.locator('.task-v5-card[data-task-id="drag-a"]').waitFor({state:'visible'});
+  await page.waitForTimeout(350); // dashboard renders task cards asynchronously after navigation
   await page.waitForFunction(()=>document.querySelector('.task-v5-card[data-task-id="drag-a"]')?.draggable===true);
-  check('Task cards are draggable',await page.locator('[data-task-id="drag-a"]').getAttribute('draggable')==='true');
+  check('Task cards are draggable',await page.locator('.task-v5-card[data-task-id="drag-a"]').evaluate(e=>e.draggable===true));
   await page.locator('[data-task-id="drag-a"]').dragTo(page.locator('.task-v5-col.doing'),{targetPosition:{x:160,y:220}});
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a')?.status==='进行中');
   check('Cross-column drag persists new status',await status('drag-a')==='进行中');
@@ -85,11 +129,21 @@ try{
   mkdirSync('tests/screenshots',{recursive:true});
   await page.locator('nav button[data-v="home"]').click();
   await page.locator('.shell>aside').screenshot({path:'tests/screenshots/lambert-sidebar-logo.png'});
+  await page.locator('#s1SidebarToggle').click();
+  await page.locator('.shell>aside').screenshot({path:'tests/screenshots/sidebar-collapsed.png'});
+  await page.locator('#s1SidebarToggle').click();
   for(const [view,name] of [['home','overview'],['projects','projects'],['tasks','tasks'],['review','review']]){
     await page.locator('nav button[data-v="'+view+'"]').click();
     await page.screenshot({path:'tests/screenshots/'+name+'-desktop.png',fullPage:true});
   }
   await page.setViewportSize({width:390,height:844});
+  check('Mobile menu button is visible',await page.locator('.s1-mobile-nav-toggle').isVisible());
+  check('Desktop rail control stays hidden on mobile',await page.locator('#s1SidebarToggle').isHidden());
+  await page.locator('.s1-mobile-nav-toggle').click();
+  check('Mobile menu expands on demand',await page.locator('.shell>aside').evaluate(e=>e.classList.contains('s1-mobile-open')));
+  await page.locator('.s1-mobile-nav-toggle').click();
+  check('Mobile menu collapses after toggle',await page.locator('.shell>aside').evaluate(e=>!e.classList.contains('s1-mobile-open')));
+  await page.locator('.s1-mobile-nav-toggle').click();
   await page.locator('nav button[data-v="review"]').click();
   const mobileColumns=await page.locator('.review-v6-workspace').evaluate(e=>getComputedStyle(e).gridTemplateColumns.trim().split(/\s+/).length);
   check('Review switches to one column on mobile',mobileColumns===1);
