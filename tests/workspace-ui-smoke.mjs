@@ -22,6 +22,16 @@ const check=(label,condition)=>{assert.ok(condition,label);console.log('PASS:',l
 const status=async id=>page.evaluate(id=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id===id)?.status,id);
 try{
   await page.goto(BASE,{waitUntil:'load'});
+  await page.locator('#home .s1-head').waitFor({state:'visible'});
+  check('Sprint 1 today hub loads',await page.locator('#home .s1-metrics .s1-metric').count()===4);
+  check('Sprint 1 uses real task data',await page.locator('#home .s1-task').count()>0);
+  check('Sprint 1 shows project and review panels',await page.locator('#home .s1-projects').count()===1&&await page.locator('#home #s1Review').count()===1);
+  await page.waitForFunction(()=>document.querySelectorAll('nav .s1-nav-group').length===3);
+  check('Navigation is grouped into work, growth and tools',await page.locator('nav .s1-nav-group').count()===3);
+  check('Navigation keeps all existing page buttons',await page.locator('nav button[data-v]').count()>=9);
+  await page.locator('#s1AddTask').click();
+  check('Quick task creation opens existing task form',await page.locator('#tasks').isVisible()&&await page.locator('#taskAddDetails').evaluate(e=>e.open));
+
   const brand=page.locator('.shell>aside .lambert-brand-icon');
   check('Selected Lambert mark is visible in sidebar',await brand.isVisible());
   check('Sidebar logo SVG has loaded',await brand.evaluate(e=>e.complete&&e.naturalWidth>0));
@@ -90,6 +100,11 @@ try{
     await page.screenshot({path:'tests/screenshots/'+name+'-desktop.png',fullPage:true});
   }
   await page.setViewportSize({width:390,height:844});
+  check('Mobile menu button is visible',await page.locator('.s1-mobile-nav-toggle').isVisible());
+  await page.locator('.s1-mobile-nav-toggle').click();
+  check('Mobile menu expands on demand',await page.locator('.shell>aside').evaluate(e=>e.classList.contains('s1-mobile-open')));
+  await page.locator('.s1-mobile-nav-toggle').click();
+
   await page.locator('nav button[data-v="review"]').click();
   const mobileColumns=await page.locator('.review-v6-workspace').evaluate(e=>getComputedStyle(e).gridTemplateColumns.trim().split(/\s+/).length);
   check('Review switches to one column on mobile',mobileColumns===1);
