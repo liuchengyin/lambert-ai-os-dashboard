@@ -18,3 +18,9 @@
 @media(max-width:1180px){.project-dashboard{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:900px){.project-dashboard{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.project-dashboard{grid-template-columns:1fr}.project-inline-task-create{grid-template-columns:1fr}.project-compose-collapsible>summary{align-items:flex-start}}
+
+/* Completed projects collapse to their title; click the card to view or edit details. */
+#projects .project-card-done{padding:9px 12px!important;min-height:0}
+#projects .project-card-done>:not(h4){display:none!important}
+#projects .project-card-done>h4{margin:0;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+#projects .project-card-done>h4::before{content:'✅';display:inline-block;margin-right:8px;font-size:14px}
