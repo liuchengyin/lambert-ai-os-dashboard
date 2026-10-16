@@ -20,3 +20,19 @@
 #tasks .task-v5-actions .task-start-arrow{margin-left:auto;display:grid;place-items:center;min-width:32px;min-height:32px;padding:3px 7px;background:transparent!important;color:#5268bb!important;font-size:20px;line-height:1;border:0;box-shadow:none!important}
 #tasks .task-v5-actions .task-start-arrow:hover{background:#edf0fc!important}
 #tasks .task-v5-actions .task-start-arrow:focus-visible{outline:2px solid #5268bb;outline-offset:2px}
+
+/* Compact cards: quadrant color surrounds the card; actions sit on its right edge. */
+#tasks .task-v5-card.q1{--task-ring:#e78c8c;--task-glow:rgba(220,67,67,.24);--task-ink:#b93232}
+#tasks .task-v5-card.q2{--task-ring:#8daee8;--task-glow:rgba(61,116,211,.23);--task-ink:#3869b7}
+#tasks .task-v5-card.q3{--task-ring:#e5b16a;--task-glow:rgba(224,145,39,.25);--task-ink:#b57520}
+#tasks .task-v5-card.q4{--task-ring:#b6bdc7;--task-glow:rgba(119,130,146,.20);--task-ink:#697484}
+#tasks .task-v5-card{position:relative;padding:10px 42px 10px 12px!important;min-height:42px;border:1px solid var(--task-ring)!important;box-shadow:0 0 0 1px var(--task-ring),0 0 12px var(--task-glow)!important;cursor:pointer}
+#tasks .task-v5-card:hover{box-shadow:0 0 0 1px var(--task-ring),0 0 17px var(--task-glow)!important}
+#tasks .task-v5-card :is(.task-v5-meta,.task-v5-note,.task-v6-countdown){display:none!important}
+#tasks .task-v5-card .task-v5-title{display:block;min-width:0;margin:0;font-size:14px;line-height:21px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#tasks .task-v5-card .task-v6-top{display:block;min-width:0}
+#tasks .task-v5-card .task-v5-actions{position:absolute;right:5px;top:50%;transform:translateY(-50%);display:flex;margin:0;gap:0}
+#tasks .task-v5-card .task-v5-actions :is(.task-start-arrow,.task-complete-edge){display:grid;place-items:center;width:32px;height:32px;min-height:32px;margin:0;padding:0;font-size:23px;line-height:1;background:transparent!important;color:var(--task-ink)!important;border:0;box-shadow:none!important;border-radius:7px}
+#tasks .task-v5-card .task-v5-actions :is(.task-start-arrow,.task-complete-edge):hover{background:var(--task-glow)!important}
+#tasks .task-v5-card .task-v5-actions :is(.task-start-arrow,.task-complete-edge):focus-visible{outline:2px solid var(--task-ring);outline-offset:1px}
+#tasks .task-v5-col.done .task-v5-card{padding:10px 12px!important;min-height:42px}

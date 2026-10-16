@@ -100,6 +100,7 @@ try{
   await page.locator('nav button[data-v="tasks"]').click();
   await page.locator('.task-v5-col.done [data-task-id="drag-a"]').waitFor({state:'visible'});
   check('Task status survives refresh',await status('drag-a')==='已完成');
+  const compactHeight=await page.locator('[data-task-id="drag-a"]').evaluate(e=>e.getBoundingClientRect().height);
   const completedBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a'));
   await page.locator('.task-v5-col.done [data-task-id="drag-a"]').click();
   await page.locator('#ev5Reopen').waitFor({state:'visible'});
@@ -117,10 +118,28 @@ try{
   await page.locator('#ev5Save').click();
   const todoCard=page.locator('[data-task-id="drag-a"]');
   check('Task cards do not duplicate the edit entry',await page.locator('.task-v5-card button').filter({hasText:'编辑'}).count()===0);
-  check('Todo start action uses an accessible arrow',await todoCard.getByRole('button',{name:'开始任务'}).innerText()==='▶');
+  check('Todo start action uses an accessible edge chevron',await todoCard.getByRole('button',{name:'开始任务'}).innerText()==='>');
+  const compact=await todoCard.evaluate(e=>{const card=e.getBoundingClientRect(),arrow=e.querySelector('.task-start-arrow').getBoundingClientRect();return {height:card.height,gap:card.right-arrow.right}});
+  check('Todo and completed cards have the same compact height',Math.abs(compact.height-compactHeight)<2);
+  check('Start chevron hugs the right edge',compact.gap>=0&&compact.gap<10);
+  const quadrantColors=await todoCard.evaluate(e=>{
+    const original=e.className,colors={};
+    for(const q of ['q1','q2','q3','q4']){e.className='task-v5-card '+q;const s=getComputedStyle(e);colors[q]={border:s.borderTopColor,shadow:s.boxShadow,sides:[s.borderTopColor,s.borderRightColor,s.borderBottomColor,s.borderLeftColor]}}
+    e.className=original;return colors;
+  });
+  for(const [q,color] of Object.entries({q1:'rgb(231, 140, 140)',q2:'rgb(141, 174, 232)',q3:'rgb(229, 177, 106)',q4:'rgb(182, 189, 199)'})){
+    check(q+' surrounds the card with its quadrant color',quadrantColors[q].sides.every(x=>x===color)&&quadrantColors[q].shadow!=='none');
+  }
   await todoCard.getByRole('button',{name:'开始任务'}).click();
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a')?.status==='进行中');
   check('Start arrow moves the task to in-progress',await status('drag-a')==='进行中');
+  const doingCard=page.locator('[data-task-id="drag-a"]');
+  check('In-progress card is compact and has no return button',Math.abs(await doingCard.evaluate(e=>e.getBoundingClientRect().height)-compactHeight)<2&&await doingCard.getByRole('button',{name:'退回',exact:true}).count()===0);
+  await doingCard.click();
+  await page.getByRole('button',{name:'退回待开始',exact:true}).click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a')?.status==='待开始');
+  check('Return from in-progress is available inside editing',await status('drag-a')==='待开始');
+  await page.locator('[data-task-id="drag-a"]').getByRole('button',{name:'开始任务'}).click();
   await page.locator('[data-task-id="drag-b"]').dragTo(page.locator('[data-task-id="drag-c"]'),{targetPosition:{x:120,y:5}});
   await page.waitForTimeout(250);
   const order=await page.evaluate(()=>JSON.parse(localStorage.getItem('task_drag_order_v1')));
