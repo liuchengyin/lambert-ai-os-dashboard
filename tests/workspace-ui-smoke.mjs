@@ -100,7 +100,9 @@ try{
   await page.locator('nav button[data-v="tasks"]').click();
   await page.locator('.task-v5-col.done [data-task-id="drag-a"]').waitFor({state:'visible'});
   check('Task status survives refresh',await status('drag-a')==='已完成');
-  const compactHeight=await page.locator('[data-task-id="drag-a"]').evaluate(e=>e.getBoundingClientRect().height);
+  // The legacy enhancer runs after rendering; measure final layout, not hover transforms.
+  await page.waitForFunction(()=>{const e=document.querySelector('[data-task-id="drag-a"]');return e&&getComputedStyle(e.querySelector('.task-v5-title')).lineHeight==='21px'&&e.offsetHeight<50});
+  const compactHeight=await page.locator('[data-task-id="drag-a"]').evaluate(e=>e.offsetHeight);
   const completedMarker=await page.locator('[data-task-id="drag-a"] .task-v5-title').evaluate(e=>({before:getComputedStyle(e,'::before').content,after:getComputedStyle(e,'::after').content,right:getComputedStyle(e,'::after').right}));
   check('Completed green check is on the right, not before the title',completedMarker.before==='none'&&completedMarker.after==='"✓"'&&completedMarker.right==='11px');
   const completedBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a'));
@@ -121,7 +123,8 @@ try{
   const todoCard=page.locator('[data-task-id="drag-a"]');
   check('Task cards do not duplicate the edit entry',await page.locator('.task-v5-card button').filter({hasText:'编辑'}).count()===0);
   check('Todo start action uses an accessible edge chevron',await todoCard.getByRole('button',{name:'开始任务'}).innerText()==='>');
-  const compact=await todoCard.evaluate(e=>{const card=e.getBoundingClientRect(),arrow=e.querySelector('.task-start-arrow').getBoundingClientRect();return {height:card.height,gap:card.right-arrow.right}});
+  await page.waitForFunction(height=>{const e=document.querySelector('[data-task-id="drag-a"]');return e&&Math.abs(e.offsetHeight-height)<2},compactHeight);
+  const compact=await todoCard.evaluate(e=>{const card=e.getBoundingClientRect(),arrow=e.querySelector('.task-start-arrow').getBoundingClientRect();return {height:e.offsetHeight,gap:card.right-arrow.right}});
   check('Todo and completed cards have the same compact height',Math.abs(compact.height-compactHeight)<2);
   check('Start chevron hugs the right edge',compact.gap>=0&&compact.gap<10);
   const quadrantColors=await todoCard.evaluate(e=>{
@@ -137,7 +140,7 @@ try{
   check('Start arrow moves the task to in-progress',await status('drag-a')==='进行中');
   const doingCard=page.locator('[data-task-id="drag-a"]');
   check('In-progress completion control is a hollow circle',await doingCard.getByRole('button',{name:'完成任务',exact:true}).innerText()==='○');
-  check('In-progress card is compact and has no return button',Math.abs(await doingCard.evaluate(e=>e.getBoundingClientRect().height)-compactHeight)<2&&await doingCard.getByRole('button',{name:'退回',exact:true}).count()===0);
+  check('In-progress card is compact and has no return button',Math.abs(await doingCard.evaluate(e=>e.offsetHeight)-compactHeight)<2&&await doingCard.getByRole('button',{name:'退回',exact:true}).count()===0);
   await doingCard.click();
   await page.getByRole('button',{name:'退回待开始',exact:true}).click();
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a')?.status==='待开始');
