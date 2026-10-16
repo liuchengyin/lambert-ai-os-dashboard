@@ -37,6 +37,8 @@
     set("projects",state.projects);set("tasks",state.tasks);
     renderProjectDashboard();renderProjectBoard();renderHome();renderTaskBoard();populateProjectOptions();renderCreateTaskPicker();
   }
+  // An additive creator can refresh the private dashboard/picker without duplicating data.
+  document.addEventListener('lambert:plan-created',()=>{renderProjectDashboard();renderCreateTaskPicker()});
 
   function taskMatches(t,q){
     if(!q)return true;

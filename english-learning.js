@@ -26,7 +26,7 @@
   const STORE='english_learning_v1';
   const mediaFiles={video:null,audio:null};
   let cues=[],cueIndex=0,repeat=false,segmentEnd=null,mediaMode='video';
-  let showSubtitles=true,abStart=null,abEnd=null,abLoop=false;
+  let showSubtitles=true,abStart=null,abEnd=null,abLoop=false,playbackSpeed=1;
   const stampTime=t=>{const p=t.replace(',','.').split(':');return (+p[0])*3600+(+p[1])*60+(+p[2]);};
   function parseSrt(source){
     return source.replace(/\r/g,'').replace(/^\uFEFF/,'').trim().split(/\n\s*\n/).map(block=>{
@@ -51,15 +51,28 @@
     const overlay=$('enSubtitleOverlay');if(overlay){overlay.textContent=showSubtitles&&c?c.text:'';overlay.style.display=showSubtitles?'block':'none'}
     const n=$('englishCueCount');if(n)n.textContent=c?((cueIndex+1)+' / '+cues.length):'0 / 0';
     const course=videoCourse();if(course.currentCueIndex!==cueIndex){course.currentCueIndex=cueIndex;persist()}
+    syncDictationCue();
+  }
+  function syncDictationCue(){
+    const dict=$('enDictation');if(!dict)return;
+    const key=String(cueIndex);
+    if(dict.dataset.cueKey!==key){
+      // Save input before changing its binding, including composition/IME text.
+      if(dict.dataset.cueKey!==undefined){videoState().dictations[dict.dataset.cueKey]=dict.value;persist()}
+      dict.dataset.cueKey=key;dict.value=videoState().dictations[key]||'';
+    }
+    const result=$('enDictationResult'),cue=cues[cueIndex];
+    if(result&&originalShown)result.innerHTML=cue?'<div>原文：'+esc(cue.text)+'</div><div>逐词对照：'+diffWords(dict.value,cue.text)+'</div>':'请先导入字幕';
   }
   function renderMedia(){
     const host=$('englishMediaArea');if(!host)return;
+    const previous=activePlayer();if(previous)previous.pause();
     const file=mediaFiles[mediaMode],available=!!file;
     const step=videoCourse().currentStep||1;
     const guide={1:'先完整观看视频，可以显示或隐藏字幕。',2:'反复精听：优先纯音频，使用倍速或 A-B 循环。',3:'逐句学习：上一句、下一句、播放本句或循环。',4:'跟读和默写：播放当前句，再录音和输入英文。',5:'自主选择要收藏的句子，再用它造句。',6:'完成前五步后，保存学习记录并盖章。'};
     host.innerHTML='<p class="en-step-guide">'+guide[step]+'</p><div class="en-media-modes"><button id="enVideoMode" class="'+(mediaMode==='video'?'active':'')+'">视频</button><button id="enAudioMode" class="'+(mediaMode==='audio'?'active':'')+'">纯音频</button></div>'+
       (available?(mediaMode==='video'?'<div class="en-video-wrap"><video id="englishMediaPlayer" controls playsinline preload="metadata"></video><div id="enSubtitleOverlay" class="en-subtitle-overlay"></div></div>':'<audio id="englishMediaPlayer" controls preload="metadata"></audio>'):'<div class="en-media-empty">导入'+(mediaMode==='video'?'视频':'音频')+'后开始播放</div>')+
-      '<div class="en-rate">倍速：<button data-speed="0.5">0.5×</button><button data-speed="0.75">0.75×</button><button data-speed="1">1×</button><button id="enSubtitleToggle">字幕：'+(showSubtitles?'显示':'隐藏')+'</button></div>'+ 
+      '<p id="enMediaStatus" class="en-hint" role="status" aria-live="polite"></p><div class="en-rate">倍速：<button data-speed="0.5">0.5×</button><button data-speed="0.75">0.75×</button><button data-speed="1">1×</button><button id="enSubtitleToggle">字幕：'+(showSubtitles?'显示':'隐藏')+'</button></div>'+
       '<div class="en-ab"><button id="enSetA">设置 A</button><button id="enSetB">设置 B</button><button id="enToggleAB">A-B 循环：'+(abLoop?'开':'关')+'</button><small id="enAbStatus"></small></div>'+
       '<div class="en-cue"><small id="englishCueCount"></small><p id="englishCue"></p><div class="en-cue-buttons"><button id="enPrev">上一句</button><button id="enPlay">播放本句</button><button id="enLoop">循环：'+(repeat?'开':'关')+'</button><button id="enNext">下一句</button></div></div>';
     $('enVideoMode').onclick=()=>{mediaMode='video';segmentEnd=null;abLoop=false;repeat=false;renderMedia()};
@@ -74,8 +87,21 @@
     $('enToggleAB').onclick=()=>{if(abStart===null||abEnd===null||abEnd<=abStart){if(abStatus)abStatus.textContent='请先设置 A，再设置晚于 A 的 B';return}abLoop=!abLoop;segmentEnd=null;if(abLoop){repeat=false;$('enLoop').textContent='循环：关'}$('enToggleAB').textContent='A-B 循环：'+(abLoop?'开':'关');if(abLoop&&player){player.currentTime=abStart;player.play().catch(()=>{})}};
     abText();
     const player=activePlayer();
+    const mediaStatus=$('enMediaStatus');
+    mediaStatus.textContent=available?'正在加载：'+file.name:(videoCourse()[mediaMode+'Name']?'重新选择「'+videoCourse()[mediaMode+'Name']+'」即可恢复本地播放。':'可先导入 SRT 浏览句子，再选择本地'+(mediaMode==='video'?'视频':'音频')+'进行精听。');
+    for(const id of ['enPlay','enLoop','enSetA','enSetB','enToggleAB'])$(id).disabled=!available;
     if(player){
       player.src=file.url;
+      player.playbackRate=playbackSpeed;
+      player.onerror=()=>{mediaStatus.textContent='无法播放「'+file.name+'」，请检查文件是否完整，或换用浏览器支持的 MP4 / WebM 视频、MP3 / WAV 音频。'};
+      // Restoring a subtitle or switching video/audio keeps the current learning sentence.
+      player.addEventListener('loadedmetadata',()=>{
+        mediaStatus.textContent='当前文件：'+file.name;
+        if(cues[cueIndex]){
+          player.currentTime=Math.min(cues[cueIndex].start,Number.isFinite(player.duration)?Math.max(0,player.duration-.01):cues[cueIndex].start);
+          if(Number.isFinite(player.duration)&&cues[cueIndex].start>=player.duration)mediaStatus.textContent+=' · 当前字幕时间超出媒体长度，请核对是否导入了配套文件。';
+        }
+      },{once:true});
       player.ontimeupdate=()=>{
         const overlay=$('enSubtitleOverlay'),cue=cues[cueIndex];
         if(overlay)overlay.textContent=showSubtitles&&cue&&player.currentTime>=cue.start&&player.currentTime<cue.end?cue.text:'';
@@ -91,7 +117,8 @@
       };
       player.onseeking=()=>{if(segmentEnd!==null&&Math.abs(player.currentTime-cues[cueIndex]?.start)>.5)segmentEnd=null};
     }
-    host.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>{if(player)player.playbackRate=Number(b.dataset.speed)});
+    const syncSpeed=()=>host.querySelectorAll('[data-speed]').forEach(b=>{const active=Number(b.dataset.speed)===playbackSpeed;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active))});
+    host.querySelectorAll('[data-speed]').forEach(b=>b.onclick=()=>{playbackSpeed=Number(b.dataset.speed);if(player)player.playbackRate=playbackSpeed;syncSpeed()});syncSpeed();
     showCue();
   }
   function bindMediaImports(){
@@ -271,8 +298,9 @@
     if(rec)rec.onclick=()=>startRecording('en');
     if(stop)stop.onclick=stopRecording;
     const dict=$('enDictation');
+    if(dict)dict.dataset.cueKey=cueKey();
     if(dict)dict.oninput=()=>{
-      c.dictations[cueKey()]=dict.value;persist();
+      c.dictations[dict.dataset.cueKey||cueKey()]=dict.value;persist();
       const result=$('enDictationResult');
       if(result&&originalShown){const cue=cues[cueIndex];result.innerHTML=cue?'<div>原文：'+esc(cue.text)+'</div><div>逐词对照：'+diffWords(dict.value,cue.text)+'</div>':'请先导入字幕'}
     };

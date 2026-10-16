@@ -24,6 +24,11 @@ try{
   await page.goto(BASE,{waitUntil:'load'});
   await page.locator('#home .s1-head').waitFor({state:'visible'});
   check('Sprint 1 today hub loads',await page.locator('#home .s1-metrics .s1-metric').count()===4);
+  await page.locator('#aiDailyCard').waitFor({state:'visible'});
+  check('AI daily advisor is visible without replacing task panels',await page.locator('#aiDailyCard').count()===1);
+  check('AI requires consent before sending task data',await page.locator('#aiDailyCard').innerText().then(t=>t.includes('同意发送任务摘要')));
+  check('AI script does not overwrite task storage on initial load',await page.evaluate(()=>JSON.parse(localStorage.getItem('tasks')).some(t=>t.id==='drag-a')));
+
   check('Sprint 1 uses real task data',await page.locator('#home .s1-task').count()>0);
   check('Sprint 1 shows project and review panels',await page.locator('#home .s1-projects').count()===1&&await page.locator('#home #s1Review').count()===1);
   await page.waitForFunction(()=>document.querySelectorAll('nav .s1-nav-group').length===3);
@@ -95,6 +100,49 @@ try{
   await page.locator('nav button[data-v="tasks"]').click();
   await page.locator('.task-v5-col.done [data-task-id="drag-a"]').waitFor({state:'visible'});
   check('Task status survives refresh',await status('drag-a')==='已完成');
+  const compactHeight=await page.locator('[data-task-id="drag-a"]').evaluate(e=>e.getBoundingClientRect().height);
+  const completedMarker=await page.locator('[data-task-id="drag-a"] .task-v5-title').evaluate(e=>({before:getComputedStyle(e,'::before').content,after:getComputedStyle(e,'::after').content,right:getComputedStyle(e,'::after').right}));
+  check('Completed green check is on the right, not before the title',completedMarker.before==='none'&&completedMarker.after==='"✓"'&&completedMarker.right==='11px');
+  const completedBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a'));
+  await page.locator('.task-v5-col.done [data-task-id="drag-a"]').click();
+  await page.locator('#ev5Reopen').waitFor({state:'visible'});
+  await page.locator('#ev5Reopen').click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a')?.status==='进行中');
+  const reopened=await page.evaluate(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a'));
+  check('Completed task can return to in-progress without changing other fields',JSON.stringify(reopened)===JSON.stringify({...completedBefore,status:'进行中'}));
+  await page.reload({waitUntil:'load'});
+  await page.locator('nav button[data-v="tasks"]').click();
+  await page.locator('.task-v5-col.doing [data-task-id="drag-a"]').waitFor({state:'visible'});
+  check('Undo completion survives refresh',await status('drag-a')==='进行中');
+  // Card click remains the edit entry; todo cards use a right-aligned start arrow.
+  await page.locator('[data-task-id="drag-a"]').click();
+  await page.locator('#ev5Status').selectOption('待开始');
+  await page.locator('#ev5Save').click();
+  const todoCard=page.locator('[data-task-id="drag-a"]');
+  check('Task cards do not duplicate the edit entry',await page.locator('.task-v5-card button').filter({hasText:'编辑'}).count()===0);
+  check('Todo start action uses an accessible edge chevron',await todoCard.getByRole('button',{name:'开始任务'}).innerText()==='>');
+  const compact=await todoCard.evaluate(e=>{const card=e.getBoundingClientRect(),arrow=e.querySelector('.task-start-arrow').getBoundingClientRect();return {height:card.height,gap:card.right-arrow.right}});
+  check('Todo and completed cards have the same compact height',Math.abs(compact.height-compactHeight)<2);
+  check('Start chevron hugs the right edge',compact.gap>=0&&compact.gap<10);
+  const quadrantColors=await todoCard.evaluate(e=>{
+    const original=e.className,transition=e.style.transition,priority=e.style.getPropertyPriority('transition'),colors={};e.style.setProperty('transition','none','important');
+    for(const q of ['q1','q2','q3','q4']){e.className='task-v5-card '+q;const s=getComputedStyle(e);colors[q]={border:s.borderTopColor,shadow:s.boxShadow,sides:[s.borderTopColor,s.borderRightColor,s.borderBottomColor,s.borderLeftColor]}}
+    e.className=original;e.style.setProperty('transition',transition,priority);return colors;
+  });
+  for(const [q,color] of Object.entries({q1:'rgb(231, 140, 140)',q2:'rgb(141, 174, 232)',q3:'rgb(229, 177, 106)',q4:'rgb(182, 189, 199)'})){
+    check(q+' surrounds the card with its quadrant color',quadrantColors[q].sides.every(x=>x===color)&&quadrantColors[q].shadow!=='none');
+  }
+  await todoCard.getByRole('button',{name:'开始任务'}).click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a')?.status==='进行中');
+  check('Start arrow moves the task to in-progress',await status('drag-a')==='进行中');
+  const doingCard=page.locator('[data-task-id="drag-a"]');
+  check('In-progress completion control is a hollow circle',await doingCard.getByRole('button',{name:'完成任务',exact:true}).innerText()==='○');
+  check('In-progress card is compact and has no return button',Math.abs(await doingCard.evaluate(e=>e.getBoundingClientRect().height)-compactHeight)<2&&await doingCard.getByRole('button',{name:'退回',exact:true}).count()===0);
+  await doingCard.click();
+  await page.getByRole('button',{name:'退回待开始',exact:true}).click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a')?.status==='待开始');
+  check('Return from in-progress is available inside editing',await status('drag-a')==='待开始');
+  await page.locator('[data-task-id="drag-a"]').getByRole('button',{name:'开始任务'}).click();
   await page.locator('[data-task-id="drag-b"]').dragTo(page.locator('[data-task-id="drag-c"]'),{targetPosition:{x:120,y:5}});
   await page.waitForTimeout(250);
   const order=await page.evaluate(()=>JSON.parse(localStorage.getItem('task_drag_order_v1')));

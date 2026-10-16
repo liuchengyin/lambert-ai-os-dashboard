@@ -5,13 +5,15 @@ const demoProjectNames=new Set(["Lambert AI OS","职业能力 / 求职","知识�
 const demoTaskNames=new Set(["看板 V2 上线","填写真实项目","设置 Notion / 飞书入口"]);
 const demoTop3=new Set(["把个人看板上线","补齐项目/任务/复盘框架","把 Notion/飞书链接挂进去"]);
 
-let savedProjects=get("projects",[]).filter(x=>!demoProjectNames.has(x.name));
-let rawTasks=get("tasks",[]).filter(x=>!demoTaskNames.has(x.name||x.title));
+// Names are user data: a real entry can have the same title as an old demo item.
+let savedProjects=get("projects",[]);
+let rawTasks=get("tasks",[]);
 let savedTop3=get("top3",[]).filter(x=>!demoTop3.has(x));
 
 function makeTaskId(){return `task_${Date.now()}_${Math.random().toString(36).slice(2,8)}`}
 function normalizeTask(x){
   return {
+    ...x,
     id:x.id||makeTaskId(),
     title:x.title||x.name||"未命名任务",
     status:["待开始","进行中","已完成"].includes(x.status)?x.status:"待开始",

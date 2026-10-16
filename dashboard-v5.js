@@ -60,13 +60,19 @@
 
   function taskButton(label,cls,fn){const b=document.createElement('button');b.textContent=label;b.className=cls||'';b.onclick=e=>{e.stopPropagation();fn()};return b}
   function renderTaskCard(t,index){
-    const c=document.createElement('article');c.className=`task-v5-card ${t.matrix}`;c.dataset.taskId=t.id;c.onclick=()=>openTaskEditor(index);
+    const c=document.createElement('article');c.className=`task-v5-card ${t.matrix}`;c.dataset.taskId=t.id;c.onclick=()=>openTaskEditor(index);c.title=t.title+' · '+QUADS[t.matrix].name;c.setAttribute('aria-label',t.title+'，'+t.status+'，'+QUADS[t.matrix].name);
     c.innerHTML=`<div class="task-v5-title">${esc(t.title)}</div><div class="task-v5-meta"><span class="task-v5-chip ${t.matrix}">${QUADS[t.matrix].short}</span><span class="task-v5-chip">${esc(t.priority)}</span>${t.project?`<span class="task-v5-chip">${esc(t.project)}</span>`:''}${t.due?`<span class="task-v5-chip">${isOverdue(t)?'已逾期 · ':''}${esc(dueLabel(t.due))}</span>`:''}</div>${t.note?`<div class="task-v5-note">${esc(t.note)}</div>`:''}`;
     const a=document.createElement('div');a.className='task-v5-actions';
-    if(t.status==='待开始')a.appendChild(taskButton('开始','primary',()=>changeStatus(index,'进行中')));
-    if(t.status==='进行中'){a.appendChild(taskButton('完成','primary',()=>changeStatus(index,'已完成')));a.appendChild(taskButton('退回','',()=>changeStatus(index,'待开始')))}
+    if(t.status==='待开始'){
+      const start=taskButton('>','task-start-arrow',()=>changeStatus(index,'进行中'));
+      start.title='开始任务';start.setAttribute('aria-label','开始任务');a.appendChild(start);
+    }
+    if(t.status==='进行中'){
+      const complete=taskButton('○','task-complete-edge',()=>changeStatus(index,'已完成'));
+      complete.title='完成任务';complete.setAttribute('aria-label','完成任务');a.appendChild(complete);
+    }
     if(t.status==='已完成')a.appendChild(taskButton('重新打开','',()=>changeStatus(index,'待开始')));
-    a.appendChild(taskButton('编辑','',()=>openTaskEditor(index)));c.appendChild(a);return c
+    c.appendChild(a);return c
   }
 
   function renderTaskPageSkeleton(){
@@ -122,7 +128,14 @@
   function changeStatus(index,status){state.tasks[index].status=status;persistAll()}
 
   const editDlg=document.createElement('dialog');editDlg.id='taskV5EditDlg';editDlg.innerHTML=`<form method="dialog" class="task-v5-dialog"><h3>编辑任务</h3><label>任务名称<input id="ev5Title"></label><label>状态<select id="ev5Status"><option>待开始</option><option>进行中</option><option>已完成</option></select></label><label>所属项目<select id="ev5Project"></select></label><label>优先级<select id="ev5P"><option>P1</option><option>P2</option><option>P3</option></select></label><label>重要 / 紧急<select id="ev5Q"><option value="q1">重要且紧急</option><option value="q2">重要不紧急</option><option value="q3">紧急不重要</option><option value="q4">不重要不紧急</option></select></label><label>截止时间<input id="ev5Due" type="datetime-local"></label><label>完成标准 / 备注<textarea id="ev5Note"></textarea></label><div class="dlgActions"><button value="cancel">取消</button><button id="ev5Delete" type="button">删除</button><button id="ev5Save" type="button" class="task-primary-btn">保存</button></div></form>`;document.body.appendChild(editDlg);
-  function openTaskEditor(index){editTaskIndex=index;const t=state.tasks[index];$('ev5Title').value=t.title;$('ev5Status').value=t.status;projectOptions($('ev5Project'),t.project||'');$('ev5P').value=t.priority;$('ev5Q').value=t.matrix;$('ev5Due').value=t.due||'';$('ev5Note').value=t.note||'';editDlg.showModal()}
+  const reopenButton=document.createElement('button');reopenButton.type='button';reopenButton.id='ev5Reopen';reopenButton.textContent='退回进行中';reopenButton.hidden=true;
+  $('ev5Save').before(reopenButton);
+  reopenButton.onclick=()=>{
+    const status=state.tasks[editTaskIndex]?.status;
+    if(editTaskIndex<0||!['已完成','进行中'].includes(status))return;
+    const index=editTaskIndex;editDlg.close();changeStatus(index,status==='已完成'?'进行中':'待开始');
+  };
+  function openTaskEditor(index){editTaskIndex=index;const t=state.tasks[index];$('ev5Title').value=t.title;$('ev5Status').value=t.status;projectOptions($('ev5Project'),t.project||'');$('ev5P').value=t.priority;$('ev5Q').value=t.matrix;$('ev5Due').value=t.due||'';$('ev5Note').value=t.note||'';reopenButton.hidden=!['已完成','进行中'].includes(t.status);reopenButton.textContent=t.status==='已完成'?'退回进行中':'退回待开始';editDlg.showModal()}
   $('ev5Save').onclick=()=>{if(editTaskIndex<0)return;const title=$('ev5Title').value.trim();if(!title)return;const old=state.tasks[editTaskIndex];state.tasks[editTaskIndex]={...old,title,status:$('ev5Status').value,project:$('ev5Project').value,priority:$('ev5P').value,matrix:$('ev5Q').value,due:$('ev5Due').value,note:$('ev5Note').value.trim()};editDlg.close();persistAll()};
   $('ev5Delete').onclick=()=>{if(editTaskIndex<0)return;const t=state.tasks[editTaskIndex];if(!confirm(`确认删除任务“${t.title}”吗？`))return;state.tasks.splice(editTaskIndex,1);editDlg.close();persistAll()};
 

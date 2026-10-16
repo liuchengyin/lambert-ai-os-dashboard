@@ -47,6 +47,8 @@
 @media(max-width:620px){#english .en-subtitle-overlay{font-size:14px;bottom:48px}#english .en-ab button{flex:1}}
 
 #english .en-step-guide{margin:8px 0 12px;font-size:13px;color:#667085;line-height:1.6}#english .en-media-modes button.active{background:#242428;color:#fff;border-color:#242428}
+#english .en-rate [data-speed].active{background:#eee8f9;border-color:#bfa9e0;color:#6a459d}
+#english #enMediaStatus{overflow-wrap:anywhere;min-height:18px}
 
 
 /* Scoped mobile shell correction: theme-linear.css forces a desktop sidebar at <=900px.
