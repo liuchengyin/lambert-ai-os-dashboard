@@ -43,3 +43,10 @@
 #tasks .task-v5-card .task-v5-actions{padding:0!important}
 #tasks .task-v5-col .task-v5-card[class]{border:1px solid var(--task-ring)!important;box-shadow:0 0 0 1px var(--task-ring),0 0 12px var(--task-glow)!important}
 #tasks .task-v5-col .task-v5-card[class]:hover{box-shadow:0 0 0 1px var(--task-ring),0 0 17px var(--task-glow)!important}
+
+/* Shared right-edge icon slot; completion stays green while action controls match. */
+#tasks .task-v5-col.done .task-v5-card{padding:10px 42px 10px 12px!important}
+#tasks .task-v5-col.done .task-v5-title::before{content:none}
+#tasks .task-v5-col.done .task-v5-title::after{content:'✅';position:absolute;right:5px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:32px;height:32px;margin:0;font-size:18px;line-height:1;pointer-events:none}
+#tasks .task-v5-card .task-v5-actions :is(.task-start-arrow,.task-complete-edge){width:32px;height:32px;font-family:inherit;font-size:23px;font-weight:500;color:#5268bb!important;border-radius:7px}
+#tasks .task-v5-card .task-v5-actions :is(.task-start-arrow,.task-complete-edge):hover{background:#edf0fc!important}

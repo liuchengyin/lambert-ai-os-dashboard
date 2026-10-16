@@ -68,7 +68,7 @@
       start.title='开始任务';start.setAttribute('aria-label','开始任务');a.appendChild(start);
     }
     if(t.status==='进行中'){
-      const complete=taskButton('✓','task-complete-edge',()=>changeStatus(index,'已完成'));
+      const complete=taskButton('○','task-complete-edge',()=>changeStatus(index,'已完成'));
       complete.title='完成任务';complete.setAttribute('aria-label','完成任务');a.appendChild(complete);
     }
     if(t.status==='已完成')a.appendChild(taskButton('重新打开','',()=>changeStatus(index,'待开始')));

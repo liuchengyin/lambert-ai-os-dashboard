@@ -101,6 +101,8 @@ try{
   await page.locator('.task-v5-col.done [data-task-id="drag-a"]').waitFor({state:'visible'});
   check('Task status survives refresh',await status('drag-a')==='已完成');
   const compactHeight=await page.locator('[data-task-id="drag-a"]').evaluate(e=>e.getBoundingClientRect().height);
+  const completedMarker=await page.locator('[data-task-id="drag-a"] .task-v5-title').evaluate(e=>({before:getComputedStyle(e,'::before').content,after:getComputedStyle(e,'::after').content,right:getComputedStyle(e,'::after').right}));
+  check('Completed green check is on the right, not before the title',completedMarker.before==='none'&&completedMarker.after==='"✅"'&&completedMarker.right==='5px');
   const completedBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a'));
   await page.locator('.task-v5-col.done [data-task-id="drag-a"]').click();
   await page.locator('#ev5Reopen').waitFor({state:'visible'});
@@ -134,6 +136,7 @@ try{
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a')?.status==='进行中');
   check('Start arrow moves the task to in-progress',await status('drag-a')==='进行中');
   const doingCard=page.locator('[data-task-id="drag-a"]');
+  check('In-progress completion control is a hollow circle',await doingCard.getByRole('button',{name:'完成任务',exact:true}).innerText()==='○');
   check('In-progress card is compact and has no return button',Math.abs(await doingCard.evaluate(e=>e.getBoundingClientRect().height)-compactHeight)<2&&await doingCard.getByRole('button',{name:'退回',exact:true}).count()===0);
   await doingCard.click();
   await page.getByRole('button',{name:'退回待开始',exact:true}).click();
