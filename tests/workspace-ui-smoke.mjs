@@ -111,6 +111,16 @@ try{
   await page.locator('nav button[data-v="tasks"]').click();
   await page.locator('.task-v5-col.doing [data-task-id="drag-a"]').waitFor({state:'visible'});
   check('Undo completion survives refresh',await status('drag-a')==='进行中');
+  // Card click remains the edit entry; todo cards use a right-aligned start arrow.
+  await page.locator('[data-task-id="drag-a"]').click();
+  await page.locator('#ev5Status').selectOption('待开始');
+  await page.locator('#ev5Save').click();
+  const todoCard=page.locator('[data-task-id="drag-a"]');
+  check('Task cards do not duplicate the edit entry',await page.locator('.task-v5-card button').filter({hasText:'编辑'}).count()===0);
+  check('Todo start action uses an accessible arrow',await todoCard.getByRole('button',{name:'开始任务'}).innerText()==='▶');
+  await todoCard.getByRole('button',{name:'开始任务'}).click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a')?.status==='进行中');
+  check('Start arrow moves the task to in-progress',await status('drag-a')==='进行中');
   await page.locator('[data-task-id="drag-b"]').dragTo(page.locator('[data-task-id="drag-c"]'),{targetPosition:{x:120,y:5}});
   await page.waitForTimeout(250);
   const order=await page.evaluate(()=>JSON.parse(localStorage.getItem('task_drag_order_v1')));

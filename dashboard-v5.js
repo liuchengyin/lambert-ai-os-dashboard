@@ -63,10 +63,13 @@
     const c=document.createElement('article');c.className=`task-v5-card ${t.matrix}`;c.dataset.taskId=t.id;c.onclick=()=>openTaskEditor(index);
     c.innerHTML=`<div class="task-v5-title">${esc(t.title)}</div><div class="task-v5-meta"><span class="task-v5-chip ${t.matrix}">${QUADS[t.matrix].short}</span><span class="task-v5-chip">${esc(t.priority)}</span>${t.project?`<span class="task-v5-chip">${esc(t.project)}</span>`:''}${t.due?`<span class="task-v5-chip">${isOverdue(t)?'已逾期 · ':''}${esc(dueLabel(t.due))}</span>`:''}</div>${t.note?`<div class="task-v5-note">${esc(t.note)}</div>`:''}`;
     const a=document.createElement('div');a.className='task-v5-actions';
-    if(t.status==='待开始')a.appendChild(taskButton('开始','primary',()=>changeStatus(index,'进行中')));
+    if(t.status==='待开始'){
+      const start=taskButton('▶','task-start-arrow',()=>changeStatus(index,'进行中'));
+      start.title='开始任务';start.setAttribute('aria-label','开始任务');a.appendChild(start);
+    }
     if(t.status==='进行中'){a.appendChild(taskButton('完成','primary',()=>changeStatus(index,'已完成')));a.appendChild(taskButton('退回','',()=>changeStatus(index,'待开始')))}
     if(t.status==='已完成')a.appendChild(taskButton('重新打开','',()=>changeStatus(index,'待开始')));
-    a.appendChild(taskButton('编辑','',()=>openTaskEditor(index)));c.appendChild(a);return c
+    c.appendChild(a);return c
   }
 
   function renderTaskPageSkeleton(){

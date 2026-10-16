@@ -15,3 +15,8 @@
 #tasks .task-v5-col.done .task-v5-card :is(.task-v5-meta,.task-v5-note,.task-v5-actions,.task-v6-countdown){display:none!important}
 #tasks .task-v5-col.done .task-v5-title{margin:0;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
 #tasks .task-v5-col.done .task-v5-title::before{content:'✅';display:inline-block;margin-right:8px;font-size:14px}
+
+/* Card click opens editing; the only todo action is a right-aligned start arrow. */
+#tasks .task-v5-actions .task-start-arrow{margin-left:auto;display:grid;place-items:center;min-width:32px;min-height:32px;padding:3px 7px;background:transparent!important;color:#5268bb!important;font-size:20px;line-height:1;border:0;box-shadow:none!important}
+#tasks .task-v5-actions .task-start-arrow:hover{background:#edf0fc!important}
+#tasks .task-v5-actions .task-start-arrow:focus-visible{outline:2px solid #5268bb;outline-offset:2px}
