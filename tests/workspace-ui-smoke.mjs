@@ -100,6 +100,17 @@ try{
   await page.locator('nav button[data-v="tasks"]').click();
   await page.locator('.task-v5-col.done [data-task-id="drag-a"]').waitFor({state:'visible'});
   check('Task status survives refresh',await status('drag-a')==='已完成');
+  const completedBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a'));
+  await page.locator('.task-v5-col.done [data-task-id="drag-a"]').click();
+  await page.locator('#ev5Reopen').waitFor({state:'visible'});
+  await page.locator('#ev5Reopen').click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a')?.status==='进行中');
+  const reopened=await page.evaluate(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a'));
+  check('Completed task can return to in-progress without changing other fields',JSON.stringify(reopened)===JSON.stringify({...completedBefore,status:'进行中'}));
+  await page.reload({waitUntil:'load'});
+  await page.locator('nav button[data-v="tasks"]').click();
+  await page.locator('.task-v5-col.doing [data-task-id="drag-a"]').waitFor({state:'visible'});
+  check('Undo completion survives refresh',await status('drag-a')==='进行中');
   await page.locator('[data-task-id="drag-b"]').dragTo(page.locator('[data-task-id="drag-c"]'),{targetPosition:{x:120,y:5}});
   await page.waitForTimeout(250);
   const order=await page.evaluate(()=>JSON.parse(localStorage.getItem('task_drag_order_v1')));
