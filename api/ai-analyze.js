@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import {CHAT_SYSTEM,chatInput,chatOutput} from '../lib/ai-chat-contract.js';
 
 const MODEL=process.env.DEEPSEEK_MODEL==='deepseek-v4-pro'?'deepseek-v4-pro':'deepseek-flash';
+const DAILY_LIMIT=100,GLOBAL_LIMIT=200,MINUTE_LIMIT=6;
 const COOKIE='lambert_ai_session';
 const ready=()=>process.env.AI_ENABLED==='true'&&['DEEPSEEK_API_KEY','AI_ACCESS_PASSWORD','AI_SESSION_SECRET','UPSTASH_REDIS_REST_URL','UPSTASH_REDIS_REST_TOKEN'].every(k=>!!process.env[k])&&process.env.AI_SESSION_SECRET.length>=32;
 const send=(res,code,data)=>res.status(code).json(data);
@@ -89,8 +90,21 @@ export default async function handler(req,res){
     const token=crypto.randomUUID();
     if(await redis(['SET','ai:concurrent',token,'NX','EX',45])!=='OK')return send(res,429,{ok:false,code:'busy',message:'已有 AI 请求正在处理，请稍后重试'});
     lockToken=token;
-    if(!await gate('ai:minute:'+fingerprint,3,60)||!await gate('ai:day:'+fingerprint+':'+new Date().toISOString().slice(0,10),15,90000)||!await gate('ai:global:'+new Date().toISOString().slice(0,10),40,90000))
-      return send(res,429,{ok:false,code:'rate_limited',message:'调用次数已达安全限制'});
+    const day=new Date().toISOString().slice(0,10);
+    const dayKey='ai:day:'+fingerprint+':'+day,globalKey='ai:global:'+day;
+    const resetAt=Date.parse(day+'T00:00:00Z')+86400000;
+    function limited(scope,retryAfter,limit){
+      res.setHeader('Retry-After',String(retryAfter));
+      return send(res,429,{ok:false,code:'rate_limited',scope,limit,retryAfter,
+        resetAt:new Date(Date.now()+retryAfter*1000).toISOString()});
+    }
+    // The owner lock serializes quota reads and paid calls across all users.
+    for(const [key,scope,limit] of [[dayKey,'day',DAILY_LIMIT],[globalKey,'global_day',GLOBAL_LIMIT]]){
+      const count=await redis(['GET',key]);
+      if(count!==null&&(!Number.isFinite(Number(count))||Number(count)<0))throw new DependencyError('rate_store_unavailable');
+      if(Number(count)>=limit)return limited(scope,Math.max(1,Math.ceil((resetAt-Date.now())/1000)),limit);
+    }
+    if(!await gate('ai:minute:'+fingerprint,MINUTE_LIMIT,60))return limited('minute',60,MINUTE_LIMIT);
     const tasks=body.tasks.map(cleanTask).filter(Boolean),projects=body.projects.map(cleanProject).filter(Boolean);
     if(!tasks.length&&!chat)return send(res,200,{ok:true,result:{summary:'当前没有待分析的任务。',focus:[],alerts:[],observations:[]}});
     const ids=new Set(tasks.map(t=>t.id));
@@ -101,7 +115,7 @@ export default async function handler(req,res){
       response=await fetch('https://api.deepseek.com/chat/completions',{
         method:'POST',headers:{Authorization:'Bearer '+process.env.DEEPSEEK_API_KEY,'Content-Type':'application/json'},
         body:JSON.stringify({model:MODEL,thinking:{type:'disabled'},temperature:0.3,max_tokens:chat?2200:1200,response_format:{type:'json_object'},messages:[
-          {role:'system',content:chat?CHAT_SYSTEM:'你是个人工作台的任务参谋。只依据输入的真实任务和项目进行分析。返回合法 JSON 对象：{"summary":"不超过60字","focus":[{"taskId":"输入中存在的ID","why":"不超过65字","nextAction":"5-10分钟可执行动作"}],"alerts":[{"taskId":"可选输入ID","severity":"high或medium","reason":"不超过70字"}],"observations":["不超过65字"]}。focus最多3项，alerts最多3项，observations最多2项。优先用户手动指定的top3Ids，不可编造任务、日期或承诺。不输出markdown。'},
+          {role:'system',content:chat?CHAT_SYSTEM:'你是个人工作台的任务参谋。只依据输入的真实任务和项目进行分析。返回合法 JSON 对象：{"summary":"不超过60字","focus":[{"taskId":"输入中存在的ID","why":"不超过65字","nextAction":"5-10分钟可执行动作"}],"alerts":[{"taskId":"可选输入ID","severity":"high或medium","reason":"不超过70字"}],"observations":["不超过65字"]}。focus最多3项，alerts最多3项，observations最多2项。优先用户手动指定的top3Ids，综合重要性、紧急性和进行中状态；不要仅按逾期时间排序。缺少完成标准时建议先明确标准。每个下一步必须具体且能在5-10分钟内开始，不要泛泛催促。不可编造任务、日期或承诺。不输出markdown。'},
           {role:'user',content:JSON.stringify(input)}
         ]}),signal:controller.signal
       });
@@ -112,19 +126,22 @@ export default async function handler(req,res){
       console.warn('lambert_ai_dependency',JSON.stringify({requestId,code,status:response.status,elapsedMs:Date.now()-started}));
       return send(res,502,{ok:false,code,requestId});
     }
+    // Authentication, balance, timeout and provider failures do not consume daily quota.
+    await gate(dayKey,Number.MAX_SAFE_INTEGER,90000);
+    await gate(globalKey,Number.MAX_SAFE_INTEGER,90000);
     let result;try{result=JSON.parse(json?.choices?.[0]?.message?.content||'')}catch{return send(res,502,{ok:false,code:'invalid_model_output'})}
     if(chat){
       const draft=chatOutput(result,projects);
       if(!draft)return send(res,502,{ok:false,code:'invalid_model_output'});
       // Release before replying so immediate post-creation analysis can acquire the lock.
       await unlock();
-      return send(res,200,{ok:true,result:draft,requestId,generatedAt:new Date().toISOString()});
+      return send(res,200,{ok:true,model:MODEL,result:draft,requestId,generatedAt:new Date().toISOString()});
     }
     if(!result||Array.isArray(result)||typeof result!=='object'||!text(result.summary,100)||!Array.isArray(result.focus)||!Array.isArray(result.alerts)||!Array.isArray(result.observations))return send(res,502,{ok:false,code:'invalid_model_output'});
     const focus=(Array.isArray(result.focus)?result.focus:[]).filter(x=>ids.has(x?.taskId)).slice(0,3).map(x=>({taskId:x.taskId,why:text(x.why,65),nextAction:text(x.nextAction,100)}));
     const alerts=result.alerts.filter(x=>x&&typeof x==='object'&&(!x.taskId||ids.has(x.taskId))).slice(0,3).map(x=>({taskId:ids.has(x.taskId)?x.taskId:'',severity:x.severity==='high'?'high':'medium',reason:text(x.reason,70)}));
     await unlock();
-    return send(res,200,{ok:true,result:{summary:text(result.summary,100),focus,alerts,observations:(Array.isArray(result.observations)?result.observations:[]).slice(0,2).map(x=>text(x,65))},generatedAt:new Date().toISOString()});
+    return send(res,200,{ok:true,model:MODEL,result:{summary:text(result.summary,100),focus,alerts,observations:(Array.isArray(result.observations)?result.observations:[]).slice(0,2).map(x=>text(x,65))},generatedAt:new Date().toISOString()});
   }catch(err){
     const code=err instanceof DependencyError?err.code:'temporarily_unavailable';
     console.warn('lambert_ai_dependency',JSON.stringify({requestId,code,elapsedMs:Date.now()-started}));

@@ -5,11 +5,11 @@
   const button=(label,fn,cls='ai-secondary')=>{const b=el('button',cls,label);b.type='button';b.onclick=fn;return b};
   let sending=false,history=[],proposal=null,committing=false,committed=new Set();
   const api=()=>window.LambertAI;
-  let panel,log,input,send,status,draft,examples;
+  let panel,log,input,send,status,draft,examples,minutes,energy;
   function message(role,value){
     const item=el('div','ai-chat-message ai-chat-'+role);
     item.append(el('small','',role==='user'?'你':'DeepSeek'),el('p','',value));log.append(item);
-    if(examples)examples.hidden=true;
+
     while(log.children.length>12)log.firstElementChild.remove();
     log.scrollTop=log.scrollHeight;
   }
@@ -101,7 +101,7 @@
     sending=true;send.disabled=true;input.disabled=true;feedback('DeepSeek 正在整理…');
     try{
       const now=new Date(),snapshot=api().snapshot();
-      const payload={action:'chat',...snapshot,message:content,history:history.slice(-6),weekday:now.toLocaleDateString('zh-CN',{weekday:'long'}),timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
+      const payload={action:'chat',...snapshot,message:content,availableMinutes:minutes.value?Number(minutes.value):null,energy:energy.value,history:history.slice(-6),weekday:now.toLocaleDateString('zh-CN',{weekday:'long'}),timezone:Intl.DateTimeFormat().resolvedOptions().timeZone};
       let out=await api().call(payload);
       if(out.code==='auth_required'){
         feedback('需要登录 AI 服务。');
@@ -113,7 +113,7 @@
       message('user',content);message('assistant',out.result.reply);
       history.push({role:'user',content},{role:'assistant',content:out.result.reply.slice(0,2000)});history=history.slice(-6);
       input.value='';proposal=(out.result.projects.length||out.result.tasks.length)?out:null;showDraft();
-      feedback(proposal?'草稿已生成，请核对后确认创建。':'回复已生成。可继续提问或说明要创建的任务。');
+      feedback((proposal?'草稿已生成，请核对后确认创建。':'回复已生成。可继续提问或说明要创建的任务。')+(out.model?' · 模型：'+out.model:''));
     }catch{feedback('连接失败或响应异常，输入内容已保留，可稍后重试。')}
     finally{sending=false;send.disabled=false;input.disabled=false;input.focus()}
   }
@@ -126,10 +126,25 @@
     panel=el('section','ai-chat-panel');panel.id='aiChatPanel';
     const head=el('div','ai-card-heading');head.append(el('strong','','和 DeepSeek 一起推进'));
     const clear=button('新对话',()=>{if(sending)return;if(proposal){feedback('请先确认或取消草稿，再开始新对话。');return}history=[];log.replaceChildren();examples.hidden=false;feedback('已开始新对话，已有任务和项目不受影响。')});head.append(clear);panel.append(head);
-    panel.append(el('p','ai-note','说出要做的事，整理成任务或项目。对话仅保留在本次页面，消息和任务摘要将发送给 DeepSeek。'));
+    panel.append(el('p','ai-note','说出要做的事，整理成任务或项目，也可以安排今天、拆解阻塞和复盘。对话仅保留在本次页面，消息和任务摘要将发送给 DeepSeek。'));
     log=el('div','ai-chat-log');log.setAttribute('role','log');log.setAttribute('aria-label','与 DeepSeek 的对话');panel.append(log);
     examples=el('div','ai-chat-examples');
-    ['创建一个任务：明晚练习 SQL，先做 10 分钟','创建英语学习项目，拆成听力和跟读两个任务','分析我现在的任务，建议今天先做哪一件'].forEach(value=>examples.append(button(value,()=>{input.value=value;input.focus()})));panel.append(examples);
+    const context=el('div','ai-chat-context');
+    function choice(label,options){
+      const wrap=el('label');wrap.append(el('span','',label));const select=el('select');
+      for(const [value,name] of options){const option=el('option','',name);option.value=value;select.append(option)}
+      wrap.append(select);context.append(wrap);return select;
+    }
+    minutes=choice('本次可用时间',[['','未指定'],['10','10分钟'],['20','20分钟'],['30','30分钟'],['60','1小时'],['120','2小时']]);
+    energy=choice('当前精力',[['normal','一般'],['low','有点累'],['high','精力充足']]);
+    panel.append(context);
+    const shortcuts=[
+      ['帮我安排今天','请结合已有任务、我本次可用时间和精力，推荐今天先做哪一件、下一步做什么。不创建重复任务；如果我没选时间，请先问我有多少时间。'],
+      ['拆解这个项目','我想拆解一个项目，请先问我是哪个项目，以及希望做到什么算完成，再根据我的回答生成近期执行计划草稿。'],
+      ['我卡住了','我有任务卡住了，请先问我是哪件任务，再帮我找到阻塞原因和一个5分钟能开始的动作。'],
+      ['记录今天进展','我想复盘今天，请先问我完成了什么、什么没完成，再帮我整理差距和明天的一个调整建议。当前先在对话中整理。']
+    ];
+    shortcuts.forEach(([label,value])=>examples.append(button(label,()=>{input.value=value;input.focus()})));panel.append(examples);
     const form=el('form','ai-chat-form');input=el('textarea');input.id='aiChatInput';input.rows=3;input.maxLength=2000;input.placeholder='例如：建一个求职项目，本周先修改简历、准备履约案例';input.setAttribute('aria-label','发送给 DeepSeek 的消息');form.append(input);
     const actions=el('div','ai-chat-actions');actions.append(el('small','ai-note','Enter 换行 · Ctrl / ⌘ + Enter 发送'));
     send=button('发送',submit,'ai-primary');actions.append(send);form.append(actions);

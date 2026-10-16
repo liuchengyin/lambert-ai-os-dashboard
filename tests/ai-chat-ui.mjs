@@ -64,7 +64,16 @@ try{
   check('New task persists on refresh',(await rows('tasks')).some(t=>t.title==='精听小猪佩奇十分钟'));
   const oldAfterRefresh=(await rows('tasks')).find(t=>t.id==='old-task');
   check('Existing matrix and custom fields survive refresh',oldAfterRefresh.matrix==='q3'&&oldAfterRefresh.sourceTag==='保留扩展字段');
-  mode='answer';await submit('分析现在的任务');await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('回复已生成'));
+  mode='answer';
+  await page.getByLabel('本次可用时间').selectOption('30');await page.getByLabel('当前精力').selectOption('low');
+  await page.getByRole('button',{name:'帮我安排今天',exact:true}).click();
+  check('Planning shortcut prepares a request without sending', (await page.locator('#aiChatInput').inputValue()).includes('本次可用时间'));
+  await page.locator('#aiChatPanel').getByRole('button',{name:'发送',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('回复已生成'));
+  check('Time and energy travel with the chat request',requests.filter(x=>x.action==='chat').at(-1).availableMinutes===30&&requests.filter(x=>x.action==='chat').at(-1).energy==='low');
+  await page.getByRole('button',{name:'我卡住了',exact:true}).click();
+  check('Unblocking shortcut stays available after a reply',(await page.locator('#aiChatInput').inputValue()).includes('5分钟'));
+  await submit('分析现在的任务');await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('回复已生成'));
   check('Analysis-only chat has no create action',await page.getByRole('button',{name:'确认创建',exact:true}).count()===0);
   mode='network';await submit('连接失败保留这段话');await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('连接失败'));
   check('Network failure retains input',await page.locator('#aiChatInput').inputValue()==='连接失败保留这段话');

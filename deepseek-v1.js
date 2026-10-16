@@ -6,7 +6,7 @@
   const get=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k))??fallback}catch{return fallback}};
   const set=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
   const date=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
-  let busy=false,booted=false,lastHash='',result=null,generatedAt='',notice='',loginPending=null;
+  let busy=false,booted=false,lastHash='',result=null,generatedAt='',model='',notice='',loginPending=null;
   const node=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el};
   function snapshot(){
     const tasks=get('tasks',[]).filter(t=>t&&t.status!=='已完成'&&t.title).slice(0,200);
@@ -75,7 +75,7 @@
     }
     for(const x of result.alerts||[])card.append(node('p','ai-alert','注意：'+x.reason));
     const stale=lastHash&&lastHash!==hash(snapshot());
-    card.append(node('div','ai-footer',(generatedAt?'分析于 '+new Date(generatedAt).toLocaleString('zh-CN'):'')+(stale?' · 任务有变化，可重新分析':'')));
+    card.append(node('div','ai-footer',(model?'模型：'+model+' · ':'')+(generatedAt?'分析于 '+new Date(generatedAt).toLocaleString('zh-CN'):'')+(stale?' · 任务有变化，可重新分析':'')));
     card.append(button('关闭 AI 自动分析',()=>{set(CONSENT,false);draw()},'ai-quiet'));
   }
   async function call(payload){
@@ -109,12 +109,12 @@
           if(!dialog.isConnected)return;
           if(out.ok){dialog.close('ok');return}
           const messages={
-            not_configured:'AI 服务端配置未完成（503），请检查 Preview 环境变量。',
+            not_configured:'AI 服务端配置未完成（503），请检查当前部署环境的变量。',
             wrong_password:'访问密码不匹配（401），请输入 AI_ACCESS_PASSWORD，不是 API Key。',
             rate_limited:'登录尝试次数过多（429），请等待一小时后重试。',
             temporarily_unavailable:'登录服务暂不可用（503），请检查服务配置与网络。',
             rate_store_unavailable:'限流数据库连接失败（503），请检查 Upstash REST URL 和 Token。',
-            origin:'请求来源校验失败（403），请从当前 Preview 地址打开网页。',
+            origin:'请求来源校验失败（403），请从工作台正式地址或当前部署地址打开网页。',
             invalid_response:'服务端未返回有效 JSON，请检查部署及网络。'
           };
           error.textContent=messages[out.code]||('AI 登录失败（HTTP '+out.status+'，'+(out.code||'unknown')+'）。');
@@ -140,9 +140,9 @@
         busy=true;out=await call({action:'analyze',...snap});
       }
       if(!out.ok){draw(errorMessage(out));return}
-      result=out.result;generatedAt=out.generatedAt||new Date().toISOString();lastHash=fingerprint;notice='';
+      result=out.result;model=out.model||'';generatedAt=out.generatedAt||new Date().toISOString();lastHash=fingerprint;notice='';
       const previous=get(CACHE,{});
-      previous[date()]={result,generatedAt,fingerprint};
+      previous[date()]={result,model,generatedAt,fingerprint};
       const keys=Object.keys(previous).sort().slice(-7),recent={};keys.forEach(k=>recent[k]=previous[k]);set(CACHE,recent);
       set(DAY,date());draw();
     }catch{draw('网络不可用，已保留原始任务数据和之前的 AI 建议')}
@@ -151,7 +151,7 @@
   function autoAnalyze(){
     if(get(CONSENT,false)!==true)return;
     const snap=snapshot(),cache=get(CACHE,{})[date()];
-    if(cache?.result){result=cache.result;generatedAt=cache.generatedAt;lastHash=cache.fingerprint;draw();return}
+    if(cache?.result){result=cache.result;model=cache.model||'';generatedAt=cache.generatedAt;lastHash=cache.fingerprint;draw();return}
     if(get(DAY,'')===date())return;
     // Only one automatic attempt per day; login is user-initiated and never prompts on page load.
     set(DAY,date());analyze(false);
@@ -163,7 +163,12 @@
     observer.observe(document.querySelector('main')||document.body,{childList:true,subtree:true});
   }
   function errorMessage(out){
-    return ({busy:'已有 AI 请求正在处理，请稍后重试。',too_large:'消息与任务摘要过长，请缩短对话或开始新对话。',not_configured:'服务端 AI 功能尚未启用，请检查 Preview 配置。',rate_limited:'已达到安全调用上限，请稍后重试。',rate_store_unavailable:'限流数据库连接失败，请检查 Upstash 配置。',provider_auth:'DeepSeek 密钥校验失败，请检查 Preview 的 API Key。',provider_quota:'DeepSeek 额度不足，请检查平台余额。',provider_rate_limited:'DeepSeek 当前请求较多，请稍后重试。',provider_timeout:'DeepSeek 响应超时，请稍后重试。',provider_unavailable:'DeepSeek 调用失败，请检查服务、模型和网络。',invalid_model_output:'模型返回格式异常，请稍后重试。',invalid_payload:'请求内容不符合要求，请缩短消息后重试。',origin:'请求来源校验失败，请从当前 Preview 地址打开。',auth_required:'需要先登录 AI 服务。'})[out.code]||'AI 暂时不可用，原始任务不受影响。';
+    if(out.code==='rate_limited'&&out.scope){
+      if(out.scope==='minute')return '请求较频繁，请等待 '+(out.retryAfter||60)+' 秒后再试。认证或余额失败不扣每日额度。';
+      const reset=out.resetAt?new Date(out.resetAt).toLocaleString('zh-CN'):'';
+      return (out.scope==='day'?'今天的个人':'今天工作台的总')+'调用额度已用完（'+out.limit+' 次）'+(reset?'，将在 '+reset+' 恢复。':'，请明天再试。');
+    }
+    return ({busy:'已有 AI 请求正在处理，请稍后重试。',too_large:'消息与任务摘要过长，请缩短对话或开始新对话。',not_configured:'服务端 AI 功能尚未启用，请检查当前部署环境配置。',rate_limited:'已达到安全调用上限，请稍后重试。',rate_store_unavailable:'限流数据库连接失败，请检查 Upstash 配置。',provider_auth:'DeepSeek 密钥校验失败，请检查当前部署环境的 DEEPSEEK_API_KEY。',provider_quota:'DeepSeek 额度不足，请检查平台余额。',provider_rate_limited:'DeepSeek 当前请求较多，请稍后重试。',provider_timeout:'DeepSeek 响应超时，请稍后重试。',provider_unavailable:'DeepSeek 调用失败，请检查服务、模型和网络。',invalid_model_output:'模型返回格式异常，请稍后重试。',invalid_payload:'请求内容不符合要求，请缩短消息后重试。',origin:'请求来源校验失败，请从工作台正式地址或当前部署地址打开。',auth_required:'需要先登录 AI 服务。'})[out.code]||'AI 暂时不可用，原始任务不受影响。';
   }
   window.LambertAI={call,login,snapshot,errorMessage,analyze,hasConsent:()=>get(CONSENT,false)===true,markChanged:()=>draw('任务已新增，正在更新分析建议。')};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
