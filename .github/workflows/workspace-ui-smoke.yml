@@ -15,6 +15,8 @@ on:
       - 'tests/deepseek-api-smoke.mjs'
       - 'tests/deepseek-ui-smoke.mjs'
       - 'dashboard-v5.js'
+      - 'task-board-v6.css'
+      - 'project-v3.css'
       - 'sprint1-navigation.js'
       - 'sprint1-hub.css'
       - 'english-app.html'
