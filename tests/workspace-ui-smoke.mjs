@@ -123,9 +123,9 @@ try{
   check('Todo and completed cards have the same compact height',Math.abs(compact.height-compactHeight)<2);
   check('Start chevron hugs the right edge',compact.gap>=0&&compact.gap<10);
   const quadrantColors=await todoCard.evaluate(e=>{
-    const original=e.className,transition=e.style.transition,colors={};e.style.transition='none';
+    const original=e.className,transition=e.style.transition,priority=e.style.getPropertyPriority('transition'),colors={};e.style.setProperty('transition','none','important');
     for(const q of ['q1','q2','q3','q4']){e.className='task-v5-card '+q;const s=getComputedStyle(e);colors[q]={border:s.borderTopColor,shadow:s.boxShadow,sides:[s.borderTopColor,s.borderRightColor,s.borderBottomColor,s.borderLeftColor]}}
-    e.className=original;e.style.transition=transition;return colors;
+    e.className=original;e.style.setProperty('transition',transition,priority);return colors;
   });
   for(const [q,color] of Object.entries({q1:'rgb(231, 140, 140)',q2:'rgb(141, 174, 232)',q3:'rgb(229, 177, 106)',q4:'rgb(182, 189, 199)'})){
     check(q+' surrounds the card with its quadrant color',quadrantColors[q].sides.every(x=>x===color)&&quadrantColors[q].shadow!=='none');
