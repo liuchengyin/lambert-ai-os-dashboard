@@ -102,7 +102,7 @@ try{
   check('Task status survives refresh',await status('drag-a')==='已完成');
   const compactHeight=await page.locator('[data-task-id="drag-a"]').evaluate(e=>e.getBoundingClientRect().height);
   const completedMarker=await page.locator('[data-task-id="drag-a"] .task-v5-title').evaluate(e=>({before:getComputedStyle(e,'::before').content,after:getComputedStyle(e,'::after').content,right:getComputedStyle(e,'::after').right}));
-  check('Completed green check is on the right, not before the title',completedMarker.before==='none'&&completedMarker.after==='"✅"'&&completedMarker.right==='5px');
+  check('Completed green check is on the right, not before the title',completedMarker.before==='none'&&completedMarker.after==='"✓"'&&completedMarker.right==='11px');
   const completedBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a'));
   await page.locator('.task-v5-col.done [data-task-id="drag-a"]').click();
   await page.locator('#ev5Reopen').waitFor({state:'visible'});
