@@ -36,3 +36,10 @@
 #tasks .task-v5-card .task-v5-actions :is(.task-start-arrow,.task-complete-edge):hover{background:var(--task-glow)!important}
 #tasks .task-v5-card .task-v5-actions :is(.task-start-arrow,.task-complete-edge):focus-visible{outline:2px solid var(--task-ring);outline-offset:1px}
 #tasks .task-v5-col.done .task-v5-card{padding:10px 12px!important;min-height:42px}
+
+/* Suppress decorations reinserted by the older card enhancer. */
+#tasks .task-v5-card :is(.task-v5-countdown,.task-v5-matrix-corner){display:none!important}
+#tasks .task-v5-card :is(.task-v5-title-row,.task-v6-top){display:contents!important}
+#tasks .task-v5-card .task-v5-actions{padding:0!important}
+#tasks .task-v5-col .task-v5-card[class]{border:1px solid var(--task-ring)!important;box-shadow:0 0 0 1px var(--task-ring),0 0 12px var(--task-glow)!important}
+#tasks .task-v5-col .task-v5-card[class]:hover{box-shadow:0 0 0 1px var(--task-ring),0 0 17px var(--task-glow)!important}
