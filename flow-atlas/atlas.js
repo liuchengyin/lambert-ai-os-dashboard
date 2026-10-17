@@ -10,7 +10,7 @@
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const sequences = {request: [0,1,2,3,4,5,6,7,8,9], response: [9,8,7,6,5,4,3,10]};
   const state = {opened: null, selected: null, phase: 'request', index: 0, running: false, complete: false};
-  let columns = columnCount(), frame = 0, drawFrame = 0, start = 0, speed = 1, progress = 0;
+  let columns = columnCount(), frame = 0, timer = 0, drawFrame = 0, start = 0, speed = 1, progress = 0;
   let renders = 0, ticks = 0, destroyed = false, buttons = [], matching = new Set();
   const listeners = new AbortController();
   const on = (target, event, callback) => target.addEventListener(event, callback, {signal: listeners.signal});
@@ -202,7 +202,7 @@
     $('journey-progress').style.width = (state.index + 1) / sequences[state.phase].length * 100 + '%';
   }
   function pause() {
-    state.running = false; cancelAnimationFrame(frame); frame = 0; progress = 0; start = 0;
+    state.running = false; cancelAnimationFrame(frame); clearTimeout(timer); frame = timer = 0; progress = 0; start = 0;
     updatePlayback(); $('packet').setAttribute('hidden', '');
   }
   function advance() {
@@ -220,19 +220,30 @@
     progress = Math.min((now - start) / (1800 / speed), 1);
     movePacket(progress);
     if (progress >= 1) {advance(); start = now;}
-    if (state.running) frame = requestAnimationFrame(tick);
+    if (state.running) schedulePlayback();
+  }
+  function schedulePlayback() {
+    if (reduced.matches) {
+      timer = setTimeout(() => {
+        timer = 0;
+        if (!state.running || destroyed) return;
+        ticks++; advance();
+        if (state.running) schedulePlayback();
+      }, 1800 / speed);
+    } else frame = requestAnimationFrame(tick);
   }
   function play() {
     if (state.running) return pause();
     if (state.complete) {state.phase = 'request'; state.index = 0; state.complete = false;}
     state.running = true; start = 0; progress = 0;
-    updatePlayback(); drawTravel(); frame = requestAnimationFrame(tick);
+    updatePlayback(); drawTravel(); schedulePlayback();
   }
   on($('play'), 'click', play);
   on($('step'), 'click', () => {pause(); advance();});
   on($('reset'), 'click', () => {pause(); state.phase = 'request'; state.index = 0; state.complete = false; updatePlayback(); drawTravel();});
   on($('direction'), 'click', () => {pause(); state.phase = state.phase === 'request' ? 'response' : 'request'; state.index = 0; state.complete = false; updatePlayback(); drawTravel();});
-  on($('speed'), 'change', event => {speed = Number(event.target.value) || 1; start = 0; progress = 0;});
+  on($('speed'), 'change', event => {const resume = state.running; pause(); speed = Number(event.target.value) || 1; if (resume) play();});
+  on(reduced, 'change', () => {const resume = state.running; pause(); if (resume) play();});
   on($('collapse'), 'click', collapse);
   on(document, 'visibilitychange', () => {if (document.hidden) pause();});
   const search = $('concept-search'), results = $('search-results');
@@ -272,6 +283,6 @@
     panel.querySelectorAll('button').forEach(b => b.onclick = null);
   }
   on(window, 'pagehide', event => {if (event.persisted) pause(); else destroy();});
-  window.FlowAtlas = Object.freeze({getState: () => ({...state, columns, renders, ticks, animationScheduled: !!frame, drawScheduled: !!drawFrame}), destroy});
+  window.FlowAtlas = Object.freeze({getState: () => ({...state, columns, renders, ticks, animationScheduled: !!(frame || timer), drawScheduled: !!drawFrame}), destroy});
   renderMap(); renderConcept(); loadHash();
 })();
