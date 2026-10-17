@@ -7,27 +7,8 @@ nav button{color:#bdc7d4!important}
 nav button:hover{background:#223141!important;color:#fff!important}
 nav button.active{background:#263747!important;color:#fff!important}
 
-/* Task board: remove subtitle, restore restrained left/bottom depth, and simplify task cards. */
+/* Task card layout is owned by task-board-v6.css. */
 .task-v5-head p{display:none!important}
-.task-v5-card{
-  position:relative;
-  padding-bottom:42px!important;
-  box-shadow:-4px 7px 15px rgba(24,32,48,.10)!important;
-  border-bottom-color:#d9dee7!important;
-}
-.task-v5-card:hover{
-  transform:translateY(-3px)!important;
-  box-shadow:-5px 10px 20px rgba(24,32,48,.13)!important;
-}
-.task-v5-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.task-v5-title-row .task-v5-title{flex:1;min-width:0}
-.task-v5-countdown{flex:0 0 auto;font-size:11px;color:#7a8594;white-space:nowrap;padding-top:1px}
-.task-v5-matrix-corner{position:absolute;right:12px;bottom:12px;font-size:11px;font-weight:650;padding:5px 8px;border-radius:8px}
-.task-v5-matrix-corner.q1{background:var(--q1-bg);color:#b43737}
-.task-v5-matrix-corner.q2{background:var(--q2-bg);color:#315f9f}
-.task-v5-matrix-corner.q3{background:var(--q3-bg);color:#9f681f}
-.task-v5-matrix-corner.q4{background:var(--q4-bg);color:#65717d}
-.task-v5-actions{padding-right:110px}
 
 /* Notion-like task dragging: cards move in-place, columns softly react, no abrupt jump. */
 .task-v5-card[draggable="true"]{cursor:grab;will-change:transform,opacity}
@@ -85,8 +66,3 @@ nav button.active{background:#263747!important;color:#fff!important}
 
 /* Settings module retired. */
 nav button[data-v="settings"],#settings{display:none!important}
-
-@media(max-width:700px){
-  .task-v5-actions{padding-right:0}
-  .task-v5-matrix-corner{position:static;display:inline-flex;margin-top:8px}
-}

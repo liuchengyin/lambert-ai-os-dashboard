@@ -61,7 +61,8 @@
   function taskButton(label,cls,fn){const b=document.createElement('button');b.textContent=label;b.className=cls||'';b.onclick=e=>{e.stopPropagation();fn()};return b}
   function renderTaskCard(t,index){
     const c=document.createElement('article');c.className=`task-v5-card ${t.matrix}`;c.dataset.taskId=t.id;c.onclick=()=>openTaskEditor(index);c.title=t.title+' · '+QUADS[t.matrix].name;c.setAttribute('aria-label',t.title+'，'+t.status+'，'+QUADS[t.matrix].name);
-    c.innerHTML=`<div class="task-v5-title">${esc(t.title)}</div><div class="task-v5-meta"><span class="task-v5-chip ${t.matrix}">${QUADS[t.matrix].short}</span><span class="task-v5-chip">${esc(t.priority)}</span>${t.project?`<span class="task-v5-chip">${esc(t.project)}</span>`:''}${t.due?`<span class="task-v5-chip">${isOverdue(t)?'已逾期 · ':''}${esc(dueLabel(t.due))}</span>`:''}</div>${t.note?`<div class="task-v5-note">${esc(t.note)}</div>`:''}`;
+    // Details remain in task data and the editor; do not build hidden metadata.
+    c.innerHTML=`<div class="task-v5-title">${esc(t.title)}</div>`;
     const a=document.createElement('div');a.className='task-v5-actions';
     if(t.status==='待开始'){
       const start=taskButton('>','task-start-arrow',()=>changeStatus(index,'进行中'));
@@ -71,7 +72,6 @@
       const complete=taskButton('○','task-complete-edge',()=>changeStatus(index,'已完成'));
       complete.title='完成任务';complete.setAttribute('aria-label','完成任务');a.appendChild(complete);
     }
-    if(t.status==='已完成')a.appendChild(taskButton('重新打开','',()=>changeStatus(index,'待开始')));
     c.appendChild(a);return c
   }
 
