@@ -2,6 +2,12 @@ name: Workspace UI Smoke
 on:
   pull_request:
     paths:
+      - 'knowledge-links.js'
+      - 'knowledge-itab-v2.css'
+      - 'api/link-metadata.js'
+      - 'lib/link-metadata.mjs'
+      - 'tests/link-metadata.mjs'
+      - 'tests/common-links-ui.mjs'
       - 'index.html'
       - 'app.js'
       - 'deepseek-v1.js'
@@ -55,10 +61,12 @@ jobs:
         run: |
           node tests/deepseek-api-smoke.mjs
           node tests/ai-chat-api.mjs
+          node tests/link-metadata.mjs
       - name: Run workspace UI regression
         run: |
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
+          node tests/common-links-ui.mjs
           node tests/workspace-ui-smoke.mjs
           node tests/deepseek-ui-smoke.mjs
           node tests/ai-chat-ui.mjs
