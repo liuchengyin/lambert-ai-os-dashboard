@@ -21,6 +21,7 @@
 <button data-v="home" class="active">总览</button>
 <button data-v="projects">项目看板</button>
 <button data-v="tasks">任务看板</button>
+<button data-v="vikunja">Vikunja 试验</button>
 <button data-v="review">每日复盘</button>
 <button data-v="knowledge">知识入口</button>
 <button data-v="settings">链接设置</button>
@@ -112,6 +113,8 @@
 <div class="card task-persistence-card"><div class="row"><div><h3>长期保存</h3><p class="task-storage-copy">工作台负责填写与推进；Notion / 飞书作为长期任务库。当前版本先保存在浏览器，本页已保留任务库入口，下一步再接真实写入 API。</p></div><a id="taskOpen" target="_blank">打开任务库</a></div><div id="taskEmpty" class="meta">先在“链接设置”里填 Notion 或飞书任务库链接。</div></div>
 </section>
 
+<section id="vikunja" class="view"><h2>Vikunja · 独立试验</h2><p>原版试用，与当前项目和任务分别保存。<a href="vikunja/" target="_blank" rel="noopener noreferrer">独立打开试用页 ↗</a></p><iframe id="vikunja-trial-frame" title="Vikunja 试用入口" style="width:100%;height:85vh;border:1px solid #dce3ed;border-radius:12px"></iframe></section>
+
 <section id="review" class="view">
 <div class="review-toolbar"><div><h2>每日复盘</h2><p>按日期记录目标 → 复盘 → 归档。</p></div><div class="date-switcher"><button id="reviewPrev" title="前一天">←</button><input id="reviewDate" type="date"><button id="reviewToday">今天</button><button id="reviewNext" title="后一天">→</button></div></div>
 <div class="review-layout">
@@ -154,4 +157,5 @@
 <script src="sprint1-navigation.js?v=1"></script>
 <script src="deepseek-v1.js?v=2"></script>
 <script src="ai-chat.js?v=1"></script>
+<script src="vikunja-entry.js"></script>
 </body></html>
