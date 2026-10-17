@@ -1,0 +1,25 @@
+name: Flow Atlas UI Smoke (manual)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  chromium:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Install test runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Check module syntax and UI
+        run: |
+          node --check flow-atlas/atlas.js
+          python3 -m http.server 8000 --bind 127.0.0.1 &
+          node tests/flow-atlas-ui.mjs
