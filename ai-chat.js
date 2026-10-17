@@ -137,6 +137,6 @@
     status=el('p','ai-chat-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');panel.append(status);
     draft=el('div','ai-chat-draft');panel.append(draft);anchor.insertAdjacentElement('afterend',panel);
   }
-  function start(){mount();new MutationObserver(mount).observe(document.querySelector('main')||document.body,{childList:true,subtree:true})}
+  function start(){mount();new MutationObserver(mount).observe(document.getElementById('home'),{childList:true,subtree:true})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();

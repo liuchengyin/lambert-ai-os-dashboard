@@ -3,9 +3,12 @@
   const STORE='daily_writing_v2';
   const getStore=()=>{try{return JSON.parse(localStorage.getItem(STORE)||'{}')||{}}catch{return {}}};
 
+  let observedRoot=null;
+  const observer=new MutationObserver(()=>setTimeout(enhance,0));
   function enhance(){
     const root=document.getElementById('dwHistory');
     if(!root)return false;
+    if(observedRoot!==root){observer.disconnect();observer.observe(root,{subtree:true,childList:true});observedRoot=root}
     const store=getStore();
     root.querySelectorAll('.daily-history-item').forEach(item=>{
       if(item.dataset.feishuLinked==='1')return;
@@ -36,6 +39,4 @@
   document.addEventListener('click',e=>{if(e.target.closest?.('[data-v="writing"],#writing'))setTimeout(enhance,40)});
   window.addEventListener('storage',e=>{if(e.key===STORE)setTimeout(enhance,0)});
 
-  const observer=new MutationObserver(()=>setTimeout(enhance,0));
-  observer.observe(document.documentElement,{subtree:true,childList:true});
 })();

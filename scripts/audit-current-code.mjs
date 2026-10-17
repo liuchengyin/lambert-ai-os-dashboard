@@ -5,7 +5,7 @@ const groups={
  core:['index.html','app.js','styles.css','workspace-v4.css','brand/brand.css'],
  navigation_theme:['sprint1-navigation.js','sprint1-hub.css','theme-linear.css','workspace-glass-v1.css'],
  tasks:['dashboard-v5.js','dashboard-v5.css','task-drag-v1.js','task-board-v6.css','ui-polish-v3.js','ui-polish-v3.css'],
- projects:['project-v2.js','project-v3.js','project-v4.js','project-v3.css','project-board-polish.js'],
+ projects:['project-v3.js','project-v4.js','project-v3.css','project-board-polish.js'],
  reading_extension:['reading-v2.js','reading-v2.css','reading-polish-v5.js','reading-polish-v5.css','reading-extension-import.js','chrome-extension/dashboard-sync.js','chrome-extension/service-worker.js','chrome-extension/sidepanel.js','chrome-extension/sidepanel.html','chrome-extension/sidepanel.css'],
  review_writing:['review-v6.js','review-v6.css','review-layout-v7.css','daily-modules.js','daily-modules.css','writing-history-link.js','writing-history-link.css','reading-history-bridge.js','reading-history-bridge.css'],
  english:['english-learning.js','english-learning-v1.css','english-learning-media-v1.css','english-app.html','english-app-lite.css'],

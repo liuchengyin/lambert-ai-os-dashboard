@@ -38,8 +38,7 @@
       Object.entries(values).forEach(([id,value])=>{const el=pick(id);if(el)el.value=value});
 
       const sourceUrl=params.get('sourceUrl')||'';
-      const mode=pick('rv2Mode');
-      if(mode&&/weread\.qq\.com/i.test(sourceUrl)){mode.value='weread';mode.dispatchEvent(new Event('change',{bubbles:true}))}
+      if(sourceUrl){try{const url=new URL(sourceUrl);if(['http:','https:'].includes(url.protocol)&&!/\.pdf$/i.test(url.pathname))pick('rv2WebMode')?.click()}catch{}}
 
       pick('rv2Save')?.click();
       if(pick('rv2Status'))pick('rv2Status').textContent='已从浏览器侧栏导入';

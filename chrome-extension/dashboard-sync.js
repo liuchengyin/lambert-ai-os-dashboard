@@ -6,7 +6,7 @@ function getState(){
     const state=raw?JSON.parse(raw):null;
     if(state&&typeof state==='object')return state;
   }catch{}
-  return {reader:{title:'',progress:'',mode:'weread',url:''},notes:[],currentId:''};
+  return {reader:{title:'',progress:'',mode:'pdf',url:''},notes:[],currentId:''};
 }
 
 function saveState(state){
@@ -18,7 +18,7 @@ async function syncArchivedCards(){
   if(!Array.isArray(lambertArchivedCards)||!lambertArchivedCards.length)return;
 
   const state=getState();
-  state.reader=state.reader||{title:'',progress:'',mode:'weread',url:''};
+  state.reader=state.reader||{title:'',progress:'',mode:'pdf',url:''};
   state.notes=Array.isArray(state.notes)?state.notes:[];
   const existing=new Set(state.notes.map(n=>n.id));
   let changed=false;

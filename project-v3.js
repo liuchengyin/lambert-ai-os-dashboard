@@ -74,6 +74,14 @@
     })
   }
 
+  // The popup selects the task in model state even when the picker filter hides it.
+  document.addEventListener('lambert:project-task-created',e=>{
+    const {taskId,mode}=e.detail||{};
+    if(!state.tasks.some(t=>t.id===taskId))return;
+    if(mode==='create'){createSelected.add(taskId);renderCreateTaskPicker()}
+    else if(mode==='edit'&&projectEditIndex>=0){editSelected.add(taskId);renderEditTaskPicker()}
+  });
+
   function createInlineTask(title,projectName=""){
     const clean=title.trim();if(!clean)return null;
     const task={id:makeInlineTaskId(),title:clean,status:"待开始",project:projectName,priority:"P2",due:"",note:"",createdAt:new Date().toISOString()};

@@ -41,8 +41,7 @@
   editBtn.onclick=e=>{e.preventDefault();open('edit')};
 
   function refreshPicker(taskId){
-    const search=mode==='edit'?$('projectEditTaskSearch'):$('projectTaskSearch');if(search)search.dispatchEvent(new Event('input',{bubbles:true}));
-    setTimeout(()=>{const root=mode==='edit'?$('projectEditTaskOptions'):$('projectTaskOptions');const cb=root?.querySelector(`input[value="${CSS.escape(taskId)}"]`);if(cb){cb.checked=true;cb.dispatchEvent(new Event('change',{bubbles:true}))}},0)
+    document.dispatchEvent(new CustomEvent('lambert:project-task-created',{detail:{taskId,mode}}));
   }
   function refreshDashboard(){
     const el=$('projectDashboard');if(!el||!window.state)return;
