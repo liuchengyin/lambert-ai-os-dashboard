@@ -131,5 +131,4 @@
     requestAnimationFrame(()=>{scheduled=false;bind()});
   });
   observer.observe(document.getElementById('tasks')||document.body,{childList:true,subtree:true});
-  document.addEventListener('click',e=>{if(e.target.closest?.('[data-v="tasks"]'))setTimeout(bind,70)});
 })();

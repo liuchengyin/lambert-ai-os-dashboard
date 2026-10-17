@@ -1,0 +1,25 @@
+{
+  "sha": "20fcd4412cb41ed03f48bc2fbd6f02c1c689ff7f",
+  "module": "feishu",
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "files": [
+    "api/feishu-daily.js",
+    "api/feishu-health.js"
+  ],
+  "result": {
+    "summary": "在提供的飞书模块源码中未发现符合“当前有效调用链上的遗留增强器/重复监听/不可达代码/数据丢失兼容残留”且有明确证据的问题；两文件均为独立 API handler，未发现重复定时器或观察器。",
+    "findings": []
+  },
+  "usage": {
+    "prompt_tokens": 7105,
+    "completion_tokens": 62,
+    "total_tokens": 7167,
+    "prompt_tokens_details": {
+      "cached_tokens": 2048
+    },
+    "prompt_cache_hit_tokens": 2048,
+    "prompt_cache_miss_tokens": 5057
+  },
+  "testsExecuted": false
+}

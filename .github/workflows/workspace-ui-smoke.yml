@@ -26,6 +26,10 @@ on:
       - 'ui-polish-v3.js'
       - 'ui-polish-v3.css'
       - 'reading-history-bridge.js'
+      - 'reading-extension-import.js'
+      - 'writing-history-link.js'
+      - 'chrome-extension/dashboard-sync.js'
+      - 'tests/audit-cleanup-ui.mjs'
       - 'project-v3.css'
       - 'sprint1-navigation.js'
       - 'sprint1-hub.css'
@@ -67,6 +71,7 @@ jobs:
         run: |
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
+          node tests/audit-cleanup-ui.mjs
           node tests/common-links-ui.mjs
           node tests/workspace-ui-smoke.mjs
           node tests/deepseek-ui-smoke.mjs

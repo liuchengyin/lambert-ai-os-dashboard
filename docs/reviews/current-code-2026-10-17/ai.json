@@ -1,0 +1,47 @@
+{
+  "sha": "20fcd4412cb41ed03f48bc2fbd6f02c1c689ff7f",
+  "module": "ai",
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "files": [
+    "api/ai-analyze.js",
+    "lib/ai-chat-contract.js",
+    "deepseek-v1.js",
+    "deepseek-v1.css",
+    "ai-chat.js"
+  ],
+  "result": {
+    "summary": "在提供的 ai 模块源码中，发现两处有明确证据的碎屑：ai-chat.js 的 MutationObserver 在每次 DOM 变动时都会调用 mount，而 mount 内部又通过 insertAdjacentElement 移动 panel，可能形成观察器自触发循环；deepseek-v1.js 的 MutationObserver 回调同样在 mount 内插入节点，且条件判断依赖 DOM 状态，存在重复触发风险。其余行为（任务三状态、四象限、英语双 Tab、阅读/写作/复盘历史、常用链接短链保留）未在源码中看到被破坏的证据，不报告。",
+    "findings": [
+      {
+        "file": "ai-chat.js",
+        "line": 1,
+        "severity": "medium",
+        "problem": "MutationObserver 监听整个 main 子树，回调直接调用 mount；mount 在 panel 已存在时仍执行 anchor.insertAdjacentElement('afterend',panel)，移动节点会再次触发 childList 变动，可能造成观察器自触发循环或高频重排。",
+        "evidence": "start() 中 new MutationObserver(mount).observe(document.querySelector('main')||document.body,{childList:true,subtree:true})；mount() 中 if(panel){anchor.insertAdjacentElement('afterend',panel);return}，该移动操作本身产生 childList 记录。",
+        "suggestion": "在 mount 中先判断 panel 是否已紧邻 anchor（如 panel.previousElementSibling===anchor 或 anchor.nextElementSibling===panel），已就位则直接 return，避免无意义移动；或对 observer 回调做 requestAnimationFrame 去抖。",
+        "verification": "在浏览器打开工作台，确认 #aiChatPanel 已挂载后，用 MutationObserver 计数或 Performance 面板观察 main 子树变动是否持续触发 mount；也可在 mount 入口打日志，检查页面空闲时是否反复进入 panel 已存在分支。"
+      },
+      {
+        "file": "deepseek-v1.js",
+        "line": 1,
+        "severity": "low",
+        "problem": "MutationObserver 回调在每次 DOM 变动时检查并调用 mount，而 mount 会向 #home 和 #tasks 插入新节点；插入动作再次触发回调，虽然靠 id 存在性避免重复插入，但回调条件在节点被外部重渲染移除后会反复执行插入，存在与 ai-chat.js 类似的观察器自触发/高频重入风险。",
+        "evidence": "start() 中 const observer=new MutationObserver(()=>{if(!$('aiDailyCard')||($('tasks')?.querySelector('.task-v5-head')&&!$('aiTaskAction')))mount()});observer.observe(document.querySelector('main')||document.body,{childList:true,subtree:true})；mount() 内 head.insertAdjacentElement('afterend',card) 与 taskHead.insertAdjacentElement('afterend',action) 均产生 childList 变动。",
+        "suggestion": "在 observer 回调中增加防重入标志或 requestAnimationFrame 合并，且 mount 插入前再次确认目标节点不存在；插入完成后不依赖下一次 DOM 变动再挂载。",
+        "verification": "打开工作台首页，在 mount 入口与 observer 回调打日志，观察页面空闲或任务区重渲染时回调与 mount 的调用次数；确认插入节点后是否立即再次进入回调。"
+      }
+    ]
+  },
+  "usage": {
+    "prompt_tokens": 15684,
+    "completion_tokens": 708,
+    "total_tokens": 16392,
+    "prompt_tokens_details": {
+      "cached_tokens": 2048
+    },
+    "prompt_cache_hit_tokens": 2048,
+    "prompt_cache_miss_tokens": 13636
+  },
+  "testsExecuted": false
+}

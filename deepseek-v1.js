@@ -160,7 +160,7 @@
     if(booted)return;booted=true;
     mount();autoAnalyze();
     const observer=new MutationObserver(()=>{if(!$('aiDailyCard')||($('tasks')?.querySelector('.task-v5-head')&&!$('aiTaskAction')))mount()});
-    observer.observe(document.querySelector('main')||document.body,{childList:true,subtree:true});
+    ['home','tasks'].forEach(id=>{const root=$(id);if(root)observer.observe(root,{childList:true,subtree:true})});
   }
   function errorMessage(out){
     return ({busy:'已有 AI 请求正在处理，请稍后重试。',too_large:'消息与任务摘要过长，请缩短对话或开始新对话。',not_configured:'服务端 AI 功能尚未启用，请检查 Preview 配置。',rate_limited:'已达到安全调用上限，请稍后重试。',rate_store_unavailable:'限流数据库连接失败，请检查 Upstash 配置。',provider_auth:'DeepSeek 密钥校验失败，请检查 Preview 的 API Key。',provider_quota:'DeepSeek 额度不足，请检查平台余额。',provider_rate_limited:'DeepSeek 当前请求较多，请稍后重试。',provider_timeout:'DeepSeek 响应超时，请稍后重试。',provider_unavailable:'DeepSeek 调用失败，请检查服务、模型和网络。',invalid_model_output:'模型返回格式异常，请稍后重试。',invalid_payload:'请求内容不符合要求，请缩短消息后重试。',origin:'请求来源校验失败，请从当前 Preview 地址打开。',auth_required:'需要先登录 AI 服务。'})[out.code]||'AI 暂时不可用，原始任务不受影响。';

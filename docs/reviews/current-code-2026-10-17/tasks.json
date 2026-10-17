@@ -1,0 +1,48 @@
+{
+  "sha": "20fcd4412cb41ed03f48bc2fbd6f02c1c689ff7f",
+  "module": "tasks",
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "files": [
+    "dashboard-v5.js",
+    "dashboard-v5.css",
+    "task-drag-v1.js",
+    "task-board-v6.css",
+    "ui-polish-v3.js",
+    "ui-polish-v3.css"
+  ],
+  "result": {
+    "summary": "在提供的任务模块源码中，发现两处有明确证据的残留：ui-polish-v3.js 的观察器会因自身 polish 修改 DOM 而反复自触发，且每次 polish 都重复执行删除/移动/加载检查；task-drag-v1.js 的 MutationObserver 在每次任务重渲染后都会重新绑定，且其 click 监听与 dashboard-v5.js 的导航监听叠加，可能造成重复绑定/重复同步。其余如退回按钮、绿色圆勾、四象限颜色、紧凑卡片等均属当前需求，不判为残留。",
+    "findings": [
+      {
+        "file": "ui-polish-v3.js",
+        "line": 70,
+        "severity": "medium",
+        "problem": "MutationObserver 监听 home/tasks/projects/writing/reading/nav 的 childList+subtree，而 polish() 自身会删除节点、移动 select、移除 p 元素并插入 link/script，导致观察器被自身修改反复触发；同时 polish 在初始、100ms、400ms 各执行一次，且每次观察回调都 requestAnimationFrame(polish)，形成持续自触发循环。",
+        "evidence": "polish() 调用 removeProjectMaterialEntry/removeSettingsModule/moveMainlineSelectBelowCard/stripTaskSubtitle/stripWritingSubtitle/loadReadingPolish/loadEnglishLearning；watchTargets.forEach 中 new MutationObserver(()=>requestAnimationFrame(polish)).observe(target,{childList:true,subtree:true})；polish 内 row.appendChild(select)、p.remove()、document.head.appendChild(l)、document.body.appendChild(s) 均会触发 childList 变更。",
+        "suggestion": "将观察器改为只监听必要的容器且用防抖/标志位避免自触发；或把一次性结构修正从观察回调中拆出，观察回调只处理动态渲染新增节点，且 loadReadingPolish/loadEnglishLearning 用已存在检查后不再重复 append。",
+        "verification": "在浏览器打开首页，打开 DevTools Performance/MutationObserver 断点，观察 polish 是否在无用户操作时持续被调用；或在 polish 入口计数，静置数秒看计数是否持续增长。"
+      },
+      {
+        "file": "task-drag-v1.js",
+        "line": 96,
+        "severity": "low",
+        "problem": "MutationObserver 监听 #tasks 子树，dashboard-v5.js 每次 renderTaskBoard 都会重建 #taskBoard 内卡片，触发 bind() 重新查询并绑定；同时 task-drag-v1.js 在 document 上监听 [data-v=\"tasks\"] 点击后 setTimeout(bind,70)，与 dashboard-v5.js 中 nav button 点击后 setTimeout(renderTaskBoard,0) 叠加，存在同一批卡片被重复 bind 的路径（虽有 dataset.dragBound 防护，但列/卡片重建后防护失效，且 click 监听与 observer 双路径重复触发 bind）。",
+        "evidence": "observer.observe(document.getElementById('tasks')||document.body,{childList:true,subtree:true})；document.addEventListener('click',e=>{if(e.target.closest?.('[data-v=\"tasks\"]'))setTimeout(bind,70)})；dashboard-v5.js 中 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.v==='tasks')setTimeout(renderTaskBoard,0)...}))；renderTaskBoard 每次 board.innerHTML='' 重建卡片。",
+        "suggestion": "保留 MutationObserver 作为唯一重绑定入口，移除 document 上针对 [data-v=\"tasks\"] 的额外 setTimeout(bind,70)；或在 bind 内对 BOARD 做引用比较，仅当 BOARD 变化时重新绑定。",
+        "verification": "在任务页反复切换导航进入 tasks，统计 bind 调用次数与 bindCard/bindColumn 实际执行次数；观察是否出现同一卡片 dragstart 被多次触发或状态同步重复。"
+      }
+    ]
+  },
+  "usage": {
+    "prompt_tokens": 17477,
+    "completion_tokens": 828,
+    "total_tokens": 18305,
+    "prompt_tokens_details": {
+      "cached_tokens": 2048
+    },
+    "prompt_cache_hit_tokens": 2048,
+    "prompt_cache_miss_tokens": 15429
+  },
+  "testsExecuted": false
+}

@@ -1,0 +1,335 @@
+[
+  {
+    "label": "startup",
+    "legacyReadingRoot": false,
+    "writingRoot": true,
+    "observers": [
+      {
+        "stack": "    at http://127.0.0.1:8000/sprint1-navigation.js?v=1:69:18",
+        "calls": 4,
+        "records": 39,
+        "targets": [
+          "s1PrimaryNav"
+        ]
+      },
+      {
+        "stack": "    at HTMLDocument.start (http://127.0.0.1:8000/deepseek-v1.js?v=2:162:20)",
+        "calls": 10,
+        "records": 46,
+        "targets": [
+          "MAIN"
+        ]
+      },
+      {
+        "stack": "    at HTMLDocument.start (http://127.0.0.1:8000/ai-chat.js?v=1:140:28)",
+        "calls": 10,
+        "records": 46,
+        "targets": [
+          "MAIN"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/reading-history-bridge.js:92:18",
+        "calls": 7,
+        "records": 33,
+        "targets": [
+          "HTML"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/project-board-polish.js:70:20",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "projectDashboard"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 1,
+        "records": 6,
+        "targets": [
+          "home"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 2,
+        "records": 10,
+        "targets": [
+          "tasks"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "projects"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 1,
+        "records": 1,
+        "targets": [
+          "writing"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 1,
+        "records": 2,
+        "targets": [
+          "reading"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "s1PrimaryNav"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/writing-history-link.js:39:18",
+        "calls": 4,
+        "records": 22,
+        "targets": [
+          "HTML"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/task-drag-v1.js:128:18",
+        "calls": 2,
+        "records": 10,
+        "targets": [
+          "tasks"
+        ]
+      }
+    ]
+  },
+  {
+    "label": "4-character search in common links",
+    "legacyReadingRoot": false,
+    "writingRoot": true,
+    "observers": [
+      {
+        "stack": "    at http://127.0.0.1:8000/sprint1-navigation.js?v=1:69:18",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "s1PrimaryNav"
+        ]
+      },
+      {
+        "stack": "    at HTMLDocument.start (http://127.0.0.1:8000/deepseek-v1.js?v=2:162:20)",
+        "calls": 4,
+        "records": 8,
+        "targets": [
+          "MAIN"
+        ]
+      },
+      {
+        "stack": "    at HTMLDocument.start (http://127.0.0.1:8000/ai-chat.js?v=1:140:28)",
+        "calls": 4,
+        "records": 8,
+        "targets": [
+          "MAIN"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/reading-history-bridge.js:92:18",
+        "calls": 4,
+        "records": 8,
+        "targets": [
+          "HTML"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/project-board-polish.js:70:20",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "projectDashboard"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "home"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "tasks"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "projects"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "writing"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "reading"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "s1PrimaryNav"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/writing-history-link.js:39:18",
+        "calls": 4,
+        "records": 8,
+        "targets": [
+          "HTML"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/task-drag-v1.js:128:18",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "tasks"
+        ]
+      }
+    ]
+  },
+  {
+    "label": "500ms idle",
+    "legacyReadingRoot": false,
+    "writingRoot": true,
+    "observers": [
+      {
+        "stack": "    at http://127.0.0.1:8000/sprint1-navigation.js?v=1:69:18",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "s1PrimaryNav"
+        ]
+      },
+      {
+        "stack": "    at HTMLDocument.start (http://127.0.0.1:8000/deepseek-v1.js?v=2:162:20)",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "MAIN"
+        ]
+      },
+      {
+        "stack": "    at HTMLDocument.start (http://127.0.0.1:8000/ai-chat.js?v=1:140:28)",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "MAIN"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/reading-history-bridge.js:92:18",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "HTML"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/project-board-polish.js:70:20",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "projectDashboard"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "home"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "tasks"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "projects"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "writing"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "reading"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/ui-polish-v3.js:77:15",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "s1PrimaryNav"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/writing-history-link.js:39:18",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "HTML"
+        ]
+      },
+      {
+        "stack": "    at http://127.0.0.1:8000/task-drag-v1.js:128:18",
+        "calls": 0,
+        "records": 0,
+        "targets": [
+          "tasks"
+        ]
+      }
+    ]
+  }
+]

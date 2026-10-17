@@ -1,0 +1,111 @@
+{
+  "sha": "20fcd4412cb41ed03f48bc2fbd6f02c1c689ff7f",
+  "model": "deepseek-flash",
+  "files": [
+    "index.html",
+    "app.js",
+    "styles.css",
+    "workspace-v4.css",
+    "brand/brand.css",
+    "sprint1-navigation.js",
+    "sprint1-hub.css",
+    "theme-linear.css",
+    "workspace-glass-v1.css",
+    "dashboard-v5.js",
+    "dashboard-v5.css",
+    "task-drag-v1.js",
+    "task-board-v6.css",
+    "ui-polish-v3.js",
+    "ui-polish-v3.css",
+    "project-v2.js",
+    "project-v3.js",
+    "project-v4.js",
+    "project-v3.css",
+    "project-board-polish.js",
+    "reading-v2.js",
+    "reading-v2.css",
+    "reading-polish-v5.js",
+    "reading-polish-v5.css",
+    "reading-extension-import.js",
+    "chrome-extension/dashboard-sync.js",
+    "chrome-extension/service-worker.js",
+    "chrome-extension/sidepanel.js",
+    "chrome-extension/sidepanel.html",
+    "chrome-extension/sidepanel.css",
+    "review-v6.js",
+    "review-v6.css",
+    "review-layout-v7.css",
+    "daily-modules.js",
+    "daily-modules.css",
+    "writing-history-link.js",
+    "writing-history-link.css",
+    "reading-history-bridge.js",
+    "reading-history-bridge.css",
+    "english-learning.js",
+    "english-learning-v1.css",
+    "english-learning-media-v1.css",
+    "english-app.html",
+    "english-app-lite.css",
+    "api/ai-analyze.js",
+    "lib/ai-chat-contract.js",
+    "deepseek-v1.js",
+    "deepseek-v1.css",
+    "ai-chat.js",
+    "knowledge-links.js",
+    "knowledge-itab-v2.css",
+    "lib/link-sites.js",
+    "lib/link-metadata.js",
+    "api/link-metadata.js",
+    "api/feishu-daily.js",
+    "api/feishu-health.js"
+  ],
+  "bytes": 417970,
+  "calls": 10,
+  "testsExecuted": false,
+  "batches": [
+    {
+      "module": "core",
+      "findings": 0
+    },
+    {
+      "module": "navigation_theme",
+      "findings": 2
+    },
+    {
+      "module": "tasks",
+      "findings": 2
+    },
+    {
+      "module": "projects",
+      "findings": 2
+    },
+    {
+      "module": "reading_extension",
+      "findings": 2
+    },
+    {
+      "module": "review_writing",
+      "findings": 2
+    },
+    {
+      "module": "english",
+      "findings": 2
+    },
+    {
+      "module": "ai",
+      "findings": 2
+    },
+    {
+      "module": "links",
+      "findings": 2
+    },
+    {
+      "module": "feishu",
+      "findings": 0
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 156820,
+    "completion_tokens": 5859
+  }
+}
