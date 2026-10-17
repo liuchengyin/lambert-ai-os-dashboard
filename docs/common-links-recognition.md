@@ -24,4 +24,6 @@
 
 新本地图标来源：豆瓣使用 Simple Icons 开源仓库的豆瓣矢量标识 `https://github.com/simple-icons/simple-icons/blob/develop/icons/douban.svg`（CC0），应用豆瓣绿色；哔哩哔哩官网声明的 `https://i0.hdslb.com/bfs/static/jinkela/long/images/512.png`。
 
-`Common Links Flash Review` 只在专用审查分支收到指定的一次性提交消息时运行，先执行链接元信息测试与实际识别样例，再将结果及指定源码交给固定 DeepSeek Flash 做一次静态审查，无重试、无 Pro 回退。报告须人工核实，模型不会替代浏览器测试。原有任务卡片独立审查流程保留。
+`Common Links Flash Review` 改为手动运行，防止后续修复提交意外再次产生费用，先执行链接元信息测试与实际识别样例，再将结果及指定源码交给固定 DeepSeek Flash 做一次静态审查，无重试、无 Pro 回退。报告须人工核实，模型不会替代浏览器测试。原有任务卡片独立审查流程保留。
+
+知乎、GitHub、Notion、YouTube、微博、淘宝、阿里云的本地图标也来自 Simple Icons 的对应矢量标识（CC0），仅用于标注书签站点。产品不再依赖 Google favicon 服务。

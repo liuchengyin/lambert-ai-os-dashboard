@@ -50,6 +50,7 @@ try{
   await page.waitForFunction(()=>document.getElementById('kRecognizedName').textContent==='哔哩哔哩');
   check('Replacing an inline capture cancels old state',await page.locator('#kSave').isEnabled());
   await page.locator('#kCancel').click();await page.locator('#knowledgeSearch').fill('');
+  await page.waitForFunction(()=>[...document.querySelectorAll('#knowledge img[src=\"brand/links/bilibili.png\"]')].every(i=>i.complete&&i.naturalWidth>=128));
   await page.screenshot({path:'tests/screenshots/common-links-desktop.png'});
   await page.setViewportSize({width:390,height:844});await page.locator('#knowledgeSearch').fill('https://m.douban.com/movie/');await page.locator('#knowledgeSearch').press('Enter');
   check('Mobile inline capture fits',await page.locator('#knowledgeLinkDlg').evaluate(e=>e.scrollWidth<=innerWidth-10));await page.screenshot({path:'tests/screenshots/common-links-mobile.png'});

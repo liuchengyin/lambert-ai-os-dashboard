@@ -38,11 +38,10 @@
   function safeUrl(raw){let v=(raw||'').trim();if(!v||v.length>2048)return '';if(!/^https?:\/\//i.test(v))v='https://'+v;try{const u=new URL(v);if(!['http:','https:'].includes(u.protocol)||u.username||u.password||!u.hostname.includes('.'))return '';return u.href}catch{return ''}}
   function host(url){try{return new URL(url).hostname.replace(/^www\./,'')}catch{return '网站'}}
   function brandFor(url){return globalThis.LambertLinkSites?.identify(url)||null}
-  function favicon(url){return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host(url))}&sz=256`}
   function usableIcon(raw){if(typeof raw!=='string')return '';return /^https?:\/\//i.test(raw)&&safeUrl(raw)?raw:''}
   function mountIcon(box,url,icon,title){
     box.replaceChildren();const fallback=document.createElement('span');fallback.className='knowledge-icon-fallback';fallback.textContent=Array.from(title||host(url))[0]?.toUpperCase()||'↗';fallback.setAttribute('aria-hidden','true');box.append(fallback);
-    const brand=brandFor(url),candidates=[brand?.icon,usableIcon(icon),new URL('/apple-touch-icon.png',url).href,favicon(url)].filter((v,i,a)=>v&&a.indexOf(v)===i);let i=0;
+    const brand=brandFor(url),candidates=[brand?.icon,usableIcon(icon),new URL('/apple-touch-icon.png',url).href].filter((v,i,a)=>v&&a.indexOf(v)===i);let i=0;
     const img=document.createElement('img');img.alt='';img.decoding='async';img.referrerPolicy='no-referrer';img.hidden=true;box.append(img);
     function next(){if(i<candidates.length){img.hidden=true;fallback.hidden=false;img.src=candidates[i++]}else{img.remove();fallback.hidden=false}}
     img.onload=()=>{if(!/\.svg(?:[?#]|$)/i.test(img.src)&&img.naturalWidth<64){next();return}img.hidden=false;fallback.hidden=true};img.onerror=next;next();

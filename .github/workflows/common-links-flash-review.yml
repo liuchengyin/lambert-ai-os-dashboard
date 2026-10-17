@@ -1,12 +1,10 @@
 name: Common Links Flash Review
 on:
-  push:
-    branches: ['review/common-links-recognition']
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
   review:
-    if: github.event.head_commit.message == 'Run one Flash review of common link recognition'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:

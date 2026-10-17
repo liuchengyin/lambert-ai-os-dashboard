@@ -29,3 +29,12 @@ const fallback=await recognize('https://b23.tv/example',{resolver:()=>{throw Err
 await assert.rejects(recognize('https://douban.com.evil.example/',{resolver:()=>{throw Error('unknown')}}),/unknown/);
 assert.equal(parseMetadata('<title>Page</title><meta name="description" content="Useful &amp; clear">','https://example.com').description,'Useful & clear');
 console.log('PASS mobile/desktop common sites, short-link fallback, exact domain boundaries and description extraction.');
+
+for(const url of ['https://m.douban.com/movie','https://m.douban.com/movie/'])assert.equal((await recognize(url)).direct,true);
+for(const url of ['https://movie.douban.com/subject/1/','https://book.douban.com/subject/1/','https://m.douban.com/movie/subject/1/']){
+ let requests=0;const data=await recognize(url,{resolver,request:async()=>{requests++;return {html:'<title>具体条目名称</title>'}}});assert.equal(data.title,'具体条目名称');assert.equal(data.source,'page');assert.equal(requests,1);
+}
+const short=await recognize('https://b23.tv/demo',{resolver,request:async u=>u.hostname==='b23.tv'?{redirect:'https://www.bilibili.com/video/BVtest/'}:{html:'<title>具体视频标题</title>'}});
+assert.equal(short.source,'page');assert.equal(short.title,'具体视频标题');assert.equal(short.url,'https://www.bilibili.com/video/BVtest/');
+res=response();await handler({method:'POST',headers:{host:'dashboard.example',origin:'https://dashboard.example'},body:{url:'https://M.DOUBAN.COM/movie/#fragment'}},res);assert.equal(res.code,200);assert.equal(res.body.title,'豆瓣电影');assert.equal(res.body.url,'https://m.douban.com/movie/');
+console.log('PASS Flash findings verified: optional slash, deep-page metadata, successful short redirects and normalized API URL.');
