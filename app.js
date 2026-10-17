@@ -128,7 +128,7 @@ function sortTasks(rows){
 }
 function persistTasks(){set("tasks",state.tasks);renderTaskBoard();renderHome()}
 function populateProjectOptions(){
-  const selects=[$("taskProjectInput"),$("taskEditProject")];
+  const selects=[...document.querySelectorAll("#taskProjectInput,#taskEditProject,#tv5Project,#ev5Project")];
   selects.forEach(sel=>{
     const keep=sel.value;sel.innerHTML='<option value="">无项目</option>';
     state.projects.forEach(p=>{const o=document.createElement("option");o.value=p.name;o.textContent=p.name;sel.appendChild(o)});
