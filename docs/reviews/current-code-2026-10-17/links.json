@@ -1,0 +1,47 @@
+{
+  "sha": "20fcd4412cb41ed03f48bc2fbd6f02c1c689ff7f",
+  "module": "links",
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "files": [
+    "knowledge-links.js",
+    "knowledge-itab-v2.css",
+    "lib/link-sites.js",
+    "lib/link-metadata.js",
+    "api/link-metadata.js"
+  ],
+  "result": {
+    "summary": "在 knowledge-links.js 中，发现两处有明确证据的遗留问题：一是每次打开链接对话框都会重复绑定输入监听，二是快速添加对话框被移动到搜索栏后，关闭时没有移回 body，导致后续普通添加或编辑时对话框仍以快速捕获样式显示。其余行为（短链接保留、仅识别平台、卡片紧凑、双 Tab 等）按需求保留，未作为残留报告。",
+    "findings": [
+      {
+        "file": "knowledge-links.js",
+        "line": 1,
+        "severity": "medium",
+        "problem": "openLinkDlg 每次调用都会对 #kUrl 和 #kAutoIcon 重新绑定 input/blur/click 监听，而对话框元素是模块级单例，监听器随打开次数累积，导致重复触发识别、重复定时器与重复请求。",
+        "evidence": "openLinkDlg 内 `$('kUrl').addEventListener('input',...)`、`$('kUrl').addEventListener('blur',...)`、`$('kAutoIcon').onclick=recognizeLink` 位于函数体内；dlg 在 IIFE 顶层只创建一次并 append 到 body，openLinkDlg 被 quickBtn.onclick、addTile、卡片编辑按钮多次调用。",
+        "suggestion": "把 #kUrl 的 input/blur 监听和 #kAutoIcon 的 onclick 移到 dlg 创建后的一次性初始化处，openLinkDlg 只负责赋值与调用 recognizeLink。",
+        "verification": "打开添加链接对话框→取消→再次打开，重复 3 次后在 #kUrl 输入网址，观察 recognizeLink 被调用次数（可在 recognizeLink 入口打日志），应只触发一次；当前会随打开次数成倍触发。"
+      },
+      {
+        "file": "knowledge-links.js",
+        "line": 1,
+        "severity": "medium",
+        "problem": "快速添加时把 dlg 移动到搜索栏之后并加 knowledge-quick-capture 类，但关闭后未移回 body、未移除该类；后续普通添加/编辑复用同一 dlg，会继续以快速捕获布局显示，且残留于搜索栏位置。",
+        "evidence": "openLinkDlg 中 `if(quick)section.querySelector('.knowledge-searchbar').after(dlg);else document.body.append(dlg);` 与 `dlg.classList.toggle('knowledge-quick-capture',quick)`；dlg 的 close 监听只清理定时器/abort，不恢复位置和类。knowledge-itab-v2.css 中 `.knowledge-quick-capture` 隐藏 h3/#kUrlLabel/#kDescLabel 并改为网格布局。",
+        "suggestion": "在 dlg 的 close 监听中（或 openLinkDlg 开头）统一执行 `document.body.append(dlg);dlg.classList.remove('knowledge-quick-capture')`，再按本次 quick 参数重新定位。",
+        "verification": "先通过搜索栏粘贴网址触发快速添加并关闭，再点击某卡片“编辑”或“添加链接”，检查对话框是否仍缺少标题/网址/说明字段且位于搜索栏下方；修复后应恢复为普通模态布局。"
+      }
+    ]
+  },
+  "usage": {
+    "prompt_tokens": 14818,
+    "completion_tokens": 662,
+    "total_tokens": 15480,
+    "prompt_tokens_details": {
+      "cached_tokens": 2048
+    },
+    "prompt_cache_hit_tokens": 2048,
+    "prompt_cache_miss_tokens": 12770
+  },
+  "testsExecuted": false
+}

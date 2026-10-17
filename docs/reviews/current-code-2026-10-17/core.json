@@ -1,0 +1,28 @@
+{
+  "sha": "20fcd4412cb41ed03f48bc2fbd6f02c1c689ff7f",
+  "module": "core",
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "files": [
+    "index.html",
+    "app.js",
+    "styles.css",
+    "workspace-v4.css",
+    "brand/brand.css"
+  ],
+  "result": {
+    "summary": "在提供的核心模块源码中，未发现同时满足“有效调用链上有明确证据”且“属于碎屑/浮毛或兼容残留”的问题；任务三状态、卡片紧凑、四象限颜色、完成绿勾、编辑退回、英语双 Tab、历史数据与短链接等均按需求保留，未作为残留处理。",
+    "findings": []
+  },
+  "usage": {
+    "prompt_tokens": 19588,
+    "completion_tokens": 80,
+    "total_tokens": 19668,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 19588
+  },
+  "testsExecuted": false
+}

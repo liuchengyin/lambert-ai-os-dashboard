@@ -1,0 +1,52 @@
+{
+  "sha": "20fcd4412cb41ed03f48bc2fbd6f02c1c689ff7f",
+  "module": "reading_extension",
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "files": [
+    "reading-v2.js",
+    "reading-v2.css",
+    "reading-polish-v5.js",
+    "reading-polish-v5.css",
+    "reading-extension-import.js",
+    "chrome-extension/dashboard-sync.js",
+    "chrome-extension/service-worker.js",
+    "chrome-extension/sidepanel.js",
+    "chrome-extension/sidepanel.html",
+    "chrome-extension/sidepanel.css"
+  ],
+  "result": {
+    "summary": "在提供的阅读扩展模块中，发现两处有明确证据的残留：侧栏导入脚本仍写入已废弃的 rv2Mode 控件，导致微信读书来源模式无法恢复；阅读工作台初始化时把 weread 模式强制改为 pdf，与侧栏/同步数据中的 weread 默认值冲突。其余行为（历史数据、飞书归档、全屏增强）未发现可确证的碎屑。",
+    "findings": [
+      {
+        "file": "reading-extension-import.js",
+        "line": 1,
+        "severity": "medium",
+        "problem": "导入逻辑仍查找并设置旧版 rv2Mode 下拉框，但当前 reading-v2.js 已改为 rv2PdfMode/rv2WebMode 按钮，rv2Mode 不存在，导致从微信读书导入时来源模式被静默丢弃，且不会报错。",
+        "evidence": "reading-extension-import.js 中 `const mode=pick('rv2Mode'); if(mode&&/weread\\.qq\\.com/i.test(sourceUrl)){mode.value='weread';...}`；而 reading-v2.js 渲染的工具栏只有 `rv2PdfMode`/`rv2WebMode` 按钮，setMode 仅接受 'pdf'/'web'，无 rv2Mode 元素。",
+        "suggestion": "删除对 rv2Mode 的查找与赋值，改为在导入后调用现有模式切换（如点击 rv2WebMode 或直接设置 state.reader.mode='web'），或至少移除该无效分支，避免误导。",
+        "verification": "在带 `?view=reading&import=1&sourceUrl=https://weread.qq.com/...` 的页面打开，检查导入后阅读来源 Tab 是否仍为 PDF；并在控制台确认 `document.getElementById('rv2Mode')` 为 null。"
+      },
+      {
+        "file": "reading-v2.js",
+        "line": 1,
+        "severity": "low",
+        "problem": "初始化时把 state.reader.mode==='weread' 强制改为 'pdf'，而 chrome-extension/dashboard-sync.js 的默认 reader.mode 仍为 'weread'，两者对同一存储键的默认值不一致，导致侧栏同步的阅读模式被静默覆盖。",
+        "evidence": "reading-v2.js 中 `if(state.reader.mode==='weread')state.reader.mode='pdf';`；dashboard-sync.js 的 getState 默认返回 `{reader:{...,mode:'weread',...}}`，且同步时保留该字段。",
+        "suggestion": "统一默认模式：要么在 reading-v2.js 保留 weread 并映射到 web 模式，要么把 dashboard-sync.js 默认改为 'pdf'，避免同一 STORE 的默认值冲突。",
+        "verification": "在 localStorage 的 reading_workspace_v2 中设置 reader.mode='weread' 后刷新阅读页，观察模式是否被改为 pdf；再对比侧栏同步写入的默认值。"
+      }
+    ]
+  },
+  "usage": {
+    "prompt_tokens": 16211,
+    "completion_tokens": 639,
+    "total_tokens": 16850,
+    "prompt_tokens_details": {
+      "cached_tokens": 2048
+    },
+    "prompt_cache_hit_tokens": 2048,
+    "prompt_cache_miss_tokens": 14163
+  },
+  "testsExecuted": false
+}

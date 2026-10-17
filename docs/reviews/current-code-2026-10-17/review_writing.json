@@ -1,0 +1,51 @@
+{
+  "sha": "20fcd4412cb41ed03f48bc2fbd6f02c1c689ff7f",
+  "module": "review_writing",
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "files": [
+    "review-v6.js",
+    "review-v6.css",
+    "review-layout-v7.css",
+    "daily-modules.js",
+    "daily-modules.css",
+    "writing-history-link.js",
+    "writing-history-link.css",
+    "reading-history-bridge.js",
+    "reading-history-bridge.css"
+  ],
+  "result": {
+    "summary": "审查 review_writing 模块源码后，发现两处有明确证据的碎屑：writing-history-link.js 的 MutationObserver 会因自身修改 DOM 而反复自触发；reading-history-bridge.js 的 MutationObserver 在 render 清空 #drHistory 后，因 dataset 标记被移除而可能反复重绘。两者均属有效调用链上的观察器自触发风险，建议最小修复。",
+    "findings": [
+      {
+        "file": "writing-history-link.js",
+        "line": 31,
+        "severity": "medium",
+        "problem": "MutationObserver 监听整个 documentElement 的 childList 变化，而 enhance() 内部会 replaceWith 替换 strong 节点并设置 dataset，这些 DOM 变更会再次触发 observer，形成自触发循环（虽因 dataset.feishuLinked 守卫不会无限替换，但每次 DOM 变动都会排队一次 enhance 回调，造成持续空转与额外重排）。",
+        "evidence": "observer.observe(document.documentElement,{subtree:true,childList:true}) 监听全文档；enhance() 中 strong.replaceWith(a) 与 item.dataset.feishuLinked='1' 均产生 childList/属性变更；回调 setTimeout(enhance,0) 无自身变更过滤。",
+        "suggestion": "将 observer 回调改为仅在 #dwHistory 子树变化时执行，或在 enhance 执行期间断开/重连 observer（observer.disconnect() 后操作再 observe），避免自身写入触发。",
+        "verification": "在浏览器打开每日记录页，用 MutationObserver 计数或 Performance 面板观察 enhance 调用次数；点击切换日期/归档后确认 enhance 不再因自身 replaceWith 被重复排队。"
+      },
+      {
+        "file": "reading-history-bridge.js",
+        "line": 63,
+        "severity": "medium",
+        "problem": "MutationObserver 回调在 #drHistory 缺少 dataset.lambertHistorySig 时调用 render，而 render 开头 root.innerHTML='' 会清空子节点并随后重设 dataset；清空动作本身触发 childList 变更，若在 dataset 重设前回调再次执行，会重复 render，存在自触发/重复重绘风险，且与 daily-modules.js 的 renderReadingHistory 互相覆盖。",
+        "evidence": "observer 回调：if(!root.dataset.lambertHistorySig)setTimeout(render,0)；render() 中 root.innerHTML='' 后 root.dataset.lambertHistorySig=sig；daily-modules.js 的 renderReadingHistory 也会 root.innerHTML='' 重绘同一 #drHistory。",
+        "suggestion": "在 render 内先设置 dataset 标记再清空/重建，或在 observer 回调中比较签名后再决定是否 render，避免清空动作触发再次 render。",
+        "verification": "打开每日阅读页，在 DevTools 中对 render 打点或统计 #drHistory 的 childList 变更次数；切换日期或触发 lambert-reading-synced 后确认 render 不被自身 innerHTML 清空重复调用。"
+      }
+    ]
+  },
+  "usage": {
+    "prompt_tokens": 17878,
+    "completion_tokens": 633,
+    "total_tokens": 18511,
+    "prompt_tokens_details": {
+      "cached_tokens": 2048
+    },
+    "prompt_cache_hit_tokens": 2048,
+    "prompt_cache_miss_tokens": 15830
+  },
+  "testsExecuted": false
+}

@@ -1,0 +1,47 @@
+{
+  "sha": "20fcd4412cb41ed03f48bc2fbd6f02c1c689ff7f",
+  "module": "english",
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "files": [
+    "english-learning.js",
+    "english-learning-v1.css",
+    "english-learning-media-v1.css",
+    "english-app.html",
+    "english-app-lite.css"
+  ],
+  "result": {
+    "summary": "在英语模块源码中发现两处有明确证据的残留：独立播放器页 english-app.html 的初始化脚本在 english-learning.js 尚未渲染出 .english-tab 时立即查询并点击，导致该点击无效；同时 english-learning.js 的 beforeunload 清理逻辑引用了可能尚未初始化的变量，存在运行时异常风险。其余行为（双 Tab、单独移动页、六步法、录音/字幕持久化）符合需求，未发现应删除的兼容残留。",
+    "findings": [
+      {
+        "file": "english-app.html",
+        "line": 24,
+        "severity": "medium",
+        "problem": "独立播放器页的内联脚本在 english-learning.js 执行后立即查询 .english-tab[data-tab=\"video\"] 并点击，但 english-learning.js 的 render() 在 IIFE 末尾同步执行，理论上此时 DOM 已存在；然而 english-learning.js 在 english-app.html 中先于内联脚本加载，且其 render() 会重建 section.innerHTML，内联脚本查询到的 .english-tab 是重建后的节点，点击会触发 setTab('video')，进而 pauseStudy/resumeStudy/render，属于重复渲染与重复绑定，且 english-app-lite.css 已隐藏 .english-tabs，该点击对可见 UI 无意义，仅用于强制 activeTab。",
+        "evidence": "english-app.html 第 24 行 `const videoTab = document.querySelector('.english-tab[data-tab=\"video\"]'); if (videoTab && !videoTab.classList.contains('active')) videoTab.click();`；english-learning.js 中 `document.querySelectorAll('.english-tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab)); render();` 在 IIFE 末尾执行，setTab 内调用 `stopRecording();pauseStudy();...persist();render();`，形成一次额外完整 render。english-app-lite.css 中 `#english .english-tabs{display:none!important}` 表明该 Tab 在独立页不可见。",
+        "suggestion": "删除 english-app.html 内联脚本中对 .english-tab 的查询与 click，改为在 english-learning.js 初始化时根据 URL 或直接设置 state.activeTab='video' 后 render，避免重复渲染与对隐藏控件的程序化点击。",
+        "verification": "在浏览器打开 english-app.html，在 english-learning.js 的 render 与 setTab 处打断点，确认内联脚本的 videoTab.click() 是否触发第二次 render；对比删除该行后页面初始状态与 localStorage 中 activeTab 是否仍为 video。"
+      },
+      {
+        "file": "english-learning.js",
+        "line": 1,
+        "severity": "low",
+        "problem": "beforeunload 清理回调在 IIFE 顶部注册，引用了 recordUrl、phoneticAudio、recordStream 等变量，这些变量在文件后部才用 let 声明。虽然回调执行时通常已初始化，但若用户在脚本解析完成前关闭页面（极短窗口），或未来将注册位置前移，会触发 TDZ ReferenceError；当前证据显示注册位置早于声明位置，属于顺序脆弱残留。",
+        "evidence": "english-learning.js 中 `window.addEventListener('beforeunload',()=>{...if(recordUrl)URL.revokeObjectURL(recordUrl);if(phoneticAudio)URL.revokeObjectURL(phoneticAudio.url);recordStream?.getTracks().forEach(t=>t.stop())});` 位于 `let recordDevice=null,recordStream=null,recordUrl='',recordChunks=[]; let phoneticAudio=null,...` 之前。",
+        "suggestion": "将 beforeunload 监听器移动到 recordUrl/phoneticAudio/recordStream 声明之后，或改用可选链与 typeof 守卫，最小改动为把该 addEventListener 移到 `let phoneticAudio=null,phoneticRepeatLeft=0;` 之后。",
+        "verification": "在 english-learning.js 中于 beforeunload 回调内打断点，确认变量声明顺序；或在声明前手动触发 beforeunload 事件，观察是否抛出 ReferenceError。"
+      }
+    ]
+  },
+  "usage": {
+    "prompt_tokens": 18949,
+    "completion_tokens": 869,
+    "total_tokens": 19818,
+    "prompt_tokens_details": {
+      "cached_tokens": 2048
+    },
+    "prompt_cache_hit_tokens": 2048,
+    "prompt_cache_miss_tokens": 16901
+  },
+  "testsExecuted": false
+}

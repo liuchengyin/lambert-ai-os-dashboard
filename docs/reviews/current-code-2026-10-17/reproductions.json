@@ -1,0 +1,88 @@
+[
+  {
+    "case": "new project and nested task",
+    "filter": "",
+    "selected": 1,
+    "task": {
+      "id": "task_1792214922474_e41xml",
+      "title": "审查新建任务",
+      "status": "待开始",
+      "project": "审查关联项目",
+      "priority": "P2",
+      "matrix": "q2",
+      "due": "",
+      "note": "",
+      "createdAt": "2026-10-17T05:28:42.474Z"
+    }
+  },
+  {
+    "case": "new project and nested task",
+    "filter": "完全不匹配",
+    "selected": 0,
+    "task": {
+      "id": "task_1792214923359_jmgjd6",
+      "title": "审查新建任务",
+      "status": "待开始",
+      "project": "",
+      "priority": "P2",
+      "matrix": "q2",
+      "due": "",
+      "note": "",
+      "createdAt": "2026-10-17T05:28:43.359Z"
+    }
+  },
+  {
+    "case": "legacy URL import",
+    "oldModeControl": 0,
+    "activeMode": "pdf",
+    "reader": {
+      "title": "",
+      "progress": "",
+      "mode": "pdf",
+      "url": "https://weread.qq.com/web/reader/demo"
+    }
+  },
+  {
+    "case": "quick capture then normal modal",
+    "modal": true,
+    "quickClass": false,
+    "urlVisible": true
+  },
+  {
+    "case": "navigation icons",
+    "icons": [
+      {
+        "view": "home",
+        "icons": 1
+      },
+      {
+        "view": "projects",
+        "icons": 1
+      },
+      {
+        "view": "tasks",
+        "icons": 1
+      },
+      {
+        "view": "review",
+        "icons": 1
+      },
+      {
+        "view": "english",
+        "icons": 1
+      },
+      {
+        "view": "writing",
+        "icons": 1
+      },
+      {
+        "view": "reading",
+        "icons": 1
+      },
+      {
+        "view": "knowledge",
+        "icons": 1
+      }
+    ]
+  }
+]

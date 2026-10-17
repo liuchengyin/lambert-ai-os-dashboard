@@ -1,0 +1,47 @@
+{
+  "sha": "20fcd4412cb41ed03f48bc2fbd6f02c1c689ff7f",
+  "module": "projects",
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "files": [
+    "project-v2.js",
+    "project-v3.js",
+    "project-v4.js",
+    "project-v3.css",
+    "project-board-polish.js"
+  ],
+  "result": {
+    "summary": "在提供的项目模块源码中，发现两处有明确证据的残留问题：project-v4.js 的弹窗创建任务路径绕过了 v3 的选中集合，导致新建任务无法自动关联到当前项目；project-board-polish.js 的 MutationObserver 在 bindMetrics 内改写 DOM 属性，可能反复触发自身回调。其余如 project-v2.js 被 v3 覆盖、CSS 覆盖等未作为残留上报。",
+    "findings": [
+      {
+        "file": "project-v4.js",
+        "line": 1,
+        "severity": "medium",
+        "problem": "v4 弹窗创建任务时，在 create 模式下把 task.project 设为空字符串，随后仅通过 refreshPicker 勾选复选框并派发 change 事件；但 v3 的 createSelected 集合只在复选框 change 回调中更新，而 refreshPicker 在 setTimeout 中派发 change 时，若 picker 已被 renderCreateTaskPicker 重建，可能找不到对应复选框，导致新任务未被加入 createSelected，保存项目时不会关联该任务。",
+        "evidence": "project-v4.js 中 $('ptcSave').onclick 构造 task 时 project: mode==='edit'?project:''，然后 refreshPicker(task.id) 通过 dispatchEvent(new Event('input')) 重建 picker，再 setTimeout 查找 input[value=taskId] 并派发 change；project-v3.js 的 renderCreateTaskPicker 中 change 回调才执行 createSelected.add(id)。若重建后复选框尚未渲染或 CSS.escape 选择器未命中，则 createSelected 不含新任务，addProjectFromForm 中 assignTasksToProject(name,[...createSelected]) 不会关联。",
+        "suggestion": "在 v4 的 ptcSave 中，创建任务后直接调用 v3 暴露的选中逻辑（或派发一个自定义事件让 v3 把 task.id 加入 createSelected），不要仅依赖 DOM 复选框的 change 事件；最小改动是在 refreshPicker 前通过 window 事件或直接操作 createSelected 集合加入 task.id。",
+        "verification": "在项目页打开“新建任务”弹窗，填写标题后点击“创建并关联”，再保存项目；检查该任务的项目字段是否为空，以及项目卡片关联任务数是否未增加。可在 refreshPicker 的 setTimeout 内断点确认 root.querySelector 是否返回 null。"
+      },
+      {
+        "file": "project-board-polish.js",
+        "line": 1,
+        "severity": "low",
+        "problem": "MutationObserver 监听 projectDashboard 的 childList/subtree 变化，回调 bindMetrics 会对每个 .project-metric 设置 role、tabIndex、onclick、onkeydown 并添加 class；这些属性/class 变更本身会触发 observer 再次回调，形成自触发循环（虽然 class 重复添加通常幂等，但每次 dashboard 重绘后 observer 会持续触发 bindMetrics，造成不必要的重复绑定和潜在性能开销）。",
+        "evidence": "project-board-polish.js 中 const observer=new MutationObserver(()=>bindMetrics()); observer.observe(dash,{childList:true,subtree:true}); bindMetrics 内 metric.classList.add('project-metric-clickable')、metric.setAttribute('role','button')、metric.tabIndex=0、metric.onclick=... 均会修改被观察子树，触发 observer 回调。",
+        "suggestion": "在 bindMetrics 中先检查 metric 是否已绑定（例如 if(metric.dataset.metricBound) return; metric.dataset.metricBound='1'），或 observer 回调中先 disconnect 再 bindMetrics 后重新 observe；最小改动是加 dataset 标记避免重复处理。",
+        "verification": "在项目页打开 DevTools Performance 或给 bindMetrics 加计数，观察 dashboard 重绘后 bindMetrics 是否被连续多次调用；也可在 observer 回调中打印调用栈确认自触发。"
+      }
+    ]
+  },
+  "usage": {
+    "prompt_tokens": 15507,
+    "completion_tokens": 820,
+    "total_tokens": 16327,
+    "prompt_tokens_details": {
+      "cached_tokens": 2048
+    },
+    "prompt_cache_hit_tokens": 2048,
+    "prompt_cache_miss_tokens": 13459
+  },
+  "testsExecuted": false
+}
