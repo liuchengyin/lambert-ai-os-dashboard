@@ -26,6 +26,8 @@ on:
       - 'ui-polish-v3.js'
       - 'ui-polish-v3.css'
       - 'reading-history-bridge.js'
+      - 'daily-modules.js'
+      - 'reading-v2.js'
       - 'reading-extension-import.js'
       - 'writing-history-link.js'
       - 'chrome-extension/dashboard-sync.js'

@@ -69,7 +69,7 @@
     const l=document.createElement('link');l.rel='stylesheet';l.href='review-v6.css';document.head.appendChild(l)
   }
   if(!document.querySelector('script[src="review-v6.js"]')){
-    const s=document.createElement('script');s.src='review-v6.js';document.body.appendChild(s)
+    const s=document.createElement('script');s.async=false;s.src='review-v6.js';document.body.appendChild(s)
   }
   if(!document.querySelector('link[href="theme-linear.css"]')){
     const t=document.createElement('link');t.rel='stylesheet';t.href='theme-linear.css';document.head.appendChild(t)
@@ -78,40 +78,40 @@
     const d=document.createElement('link');d.rel='stylesheet';d.href='daily-modules.css';document.head.appendChild(d)
   }
   if(!document.querySelector('script[src="daily-modules.js"]')){
-    const s=document.createElement('script');s.src='daily-modules.js';document.body.appendChild(s)
+    const s=document.createElement('script');s.async=false;s.src='daily-modules.js';document.body.appendChild(s)
   }
   if(!document.querySelector('link[href="reading-v2.css"]')){
     const r=document.createElement('link');r.rel='stylesheet';r.href='reading-v2.css';document.head.appendChild(r)
   }
   if(!document.querySelector('script[src="reading-v2.js"]')){
-    const s=document.createElement('script');s.src='reading-v2.js';document.body.appendChild(s)
+    const s=document.createElement('script');s.async=false;s.src='reading-v2.js';document.body.appendChild(s)
   }
   if(!document.querySelector('script[src="reading-extension-import.js"]')){
-    const s=document.createElement('script');s.src='reading-extension-import.js';document.body.appendChild(s)
+    const s=document.createElement('script');s.async=false;s.src='reading-extension-import.js';document.body.appendChild(s)
   }
   if(!document.querySelector('link[href="reading-history-bridge.css"]')){
     const l=document.createElement('link');l.rel='stylesheet';l.href='reading-history-bridge.css';document.head.appendChild(l)
   }
   if(!document.querySelector('script[src="reading-history-bridge.js"]')){
-    const s=document.createElement('script');s.src='reading-history-bridge.js';document.body.appendChild(s)
+    const s=document.createElement('script');s.async=false;s.src='reading-history-bridge.js';document.body.appendChild(s)
   }
   if(!document.querySelector('link[href="writing-history-link.css"]')){
     const l=document.createElement('link');l.rel='stylesheet';l.href='writing-history-link.css';document.head.appendChild(l)
   }
   if(!document.querySelector('script[src="writing-history-link.js"]')){
-    const s=document.createElement('script');s.src='writing-history-link.js';document.body.appendChild(s)
+    const s=document.createElement('script');s.async=false;s.src='writing-history-link.js';document.body.appendChild(s)
   }
   if(!document.querySelector('script[src="project-board-polish.js"]')){
-    const s=document.createElement('script');s.src='project-board-polish.js';document.body.appendChild(s)
+    const s=document.createElement('script');s.async=false;s.src='project-board-polish.js';document.body.appendChild(s)
   }
   if(!document.querySelector('link[href="ui-polish-v3.css"]')){
     const l=document.createElement('link');l.rel='stylesheet';l.href='ui-polish-v3.css';document.head.appendChild(l)
   }
   if(!document.querySelector('script[src="ui-polish-v3.js"]')){
-    const s=document.createElement('script');s.src='ui-polish-v3.js';document.body.appendChild(s)
+    const s=document.createElement('script');s.async=false;s.src='ui-polish-v3.js';document.body.appendChild(s)
   }
   if(!document.querySelector('script[src="task-drag-v1.js"]')){
-    const s=document.createElement('script');s.src='task-drag-v1.js';document.body.appendChild(s)
+    const s=document.createElement('script');s.async=false;s.src='task-drag-v1.js';document.body.appendChild(s)
   }
   // Shared pastel background and a compact review layout, loaded after older themes.
   if(!document.querySelector('link[href="workspace-glass-v1.css"]')){
