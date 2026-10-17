@@ -2,9 +2,9 @@ import {chromium} from 'playwright';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const base=process.env.TEST_BASE_URL||'http://127.0.0.1:8000/';
-const browser=await chromium.launch();
+const browser=await chromium.launch(),errors=[];
 async function page(path=''){
- const c=await browser.newContext();await c.addInitScript(()=>{window.auditObservers=[];const Native=MutationObserver;window.MutationObserver=class extends Native{constructor(callback){const stat={source:new Error().stack,calls:0};window.auditObservers.push(stat);super((records,observer)=>{stat.calls++;callback(records,observer)})}}});const p=await c.newPage();await p.goto(new URL(path,base).href,{waitUntil:'domcontentloaded'});await p.locator('#rv2Save').waitFor({state:'attached'});return p;
+ const c=await browser.newContext();await c.addInitScript(()=>{window.auditObservers=[];const Native=MutationObserver;window.MutationObserver=class extends Native{constructor(callback){const stat={source:new Error().stack,calls:0};window.auditObservers.push(stat);super((records,observer)=>{stat.calls++;callback(records,observer)})}}});const p=await c.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(new URL(path,base).href,{waitUntil:'domcontentloaded'});await p.locator('#rv2Save').waitFor({state:'attached'});return p;
 }
 try{
  for(const filter of ['', '完全不匹配']){
@@ -18,5 +18,6 @@ try{
  console.log('PASS delayed legacy loader cannot overwrite stable reading.');
  const q=await page();await q.locator('nav button[data-v="knowledge"]').click();await q.waitForTimeout(450);await q.evaluate(()=>window.auditObservers.forEach(s=>s.calls=0));await q.locator('#knowledgeSearch').pressSequentially('book',{delay:25});await q.waitForTimeout(100);const stats=await q.evaluate(()=>window.auditObservers.filter(s=>/ai-chat\.js|deepseek-v1\.js|writing-history-link\.js|reading-history-bridge\.js/.test(s.source)).map(s=>s.calls));assert.ok(stats.length>=3);assert.ok(stats.every(n=>n===0));await q.context().close();
  console.log('PASS no unrelated AI/writing/legacy reading observer work during link search.');
+ assert.deepEqual(errors,[]);
  console.log('PASS project creation/editing with hidden filtered tasks; reading URL import preserves note and uses web mode.');
 }finally{await browser.close()}
