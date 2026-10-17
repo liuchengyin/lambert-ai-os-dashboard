@@ -1,0 +1,27 @@
+name: Common Links Flash Review
+on:
+  push:
+    branches: ['review/common-links-recognition']
+permissions:
+  contents: read
+jobs:
+  review:
+    if: github.event.head_commit.message == 'Run one Flash review of common link recognition'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run real recognition cases and one Flash review
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: node scripts/review-common-links.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: common-links-flash-review
+          path: review-output/common-links-flash.json
+          retention-days: 14

@@ -37,5 +37,21 @@ try{
   await page.reload();await page.locator('nav button[data-v="knowledge"]').click();check('New links survive reload',(await rows())[0].links.some(l=>l.title==='自动识别的网站'));
   await page.setViewportSize({width:390,height:844});check('Mobile locked quick add stays visible',await page.locator('#knowledgeQuickAdd').isVisible());await open();await url('https://myaccount.google.com');await page.waitForFunction(()=>document.getElementById('kTitle').value==='Google 账号');
   mkdirSync('tests/screenshots',{recursive:true});await page.screenshot({path:'tests/screenshots/common-links-mobile.png'});check('Mobile dialog fits the screen',await page.locator('#knowledgeLinkDlg').evaluate(e=>e.scrollWidth<=innerWidth-10));await page.locator('#kCancel').click();await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:'tests/screenshots/common-links-desktop.png'});
+  mode='fail';const beforeKnown=requests.length;
+  for(const [address,title] of [['https://m.douban.com/movie/','豆瓣电影'],['https://movie.douban.com/','豆瓣电影'],['https://www.bilibili.com/','哔哩哔哩'],['https://m.bilibili.com/','哔哩哔哩'],['https://book.douban.com/','豆瓣读书'],['https://www.zhihu.com/','知乎']]){
+    await page.locator('#knowledgeSearch').fill(address);await page.locator('#knowledgeSearch').press('Enter');
+    await page.waitForFunction(expected=>document.getElementById('kRecognizedName').textContent===expected,title);
+    check('Quick capture recognizes '+address,await page.locator('#knowledgeLinkDlg').evaluate(e=>!e.matches(':modal'))&&await page.locator('#kSave').isEnabled()&&!!(await page.locator('#kDesc').inputValue()));
+    await page.locator('#kSave').click();check('Quick capture saves recognized identity',(await rows())[0].links[0].title===title);
+  }
+  check('Known sites work even when metadata network fails',requests.length===beforeKnown);
+  await page.locator('#knowledgeSearch').fill('m.douban.com/movie/');await page.locator('#knowledgeSearch').press('Enter');
+  await page.locator('#knowledgeSearch').fill('https://www.bilibili.com/');await page.locator('#knowledgeSearch').press('Enter');
+  await page.waitForFunction(()=>document.getElementById('kRecognizedName').textContent==='哔哩哔哩');
+  check('Replacing an inline capture cancels old state',await page.locator('#kSave').isEnabled());
+  await page.locator('#kCancel').click();await page.locator('#knowledgeSearch').fill('');
+  await page.screenshot({path:'tests/screenshots/common-links-desktop.png'});
+  await page.setViewportSize({width:390,height:844});await page.locator('#knowledgeSearch').fill('https://m.douban.com/movie/');await page.locator('#knowledgeSearch').press('Enter');
+  check('Mobile inline capture fits',await page.locator('#knowledgeLinkDlg').evaluate(e=>e.scrollWidth<=innerWidth-10));await page.screenshot({path:'tests/screenshots/common-links-mobile.png'});
   check('No uncaught browser errors',errors.length===0);console.log('Common links UI regression passed.');
 }finally{await browser.close()}

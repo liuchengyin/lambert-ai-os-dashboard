@@ -6,7 +6,7 @@ for(const address of ['127.0.0.1','10.1.2.3','169.254.1.1','::1','fc00::1','fe80
 assert.equal(publicAddress('8.8.8.8'),true);assert.equal(normalizeUrl('example.com').href,'https://example.com/');
 const resolver=async host=>[{address:host==='private.example'?'10.0.0.1':'93.184.216.34',family:4}];
 const html=`<html><head><script>const fake='<title>Wrong</title>'</script><title>Actual &amp; useful</title><link rel="icon" sizes="16x16" href="/tiny.ico"><link rel='apple-touch-icon' sizes='180x180' href='/large.png'><link rel="icon" type="image/svg+xml" href="/icon.svg"></head></html>`;
-assert.deepEqual(parseMetadata(html,'https://example.com/path'),{title:'Actual & useful',icon:'https://example.com/icon.svg'});
+assert.deepEqual(parseMetadata(html,'https://example.com/path'),{title:'Actual & useful',description:'',icon:'https://example.com/icon.svg'});
 const recognized=await recognize('https://example.com/path',{resolver,request:async(url,address)=>{assert.equal(address.address,'93.184.216.34');return {html}}});
 assert.equal(recognized.title,'Actual & useful');
 let calls=0;
@@ -21,3 +21,11 @@ function response(){return {headers:{},setHeader(k,v){this.headers[k]=v},status(
 let res=response();await handler({method:'POST',headers:{host:'dashboard.example',origin:'https://evil.example'},body:{url:'https://example.com'}},res);assert.equal(res.code,403);
 res=response();await handler({method:'POST',headers:{host:'dashboard.example',origin:'https://dashboard.example'},body:{url:'x'.repeat(2049)}},res);assert.equal(res.code,400);
 console.log('PASS metadata title/icon extraction, bounded inputs, private networks, redirects, DNS changes, timeout and same-origin guard. No external requests.');
+
+for(const [url,title] of [['https://movie.douban.com/','豆瓣电影'],['https://m.douban.com/movie/','豆瓣电影'],['https://www.bilibili.com/','哔哩哔哩'],['https://m.bilibili.com/','哔哩哔哩'],['https://book.douban.com/','豆瓣读书'],['https://github.com/','GitHub']]){
+ const data=await recognize(url,{resolver:()=>{throw Error('catalog must not need network')}});assert.equal(data.title,title);assert.ok(data.description);assert.equal(data.source,'catalog');
+}
+const fallback=await recognize('https://b23.tv/example',{resolver:()=>{throw Error('blocked')}});assert.equal(fallback.title,'哔哩哔哩');assert.equal(fallback.direct,false);
+await assert.rejects(recognize('https://douban.com.evil.example/',{resolver:()=>{throw Error('unknown')}}),/unknown/);
+assert.equal(parseMetadata('<title>Page</title><meta name="description" content="Useful &amp; clear">','https://example.com').description,'Useful & clear');
+console.log('PASS mobile/desktop common sites, short-link fallback, exact domain boundaries and description extraction.');
