@@ -2,7 +2,6 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const KEY = 'lambert_vikunja_instance_v1';
-  const DEMO = 'https://try.vikunja.io/demo-account-create/';
   function parseInstance(value) {
     const url = new URL(value);
     const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
@@ -19,7 +18,6 @@
     $('viewer').hidden = false;
     $('viewer').scrollIntoView({block: 'start'});
   }
-  $('demo').addEventListener('click', () => show(DEMO, '官方临时演示 · 非私有实例'));
   $('instance-form').addEventListener('submit', event => {
     event.preventDefault();
     try {
