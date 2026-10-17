@@ -1,0 +1,27 @@
+name: Flow Atlas Flash Contribution
+on:
+  push:
+    branches: [feat/flow-atlas-network]
+permissions:
+  contents: read
+jobs:
+  review:
+    if: github.event.head_commit.message == 'Review Flow Atlas with Flash'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: One bounded Flash call
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: node scripts/review-flow-atlas.mjs --run
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flow-atlas-flash
+          path: review-output/flow-atlas/
+          retention-days: 14
