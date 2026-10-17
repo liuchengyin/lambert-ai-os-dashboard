@@ -12,6 +12,7 @@ globalThis.fetch=async(url,opts)=>{
   const target=String(url);
   if(target.startsWith('https://redis.test')){
     const command=JSON.parse(opts.body),[cmd,key,extra]=command;
+    if(cmd==='GET')return fakeResponse({result:redis.get(key)??null});
     if(cmd==='SET'){if(redis.has(key))return fakeResponse({result:null});redis.set(key,extra);return fakeResponse({result:'OK'})}
     if(cmd==='EVAL'){
       const actualKey=command[3];
@@ -71,10 +72,17 @@ try{
   r=await invoke({...body,tasks:Array(31).fill(body.tasks[0])},{headers:{cookie}});
   check('Oversized task array rejected',r.statusCode===400&&providerCalls===1);
   // Repeated analysis eventually hits server-side per-minute limit.
-  await invoke(body,{headers:{cookie}});
-  await invoke(body,{headers:{cookie}});
+  for(let i=0;i<5;i++)await invoke(body,{headers:{cookie}});
   r=await invoke(body,{headers:{cookie}});
-  check('Persistent rate limit blocks excess paid calls',r.statusCode===429&&providerCalls===3);
+  check('Persistent minute limit blocks excess paid calls',r.statusCode===429&&providerCalls===6&&r.body.scope==='minute'&&r.headers['Retry-After']==='60');
+  redis.clear();redis.set('ai:global:'+new Date().toISOString().slice(0,10),200);
+  r=await invoke(body,{headers:{cookie}});
+  check('Global daily quota includes reset time',r.statusCode===429&&r.body.scope==='global_day'&&r.body.resetAt&&providerCalls===6);
+  redis.clear();
+  const fingerprint=(await import('node:crypto')).createHash('sha256').update('192.0.2.33').digest('hex').slice(0,24);
+  redis.set('ai:day:'+fingerprint+':'+new Date().toISOString().slice(0,10),100);
+  r=await invoke(body,{headers:{cookie}});
+  check('Personal daily quota distinguishes the scope and unlocks',r.statusCode===429&&r.body.scope==='day'&&r.body.limit===100&&r.body.retryAfter>0&&!redis.has('ai:concurrent'));
   for(const invalid of [null,[],{}, {summary:'有摘要但缺少数组'}]){
     redis.clear();modelOverride=invalid;r=await invoke(body,{headers:{cookie}});
     check('Malformed analysis output rejected: '+JSON.stringify(invalid),r.statusCode===502&&r.body.code==='invalid_model_output'&&!redis.has('ai:concurrent'));

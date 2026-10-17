@@ -59,3 +59,7 @@
 #home .ai-draft-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:0}
 #home .ai-draft-remove{justify-self:start;border:0;background:none;color:#8c748f;padding:3px 0;font-size:11px;cursor:pointer}
 @media(max-width:700px){#home .ai-chat-panel{padding:16px}#home .ai-chat-actions{justify-content:space-between}#home .ai-chat-actions .ai-note{flex-basis:100%}#home .ai-chat-message{margin-left:0;margin-right:0}#home .ai-chat-examples{display:grid}#home .ai-draft-row{grid-template-columns:1fr}#home .ai-chat-form textarea,#home .ai-draft-field input,#home .ai-draft-field textarea,#home .ai-draft-field select{font-size:16px}}
+
+#home .ai-chat-context{display:flex;flex-wrap:wrap;gap:12px;margin:12px 0}
+#home .ai-chat-context label{display:flex;align-items:center;gap:8px;font-size:12px;color:#74718b}
+#home .ai-chat-context select{max-width:100%;padding:7px 10px;border:1px solid #d9d1ec;border-radius:8px;background:#fff;color:#403755;font:inherit}
