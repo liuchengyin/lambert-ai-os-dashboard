@@ -1,0 +1,51 @@
+{
+  "reviewer": "DeepSeek Flash",
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "commit": "87657d7bcb72960865c062d29b7b5a3d93848f4e",
+  "generatedAt": "2026-10-17T04:30:52.165Z",
+  "scope": [
+    "dashboard-v5.js",
+    "task-board-v6.js",
+    "task-board-v6.css",
+    "ui-polish-v3.js",
+    "ui-polish-v3.css",
+    "workspace-glass-v1.css"
+  ],
+  "testsExecuted": false,
+  "summary": "任务卡片存在多套增强脚本互相覆盖：task-board-v6.js 与 ui-polish-v3.js 都重复插入倒计时/标题行并删除同一批 chip，且 ui-polish-v3.js 的 MutationObserver 会在每次 DOM 变动后反复执行 polishTaskCards，造成持续 DOM 修改与死逻辑；task-board-v6.css 中 .task-v6-top 先被设为 flex 又被 display:contents 覆盖，属于互相覆盖的残留。",
+  "findings": [
+    {
+      "file": "ui-polish-v3.js",
+      "line": 1,
+      "severity": "high",
+      "problem": "polishTaskCards 与 task-board-v6.js 的 enhanceCard 重复处理同一批卡片：两者都删除 P1/P2/P3 chip、删除截止 chip、插入倒计时节点（task-v5-title-row/task-v5-countdown 与 task-v6-top/task-v6-countdown），并各自用 setInterval 每 60 秒刷新倒计时；同时 MutationObserver 监听 home/tasks/projects/writing/reading/nav 的 subtree childList，每次 polish 自身插入节点又会触发下一轮 polish，形成持续 DOM 修改循环。",
+      "evidence": "ui-polish-v3.js 中 watchTargets.forEach 对 #tasks 等注册 MutationObserver(()=>requestAnimationFrame(polish))，polish 调用 polishTaskCards 会 insertBefore 创建 .task-v5-title-row 并 append .task-v5-countdown；task-board-v6.js 的 enhanceBoard 同样对 .task-v5-card 执行 enhanceCard 创建 .task-v6-top/.task-v6-countdown，且 wrapRenderer 包裹 renderTaskBoard 后 setTimeout(enhanceBoard,0)，另有 setInterval 60000 刷新。两套逻辑对同一 .task-v5-card 的 .task-v5-meta chip 都做 remove，且都依赖 state.tasks 查找。",
+      "suggestion": "保留一套卡片增强实现：若以 task-board-v6.js 为准，则从 ui-polish-v3.js 移除 polishTaskCards 及对应 setInterval，并让 MutationObserver 只监听必要的容器且加防抖/去重（例如仅在新增 .task-v5-card 时处理），避免 polish 自身插入节点再次触发。",
+      "verification": "在任务页反复切换筛选、增删任务、等待 60 秒，确认每张卡片只有一个倒计时节点、无重复 title-row/top 包裹，且 MutationObserver 回调次数不随自身插入持续增长（可在回调计数观察）。"
+    },
+    {
+      "file": "task-board-v6.css",
+      "line": 1,
+      "severity": "medium",
+      "problem": ".task-v6-top 在同一文件中先定义为 display:flex，随后又被 #tasks .task-v5-card .task-v6-top{display:contents!important} 覆盖，导致 flex 布局与 gap 规则失效，属于互相覆盖的残留样式；同时 .task-v6-countdown 在 #tasks .task-v5-card :is(.task-v5-meta,.task-v5-note,.task-v6-countdown){display:none!important} 中被隐藏，而 task-board-v6.js 仍持续写入其 textContent 并切换 overdue 类，形成无效 DOM 更新。",
+      "evidence": "task-board-v6.css 中 .task-v6-top{display:flex;...} 与后文 #tasks .task-v5-card .task-v6-top{display:contents!important} 冲突；#tasks .task-v5-card :is(.task-v5-meta,.task-v5-note,.task-v6-countdown){display:none!important} 使 .task-v6-countdown 不可见，但 task-board-v6.js 的 enhanceCard 与 setInterval 仍设置 countdown.textContent 和 classList.toggle('overdue')。",
+      "suggestion": "若现行需求是紧凑单行且不显示倒计时，则删除 task-board-v6.js 中倒计时创建/刷新逻辑及 .task-v6-countdown 相关 CSS；若需保留倒计时，则移除 display:none 覆盖并统一 .task-v6-top 的 display 规则，避免 flex 与 contents 并存。",
+      "verification": "在任务页检查卡片 DOM 中 .task-v6-top 的计算样式与 .task-v6-countdown 是否可见，确认不存在被隐藏却仍被脚本写入的节点，且卡片仍保持单行紧凑与四象限边框阴影。"
+    },
+    {
+      "file": "task-board-v6.js",
+      "line": 1,
+      "severity": "medium",
+      "problem": "enhanceBoard 中 const preview=document.querySelector('.matrix-preview');if(preview)preview.remove(); 与 task-board-v6.css 的 .matrix-preview{display:none!important} 重复处理同一元素；且 enhanceBoard 由 MutationObserver 与 setInterval 反复调用，每次都对全量 .task-v5-card 重新执行 chip 删除与节点查找，属于不必要的持续 DOM 修改。",
+      "evidence": "task-board-v6.js 的 enhanceBoard 每次调用执行 document.querySelectorAll('.task-v5-card').forEach(enhanceCard) 并 remove .matrix-preview；observer.observe(document.documentElement,{subtree:true,childList:true}) 在任意 DOM 变动后 setTimeout(enhanceBoard,0)，setInterval 60000 也调用 wrapRenderer 与遍历卡片。CSS 中 .matrix-preview{display:none!important} 已隐藏该元素。",
+      "suggestion": "移除 enhanceBoard 中对 .matrix-preview 的 remove（由 CSS 隐藏即可），并将 MutationObserver 限定到 #taskBoard 且仅在新增卡片时增强，避免全量重复处理。",
+      "verification": "在任务页触发筛选与状态切换，确认 .matrix-preview 仍被隐藏且无脚本删除动作，卡片增强只对新卡片执行一次，DOM 变动次数不随观察器自身回调增长。"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 16334,
+    "completion_tokens": 1267
+  },
+  "status": "unverified_findings"
+}

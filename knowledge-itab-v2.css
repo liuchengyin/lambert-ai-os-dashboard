@@ -44,4 +44,21 @@ background-size:cover;background-position:center;background-attachment:fixed}
 #knowledge dialog{backdrop-filter:blur(20px)}
 @media(max-width:1120px){#knowledge .knowledge-grid{grid-template-columns:repeat(6,minmax(76px,1fr))}}
 @media(max-width:860px){#knowledge .knowledge-grid{grid-template-columns:repeat(5,minmax(72px,1fr))}#knowledge .knowledge-searchbar{width:90%}}
-@media(max-width:640px){#knowledge{border-radius:18px}#knowledge .knowledge-page{padding-inline:8px}#knowledge .knowledge-grid{grid-template-columns:repeat(4,minmax(64px,1fr));gap:18px 8px}#knowledge .knowledge-searchbar{width:100%;grid-template-columns:auto 1fr}#knowledge .knowledge-searchbar button{display:none!important}#knowledge .knowledge-link-icon,#knowledge .knowledge-add-icon{width:58px;height:58px;border-radius:16px}#knowledge .knowledge-wallpaper-btn{padding:0 10px}}
+@media(max-width:640px){#knowledge{border-radius:18px}#knowledge .knowledge-page{padding-inline:8px}#knowledge .knowledge-grid{grid-template-columns:repeat(4,minmax(64px,1fr));gap:18px 8px}#knowledge .knowledge-searchbar{width:100%;grid-template-columns:auto minmax(0,1fr) auto}#knowledge .knowledge-searchbar button{display:block!important;padding:9px 10px;font-size:12px}#knowledge .knowledge-searchbar input{min-width:0}#knowledge .knowledge-link-icon,#knowledge .knowledge-add-icon{width:58px;height:58px;border-radius:16px}#knowledge .knowledge-wallpaper-btn{padding:0 10px}}
+
+/* Recognition preview: sharp source assets, no blurred icon filter or broken images. */
+#knowledge .knowledge-link-icon img{width:42px;height:42px;filter:none;object-fit:contain}
+.knowledge-link-icon img[hidden],.knowledge-icon-fallback[hidden]{display:none!important}
+.knowledge-icon-fallback{display:grid;place-items:center;width:42px;height:42px;border-radius:11px;background:#eee9f8;color:#6b57a5;font-size:23px;font-weight:700}
+#knowledgeLinkDlg{width:min(560px,calc(100vw - 28px));max-height:calc(100dvh - 40px);overflow:auto;border:1px solid #e5e1ee;border-radius:16px;padding:0}
+#knowledgeLinkDlg .knowledge-dialog{padding:24px;min-width:0}
+#knowledgeLinkDlg .knowledge-icon-row{display:flex;align-items:center;gap:12px;margin:16px 0;padding:14px;background:#f8f7fb;border:1px solid #ece8f2;border-radius:11px}
+#knowledgeLinkDlg .knowledge-icon-preview{display:grid;place-items:center;width:56px;height:56px;flex:0 0 56px;background:white;border:1px solid #ece8f2;border-radius:12px;overflow:hidden}
+#knowledgeLinkDlg .knowledge-icon-preview img{width:40px;height:40px;object-fit:contain}
+#knowledgeLinkDlg .knowledge-icon-preview img[hidden]{display:none}
+.knowledge-recognition-info{flex:1;min-width:0}.knowledge-recognition-info strong{font-size:13px;overflow-wrap:anywhere}.knowledge-recognition-info p{font-size:11px;color:#80768c;margin:4px 0 0;line-height:1.5}
+#knowledgeLinkDlg #kAutoIcon{font-size:11px;padding:7px 9px;white-space:nowrap}
+#knowledgeLinkDlg input[readonly]{background:#f7f6fa;color:#6c647b;cursor:default}
+#knowledgeLinkDlg details{font-size:12px;margin:12px 0}#knowledgeLinkDlg details[hidden]{display:none}.knowledge-manual-note{font-size:11px;color:#887e95}
+#knowledgeLinkDlg button:disabled{opacity:.5;cursor:wait}
+@media(max-width:640px){#knowledgeLinkDlg .knowledge-dialog{padding:20px}#knowledgeLinkDlg .knowledge-icon-row{gap:8px;padding:10px}#knowledgeLinkDlg .knowledge-icon-preview{width:44px;height:44px;flex-basis:44px}#knowledgeLinkDlg input,#knowledgeLinkDlg select{font-size:16px}#knowledgeLinkDlg .dlgActions{display:flex;justify-content:flex-end;gap:10px}}

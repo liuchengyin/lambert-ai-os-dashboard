@@ -11,7 +11,7 @@ await ctx.addInitScript(()=>{
     {id:'project-test',name:'项目编辑取消测试',status:'进行中',due:'2026-10-20',standard:'保留原始完成标准',createdAt:'2026-10-10T08:00:00Z'}
   ]));
   if(!localStorage.getItem('tasks'))localStorage.setItem('tasks',JSON.stringify([
-    {id:'drag-a',title:'拖动测试 A',status:'待开始',project:'项目编辑取消测试',priority:'P2',matrix:'q2',due:'',note:'',createdAt:'2026-10-10T08:00:00Z'},
+    {id:'drag-a',title:'拖动测试 A',status:'待开始',project:'项目编辑取消测试',priority:'P2',matrix:'q2',due:'2026-10-20T20:00',note:'',createdAt:'2026-10-10T08:00:00Z'},
     {id:'drag-b',title:'拖动测试 B',status:'进行中',project:'项目编辑取消测试',priority:'P2',matrix:'q2',due:'',note:'',createdAt:'2026-10-10T08:01:00Z'},
     {id:'drag-c',title:'拖动测试 C',status:'进行中',project:'项目编辑取消测试',priority:'P2',matrix:'q2',due:'',note:'',createdAt:'2026-10-10T08:02:00Z'}
   ]));
@@ -88,6 +88,14 @@ try{
   await page.locator('.task-v5-card[data-task-id="drag-a"]').waitFor({state:'visible'});
   await page.waitForTimeout(350); // dashboard renders task cards asynchronously after navigation
   await page.waitForFunction(()=>document.querySelector('.task-v5-card[data-task-id="drag-a"]')?.draggable===true);
+  check('Compact cards have no hidden legacy decorations',await page.locator('.task-v5-countdown,.task-v6-countdown,.task-v5-title-row,.task-v6-top,.task-v5-matrix-corner,.task-v5-card .task-v5-meta,.task-v5-card .task-v5-note').count()===0);
+  await page.waitForTimeout(500);
+  const idleMutations=await page.evaluate(()=>new Promise(resolve=>{
+    let count=0;const observer=new MutationObserver(records=>count+=records.length);
+    observer.observe(document.querySelector('[data-task-id="drag-a"]'),{subtree:true,childList:true});
+    setTimeout(()=>{observer.disconnect();resolve(count)},350);
+  }));
+  check('Dated task cards stay idle without hidden countdown updates',idleMutations===0);
   check('Task cards are draggable',await page.locator('.task-v5-card[data-task-id="drag-a"]').evaluate(e=>e.draggable===true));
   await page.locator('[data-task-id="drag-a"]').dragTo(page.locator('.task-v5-col.doing'),{targetPosition:{x:160,y:220}});
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('tasks')).find(t=>t.id==='drag-a')?.status==='进行中');

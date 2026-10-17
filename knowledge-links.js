@@ -1,7 +1,7 @@
 // Common links dashboard: iTab-style launcher + editable groups + wallpaper
 (function(){
   const section=document.getElementById('knowledge');if(!section)return;
-  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261012-4';document.head.appendChild(l)}
+  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261017-1';document.head.appendChild(l)}
   const navBtn=document.querySelector('nav button[data-v="knowledge"]');if(navBtn)navBtn.textContent='常用链接';
   const STORAGE='knowledge_link_library_v1',LOCK='knowledge_link_locked_v1',WALL='knowledge_wallpaper_v1';
   const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
@@ -30,21 +30,66 @@
   const applyWallpaper=url=>{if(url){section.style.setProperty('--knowledge-wallpaper',`url("${url.replace(/"/g,'\\\"')}")`)}else section.style.removeProperty('--knowledge-wallpaper')};
   applyWallpaper(get(WALL,''));
 
-  const dlg=document.createElement('dialog');dlg.id='knowledgeLinkDlg';dlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3 id="kDlgTitle">添加链接</h3><label>链接地址<input id="kUrl" type="url" placeholder="https://example.com"></label><div class="knowledge-icon-row"><div class="knowledge-icon-preview"><img id="kIconPreview" alt=""></div><label class="knowledge-icon-input">图标链接（可选）<input id="kIcon" placeholder="留空自动识别网站图标"></label><button id="kAutoIcon" type="button">自动识别</button></div><label>名称<input id="kTitle" placeholder="可不填，自动使用网站域名"></label><label>说明<input id="kDesc" placeholder="一句话说明用途"></label><label>分组<select id="kGroup"></select></label><div class="dlgActions"><button value="cancel">取消</button><button id="kSave" type="button" class="task-primary-btn">保存</button></div></form>`;document.body.appendChild(dlg);
+  const dlg=document.createElement('dialog');dlg.id='knowledgeLinkDlg';dlg.innerHTML=`<form class="knowledge-dialog"><h3 id="kDlgTitle">添加链接</h3><label>链接地址<input id="kUrl" type="url" placeholder="粘贴网址，自动识别网站信息" required></label><div class="knowledge-icon-row"><div class="knowledge-icon-preview" id="kPreviewBox"></div><div class="knowledge-recognition-info"><strong id="kRecognizedName">等待粘贴网址</strong><p id="kRecognitionStatus" role="status" aria-live="polite">自动获取网站名称和图标</p></div><button id="kAutoIcon" type="button">重新识别</button></div><label>网站名称<input id="kTitle" placeholder="识别后自动填写" readonly></label><details id="kManual" hidden><summary>识别失败，手动补充</summary><p class="knowledge-manual-note">展开后可修改名称和图标地址。</p><label>图标链接（可选）<input id="kIcon" type="url" placeholder="https://… / 留空使用备用图标"></label></details><label>说明（可选）<input id="kDesc" placeholder="一句话说明用途"></label><label>分组<select id="kGroup"></select></label><div class="dlgActions"><button id="kCancel" type="button">取消</button><button id="kSave" type="submit" class="task-primary-btn" disabled>保存</button></div></form>`;document.body.appendChild(dlg);
   const groupDlg=document.createElement('dialog');groupDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>添加分组</h3><label>分组名称<input id="kgName" placeholder="例如：工具 / 工作 / 学习"></label><div class="dlgActions"><button value="cancel">取消</button><button id="kgSave" type="button" class="task-primary-btn">保存</button></div></form>`;document.body.appendChild(groupDlg);
   const wallDlg=document.createElement('dialog');wallDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>设置壁纸</h3><label>图片链接<input id="kwUrl" type="url" placeholder="https://.../wallpaper.jpg"></label><div class="dlgActions"><button id="kwClear" type="button">恢复默认</button><button value="cancel">取消</button><button id="kwSave" type="button" class="task-primary-btn">应用</button></div></form>`;document.body.appendChild(wallDlg);
 
-  function safeUrl(raw){let v=(raw||'').trim();if(!v)return '';if(!/^https?:\/\//i.test(v))v='https://'+v;try{return new URL(v).href}catch{return ''}}
+  const $=id=>document.getElementById(id);
+  function safeUrl(raw){let v=(raw||'').trim();if(!v||v.length>2048)return '';if(!/^https?:\/\//i.test(v))v='https://'+v;try{const u=new URL(v);if(!['http:','https:'].includes(u.protocol)||u.username||u.password||!u.hostname.includes('.'))return '';return u.href}catch{return ''}}
   function host(url){try{return new URL(url).hostname.replace(/^www\./,'')}catch{return '网站'}}
-  function favicon(url){return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host(url))}&sz=128`}
-  function iconFor(link){return link.icon||favicon(link.url)}
+  function brandFor(url){
+    try{const u=new URL(url),h=u.hostname;
+      if(h==='deepseek.com'||h.endsWith('.deepseek.com'))return {title:h==='platform.deepseek.com'?(u.pathname.startsWith('/usage')?'DeepSeek 余额与用量':'DeepSeek 开放平台'):'DeepSeek',icon:'brand/links/deepseek.svg'};
+      if(h==='google.com'||h.endsWith('.google.com')||h==='google.cn'||h.endsWith('.google.cn'))return {title:h==='myaccount.google.com'?'Google 账号':h==='accounts.google.com'?'Google 登录':'Google',icon:'brand/links/google.png'};
+      return null;
+    }catch{return null}
+  }
+  function favicon(url){return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host(url))}&sz=256`}
+  function usableIcon(raw){if(typeof raw!=='string')return '';return /^https?:\/\//i.test(raw)&&safeUrl(raw)?raw:''}
+  function mountIcon(box,url,icon,title){
+    box.replaceChildren();const fallback=document.createElement('span');fallback.className='knowledge-icon-fallback';fallback.textContent=Array.from(title||host(url))[0]?.toUpperCase()||'↗';fallback.setAttribute('aria-hidden','true');box.append(fallback);
+    const brand=brandFor(url),candidates=[brand?.icon,usableIcon(icon),new URL('/apple-touch-icon.png',url).href,favicon(url)].filter((v,i,a)=>v&&a.indexOf(v)===i);let i=0;
+    const img=document.createElement('img');img.alt='';img.decoding='async';img.referrerPolicy='no-referrer';img.hidden=true;box.append(img);
+    function next(){if(i<candidates.length){img.hidden=true;fallback.hidden=false;img.src=candidates[i++]}else{img.remove();fallback.hidden=false}}
+    img.onload=()=>{if(!/\.svg(?:[?#]|$)/i.test(img.src)&&img.naturalWidth<64){next();return}img.hidden=false;fallback.hidden=true};img.onerror=next;next();
+  }
   function persist(){set(STORAGE,groups)}
-  function updateLock(){lockBtn.textContent=locked?'🔒':'🔓';lockBtn.title=locked?'点击解锁编辑':'点击锁定';editBar.style.display=locked?'none':'flex';quickBtn.style.display=locked?'none':'inline-block';document.body.classList.toggle('knowledge-unlocked',!locked)}
-  function updateIconPreview(){const url=safeUrl(document.getElementById('kUrl').value),custom=document.getElementById('kIcon').value.trim(),img=document.getElementById('kIconPreview');img.src=custom||(url?favicon(url):'');img.style.visibility=img.src?'visible':'hidden'}
-  function openLinkDlg(groupId,link=null){editing=link?.id?{groupId,linkId:link.id}:null;document.getElementById('kDlgTitle').textContent=link?.id?'编辑链接':'添加链接';const sel=document.getElementById('kGroup');sel.innerHTML='';groups.forEach(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=g.name;sel.appendChild(o)});sel.value=groupId||groups[0]?.id||'';document.getElementById('kUrl').value=link?.url||'';document.getElementById('kTitle').value=link?.title||'';document.getElementById('kDesc').value=link?.desc||'';document.getElementById('kIcon').value=link?.icon||'';updateIconPreview();dlg.showModal()}
+  function updateLock(){lockBtn.textContent=locked?'🔒':'🔓';lockBtn.title=locked?'点击解锁编辑':'点击锁定';editBar.style.display=locked?'none':'flex';quickBtn.style.display='inline-block';document.body.classList.toggle('knowledge-unlocked',!locked)}
+  let recognition={status:'idle',url:''},recognitionVersion=0,recognitionTimer=null,recognitionController=null;
+  function updateRecognition(){
+    $('kTitle').readOnly=!(recognition.status==='failed'&&$('kManual').open);$('kIcon').disabled=$('kTitle').readOnly;$('kManual').hidden=recognition.status!=='failed';
+    $('kSave').disabled=recognition.status!=='ready'&&!(recognition.status==='failed'&&$('kManual').open);
+    $('kAutoIcon').disabled=!safeUrl($('kUrl').value)||recognition.status==='pending';
+    $('kAutoIcon').textContent=recognition.status==='pending'?'识别中…':'重新识别';
+  }
+  function resetRecognition(){
+    clearTimeout(recognitionTimer);recognitionController?.abort();recognitionVersion++;
+    recognition={status:'idle',url:''};$('kTitle').value='';$('kIcon').value='';$('kManual').open=false;$('kPreviewBox').replaceChildren();$('kRecognizedName').textContent='等待识别';$('kRecognitionStatus').textContent='自动获取网站名称和图标';updateRecognition();
+  }
+  async function recognizeLink(){
+    clearTimeout(recognitionTimer);const url=safeUrl($('kUrl').value);
+    if(!url){resetRecognition();$('kRecognitionStatus').textContent='请粘贴完整的 http / https 网站地址。';return}
+    if(recognition.status==='pending'&&recognition.url===url)return;
+    $('kUrl').value=url;
+    recognitionController?.abort();recognitionController=new AbortController();const controller=recognitionController,version=++recognitionVersion;
+    recognition={status:'pending',url};$('kTitle').value='';$('kIcon').value='';$('kManual').open=false;$('kRecognizedName').textContent=host(url);$('kRecognitionStatus').textContent='正在识别网站名称和图标…';updateRecognition();
+    try{
+      const brand=brandFor(url);let data=brand;
+      if(!data){const timer=setTimeout(()=>controller.abort(),9000);try{const response=await fetch('/api/link-metadata',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({url}),signal:controller.signal});const out=await response.json();if(!response.ok||!out.ok||typeof out.title!=='string'||!out.title.trim())throw Error('recognition');data={title:out.title.slice(0,140),icon:usableIcon(out.icon)}}finally{clearTimeout(timer)}}
+      if(version!==recognitionVersion||!dlg.open)return;
+      recognition={status:'ready',url,title:data.title,icon:data.icon};$('kTitle').value=data.title;$('kIcon').value=data.icon||'';$('kRecognizedName').textContent=data.title;$('kRecognitionStatus').textContent='已自动识别，确认分组后即可保存。';mountIcon($('kPreviewBox'),url,data.icon,data.title);
+    }catch{
+      if(version!==recognitionVersion||!dlg.open)return;
+      recognition={status:'failed',url};$('kTitle').value=host(url);$('kRecognizedName').textContent=host(url);$('kRecognitionStatus').textContent='未能获取网站信息，可重试或展开手动补充。';mountIcon($('kPreviewBox'),url,'',host(url));
+    }finally{if(version===recognitionVersion)updateRecognition()}
+  }
+  function openLinkDlg(groupId,link=null){
+    resetRecognition();editing=link?.id?{groupId,linkId:link.id}:null;$('kDlgTitle').textContent=link?.id?'编辑链接':'添加链接';
+    const sel=$('kGroup');sel.replaceChildren();(groups.length?groups:[{id:'g_common',name:'常用'}]).forEach(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=g.name;sel.append(o)});sel.value=groupId||groups[0]?.id||'g_common';$('kUrl').value=link?.url||'';$('kDesc').value=link?.desc||'';dlg.showModal();$('kUrl').focus();if(link?.url)recognizeLink();else updateRecognition();
+  }
   function renameGroup(g){const name=prompt('修改分组名称',g.name);if(name===null)return;const clean=name.trim();if(!clean)return;g.name=clean;persist();render()}
   function moveGroup(fromId,toId){if(!fromId||!toId||fromId===toId)return;const from=groups.findIndex(g=>g.id===fromId),to=groups.findIndex(g=>g.id===toId);if(from<0||to<0)return;const [item]=groups.splice(from,1);groups.splice(to,0,item);persist();render()}
-  function addTile(grid,g){if(locked||query.trim())return;const b=document.createElement('button');b.type='button';b.className='knowledge-add-tile';b.innerHTML='<div class="knowledge-add-icon">＋</div><span>添加链接</span>';b.onclick=()=>openLinkDlg(g.id);grid.appendChild(b)}
+  function addTile(grid,g){if(query.trim())return;const b=document.createElement('button');b.type='button';b.className='knowledge-add-tile';b.innerHTML='<div class="knowledge-add-icon">＋</div><span>添加链接</span>';b.onclick=()=>openLinkDlg(g.id);grid.appendChild(b)}
   function render(){
     root.innerHTML='';const q=query.trim().toLowerCase();
     groups.forEach(g=>{
@@ -54,8 +99,8 @@
       const head=document.createElement('div');head.className='knowledge-group-head';head.innerHTML=`<div class="knowledge-group-title-wrap">${!locked?'<span class="knowledge-drag-handle" title="拖动分组">⋮⋮</span>':''}<h3>${esc(g.name)}</h3><span>${links.length}</span></div><div class="knowledge-group-actions"></div>`;
       const actions=head.querySelector('.knowledge-group-actions');if(!locked){const r=document.createElement('button');r.textContent='改名';r.onclick=()=>renameGroup(g);const d=document.createElement('button');d.textContent='删除分组';d.className='danger-lite';d.onclick=()=>{if(g.links.length&&!confirm(`分组“${g.name}”还有 ${g.links.length} 个链接，仍要删除吗？`))return;if(confirm(`确认删除分组“${g.name}”吗？`)){groups=groups.filter(x=>x.id!==g.id);persist();render()}};actions.append(r,d)}
       sec.appendChild(head);const grid=document.createElement('div');grid.className='knowledge-grid';
-      links.forEach(l=>{const card=document.createElement('article');card.className='knowledge-link-card';card.innerHTML=`<a href="${esc(l.url)}" target="_blank" rel="noopener"><div class="knowledge-link-icon"><img src="${esc(iconFor(l))}" onerror="this.style.display='none'" alt=""></div><div><strong>${esc(l.title||host(l.url))}</strong><p>${esc(l.desc||host(l.url))}</p></div></a><div class="knowledge-card-actions"></div>`;if(!locked){const a=card.querySelector('.knowledge-card-actions'),e=document.createElement('button'),d=document.createElement('button');e.textContent='编辑';e.onclick=()=>openLinkDlg(g.id,l);d.textContent='删除';d.onclick=()=>{if(confirm(`删除“${l.title||host(l.url)}”？`)){g.links=g.links.filter(x=>x.id!==l.id);persist();render()}};a.append(e,d)}grid.appendChild(card)});
-      addTile(grid,g);if(!links.length&&locked)grid.innerHTML='<div class="knowledge-empty">暂无链接</div>';sec.appendChild(grid);root.appendChild(sec)
+      links.forEach(l=>{const card=document.createElement('article');card.className='knowledge-link-card';card.innerHTML=`<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" title="${esc(l.title||host(l.url))}"><div class="knowledge-link-icon"></div><div><strong>${esc(l.title||host(l.url))}</strong><p>${esc(l.desc||host(l.url))}</p></div></a><div class="knowledge-card-actions"></div>`;if(safeUrl(l.url))mountIcon(card.querySelector('.knowledge-link-icon'),l.url,l.icon,l.title);if(!locked){const a=card.querySelector('.knowledge-card-actions'),e=document.createElement('button'),d=document.createElement('button');e.textContent='编辑';e.onclick=()=>openLinkDlg(g.id,l);d.textContent='删除';d.onclick=()=>{if(confirm(`删除“${l.title||host(l.url)}”？`)){g.links=g.links.filter(x=>x.id!==l.id);persist();render()}};a.append(e,d)}grid.appendChild(card)});
+      addTile(grid,g);sec.appendChild(grid);root.appendChild(sec)
     });
     if(!root.children.length)root.innerHTML='<div class="knowledge-empty-large">没有匹配结果。</div>'
   }
@@ -63,9 +108,20 @@
   wallBtn.onclick=()=>{document.getElementById('kwUrl').value=get(WALL,'');wallDlg.showModal()};
   document.getElementById('kwSave').onclick=()=>{const url=safeUrl(document.getElementById('kwUrl').value);if(!url){document.getElementById('kwUrl').focus();return}set(WALL,url);applyWallpaper(url);wallDlg.close()};
   document.getElementById('kwClear').onclick=()=>{localStorage.removeItem(WALL);applyWallpaper('');wallDlg.close()};
-  search.oninput=e=>{query=e.target.value;render()};quickBtn.onclick=()=>openLinkDlg(groups[0]?.id);search.addEventListener('keydown',e=>{if(e.key==='Enter'&&!locked){e.preventDefault();quickBtn.click()}});
-  document.getElementById('knowledgeAddGroup').onclick=()=>{document.getElementById('kgName').value='';groupDlg.showModal();setTimeout(()=>document.getElementById('kgName').focus(),20)};document.getElementById('kgSave').onclick=()=>{const name=document.getElementById('kgName').value.trim();if(!name)return;groups.push({id:gid(),name,links:[]});persist();groupDlg.close();render()};document.getElementById('kUrl').addEventListener('input',updateIconPreview);document.getElementById('kIcon').addEventListener('input',updateIconPreview);document.getElementById('kAutoIcon').onclick=()=>{document.getElementById('kIcon').value='';updateIconPreview()};
-  document.getElementById('kSave').onclick=()=>{const url=safeUrl(document.getElementById('kUrl').value);if(!url){document.getElementById('kUrl').focus();return}const groupId=document.getElementById('kGroup').value,title=document.getElementById('kTitle').value.trim()||host(url),desc=document.getElementById('kDesc').value.trim(),icon=document.getElementById('kIcon').value.trim();if(editing){const oldGroup=groups.find(g=>g.id===editing.groupId),link=oldGroup?.links.find(l=>l.id===editing.linkId);if(link){oldGroup.links=oldGroup.links.filter(x=>x.id!==link.id);groups.find(g=>g.id===groupId)?.links.unshift({...link,title,url,desc,icon})}}else groups.find(g=>g.id===groupId)?.links.unshift({id:id(),title,url,desc,icon});persist();dlg.close();search.value='';query='';render()};
+  search.oninput=e=>{query=e.target.value;render()};quickBtn.onclick=()=>openLinkDlg(groups[0]?.id);search.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();quickBtn.click()}});
+  document.getElementById('knowledgeAddGroup').onclick=()=>{document.getElementById('kgName').value='';groupDlg.showModal();setTimeout(()=>document.getElementById('kgName').focus(),20)};document.getElementById('kgSave').onclick=()=>{const name=document.getElementById('kgName').value.trim();if(!name)return;groups.push({id:gid(),name,links:[]});persist();groupDlg.close();render()};$('kUrl').addEventListener('input',()=>{resetRecognition();if(safeUrl($('kUrl').value))recognitionTimer=setTimeout(recognizeLink,450)});$('kUrl').addEventListener('blur',()=>{if(recognition.status==='idle'&&safeUrl($('kUrl').value))recognizeLink()});$('kAutoIcon').onclick=recognizeLink;
+  $('kManual').addEventListener('toggle',updateRecognition);$('kIcon').oninput=()=>{if(recognition.status==='failed')mountIcon($('kPreviewBox'),safeUrl($('kUrl').value),$('kIcon').value,$('kTitle').value)};
+  $('kCancel').onclick=()=>dlg.close();dlg.addEventListener('close',()=>{clearTimeout(recognitionTimer);recognitionController?.abort();recognitionVersion++});
+  dlg.querySelector('form').onsubmit=e=>{
+    e.preventDefault();const url=safeUrl($('kUrl').value);if(!url){$('kUrl').focus();return}
+    if(recognition.url!==url||recognition.status==='idle'){recognizeLink();return}
+    if(recognition.status==='pending'||recognition.status==='failed'&&!$('kManual').open)return;
+    const groupId=$('kGroup').value,title=recognition.status==='ready'?recognition.title:$('kTitle').value.trim()||host(url),desc=$('kDesc').value.trim(),icon=recognition.status==='ready'?recognition.icon:usableIcon($('kIcon').value.trim());
+    const next=groups.map(g=>({...g,links:[...g.links]}));if(!next.length)next.push({id:'g_common',name:'常用',links:[]});const target=next.find(g=>g.id===groupId);if(!target){$('kRecognitionStatus').textContent='分组不存在，请重新选择。';return}
+    if(editing){const oldGroup=next.find(g=>g.id===editing.groupId),link=oldGroup?.links.find(l=>l.id===editing.linkId);if(!link){$('kRecognitionStatus').textContent='链接已变化，请取消后重新打开。';return}oldGroup.links=oldGroup.links.filter(x=>x.id!==link.id);target.links.unshift({...link,title,url,desc,icon})}
+    else target.links.unshift({id:id(),title,url,desc,icon});
+    try{set(STORAGE,next)}catch{$('kRecognitionStatus').textContent='保存失败，内容已保留。请检查浏览器存储后重试。';return}groups=next;dlg.close();search.value='';query='';render();
+  };
   updateLock();render();
 })();
 
