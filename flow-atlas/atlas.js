@@ -6,6 +6,22 @@
   const route = $('route'), canvas = $('map-canvas'), panel = $('concept-content');
   if (!data?.nodes?.length || !route || window.FlowAtlas) return;
   const nodes = data.nodes;
+  const themeButton = $('theme-toggle');
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    const light = theme === 'light';
+    themeButton.textContent = light ? '☾ 深色背景' : '☀ 白色背景';
+    themeButton.setAttribute('aria-pressed', String(light));
+    document.querySelector('meta[name="theme-color"]').content = light ? '#ffffff' : '#0b0f14';
+  }
+  let savedTheme;
+  try { savedTheme = localStorage.getItem('flow-atlas-theme'); } catch {}
+  applyTheme(savedTheme === 'light' ? 'light' : 'dark');
+  themeButton.onclick = () => {
+    const theme = document.documentElement.dataset.theme === 'light' ? 'dark' : 'light';
+    applyTheme(theme);
+    try { localStorage.setItem('flow-atlas-theme', theme); } catch {}
+  };
   const concepts = nodes.flatMap((node, index) => node.l2.map(step => ({node, index, step})));
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const sequences = {request: [0,1,2,3,4,5,6,7,8,9], response: [9,8,7,6,5,4,3,10]};
@@ -128,10 +144,18 @@
       const section = (title, text) => {
         const s = el('section', 'concept-section'); s.append(el('h3', '', title), el('p', '', text)); return s;
       };
-      body.append(section('它是什么', step.what), section('为什么需要它', step.why));
+      body.append(section('是什么 · 概念与边界', step.what), section('为什么 · 解决什么问题', step.why));
       const how = el('section', 'concept-section'), list = el('ol');
-      how.append(el('h3', '', '它怎样发生'));
+      how.append(el('h3', '', '怎么样 · 一步步发生'));
       step.how.forEach(text => list.append(el('li', '', text))); how.append(list); body.append(how);
+      if (step.detail) body.append(section('再往深一层', step.detail));
+      if (step.observe) body.append(section('动手观察', step.observe));
+      if (item.node.book) {
+        const book = section('对照书籍读', item.node.book.focus);
+        book.classList.add('concept-book');
+        book.append(el('small', '', item.node.book.chapter + '。以下为知识梳理与章节对照，非原文摘录；现代 HTTPS/浏览器实现另作补充。'));
+        body.append(book);
+      }
       const io = el('div', 'io-flow');
       io.append(el('span', '', '输入 / ' + step.input), el('i', '', '↓'), el('span', '', '输出 / ' + step.output));
       const ioSection = el('section', 'concept-section'); ioSection.append(el('h3', '', '输入 → 输出'), io); body.append(ioSection);
