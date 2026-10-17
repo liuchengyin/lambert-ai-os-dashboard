@@ -1,0 +1,34 @@
+name: Current Code Flash Audit
+on:
+  push:
+    branches: ['review/current-code-audit-20261017']
+permissions:
+  contents: read
+concurrency:
+  group: current-code-flash-audit
+  cancel-in-progress: false
+jobs:
+  audit:
+    if: github.event.head_commit.message == 'Audit current production code with Flash'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check coverage and call budget without paid requests
+        run: node scripts/audit-current-code.mjs
+      - name: Audit ten modules with fixed Flash (no retries or Pro)
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: node scripts/audit-current-code.mjs --run
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: current-code-flash-audit
+          path: review-output/current-code-audit/
+          if-no-files-found: error
+          retention-days: 14
