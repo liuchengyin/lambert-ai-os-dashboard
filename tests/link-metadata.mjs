@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {normalizeUrl,publicAddress,parseMetadata,recognize} from '../lib/link-metadata.mjs';
+import {normalizeUrl,publicAddress,parseMetadata,recognize} from '../lib/link-metadata.js';
 import handler from '../api/link-metadata.js';
 for(const url of ['http://127.1','http://2130706433','http://169.254.169.254/latest/meta-data','http://[::1]','http://[::ffff:127.0.0.1]','http://192.168.1.1','http://localhost','https://x.local','https://user:password@example.com','https://example.com:8080','javascript:alert(1)'])assert.equal(normalizeUrl(url),null,url);
 for(const address of ['127.0.0.1','10.1.2.3','169.254.1.1','::1','fc00::1','fe80::1','::ffff:8.8.8.8'])assert.equal(publicAddress(address),false,address);

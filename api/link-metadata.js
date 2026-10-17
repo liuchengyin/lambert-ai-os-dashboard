@@ -1,4 +1,4 @@
-import {recognize} from '../lib/link-metadata.mjs';
+import {recognize} from '../lib/link-metadata.js';
 const cache=new Map();let active=0;
 export default async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
