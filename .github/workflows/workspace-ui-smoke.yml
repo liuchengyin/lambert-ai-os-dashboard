@@ -6,6 +6,7 @@ on:
       - 'knowledge-itab-v2.css'
       - 'api/link-metadata.js'
       - 'lib/link-metadata.js'
+      - 'lib/link-sites.js'
       - 'tests/link-metadata.mjs'
       - 'tests/common-links-ui.mjs'
       - 'index.html'

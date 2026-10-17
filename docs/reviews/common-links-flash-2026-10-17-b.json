@@ -1,0 +1,105 @@
+{
+  "sha": "80409026d26ebf928d947fd010a828d0dc57b6c6",
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "testsExecutedBy": "Node test harness (not the model)",
+  "tests": "PASS metadata title/icon extraction, bounded inputs, private networks, redirects, DNS changes, timeout and same-origin guard. No external requests.\nPASS mobile/desktop common sites, short-link fallback, exact domain boundaries and description extraction.\n",
+  "cases": [
+    {
+      "url": "https://movie.douban.com/",
+      "title": "豆瓣电影",
+      "description": "电影信息、评分、影评与片单",
+      "icon": "brand/links/douban.svg",
+      "direct": true,
+      "source": "catalog"
+    },
+    {
+      "url": "https://m.douban.com/movie/",
+      "title": "豆瓣电影",
+      "description": "电影信息、评分、影评与片单",
+      "icon": "brand/links/douban.svg",
+      "direct": true,
+      "source": "catalog"
+    },
+    {
+      "url": "https://www.bilibili.com/",
+      "title": "哔哩哔哩",
+      "description": "视频、动画与学习社区",
+      "icon": "brand/links/bilibili.png",
+      "direct": true,
+      "source": "catalog"
+    },
+    {
+      "url": "https://m.bilibili.com/",
+      "title": "哔哩哔哩",
+      "description": "视频、动画与学习社区",
+      "icon": "brand/links/bilibili.png",
+      "direct": true,
+      "source": "catalog"
+    },
+    {
+      "url": "https://book.douban.com/",
+      "title": "豆瓣读书",
+      "description": "图书信息、评分、书评与书单",
+      "icon": "brand/links/douban.svg",
+      "direct": true,
+      "source": "catalog"
+    },
+    {
+      "url": "https://github.com/",
+      "title": "GitHub",
+      "description": "代码托管与开源协作",
+      "icon": "",
+      "direct": true,
+      "source": "catalog"
+    },
+    {
+      "url": "https://b23.tv/example",
+      "title": "哔哩哔哩",
+      "description": "哔哩哔哩视频短链接",
+      "icon": "brand/links/bilibili.png",
+      "direct": false,
+      "source": "catalog"
+    }
+  ],
+  "review": {
+    "summary": "静态审查发现3个可复现问题：豆瓣电影/读书的移动版路径判断存在运算符优先级错误，导致 m.douban.com 下非电影/读书路径被误标为电影/读书；短链接 b23.tv 在目录直连判断中仍可能被当作直连返回，与“短链接必须先解析”的注释和测试预期不一致；图标回退使用 Google favicon 服务，会把用户访问的域名泄露给第三方，且与“无外部请求”的隐私目标冲突。",
+    "findings": [
+      {
+        "file": "lib/link-sites.js",
+        "line": 1,
+        "severity": "high",
+        "problem": "豆瓣移动版路径判断缺少括号，&& 优先级高于 ||，导致 h==='movie.douban.com' 时无论路径是什么都命中电影分支；同理 book.douban.com 任意路径都命中读书分支。m.douban.com 的 /movie 与 /book 判断也因优先级被错误组合。",
+        "evidence": "源码：if(h==='movie.douban.com'||h==='m.douban.com'&&/^\\/movie(?:\\/|$)/.test(u.pathname)){title='豆瓣电影'...}。按 JS 优先级等价于 h==='movie.douban.com' || (h==='m.douban.com' && /movie/)，因此 https://movie.douban.com/subject/123/ 会被标为“豆瓣电影”直连目录项，而实际是具体条目页；https://book.douban.com/subject/1/ 同理被标为“豆瓣读书”。测试用例只覆盖了根路径，未覆盖深层路径。",
+        "suggestion": "改为 if(h==='movie.douban.com'||(h==='m.douban.com'&&/^\\/movie(?:\\/|$)/.test(u.pathname))){...}，book 分支同样加括号；并补充 movie.douban.com/subject/ 与 book.douban.com/subject/ 的用例断言 direct=false 且走页面元数据。"
+      },
+      {
+        "file": "lib/link-metadata.js",
+        "line": 1,
+        "severity": "medium",
+        "problem": "短链接 b23.tv/xhslink.com 的 direct 在 identify 中被置为 false，但 recognize 中 site?.direct 为 false 时会进入 recognizePage；若页面抓取失败则回退返回 {...site}，其中 direct 仍为 false，这本身正确。但 identify 对 b23.tv 的 direct 计算先按 pathname 设为 true，再在末尾覆盖为 false，逻辑虽最终正确，然而 recognize 的目录直连分支只检查 site?.direct，未显式排除短链接；若未来 identify 顺序调整或新增短链站点，短链接可能被当作直连返回目录名而不解析。当前测试仅验证 fallback 的 title，未验证短链接成功解析时不会返回目录直连。",
+        "evidence": "源码：let title=site[1],description=site[2],direct=/^\\/$/.test(u.pathname); ... if(['b23.tv','xhslink.com'].includes(site[0]))direct=false; 以及 recognize 中 if(site?.direct)return {url:url.href,...site};。测试 fallback=await recognize('https://b23.tv/example',{resolver:()=>{throw Error('blocked')}});assert.equal(fallback.direct,false); 只覆盖失败回退，未覆盖成功解析路径。",
+        "suggestion": "在 recognize 中显式判断短链接站点：const isShort=['b23.tv','xhslink.com'].includes(new URL(url.href).hostname.replace(/^www\\./,'')); if(site?.direct&&!isShort)return {...site};，并增加短链接成功解析返回 source:'page' 的测试。"
+      },
+      {
+        "file": "knowledge-links.js",
+        "line": 1,
+        "severity": "medium",
+        "problem": "图标回退使用 https://www.google.com/s2/favicons?domain=...，会把用户添加的每个站点域名发送给 Google，属于外部请求与隐私泄露；同时与测试中“No external requests”的声明及服务端“不向浏览器发送私网 URL”的隐私目标不一致。",
+        "evidence": "源码：function favicon(url){return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host(url))}&sz=256`}，并在 mountIcon 的 candidates 中作为回退。测试通过 page.route('https://www.google.com/s2/**',route=>route.abort()) 主动拦截，说明该请求确实会发出。",
+        "suggestion": "移除 Google favicon 回退，改为仅使用本地 brand 资源、识别返回的 icon 和同源 /apple-touch-icon.png；若需通用回退，使用首字母占位符，不发起第三方请求。"
+      }
+    ]
+  },
+  "usage": {
+    "prompt_tokens": 13788,
+    "completion_tokens": 1053,
+    "total_tokens": 14841,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 13788
+  },
+  "generatedAt": "2026-10-17T05:14:33.573Z"
+}

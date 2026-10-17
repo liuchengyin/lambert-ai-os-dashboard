@@ -1,0 +1,105 @@
+{
+  "sha": "defe570b01e7a1dc3dc98f15da6a74a1ce51761e",
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "testsExecutedBy": "Node test harness (not the model)",
+  "tests": "PASS metadata title/icon extraction, bounded inputs, private networks, redirects, DNS changes, timeout and same-origin guard. No external requests.\nPASS mobile/desktop common sites, short-link fallback, exact domain boundaries and description extraction.\n",
+  "cases": [
+    {
+      "url": "https://movie.douban.com/",
+      "title": "豆瓣电影",
+      "description": "电影信息、评分、影评与片单",
+      "icon": "brand/links/douban.svg",
+      "direct": true,
+      "source": "catalog"
+    },
+    {
+      "url": "https://m.douban.com/movie/",
+      "title": "豆瓣电影",
+      "description": "电影信息、评分、影评与片单",
+      "icon": "brand/links/douban.svg",
+      "direct": true,
+      "source": "catalog"
+    },
+    {
+      "url": "https://www.bilibili.com/",
+      "title": "哔哩哔哩",
+      "description": "视频、动画与学习社区",
+      "icon": "brand/links/bilibili.png",
+      "direct": true,
+      "source": "catalog"
+    },
+    {
+      "url": "https://m.bilibili.com/",
+      "title": "哔哩哔哩",
+      "description": "视频、动画与学习社区",
+      "icon": "brand/links/bilibili.png",
+      "direct": true,
+      "source": "catalog"
+    },
+    {
+      "url": "https://book.douban.com/",
+      "title": "豆瓣读书",
+      "description": "图书信息、评分、书评与书单",
+      "icon": "brand/links/douban.svg",
+      "direct": true,
+      "source": "catalog"
+    },
+    {
+      "url": "https://github.com/",
+      "title": "GitHub",
+      "description": "代码托管与开源协作",
+      "icon": "",
+      "direct": true,
+      "source": "catalog"
+    },
+    {
+      "url": "https://b23.tv/example",
+      "title": "哔哩哔哩",
+      "description": "哔哩哔哩视频短链接",
+      "icon": "brand/links/bilibili.png",
+      "direct": false,
+      "source": "catalog"
+    }
+  ],
+  "review": {
+    "summary": "静态审查发现3个可复现问题：豆瓣电影/读书的direct判定在m.douban.com子路径上依赖运算符优先级，导致非根路径被误判为direct而跳过页面元数据抓取；短链接b23.tv/xhslink.com在页面抓取失败时回退为平台名，但direct=false时前端提示语与保存逻辑存在状态不一致风险；API缓存键未规范化，同一URL不同写法会重复抓取且缓存无上限清理策略。",
+    "findings": [
+      {
+        "file": "lib/link-sites.js",
+        "line": 1,
+        "severity": "medium",
+        "problem": "豆瓣电影/读书的direct判定使用`direct=direct||/^\\/movie\\/?$/.test(u.pathname)`，但外层条件`h==='movie.douban.com'||h==='m.douban.com'&&/^\\/movie(?:\\/|$)/.test(u.pathname)`中&&优先级高于||，导致movie.douban.com任意路径（如/movie/subject/123/）都进入分支，且direct仅在根路径为true；然而m.douban.com/movie/subject/123/会进入分支但direct为false，此时recognize会先尝试抓取页面，若抓取失败回退catalog，标题为“豆瓣电影”而非具体影片标题，符合预期；但movie.douban.com/movie/subject/123/的direct为false同样会尝试抓取，行为一致。真正问题在于：m.douban.com/movie/（带尾斜杠）direct为true，而m.douban.com/movie（无尾斜杠）direct为false，两者语义相同却行为不同，导致同一页面有时跳过抓取有时抓取。",
+        "evidence": "源码`direct=direct||/^\\/movie\\/?$/.test(u.pathname)`中`\\/?`允许可选斜杠，但外层`/^\\/movie(?:\\/|$)/`要求斜杠或结尾；测试用例仅覆盖`https://m.douban.com/movie/`（带斜杠）返回direct:true，未覆盖无斜杠变体。",
+        "suggestion": "将direct判定改为`direct=direct||/^\\/movie\\/?$/.test(u.pathname)`并确保外层条件与direct判定使用同一正则，或统一为`/^\\/movie(?:\\/|$)/`且direct判定用`u.pathname==='/movie'||u.pathname==='/movie/'`。"
+      },
+      {
+        "file": "knowledge-links.js",
+        "line": 1,
+        "severity": "medium",
+        "problem": "短链接b23.tv/xhslink.com在recognize中direct=false，会先尝试抓取页面；若抓取失败回退catalog返回source:'catalog'且direct:false。前端recognizeLink中`data.source==='catalog'&&!data.direct`时提示“已识别所属网站；此页面的具体标题暂未获取”，但recognition.status仍为'ready'，保存按钮启用，保存的title为“哔哩哔哩”平台名。这本身符合“不得把网站目录识别说成已抓到具体视频标题”的要求，但问题在于：若抓取成功返回source:'page'，title为具体视频标题，direct字段不存在（undefined），前端`data.source==='catalog'&&!data.direct`为false，提示“已自动识别”，行为正确。可复现问题：b23.tv短链接抓取成功时返回的url是重定向后的最终URL（如www.bilibili.com/video/BVxxx），但前端保存的是用户输入的原始短链接url（`recognition.url`为safeUrl后的输入），而非返回的out.url，导致保存的链接仍是短链接，图标和标题来自最终页面，下次渲染时mountIcon用短链接重新识别可能不一致。",
+        "evidence": "recognizeLink中`recognition={status:'ready',url,title:data.title,icon:data.icon}`使用输入url而非`out.url`；recognize返回`{url:url.href,...}`但前端未使用out.url。测试用例`https://b23.tv/example`仅验证回退catalog，未覆盖抓取成功场景。",
+        "suggestion": "在recognizeLink成功分支中，若`out.url`存在且为合法URL，用`out.url`更新`$('kUrl').value`和recognition.url，或保存时使用`data.url||url`作为最终链接。"
+      },
+      {
+        "file": "api/link-metadata.js",
+        "line": 1,
+        "severity": "low",
+        "problem": "缓存键直接使用`req.body.url`原始字符串，未经过normalizeUrl规范化。同一网站的不同写法（如`https://example.com`与`https://example.com/`、大小写域名、带hash）会生成不同缓存键，导致重复抓取；且缓存无过期清理机制，仅当size>=100时删除最早插入项，但Map的迭代顺序是插入顺序，删除的是最旧插入而非最久未使用，长期运行可能保留大量过期条目。",
+        "evidence": "源码`const key=req.body.url,stored=cache.get(key)`未调用normalizeUrl；`if(cache.size>=100)cache.delete(cache.keys().next().value)`删除首个插入项。测试未覆盖缓存键规范化。",
+        "suggestion": "在handler中先`const normalized=normalizeUrl(req.body.url)`，用`normalized?.href`作为缓存键；或改用带TTL的LRU结构，定期清理`Date.now()-stored.at>=900000`的条目。"
+      }
+    ]
+  },
+  "usage": {
+    "prompt_tokens": 13791,
+    "completion_tokens": 1209,
+    "total_tokens": 15000,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 13791
+  },
+  "generatedAt": "2026-10-17T05:14:19.220Z"
+}
