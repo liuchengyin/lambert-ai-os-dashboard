@@ -63,3 +63,41 @@
 #knowledge .knowledge-link-card .knowledge-link-icon{grid-column:1;grid-row:1}
 #knowledge .knowledge-link-card strong{grid-column:2;grid-row:1;margin:0;text-align:left}
 #knowledge .knowledge-link-card p{grid-column:1/-1;grid-row:2;text-align:left}
+
+/* Flash: recognition spinner and manual form modal. */
+.knowledge-spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,.15);border-top-color:#2563eb;border-radius:50%;animation:knowledge-spin .8s linear infinite;vertical-align:middle;margin-left:6px}
+.knowledge-spinner[hidden]{display:none}
+@keyframes knowledge-spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.knowledge-spinner{animation:none;border-top-color:rgba(0,0,0,.15);border-right-color:#2563eb}}
+#knowledgeLinkDlg{background:#fff;color:#111;border:none;border-radius:14px;padding:0;width:min(560px,calc(100vw - 32px));max-height:85vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+#knowledgeLinkDlg::backdrop{background:rgba(0,0,0,.35)}
+#knowledgeLinkDlg .knowledge-dialog{padding:20px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box}
+#knowledgeLinkDlg .knowledge-dialog label{display:flex;flex-direction:column;gap:6px;font-size:13px;color:#333}
+#knowledgeLinkDlg .knowledge-dialog input,#knowledgeLinkDlg .knowledge-dialog select,#knowledgeLinkDlg .knowledge-dialog textarea{width:100%;box-sizing:border-box;padding:8px 10px;border:1px solid #d0d5dd;border-radius:8px;font:inherit;background:#fff;color:#111}
+#knowledgeLinkDlg .knowledge-dialog textarea{resize:vertical;min-height:56px}
+#knowledgeLinkDlg .knowledge-icon-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#knowledgeLinkDlg .knowledge-icon-preview{width:48px;height:48px;border-radius:10px;background:#f2f4f7;display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto}
+#knowledgeLinkDlg .knowledge-icon-preview img{width:100%;height:100%;object-fit:cover}
+#knowledgeLinkDlg .knowledge-recognition-info{flex:1;min-width:0}
+#knowledgeLinkDlg .knowledge-recognition-info strong{display:block;font-size:14px;color:#111;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#knowledgeLinkDlg .knowledge-recognition-info p{margin:2px 0;font-size:12px;color:#667085;overflow:hidden;text-overflow:ellipsis}
+#knowledgeLinkDlg .knowledge-icon-file-error{color:#b42318;font-size:12px;margin:0}
+#knowledgeLinkDlg .dlgActions{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+#knowledgeLinkDlg .dlgActions button{padding:8px 14px;border-radius:8px;border:1px solid #d0d5dd;background:#fff;cursor:pointer;font:inherit}
+#knowledgeLinkDlg .dlgActions .task-primary-btn{background:#2563eb;color:#fff;border-color:#2563eb}
+#knowledgeLinkDlg .dlgActions .task-primary-btn:disabled{opacity:.5;cursor:not-allowed}
+#knowledgeLinkDlg.knowledge-manual-mode #kAutoIcon{display:none}
+#knowledgeLinkDlg.knowledge-manual-mode #kRecognitionStatus{color:#475467}
+#knowledgeLinkDlg.knowledge-manual-mode #kManual{display:block}
+#knowledgeLinkDlg.knowledge-manual-mode #kManual[hidden]{display:block}
+#knowledgeLinkDlg.knowledge-manual-mode #kManual>summary{display:none}
+#knowledgeLinkDlg.knowledge-manual-mode #kManual>p.knowledge-manual-note{display:none}
+#knowledgeLinkDlg.knowledge-manual-mode .knowledge-recognition-info strong,#knowledgeLinkDlg.knowledge-manual-mode #kPreviewDesc{display:none}
+#knowledgeLinkDlg.knowledge-manual-mode .knowledge-dialog{display:flex}
+#knowledgeLinkDlg.knowledge-manual-mode #kManual>p.knowledge-manual-note{display:none}
+#knowledgeLinkDlg.knowledge-manual-mode #kTitle{width:100%}
+#knowledgeManualCreate[hidden],#kManualCreate[hidden],#knowledgeSearchSpinner[hidden],#kDlgSpinner[hidden]{display:none!important}
+#knowledge .knowledge-searchbar{flex-wrap:wrap}
+#knowledge .knowledge-searchbar input{min-width:120px}
+#knowledgeLinkDlg.knowledge-manual-mode{margin:auto}
+@media(max-width:480px){#knowledgeLinkDlg{max-width:calc(100vw - 32px)}#knowledgeLinkDlg .knowledge-dialog{padding:16px}#knowledgeLinkDlg input[type=file]{max-width:100%}}

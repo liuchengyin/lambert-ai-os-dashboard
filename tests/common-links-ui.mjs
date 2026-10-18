@@ -6,7 +6,7 @@ const browser=await chromium.launch(),ctx=await browser.newContext({viewport:{wi
 const original=[{id:'tools',name:'工具',links:[{id:'old-deepseek',title:'我的余额页',url:'https://platform.deepseek.com/usage',icon:'https://www.google.com/s2/favicons?domain=platform.deepseek.com&sz=16',desc:'保留旧备注',extra:'保留扩展字段'},{id:'old-google',title:'Google 账号',url:'https://myaccount.google.com/',icon:'https://www.google.com/s2/favicons?domain=myaccount.google.com&sz=16'}]},{id:'study',name:'学习',links:[]}];
 await ctx.addInitScript(rows=>{if(!localStorage.getItem('knowledge_link_library_v1'))localStorage.setItem('knowledge_link_library_v1',JSON.stringify(rows));localStorage.setItem('knowledge_link_locked_v1','true')},original);
 const page=await ctx.newPage();let mode='normal',requests=[];const errors=[];page.on('pageerror',e=>errors.push(e.message));
-await page.route('**/api/link-metadata',async route=>{const {url}=route.request().postDataJSON();requests.push(url);if(url.includes('slow'))await new Promise(r=>setTimeout(r,350));if(mode==='fail')return route.fulfill({status:422,json:{ok:false}});try{await route.fulfill({json:{ok:true,title:url.includes('fast')?'快速识别结果':'自动识别的网站',icon:'https://broken.example/icon.svg'}})}catch{}});
+await page.route('**/api/link-metadata',async route=>{const {url}=route.request().postDataJSON();requests.push(url);if(url.includes('slow'))await new Promise(r=>setTimeout(r,url.includes('interrupt')?1200:350));if(mode==='fail')return route.fulfill({status:422,json:{ok:false}});try{await route.fulfill({json:{ok:true,title:url.includes('fast')?'快速识别结果':'自动识别的网站',icon:'https://broken.example/icon.svg'}})}catch{}});
 await page.route('https://broken.example/**',route=>route.abort());await page.route('https://www.google.com/s2/**',route=>route.abort());
 const rows=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('knowledge_link_library_v1')));
 const check=(name,value)=>{assert.ok(value,name);console.log('PASS:',name)};
@@ -45,6 +45,28 @@ try{
   const beforeFailure=JSON.stringify(await rows());await page.evaluate(()=>{const set=Storage.prototype.setItem;window.restoreLinkStorage=()=>Storage.prototype.setItem=set;Storage.prototype.setItem=function(k,v){if(k==='knowledge_link_library_v1')throw Error('quota');return set.call(this,k,v)}});
   await page.locator('#kSave').click();check('Storage failure keeps draft and original records',await page.locator('#knowledgeLinkDlg').isVisible()&&JSON.stringify(await rows())===beforeFailure);await page.evaluate(()=>window.restoreLinkStorage());await page.locator('#kSave').click();
   await page.reload();await page.locator('nav button[data-v="knowledge"]').click();check('New links survive reload',(await rows())[0].links.some(l=>l.title==='自动识别的网站'));
+
+  await page.locator('#knowledgeSearch').fill('https://slow-interrupt.example/path');
+  await page.locator('#kDlgSpinner').waitFor({state:'visible'});
+  check('Pasting starts recognition without Enter',await page.locator('#knowledgeSearchSpinner').isVisible());
+  const interruptRequests=requests.length;
+  await page.locator('#knowledgeManualCreate').click();
+  check('Manual creation interrupts into modal',await page.locator('#knowledgeLinkDlg').evaluate(e=>e.matches(':modal')&&e.classList.contains('knowledge-manual-mode')));
+  check('Manual modal keeps pasted URL',await page.locator('#kUrl').inputValue()==='https://slow-interrupt.example/path');
+  check('Recognition spinner stops on manual switch',!await page.locator('#kDlgSpinner').isVisible()&&!await page.locator('#knowledgeSearchSpinner').isVisible());
+  await page.locator('#kTitle').fill('主动手动创建');await page.locator('#kDesc').fill('保留手动描述');
+  await page.waitForTimeout(1400);
+  check('Late recognition cannot overwrite manual draft',await page.locator('#kTitle').inputValue()==='主动手动创建'&&await page.locator('#kDesc').inputValue()==='保留手动描述'&&requests.length===interruptRequests);
+  const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=c.height=128;c.getContext('2d').fillRect(0,0,128,128);return c.toDataURL('image/png').split(',')[1]});
+  await page.locator('#kIconFile').setInputFiles({name:'icon.png',mimeType:'image/png',buffer:Buffer.from(png,'base64')});
+  await page.waitForFunction(()=>document.getElementById('kIcon').value.startsWith('data:image/png;base64,'));
+  await page.locator('#kSave').click();
+  check('Manual creation saves uploaded icon',(await rows())[0].links[0].icon.startsWith('data:image/png;base64,'));
+  await page.locator('#knowledgeLock').click();const reeditRequests=requests.length;
+  await page.locator('.knowledge-link-card').filter({hasText:'主动手动创建'}).getByRole('button',{name:'编辑',exact:true}).click();
+  check('Uploaded icon survives edit',await page.locator('#kIcon').inputValue()===(await rows())[0].links[0].icon);
+  await page.waitForTimeout(500);check('Manual re-edit is recognition free',requests.length===reeditRequests);await page.locator('#kCancel').click();await page.locator('#knowledgeLock').click();
+
   await page.setViewportSize({width:390,height:844});check('Mobile locked quick add stays visible',await page.locator('#knowledgeQuickAdd').isVisible());await open();await url('https://myaccount.google.com');await page.waitForFunction(()=>document.getElementById('kTitle').value==='Google 账号');
   mkdirSync('tests/screenshots',{recursive:true});await page.screenshot({path:'tests/screenshots/common-links-mobile.png'});check('Mobile dialog fits the screen',await page.locator('#knowledgeLinkDlg').evaluate(e=>e.scrollWidth<=innerWidth-10));await page.locator('#kCancel').click();await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:'tests/screenshots/common-links-desktop.png'});
   mode='fail';const beforeKnown=requests.length;
