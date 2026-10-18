@@ -9,6 +9,15 @@ on:
       - 'lib/link-sites.js'
       - 'tests/link-metadata.mjs'
       - 'tests/common-links-ui.mjs'
+      - 'api/feishu-targets.js'
+      - 'api/feishu-daily.js'
+      - 'lib/feishu-targets.js'
+      - 'archive-targets.js'
+      - 'archive-targets.css'
+      - 'reading-v2.js'
+      - 'chrome-extension/**'
+      - 'tests/archive-targets-ui.mjs'
+      - 'tests/feishu-targets.mjs'
       - 'index.html'
       - 'app.js'
       - 'deepseek-v1.js'
@@ -69,6 +78,7 @@ jobs:
           node tests/deepseek-api-smoke.mjs
           node tests/ai-chat-api.mjs
           node tests/link-metadata.mjs
+          node tests/feishu-targets.mjs
       - name: Run workspace UI regression
         run: |
           python3 -m http.server 8000 --bind 127.0.0.1 &
@@ -76,6 +86,7 @@ jobs:
           node tests/audit-cleanup-ui.mjs
           node tests/common-links-ui.mjs
           node tests/bookmark-density-ui.mjs
+          node tests/archive-targets-ui.mjs
           node tests/workspace-ui-smoke.mjs
           node tests/deepseek-ui-smoke.mjs
           node tests/ai-chat-ui.mjs

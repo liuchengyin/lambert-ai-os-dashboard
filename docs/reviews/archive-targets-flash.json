@@ -1,0 +1,22 @@
+{
+  "model": "deepseek-flash",
+  "usage": {
+    "prompt_tokens": 494,
+    "completion_tokens": 3039,
+    "total_tokens": 3533,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 494
+  },
+  "calls": 1,
+  "adopted": "Shared target settings dialog, CRUD form, destination selector and scoped CSS",
+  "corrections": [
+    "Do not silently select first destination after deleting defaults",
+    "Track explicit selector overrides separately",
+    "Refresh selector when server defaults change",
+    "Password label explains existing AI password"
+  ],
+  "integration": "GPT implements protected server config, routing, old target compatibility, extension metadata and verification"
+}

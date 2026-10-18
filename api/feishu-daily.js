@@ -1,3 +1,4 @@
+import {archiveTarget,LEGACY_TOKEN} from '../lib/feishu-targets.js';
 const API='https://open.feishu.cn/open-apis';
 const DAILY_WIKI_TOKEN='IH63wL0oKi6Dp2kU4cncE8gUnig';
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -116,15 +117,17 @@ export default async function handler(req,res){
   const appId=process.env.FEISHU_APP_ID,appSecret=process.env.FEISHU_APP_SECRET;if(!appId||!appSecret)return res.status(503).json({ok:false,message:'Vercel 尚未配置飞书凭证'});
   const body=req.body||{},date=String(body.date||'').trim(),title=safeName(String(body.title||`${date||'今日'}｜每日记录`)),markdown=String(body.markdown||''),targetWikiToken=String(body.targetWikiToken||DAILY_WIKI_TOKEN).trim();
   const existingDoc=String(body.documentToken||'').trim(),existingWiki=String(body.wikiToken||'').trim();
-  if(!markdown.trim())return res.status(400).json({ok:false,message:'记录内容为空'});if(targetWikiToken!==DAILY_WIKI_TOKEN)return res.status(400).json({ok:false,message:'归档目标不匹配'});
+  if(!markdown.trim())return res.status(400).json({ok:false,message:'记录内容为空'});
+  let destination;try{destination=await archiveTarget(body)}catch(e){return res.status(400).json({ok:false,message:e.message})}
+  const targetChanged=existingDoc&&String(body.previousTargetToken||LEGACY_TOKEN)!==destination.token;
   try{
-    const token=await tenantToken(appId,appSecret),node=await resolveWikiNode(token,targetWikiToken),{cleaned,images}=extractInlineImages(markdown),conv=await convertMarkdown(token,cleaned);
-    let docId=existingDoc,wikiToken=existingWiki,updated=false;
+    const token=await tenantToken(appId,appSecret),node=await resolveWikiNode(token,destination.token),{cleaned,images}=extractInlineImages(markdown),conv=await convertMarkdown(token,cleaned);
+    let docId=targetChanged?'':existingDoc,wikiToken=targetChanged?'':existingWiki,updated=false;
     if(docId){await clearDocument(token,docId);updated=true}else{docId=await createDocument(token,title)}
     await appendConverted(token,docId,conv);
     for(let i=0;i<images.length;i++)await insertNativeImageAtMarker(token,docId,images[i],i);
     if(!wikiToken)wikiToken=await moveIntoWiki(token,node,docId);
     const url=`https://my.feishu.cn/wiki/${wikiToken}`;
-    return res.status(200).json({ok:true,url,wikiToken,documentToken:docId,title,imageCount:images.length,updated});
+    return res.status(200).json({ok:true,url,wikiToken,documentToken:docId,title,imageCount:images.length,updated,targetToken:destination.token,locationId:destination.id});
   }catch(err){console.error('feishu daily save failed',{message:err?.message,code:err?.code,httpStatus:err?.httpStatus,logId:err?.logId});return res.status(err?.httpStatus&&err.httpStatus>=400&&err.httpStatus<600?err.httpStatus:500).json({ok:false,code:err?.code||'FEISHU_SAVE_FAILED',message:userMessage(err),logId:err?.logId||''})}
 }
