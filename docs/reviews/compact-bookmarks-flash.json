@@ -1,0 +1,22 @@
+{
+  "model": "deepseek-flash",
+  "usage": {
+    "prompt_tokens": 414,
+    "completion_tokens": 562,
+    "total_tokens": 976,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 414
+  },
+  "calls": 1,
+  "adopted": "Compact bookmark grid/card typography and hover/focus tooltip CSS",
+  "corrections": [
+    "Override anchor minimum height",
+    "Override old multiline description rule",
+    "Scale fallback icon",
+    "Keep tooltip within narrow card boundaries"
+  ],
+  "integration": "data-tooltip and aria-label preserve full title without duplicate native tooltip"
+}
