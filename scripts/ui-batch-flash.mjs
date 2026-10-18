@@ -1,0 +1,14 @@
+import {readFile} from 'node:fs/promises';
+const provider=process.argv[2];
+const project=provider==='deepseek';
+const files=project?['project-v3.js','project-v3.css']:['task-center.js','task-center.css','sprint1-navigation.js'];
+const sources=await Promise.all(files.map(async path=>({path,content:await readFile(path,'utf8')})));
+const request=project?`实现项目看板：所有状态项目卡片都像已完成一样原生details单个折叠、每列全部展开/全部折叠、默认全部折叠，展开保留操作和查看任务按钮。已完成保持绿色对勾+标题，其他状态折叠只显示标题+彩色项目分类下拉标签+箭头。分类健康/工作/个人/习惯/金融，保留自定义旧分类；卡片内select可直接改分类persistProjects，不触发打开卡片/折叠。分类有彩色底类似Excel下拉标签，可为空未分类。项目归档切换按钮放projectBoard之后（已有按钮也移动），其余逻辑不变。CSS追加在project-v3.css，精确限定项目区域以覆盖旧规则，折叠卡片无空白，列标题与controls间隙6px，控件到卡片8px。`: `实现任务中心所有状态卡片都用details单个折叠、每列全部展开/全部折叠，默认全部折叠，展开保留编辑/状态操作，未完成summary只标题和箭头，已完成保持绿色勾。只有已完成或已归档任务展示归档/取消归档按钮，待开始进行中普通卡片不展示归档。全部展开折叠只作用当前列，不影响其他列。减少任务列header与controls间大空白，需覆盖可能全局header样式，header设margin:0 padding:0 min-height:0，与项目列间距一致。CSS追加task-center.css。导航在sprint1-navigation.js实现刷新保持当前一级Tab和浏览器前进后退：URL ?view= 优先，其次本地上次tab，否则home；白名单home/projects/tasks/review/writing/reading/english/knowledge；动态模块未加载时待对应nav+section存在再调用openView；保持其它query参数和hash，避免初始化openView覆盖状态；包装openView捕获程序化导航及按钮调用，原功能不变，点击更新history，popstate不新增history，localStorage失败不影响使用。不可轮询计时器，用现有nav observer或MutationObserver等待动态模块。`;
+const prompt=`你负责实际开发，返回JSON {patches:[{path,old,new}],notes:字符串}。每个old必须是源文件精确唯一片段。不要整文件返回，不要代码围栏，CSS可用old末尾唯一片段替换追加。不要执行命令或访问秘密，不改其他文件。保留数据格式和已有行为。${request}\n源文件：${JSON.stringify(sources)}`;
+const model=project?'deepseek-flash':'glm-4.7-flash';
+const key=project?process.env.DEEPSEEK_REVIEW_API_KEY:process.env.ZHIPU_API_KEY;
+if(!key)throw Error('missing_provider_secret');
+const r=await fetch(project?'https://api.deepseek.com/chat/completions':'https://open.bigmodel.cn/api/paas/v4/chat/completions',{method:'POST',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({model,thinking:{type:'disabled'},temperature:0,max_tokens:10000,response_format:{type:'json_object'},messages:[{role:'user',content:prompt}]}),signal:AbortSignal.timeout(180000)});
+if(!r.ok)throw Error('provider_http_'+r.status);
+const d=await r.json();if(d.choices?.[0]?.finish_reason==='length'||/pro/i.test(d.model||''))throw Error('invalid_model_or_truncated');
+console.log('FLASH_RESULT '+JSON.stringify({provider,model:d.model,usage:d.usage,result:JSON.parse(d.choices[0].message.content)}));
