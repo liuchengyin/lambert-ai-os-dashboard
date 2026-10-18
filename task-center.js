@@ -73,6 +73,7 @@
     }).sort((a,b)=>filters.sort==='manual'?(ranks.get(a.id)??999999)-(ranks.get(b.id)??999999):filters.sort==='due'?(a.due||'9999').localeCompare(b.due||'9999'):filters.sort==='created'?String(b.createdAt||'').localeCompare(String(a.createdAt||'')):(Number(priorityCode(a).slice(1))-Number(priorityCode(b).slice(1)))||String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
   }
   function taskDates(task) {return task.start||task.due?`${task.start?.replace('T',' ')||'待定'} → ${task.due?.replace('T',' ')||'待定'}`:'待排期';}
+function compactTaskDates(task){function p(s){if(!s||typeof s!=='string')return null;var m=s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?)?$/);if(!m)return null;var mo=+m[2],d=+m[3];var y=+m[1],max=[31,(y%4===0&&(y%100!==0||y%400===0))?29:28,31,30,31,30,31,31,30,31,30,31][mo-1];if(y<1||mo<1||mo>12||d<1||d>max||(m[4]!=null&&(+m[4]>23||+m[5]>59)))return null;var r=mo+'月'+d+'日';if(m[4]!=null&&m[5]!=null)r+=' '+m[4]+':'+m[5];return r;}var a=p(task&&task.start),b=p(task&&task.due);if(!task||(!task.start&&!task.due))return '待排期';if(!a)a='待定';if(!b)b='待定';return a+'—'+b;}
 function taskExpanded(t){return expandedMap.has(t.id)?expandedMap.get(t.id):t.status!=='已完成';}
 function card(task){
   const el=document.createElement('article');
@@ -92,7 +93,7 @@ function card(task){
   const title=document.createElement('button');
   title.type='button';
   title.className='tc-task-title';
-  title.textContent=task.title;
+  title.textContent=task.title;title.title=task.title;
   title.onclick=e=>{e.preventDefault();e.stopPropagation();editTask(task.id);};
   fold.onclick=e=>{e.preventDefault();e.stopPropagation();const next=!detail.open;detail.open=next;expandedMap.set(task.id,next);fold.setAttribute('aria-expanded',String(next));};
   summary.append(title,fold);
@@ -102,8 +103,14 @@ function card(task){
   const prio=document.createElement('span');
   prio.className='tc-priority tc-priority-'+(priorityCode(task)||'P2');
   prio.textContent=priorityCode(task)||'P2';
-  body.innerHTML='<div class="tc-tags">'+labelsHtml(task.labels)+'</div><small>'+esc(taskDates(task))+'</small>';
-  summary.insertBefore(prio,fold);
+  const badges=document.createElement('div');badges.className='tc-card-badges';
+  const labels=Array.isArray(task.labels)?task.labels:[];
+  const labelGroup=document.createElement('span');labelGroup.className='tc-card-labels';labelGroup.innerHTML=labelsHtml(labels.slice(0,2));labelGroup.title=labels.join('、');
+  if(labels.length>2){const more=document.createElement('span');more.className='tc-tag tc-label-more';more.textContent='+'+(labels.length-2);labelGroup.append(more)}
+  if(labels.length)badges.append(labelGroup);badges.append(prio);summary.insertBefore(badges,fold);
+  if(task.note){const note=document.createElement('p');note.className='tc-task-note';note.textContent=task.note;note.title=task.note;body.append(note)}
+  const footer=document.createElement('div');footer.className='tc-task-footer';
+  const dates=document.createElement('small');dates.className='tc-task-dates';dates.textContent=compactTaskDates(task);dates.title=taskDates(task);footer.append(dates);body.append(footer);
   const actions=document.createElement('div');
   actions.className='tc-task-actions';
   if(task.status!=='已完成'){
@@ -113,7 +120,7 @@ function card(task){
     adv.textContent='>';
     adv.setAttribute('aria-label','推进任务 '+task.title);
     adv.onclick=e=>{e.preventDefault();e.stopPropagation();const next=task.status==='待开始'?'进行中':'已完成';task.status=next;if(next==='已完成'){expandedMap.set(task.id,false);}else{expandedMap.set(task.id,true);}save();};
-    actions.append(adv);
+    footer.append(adv);
   }
   if(task.status==='已完成'){
     const reopen=document.createElement('button');
@@ -127,7 +134,7 @@ function card(task){
     archive.onclick=e=>{e.preventDefault();e.stopPropagation();task.archived=!task.archived;save();};
     actions.append(archive);
   }
-  body.append(actions);
+  if(actions.childElementCount)body.append(actions);
   detail.append(summary,body);
   el.append(detail);
   detail.ontoggle=()=>{if(!detail.isConnected)return;expandedMap.set(task.id,detail.open);fold.setAttribute('aria-expanded',String(detail.open));};
