@@ -22,6 +22,20 @@ try{
  await ensureOpen(page.locator('[data-tc-task="t"] details'));await page.locator('[data-tc-task="t"]').getByRole('button',{name:'重新打开'}).click();assert.equal((await stored('tasks')).find(t=>t.id==='t').status,'进行中');assert.equal(await page.locator('[data-tc-task="t"] summary').count(),0);
  await page.locator('[data-tc-task="t"]').dragTo(page.locator('[data-tc-status="已完成"] header'),{sourcePosition:{x:8,y:8}});assert.equal((await stored('tasks')).find(t=>t.id==='t').status,'已完成');assert.equal(await page.locator('[data-tc-task="t"] details').evaluate(e=>e.open),false);
  await page.reload();await page.waitForFunction(()=>window.TaskCenter);await page.locator('nav button[data-v="tasks"]').click();assert.equal(await page.locator('#tcContent details[open]').count(),0);
+
+ // DeepSeek Flash draft, corrected bulk-control scope and strengthened all-item assertions.
+ const items=page.locator('#tcContent details.completed-item');
+await page.locator('[data-tc-expand]').click();
+assert(await items.evaluateAll(elements=>elements.length>0&&elements.every(e=>e.open)));
+await page.locator('[data-tc-collapse]').click();
+assert(await items.evaluateAll(elements=>elements.every(e=>!e.open)));
+await items.first().locator('summary').click();
+assert(await items.first().evaluate(e=>e.open));
+await page.reload();
+await page.waitForFunction(()=>window.TaskCenter);
+await page.locator('nav button[data-v="tasks"]').click();
+const n=await items.count();
+for(let i=0;i<n;i++) assert(!(await items.nth(i).evaluate(e=>e.open)));
  await mkdir('test-artifacts/completed',{recursive:true});await page.screenshot({path:'test-artifacts/completed/desktop.png',fullPage:true});
  await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));await page.screenshot({path:'test-artifacts/completed/mobile.png',fullPage:true});assert.deepEqual(errors,[]);console.log('PASS completed project/task disclosure, bulk controls, edit, reopen, archive/restore, drag, reload, mobile');
 }finally{await browser.close()}
