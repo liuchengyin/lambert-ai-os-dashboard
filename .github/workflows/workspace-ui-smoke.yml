@@ -75,6 +75,7 @@ jobs:
           sleep 2
           node tests/audit-cleanup-ui.mjs
           node tests/common-links-ui.mjs
+          node tests/bookmark-density-ui.mjs
           node tests/workspace-ui-smoke.mjs
           node tests/deepseek-ui-smoke.mjs
           node tests/ai-chat-ui.mjs
