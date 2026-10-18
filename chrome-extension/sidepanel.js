@@ -1,5 +1,5 @@
 const DASHBOARD='https://lambert-ai-os-dashboard.vercel.app';
-const TARGET_WIKI_TOKEN='IH63wL0oKi6Dp2kU4cncE8gUnig';
+
 const prompts={
   '观念卡':['这个观点到底在说什么？','为什么它重要？','它改变了我什么理解或判断？','我能把它用在哪里？'],
   '案例卡':['这个案例发生了什么？','真正起作用的关键因果是什么？','它说明了什么规律？','我能迁移到什么场景？'],
@@ -83,7 +83,7 @@ async function pushArchiveToLocal(d,feishu){
     savedAt:new Date().toISOString(),
     feishuUrl:feishu.url||'',
     feishuDocumentToken:feishu.documentToken||'',
-    feishuWikiToken:feishu.wikiToken||''
+    feishuWikiToken:feishu.wikiToken||'',archiveTargetToken:feishu.targetToken||'',archiveLocationId:feishu.locationId||'',archiveSource:'extension'
   },...lambertArchivedCards].slice(0,500);
   await chrome.storage.local.set({lambertArchivedCards:next});
 }
@@ -119,11 +119,12 @@ async function archiveCard(){
   $('status').textContent='正在同步飞书…';
 
   try{
+    const destination=await loadExtensionTargets();
     const title=`${d.type}：${d.title||d.sourceTitle||'阅读笔记'}`;
     const res=await fetch(`${DASHBOARD}/api/feishu-daily`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({date:d.date,title,markdown:archiveMarkdown(d),targetWikiToken:TARGET_WIKI_TOKEN})
+      body:JSON.stringify({date:d.date,title,markdown:archiveMarkdown(d),source:'extension',locationId:destination.id})
     });
     const data=await res.json().catch(()=>({}));
     if(!res.ok||!data.ok)throw new Error(data.message||`归档失败 (${res.status})`);
@@ -152,3 +153,13 @@ chrome.storage.onChanged.addListener((changes,area)=>{
 });
 
 (async()=>{await loadDraft();await refreshSource();renderPrompts()})();
+
+let extensionSelection='';
+async function loadExtensionTargets(){
+  const r=await fetch(DASHBOARD+'/api/feishu-targets',{signal:AbortSignal.timeout(10000)});const d=await r.json();if(!r.ok||!d.ok)throw Error(d.message||'无法加载归档位置');
+  const locations=d.config?.locations||[],chosen=locations.find(x=>x.id===extensionSelection)||locations.find(x=>x.id===d.config?.defaults?.extension);if(!chosen)throw Error('请先设置插件笔记归档位置');
+  const select=$('extensionArchiveTarget');select.replaceChildren();locations.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name;o.selected=l.id===chosen.id;select.append(o)});$('extensionArchiveConfigStatus').textContent='';$('extensionArchiveLocation').href=chosen.url;$('extensionArchiveLocation').textContent=chosen.name+' · '+chosen.url;return chosen;
+}
+$('extensionArchiveTarget').onchange=e=>{extensionSelection=e.target.value;loadExtensionTargets().catch(e=>{$('extensionArchiveConfigStatus').textContent=e.message})};
+$('extensionArchiveSettings').onclick=e=>{e.preventDefault();chrome.tabs.create({url:DASHBOARD+'/?view=reading&archiveSettings=1'})};
+loadExtensionTargets().catch(e=>{$('extensionArchiveConfigStatus').textContent=e.message});

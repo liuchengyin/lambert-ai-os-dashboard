@@ -38,7 +38,7 @@ async function syncArchivedCards(){
       savedAt:card.savedAt||card.capturedAt||new Date().toISOString(),
       feishuUrl:card.feishuUrl||'',
       feishuDocumentToken:card.feishuDocumentToken||'',
-      feishuWikiToken:card.feishuWikiToken||''
+      feishuWikiToken:card.feishuWikiToken||'',archiveTargetToken:card.archiveTargetToken||'',archiveLocationId:card.archiveLocationId||'',archiveSource:card.archiveSource||'extension'
     });
     existing.add(card.id);
     changed=true;

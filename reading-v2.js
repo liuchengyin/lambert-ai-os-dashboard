@@ -3,8 +3,7 @@
   const reading=document.getElementById('reading');
   if(!reading)return;
 
-  const FEISHU_DAILY='https://my.feishu.cn/wiki/IH63wL0oKi6Dp2kU4cncE8gUnig?fromScene=spaceOverview';
-  const TARGET_WIKI_TOKEN='IH63wL0oKi6Dp2kU4cncE8gUnig';
+  const FEISHU_DAILY='';
   const STORE='reading_workspace_v2';
   const LEGACY='daily_reading_v1';
   const $=id=>document.getElementById(id);
@@ -135,7 +134,7 @@
     const n=state.notes.find(x=>x.id===id);if(!n)return;
     currentId=n.id;persist();$('rv2Type').value=n.type||'观念卡';$('rv2CardTitle').value=n.title||'';$('rv2Thought').value=n.thought||'';$('rv2Excerpt').value=n.excerpt||'';
     if(n.sourceTitle)$('rv2BookTitle').value=n.sourceTitle;if(n.progress)$('rv2Progress').value=n.progress;
-    renderPrompts(n.type||'观念卡');$('rv2Status').textContent=n.savedAt?'已保存':'未保存';$('rv2Archive').textContent=n.feishuDocumentToken?'更新飞书':'归档飞书';$('rv2Archive').classList.toggle('is-archived',!!n.feishuDocumentToken);$('rv2FeishuLink').href=n.feishuUrl||FEISHU_DAILY;$('rv2FeishuLink').textContent=n.feishuUrl?'打开这张卡的飞书文档':'打开飞书归档位置';renderRecords();
+    renderPrompts(n.type||'观念卡');$('rv2Status').textContent=n.savedAt?'已保存':'未保存';$('rv2Archive').textContent=n.feishuDocumentToken?'更新飞书':'归档飞书';$('rv2Archive').classList.toggle('is-archived',!!n.feishuDocumentToken);$('rv2FeishuLink').href=n.feishuUrl||FEISHU_DAILY;$('rv2FeishuLink').textContent=n.feishuUrl?'打开这张卡的飞书文档':'打开飞书归档位置';renderRecords();if(window.ArchiveTargets)refreshArchiveLink();
   }
   function readNote(){const old=currentNote()||blankNote($('rv2Type').value);return {...old,id:old.id,date:old.date||dateKey(),type:$('rv2Type').value,title:$('rv2CardTitle').value.trim(),thought:$('rv2Thought').value.trim(),excerpt:$('rv2Excerpt').value.trim(),sourceTitle:$('rv2BookTitle').value.trim(),progress:$('rv2Progress').value.trim(),savedAt:new Date().toISOString()}}
   function saveNote(show=true){
@@ -167,13 +166,20 @@
     const meta=[n.sourceTitle?`**阅读对象：** ${n.sourceTitle}`:'',n.progress?`**阅读进度：** ${n.progress}`:'',`**记录日期：** ${n.date||dateKey()}`].filter(Boolean).join('\n\n');
     const markdown=`${meta}\n\n## 我的思考\n\n${n.thought||''}\n\n---\n\n## 原文\n\n${n.excerpt||''}`;
     try{
-      const res=await fetch('/api/feishu-daily',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:n.date||dateKey(),title,markdown,targetWikiToken:TARGET_WIKI_TOKEN,documentToken:n.feishuDocumentToken||'',wikiToken:n.feishuWikiToken||''})});
+      if(!window.ArchiveTargets)throw Error('归档位置设置尚未加载，请刷新后重试');
+      const destination=await ArchiveTargets.getDestination('reading');
+      const res=await fetch('/api/feishu-daily',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:n.date||dateKey(),title,markdown,source:'reading',locationId:destination.id,previousTargetToken:n.archiveTargetToken||'',documentToken:n.feishuDocumentToken||'',wikiToken:n.feishuWikiToken||''})});
       const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.message||`归档失败 (${res.status})`);
-      const idx=state.notes.findIndex(x=>x.id===n.id);state.notes[idx]={...n,feishuUrl:data.url||FEISHU_DAILY,feishuDocumentToken:data.documentToken||n.feishuDocumentToken||'',feishuWikiToken:data.wikiToken||n.feishuWikiToken||'',syncedAt:new Date().toISOString()};persist();loadNote(n.id);$('rv2Status').textContent=data.updated?'已更新飞书':'已归档飞书';renderRecords();
+      const idx=state.notes.findIndex(x=>x.id===n.id);state.notes[idx]={...n,archiveTargetToken:data.targetToken||destination.token,archiveLocationId:data.locationId||destination.id,archiveSource:'reading',feishuUrl:data.url||destination.url,feishuDocumentToken:data.documentToken||n.feishuDocumentToken||'',feishuWikiToken:data.wikiToken||n.feishuWikiToken||'',syncedAt:new Date().toISOString()};persist();loadNote(n.id);$('rv2Status').textContent=data.updated?'已更新飞书':'已归档飞书';renderRecords();
     }catch(e){$('rv2Status').textContent=`归档失败：${e.message}`}
     finally{btn.disabled=false;const fresh=currentNote();btn.textContent=fresh?.feishuDocumentToken?'更新飞书':'归档飞书'}
   }
 
+  async function refreshArchiveLink(){
+    if(currentNote()?.feishuUrl)return;
+    try{const target=await ArchiveTargets.getDestination('reading');$('rv2FeishuLink').href=target.url;$('rv2FeishuLink').textContent='打开归档位置：'+target.name;}catch{$('rv2FeishuLink').removeAttribute('href');$('rv2FeishuLink').textContent='请先配置归档位置';}
+  }
+  if(window.ArchiveTargets){ArchiveTargets.mount('reading',$('rv2Archive').parentElement).then(()=>{refreshArchiveLink();if(new URLSearchParams(location.search).get('archiveSettings')==='1')ArchiveTargets.openSettings()});document.addEventListener('archive-target-changed',()=>refreshArchiveLink());}
   $('rv2Type').onchange=e=>{renderPrompts(e.target.value);const n=currentNote();if(n){n.type=e.target.value;persist()}};
   $('rv2Save').onclick=()=>saveNote(true);$('rv2Archive').onclick=archiveNote;$('rv2New').onclick=newNote;$('rv2Clipboard').onclick=importClipboard;
   $('rv2PdfMode').onclick=()=>setMode('pdf');$('rv2WebMode').onclick=()=>setMode('web');

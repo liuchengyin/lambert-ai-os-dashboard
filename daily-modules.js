@@ -1,6 +1,6 @@
 // Daily Writing V3 + Daily Reading
 (function(){
-  const FEISHU_DAILY='https://my.feishu.cn/wiki/IH63wL0oKi6Dp2kU4cncE8gUnig?fromScene=spaceOverview';
+  const FEISHU_DAILY='';
   const $=id=>document.getElementById(id);
   const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
   const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
@@ -24,12 +24,19 @@
 
   const writingStore=get('daily_writing_v2',{});const legacy=get('daily_writing_v1',{});if(!Object.keys(writingStore).length&&Object.keys(legacy).length){Object.entries(legacy).forEach(([d,r])=>writingStore[d]={title:r.title||'',markdown:r.body||'',savedAt:r.savedAt||'',feishuUrl:r.feishuUrl||'',syncState:r.feishuUrl?'synced':'local'});set('daily_writing_v2',writingStore)}
   let writingDate=dateKey(),editor=null,editorReady=false,autosaveTimer=null;
-  writing.innerHTML=`<div class="daily-page daily-writing-v2"><div class="daily-head"><div><h2>每日记录</h2><p>像飞书一样写。标题独立，正文支持 Markdown 快捷输入，归档后保持同一结构。</p></div><div class="daily-datebar"><button id="dwPrev">←</button><input id="dwDate" type="date"><button id="dwToday">今天</button><button id="dwNext">→</button></div></div><div class="daily-layout daily-writing-layout"><div class="daily-editor writing-editor-shell"><div class="daily-meta-row"><span id="dwPretty"></span><div class="sync-state"><span id="dwStatus" class="daily-status-pill">未保存</span><span id="dwSync" class="daily-status-pill sync">未同步飞书</span></div></div><input id="dwTitle" class="daily-title" placeholder="无标题"><div id="dwEditor" class="daily-rich-editor"><div class="editor-loading">正在加载编辑器…</div></div><div class="daily-actions"><button id="dwSave" class="primary">保存草稿</button><button id="dwArchive" class="archive">归档到飞书</button><a id="dwOpenFeishu" class="daily-open-feishu" href="${FEISHU_DAILY}" target="_blank">打开飞书目录</a></div><div class="daily-note" id="dwNote">正文支持 # + 空格标题、列表、引用、任务、表格、代码等 Markdown 快捷输入。</div></div><aside class="daily-side daily-history"><h3>记录历史</h3><div id="dwHistory" class="daily-history-list"></div><div class="daily-feishu-target"><strong>飞书正式归档位置</strong><a href="${FEISHU_DAILY}" target="_blank">🐌 每日记录</a><small>同一天重复归档会更新原文档，不再重复创建。</small></div></aside></div></div>`;
+  writing.innerHTML=`<div class="daily-page daily-writing-v2"><div class="daily-head"><div><h2>每日记录</h2><p>像飞书一样写。标题独立，正文支持 Markdown 快捷输入，归档后保持同一结构。</p></div><div class="daily-datebar"><button id="dwPrev">←</button><input id="dwDate" type="date"><button id="dwToday">今天</button><button id="dwNext">→</button></div></div><div class="daily-layout daily-writing-layout"><div class="daily-editor writing-editor-shell"><div class="daily-meta-row"><span id="dwPretty"></span><div class="sync-state"><span id="dwStatus" class="daily-status-pill">未保存</span><span id="dwSync" class="daily-status-pill sync">未同步飞书</span></div></div><input id="dwTitle" class="daily-title" placeholder="无标题"><div id="dwEditor" class="daily-rich-editor"><div class="editor-loading">正在加载编辑器…</div></div><div class="daily-actions"><button id="dwSave" class="primary">保存草稿</button><button id="dwArchive" class="archive">归档到飞书</button><a id="dwOpenFeishu" class="daily-open-feishu" href="${FEISHU_DAILY}" target="_blank" rel="noopener">打开飞书目录</a></div><div class="daily-note" id="dwNote">正文支持 # + 空格标题、列表、引用、任务、表格、代码等 Markdown 快捷输入。</div></div><aside class="daily-side daily-history"><h3>记录历史</h3><div id="dwHistory" class="daily-history-list"></div><div class="daily-feishu-target"><strong>当前归档位置</strong><a id="daily-feishu-target" href="${FEISHU_DAILY}" target="_blank" rel="noopener">加载中…</a><small>同一位置重复归档更新原文档；切换位置后在新位置新建。</small></div></aside></div></div>`;
 
   function writingBlank(){return {title:'',markdown:'',savedAt:'',feishuUrl:'',feishuDocumentToken:'',feishuWikiToken:'',syncState:'local'}}
   function currentMarkdown(){return editorReady&&editor?editor.getValue():''}
   function applyMarkdown(md){if(editorReady&&editor)editor.setValue(md||'',true)}
-  function setSyncUi(r){const sync=$('dwSync');const open=$('dwOpenFeishu');if(r?.feishuUrl){sync.textContent='已归档飞书';sync.classList.add('saved');open.href=r.feishuUrl;open.textContent='打开飞书文档'}else{sync.textContent='未同步飞书';sync.classList.remove('saved');open.href=FEISHU_DAILY;open.textContent='打开飞书目录'}}
+  async function refreshWritingDestination(){
+    if(!window.ArchiveTargets)return;
+    try{const loc=await ArchiveTargets.getDestination('writing');const t=$('daily-feishu-target');if(t){t.href=loc.url;t.textContent=loc.name+' · '+loc.url;}
+      if(!writingStore[writingDate]?.feishuUrl){$('dwOpenFeishu').href=loc.url;$('dwOpenFeishu').textContent='打开飞书目录';}
+    }catch(e){const t=$('daily-feishu-target');if(t){t.removeAttribute('href');t.textContent='归档位置暂不可用：'+e.message;}}
+  }
+  function setSyncUi(r){const sync=$('dwSync'),open=$('dwOpenFeishu');if(r?.feishuUrl){sync.textContent='已归档飞书';sync.classList.add('saved');open.href=r.feishuUrl;open.textContent='打开飞书文档'}else{sync.textContent='未同步飞书';sync.classList.remove('saved');open.removeAttribute('href');open.textContent='打开飞书目录'}refreshWritingDestination();}
+
   function loadWriting(key){writingDate=key;$('dwDate').value=key;$('dwPretty').textContent=pretty(key);const r=writingStore[key]||writingBlank();$('dwTitle').value=r.title||'';applyMarkdown(r.markdown||'');$('dwStatus').textContent=r.savedAt?'草稿已保存':'未保存';$('dwStatus').classList.toggle('saved',!!r.savedAt);setSyncUi(r);renderWritingHistory()}
   function saveWriting(silent=false){const old=writingStore[writingDate]||writingBlank();writingStore[writingDate]={...old,title:$('dwTitle').value.trim(),markdown:currentMarkdown(),savedAt:new Date().toISOString()};set('daily_writing_v2',writingStore);$('dwStatus').textContent='草稿已保存';$('dwStatus').classList.add('saved');renderWritingHistory();if(!silent)$('dwNote').textContent='草稿已保存。正式版本仍以飞书归档结果为准。'}
   function renderWritingHistory(){const root=$('dwHistory');root.innerHTML='';const rows=Object.entries(writingStore).filter(([,r])=>r.title||r.markdown).sort((a,b)=>b[0].localeCompare(a[0]));if(!rows.length){root.innerHTML='<div class="daily-placeholder">还没有记录</div>';return}rows.slice(0,30).forEach(([d,r])=>{const b=document.createElement('button');b.className='daily-history-item';b.innerHTML=`<strong>${esc(r.title||'未命名记录')}</strong><span>${esc(d)}${r.feishuUrl?' · 已归档飞书':''}</span>`;b.onclick=()=>{saveWriting(true);loadWriting(d)};root.appendChild(b)})}
@@ -57,13 +64,15 @@
     saveWriting(true);const r=writingStore[writingDate]||writingBlank();if(!r.title&&!r.markdown){$('dwNote').textContent='请先写点内容再归档。';return}
     const btn=$('dwArchive');btn.disabled=true;btn.textContent=r.feishuDocumentToken?'正在更新…':'正在归档…';$('dwNote').textContent=r.feishuDocumentToken?'正在更新原飞书文档…':'正在创建飞书文档…';
     try{
-      const res=await fetch('/api/feishu-daily',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:writingDate,title:r.title||`${writingDate}｜每日记录`,markdown:r.markdown,targetWikiToken:'IH63wL0oKi6Dp2kU4cncE8gUnig',documentToken:r.feishuDocumentToken||'',wikiToken:r.feishuWikiToken||''})});
+      const destination=await window.ArchiveTargets.getDestination('writing');
+      const res=await fetch('/api/feishu-daily',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({date:writingDate,title:r.title||`${writingDate}｜每日记录`,markdown:r.markdown,source:'writing',locationId:destination.id,previousTargetToken:r.archiveTargetToken||'',documentToken:r.feishuDocumentToken||'',wikiToken:r.feishuWikiToken||''})});
       const data=await res.json().catch(()=>({}));if(!res.ok||!data.ok)throw new Error(data.message||`归档失败 (${res.status})`);
-      writingStore[writingDate]={...r,feishuUrl:data.url||FEISHU_DAILY,feishuDocumentToken:data.documentToken||r.feishuDocumentToken||'',feishuWikiToken:data.wikiToken||r.feishuWikiToken||'',syncState:'synced',syncedAt:new Date().toISOString()};
+      writingStore[writingDate]={...r,feishuUrl:data.url||destination.url,feishuDocumentToken:data.documentToken||r.feishuDocumentToken||'',feishuWikiToken:data.wikiToken||r.feishuWikiToken||'',archiveTargetToken:data.targetToken||destination.token,archiveLocationId:destination.id,syncState:'synced',syncedAt:new Date().toISOString()};
       set('daily_writing_v2',writingStore);setSyncUi(writingStore[writingDate]);renderWritingHistory();$('dwNote').textContent=data.updated?'已更新原飞书文档，不会重复创建。':'已完整归档到飞书。';
     }catch(e){$('dwNote').textContent=`暂未完成飞书归档：${e.message}`;}finally{btn.disabled=false;btn.textContent='归档到飞书'}
   }
 
+  if(window.ArchiveTargets){window.ArchiveTargets.mount('writing',$('dwArchive').parentElement);document.addEventListener('archive-target-changed',function(ev){if(ev.detail&&ev.detail.source==='writing'){setSyncUi(writingStore[writingDate]);}});}
   $('dwSave').onclick=()=>saveWriting(false);$('dwArchive').onclick=archiveWriting;$('dwTitle').addEventListener('input',markEditing);$('dwPrev').onclick=()=>{saveWriting(true);loadWriting(shiftDate(writingDate,-1))};$('dwNext').onclick=()=>{saveWriting(true);loadWriting(shiftDate(writingDate,1))};$('dwToday').onclick=()=>{saveWriting(true);loadWriting(dateKey())};$('dwDate').onchange=e=>{saveWriting(true);loadWriting(e.target.value||dateKey())};
   initEditor();
 
