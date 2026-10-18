@@ -1,0 +1,27 @@
+name: UI batch Flash development
+on:
+  push:
+    branches: [feat/ui-batch-navigation]
+    paths: ['scripts/ui-batch-flash.mjs', '.github/workflows/ui-batch-flash.yml']
+permissions:
+  contents: read
+jobs:
+  draft:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [deepseek-task, glm-nav]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate reviewed draft only
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+        run: node scripts/ui-batch-flash.mjs ${{ matrix.provider }}

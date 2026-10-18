@@ -31,7 +31,7 @@ globalThis.fetch=async(url,opts)=>{
     assert.equal(request.response_format.type,'json_object');
     assert.equal(opts.headers.Authorization,'Bearer test-secret');
     const data=JSON.parse(request.messages[1].content);
-    assert.equal(data.tasks.length,1);
+    assert.equal(data.tasks.length,data.projectScope?31:1);
     assert.equal(data.tasks[0].title,'真实任务');
     assert.equal('note' in data.tasks[0],false,'do not send private task notes');
     return fakeResponse({choices:[{message:{content:JSON.stringify(modelOverride===undefined?{
@@ -82,6 +82,12 @@ try{
   redis.clear();modelOverride={summary:'空提醒已过滤',focus:[],alerts:[null,'bad',{reason:'有效提醒',severity:'high'}],observations:[]};
   r=await invoke(body,{headers:{cookie}});
   check('Null and primitive alerts cannot break analysis',r.statusCode===200&&r.body.result.alerts.length===1&&r.body.result.alerts[0].reason==='有效提醒');
+  redis.clear();modelOverride={summary:'本项目建议',focus:[],alerts:[],observations:[]};
+  const beforeScoped=providerCalls;
+  r=await invoke({...body,projectScope:'project-a',tasks:Array.from({length:31},(_,i)=>({...body.tasks[0],id:'scoped-'+i}))},{headers:{cookie}});
+  check('Project analysis accepts all 31 tasks within bounded scope',r.statusCode===200&&providerCalls===beforeScoped+1);
+  r=await invoke({...body,projectScope:'project-a',tasks:Array(201).fill(body.tasks[0])},{headers:{cookie}});
+  check('Project analysis rejects more than 200 tasks before provider',[400,413].includes(r.statusCode)&&providerCalls===beforeScoped+1);
   console.log('DeepSeek API smoke passed.');
 }finally{
   globalThis.fetch=previousFetch;

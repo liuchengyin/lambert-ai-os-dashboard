@@ -21,6 +21,8 @@ on:
       - 'index.html'
       - 'app.js'
       - 'deepseek-v1.js'
+      - 'project-ai.js'
+      - 'tests/project-ai-ui.mjs'
       - 'deepseek-v1.css'
       - 'api/ai-analyze.js'
       - 'ai-chat.js'
@@ -43,6 +45,10 @@ on:
       - 'tests/audit-cleanup-ui.mjs'
       - 'project-v3.css'
       - 'sprint1-navigation.js'
+      - 'tests/ui-batch.mjs'
+      - 'tests/dense-task-card.mjs'
+      - 'task-center.js'
+      - 'task-center.css'
       - 'sprint1-hub.css'
       - 'english-app.html'
       - 'manifest.webmanifest'
@@ -83,6 +89,9 @@ jobs:
         run: |
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
+          node tests/dense-task-card.mjs
+          node tests/ui-batch.mjs
+          node tests/project-ai-ui.mjs
           node tests/audit-cleanup-ui.mjs
           node tests/common-links-ui.mjs
           node tests/bookmark-density-ui.mjs

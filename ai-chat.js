@@ -39,7 +39,7 @@
       const row=el('div','ai-draft-row');
       row.append(field('截止时间',t.due,v=>t.due=v,'datetime-local'));
       const priority=el('label','ai-draft-field');priority.append(el('span','','优先级'));
-      const select=el('select');for(const p of ['P1','P2','P3']){const o=el('option','',p);o.value=p;select.append(o)}select.value=t.priority;select.onchange=()=>t.priority=select.value;
+      const select=el('select');for(const p of ['P0','P1','P2','P3']){const o=el('option','',p);o.value=p;select.append(o)}select.value=({q1:'P0',q2:'P1',q3:'P2',q4:'P3'}[t.matrix]||'P1');select.onchange=()=>{t.priority=select.value==='P0'?'P1':select.value;t.matrix='q'+(Number(select.value.slice(1))+1)};
       priority.append(select);row.append(priority);card.append(row);
       card.append(el('small','ai-note',t.project?'关联项目：'+t.project:'独立任务'),field('下一步 / 备注',t.note,v=>t.note=v,'textarea'));
       card.append(button('从草稿移除此任务',()=>{result.tasks.splice(index,1);if(!result.tasks.length&&!result.projects.length)proposal=null;showDraft();feedback('已从草稿移除，现有任务不受影响。')},'ai-draft-remove'));draft.append(card);
@@ -73,7 +73,7 @@
       for(const t of result.tasks){
         const title=t.title.trim().slice(0,140),project=names.has(t.project)?t.project:'';
         const key=JSON.stringify([title,project]);if(existing.has(key))continue;existing.add(key);
-        newTasks.push({id:'task_'+crypto.randomUUID(),title,project,status:'待开始',priority:t.priority,matrix:'q2',due:t.due,note:t.note.slice(0,300),createdAt,aiRequestId:requestId});
+        newTasks.push({id:'task_'+crypto.randomUUID(),title,project,status:'待开始',priority:t.priority,matrix:t.matrix||'q2',due:t.due,note:t.note.slice(0,300),createdAt,aiRequestId:requestId});
       }
       const nextProjects=[...newProjects,...projects],nextTasks=[...newTasks,...tasks];
       // Preserve both exact originals if the second localStorage write fails (e.g. quota).

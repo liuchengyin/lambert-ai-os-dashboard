@@ -18,3 +18,70 @@
 @media(max-width:1180px){.project-dashboard{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:900px){.project-dashboard{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.project-dashboard{grid-template-columns:1fr}.project-inline-task-create{grid-template-columns:1fr}.project-compose-collapsible>summary{align-items:flex-start}}
+
+/* Collapsible project cards (all statuses) */
+.project-board .project-col .project-col-head{margin-bottom:6px}
+.project-board .project-col .project-col-controls{display:flex;gap:6px;margin:0 0 8px}
+.project-board .project-col .project-col-controls button{font-size:11px;padding:4px 9px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#475569;cursor:pointer}
+.project-board .project-col .project-col-controls button:hover{background:#f1f5f9}
+.project-board .project-card{padding:0!important;overflow:hidden}
+.project-board .project-card .project-collapse-item{border:0;margin:0;padding:0}
+.project-board .project-card .project-collapse-summary{list-style:none;display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;min-height:0}
+.project-board .project-card .project-collapse-summary::-webkit-details-marker{display:none}
+.project-board .project-card .project-collapse-head{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:0}
+.project-board .project-card .project-collapse-title{font-weight:600;font-size:13px;color:#1f2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-board .project-card .project-collapse-arrow{flex:0 0 auto;font-size:11px;color:#94a3b8;transition:transform .15s ease}
+.project-board .project-card .project-collapse-item[open] .project-collapse-arrow{transform:rotate(180deg)}
+.project-board .project-card .project-collapse-body{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
+.project-board .project-card .project-collapse-body:empty{display:none}
+.project-board .project-card .project-collapse-item:not([open]) .project-collapse-body{display:none}
+.project-board .project-card .project-collapse-body .project-card-top{margin:0}
+.project-board .project-card .project-collapse-body .project-card-actions{margin-top:2px}
+#projectArchiveToggle{margin:0 0 14px}
+
+#projects .project-collapse-summary:focus-visible{outline:2px solid #7957d5;outline-offset:-2px;border-radius:8px}
+#projects .project-collapse-head>.tc-done-check{display:inline-flex;align-items:center;justify-content:center;flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:#21a365;color:#fff;font-weight:700;font-size:12px}
+#projects .project-collapse-title{white-space:normal;overflow-wrap:anywhere}
+#projects .project-col{min-height:0}
+
+.project-category-tag{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;max-width:96px;padding:3px 10px 3px 16px;font-size:11px;line-height:1.5;font-weight:600;color:#fff!important;background:#8a94a6!important;border:none!important;border-radius:0!important;clip-path:polygon(0 50%,8px 0,100% 0,100% 100%,8px 100%)!important;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transform:none!important;letter-spacing:.02em;box-shadow:none!important;pointer-events:none;user-select:none}
+.project-category-tag::before{content:'';position:absolute;left:7px;top:50%;width:3px;height:3px;margin-top:-1.5px;border-radius:50%;background:rgba(255,255,255,.85)}
+.project-category-tag.cat-health{background:#22a06b!important}
+.project-category-tag.cat-work{background:#2f6fed!important}
+.project-category-tag.cat-personal{background:#8b5cf6!important}
+.project-category-tag.cat-habit{background:#f08c1a!important}
+.project-category-tag.cat-finance{background:#0ea5b7!important}
+.project-category-tag.cat-custom{background:#8a94a6!important}
+.project-category-picker{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px;padding:0;background:transparent!important;border:none!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;justify-content:center;padding:4px 12px!important;font-size:12px!important;line-height:1.4!important;font-weight:600!important;color:#fff!important;background:#8a94a6!important;border:2px solid transparent!important;border-radius:999px!important;cursor:pointer;box-shadow:none!important;transform:none!important;transition:border-color .15s,box-shadow .15s,opacity .15s;opacity:.72;min-height:0!important;height:auto!important;width:auto!important;margin:0!important;text-shadow:none!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip:hover{opacity:.9}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip[aria-pressed="true"]{opacity:1;border-color:#1f2937!important;box-shadow:0 0 0 2px rgba(31,41,55,.12)!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip:focus-visible{outline:none!important;border-color:#1f2937!important;box-shadow:0 0 0 3px rgba(47,111,237,.35)!important;opacity:1}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip.cat-health{background:#22a06b!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip.cat-work{background:#2f6fed!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip.cat-personal{background:#8b5cf6!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip.cat-habit{background:#f08c1a!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip.cat-finance{background:#0ea5b7!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip.cat-custom{background:#8a94a6!important}
+#projectCategoryInput[hidden],#projectEditCategory[hidden]{display:none!important}
+
+.project-category-tag[hidden]{display:none!important}
+
+/* project-v3 additions: title button + toggle button + tag notch */
+.project-board .project-card .project-collapse-summary{cursor:default}
+.project-board .project-card .project-collapse-title{appearance:none;-webkit-appearance:none;background:none;border:0;padding:0;margin:0;font:inherit;font-weight:600;font-size:13px;color:#1f2937;text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0}
+.project-board .project-card .project-collapse-title:hover{color:#2f6fed;text-decoration:underline}
+.project-board .project-card .project-collapse-title:focus-visible{outline:2px solid #7957d5;outline-offset:2px;border-radius:4px}
+.project-board .project-card .project-collapse-toggle{appearance:none;-webkit-appearance:none;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;margin:0;border:1px solid #e2e8f0;border-radius:7px;background:#fff;color:#94a3b8;cursor:pointer}
+.project-board .project-card .project-collapse-toggle:hover{background:#f1f5f9;color:#475569}
+.project-board .project-card .project-collapse-toggle:focus-visible{outline:2px solid #7957d5;outline-offset:1px}
+.project-board .project-card .project-collapse-toggle .project-collapse-arrow{display:inline-block;font-size:11px;transition:transform .15s ease}
+.project-board .project-card .project-collapse-item[open] .project-collapse-toggle .project-collapse-arrow{transform:rotate(180deg)}
+.project-board .project-card .project-collapse-body{cursor:pointer}
+.project-category-tag{clip-path:polygon(0 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,0 100%)!important;padding:3px 16px 3px 10px!important}
+.project-category-tag::before{left:auto!important;right:7px!important}
+#projects .project-collapse-head>.tc-done-check{flex:0 0 20px}
+
+#projects .project-collapse-title{background:transparent!important;border:0!important;padding:0!important;text-align:left;white-space:normal!important}
+#projects .project-category-tag{clip-path:polygon(0 0,100% 0,calc(100% - 7px) 50%,100% 100%,0 100%)!important}
+#projects .project-category-tag::before{display:none}

@@ -34,18 +34,18 @@ try{
  await page.locator('#tcDue').fill('2026-10-25T10:00');await page.locator('#tcEditorForm button[type="submit"]').click();
  saved=await tasks();const added=saved.find(t=>t.title==='每日阅读任务');assert.equal(added.projectId,'a');assert.deepEqual(added.labels,['个人']);
  // Actual drag event flow moves status and retains project; selectors are the new engine only.
- await page.locator(`[data-tc-task="${added.id}"]`).dragTo(page.locator('[data-tc-status="已完成"] .tc-cards'),{sourcePosition:{x:8,y:8}});
+ await page.locator(`[data-tc-task="${added.id}"]`).dragTo(page.locator('[data-tc-status="已完成"] .tc-cards'),{sourcePosition:{x:1,y:1}});
  assert.equal((await tasks()).find(t=>t.id===added.id).status,'已完成');
  assert.equal(await page.locator(`[data-tc-task="${added.id}"] .tc-done-check`).count(),1);
- await page.locator(`[data-tc-task="${added.id}"]`).dragTo(page.locator('[data-tc-status="进行中"] .tc-cards'),{sourcePosition:{x:8,y:8}});
+ await page.locator(`[data-tc-task="${added.id}"]`).dragTo(page.locator('[data-tc-status="进行中"] .tc-cards'),{sourcePosition:{x:1,y:1}});
  assert.equal(await page.locator(`[data-tc-task="${added.id}"] .tc-done-check`).count(),0);
  assert.equal((await tasks()).find(t=>t.id===added.id).status,'进行中');
  await tab('表格');await page.locator(`[data-tc-row="${added.id}"] [data-field="projectId"]`).selectOption('inbox');assert.equal((await tasks()).find(t=>t.id===added.id).projectId,'');
  await page.locator('#tcProjectSelect').selectOption('inbox');assert.equal(await page.locator('[data-tc-row]').count(),2);
  await page.locator('#tcProjectSelect').selectOption('b');await page.reload();await page.waitForFunction(()=>!!window.TaskCenter);await nav();assert.equal(await page.locator('#tcProjectSelect').inputValue(),'b');assert.equal(await page.getByRole('tab',{name:'▥ 表格'}).getAttribute('aria-selected'),'true');
  // Project card drilldown and rename retain stable identity.
- await page.locator('nav button[data-v="projects"]').click();const project=page.getByRole('button',{name:'打开项目 网络阅读',exact:true});await project.click();assert.equal(await page.locator('#tcProjectTitle').innerText(),'网络阅读');
- await page.locator('#tcBackProjects').click();await page.getByRole('button',{name:'打开项目 网络阅读',exact:true}).getByRole('button',{name:'编辑',exact:true}).click();
+ await page.locator('nav button[data-v="projects"]').click();const project=page.locator('.project-card').filter({has:page.locator('.project-collapse-title',{hasText:'网络阅读'})});await project.getByRole('button',{name:'查看任务',exact:true}).click();assert.equal(await page.locator('#tcProjectTitle').innerText(),'网络阅读');
+ await page.locator('#tcBackProjects').click();await page.locator('.project-card').filter({has:page.locator('.project-collapse-title',{hasText:'网络阅读'})}).getByRole('button',{name:'编辑',exact:true}).click();
  // Picker cancellation preserves the source; confirmation saves an explicit local time.
  assert.equal(await page.locator('#projectEditDue').inputValue(),'2026-11-01T23:59');
  await page.clock.install({time:new Date('2026-10-18T01:00:00Z')});
@@ -86,7 +86,7 @@ try{
  assert.equal((await tasks()).find(t=>t.id==='review_0').status,'待开始');
  assert.equal(await page.locator('#rv6CompletionValue').innerText(),'70%');
  await page.locator('nav button[data-v="tasks"]').click();await page.locator('#tcProjectSelect').selectOption('b');await tab('看板');
- await page.locator('[data-tc-task="review_0"]').dragTo(page.locator('[data-tc-status="已完成"] header'),{sourcePosition:{x:8,y:8}});
+ await page.locator('[data-tc-task="review_0"]').dragTo(page.locator('[data-tc-status="已完成"] header'),{sourcePosition:{x:1,y:1}});
  assert.equal(await page.locator('[data-tc-task="review_0"] .tc-done-check').count(),1);
  await page.locator('nav button[data-v="review"]').click();assert.equal(await page.locator('#rv6CompletionValue').innerText(),'80%');
  const storedReview=await page.evaluate(()=>JSON.parse(localStorage.getItem('daily_reviews_v2'))['2026-10-18']);assert.equal(storedReview.taskIds.length,10);assert.equal(storedReview.deadline,'2026-10-18T18:00');assert.equal(storedReview.unknown,'keep');

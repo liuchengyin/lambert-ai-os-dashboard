@@ -57,7 +57,7 @@
   }
   function jumpToProject(id){
     if(window.TaskCenter){TaskCenter.openProject(id);return}
-    openView('projects');setTimeout(()=>{const p=(state.projects||[]).find(x=>x.id===id);if(!p)return;const card=[...document.querySelectorAll('.project-card')].find(x=>x.querySelector('h4')?.textContent===p.name);if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('highlight-jump');setTimeout(()=>card.classList.remove('highlight-jump'),1400)}},80)
+    openView('projects');setTimeout(()=>{const p=(state.projects||[]).find(x=>x.id===id);if(!p)return;const card=[...document.querySelectorAll('.project-card')].find(x=>x.querySelector('.project-collapse-title,h4')?.textContent===p.name);if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('highlight-jump');setTimeout(()=>card.classList.remove('highlight-jump'),1400)}},80)
   }
 
   // The project-focused task center owns task presentation and editing.
@@ -68,7 +68,7 @@
   const MAINLINE='mainline_project_id_v1',TOP3='top3_task_ids_v1';
   function activeMainlineId(){let id=getLS(MAINLINE,'');if(!state.projects.some(p=>p.id===id)){id=(state.projects.find(p=>p.status==='进行中')||state.projects.find(p=>p.status==='待开始')||state.projects[0])?.id||'';setLS(MAINLINE,id)}return id}
   function todayTasks(){const today=localDateKey();return sortRows(state.tasks.filter(t=>t.status!=='已完成'&&(dueDate(t)===today||isOverdue(t))))}
-  function homeTaskRow(t){return `<div class="home-task-row" data-home-task="${esc(t.id)}"><div class="home-task-row-title">${esc(t.title)}</div><div class="home-task-row-meta"><span>${esc(t.priority)}</span>${t.due?`<span>${isOverdue(t)?'逾期 · ':''}${esc(dueLabel(t.due))}</span>`:''}${t.project?`<span>${esc(t.project)}</span>`:''}</div></div>`}
+  function homeTaskRow(t){return `<div class="home-task-row" data-home-task="${esc(t.id)}"><div class="home-task-row-title">${esc(t.title)}</div><div class="home-task-row-meta"><span>${esc(({q1:'P0',q2:'P1',q3:'P2',q4:'P3'}[t.matrix]||'P1'))}</span>${t.due?`<span>${isOverdue(t)?'逾期 · ':''}${esc(dueLabel(t.due))}</span>`:''}${t.project?`<span>${esc(t.project)}</span>`:''}</div></div>`}
   function recentProjectsHtml(){if(!state.projects.length)return '<div class="meta">暂无项目</div>';return state.projects.slice(0,5).map(p=>`<div class="item" data-home-project="${esc(p.id)}" style="cursor:pointer"><b>${esc(p.name)}</b><div class="meta">${esc(p.status)}${p.due?' · 截止 '+esc(p.due):''}</div></div>`).join('')}
 
 
@@ -86,7 +86,7 @@
     const reviews=getLS('daily_reviews_v2',{});
     const record=reviews&&typeof reviews==='object'?reviews[today]:null;
     const reviewDone=!!(record&&['goal','delivery','gap','restart','deliverable'].some(k=>String(record[k]||'').trim()));
-    const taskRow=t=>'<div class="s1-task" data-s1-task="'+esc(t.id)+'"><button class="s1-check" type="button" data-s1-done="'+esc(t.id)+'" title="标记完成" aria-label="完成任务">✓</button><div class="s1-task-info"><strong>'+esc(t.title)+'</strong><div class="s1-sub">'+(t.project?'<span>'+esc(t.project)+'</span>':'')+'<span>'+esc(t.priority||'P2')+'</span>'+(t.due?'<span>'+esc(dueLabel(t.due))+'</span>':'')+'</div></div><span class="s1-chevron">›</span></div>';
+    const taskRow=t=>'<div class="s1-task" data-s1-task="'+esc(t.id)+'"><button class="s1-check" type="button" data-s1-done="'+esc(t.id)+'" title="标记完成" aria-label="完成任务">✓</button><div class="s1-task-info"><strong>'+esc(t.title)+'</strong><div class="s1-sub">'+(t.project?'<span>'+esc(t.project)+'</span>':'')+'<span>'+esc(({q1:'P0',q2:'P1',q3:'P2',q4:'P3'}[t.matrix]||'P1'))+'</span>'+(t.due?'<span>'+esc(dueLabel(t.due))+'</span>':'')+'</div></div><span class="s1-chevron">›</span></div>';
     const projectRow=p=>{
       const related=state.tasks.filter(t=>t.project===p.name||t.project===p.id);
       const completed=related.filter(t=>t.status==='已完成').length;
@@ -118,7 +118,7 @@
   };
 
   const topDlg=document.createElement('dialog');topDlg.id='top3Dlg';topDlg.innerHTML=`<form method="dialog" class="task-v5-dialog"><h3>定义今日 Top 3</h3><div class="meta">从未完成任务中最多选择 3 个。首页点击后可直接跳到对应任务。</div><input id="top3Search" placeholder="搜索任务"><div id="top3Picker" class="top3-picker"></div><div class="dlgActions"><button value="cancel">取消</button><button id="top3Save" type="button" class="task-primary-btn">保存</button></div></form>`;document.body.appendChild(topDlg);
-  function renderTopPicker(){const q=$('top3Search').value.trim().toLowerCase(),selected=new Set(getLS(TOP3,[]));const rows=sortRows(state.tasks.filter(t=>t.status!=='已完成'&&(!q||String([t.title,t.project].join(' ')).toLowerCase().includes(q))));$('top3Picker').innerHTML=rows.map(t=>`<label class="top3-option"><input type="checkbox" value="${esc(t.id)}" ${selected.has(t.id)?'checked':''}><span>${esc(t.title)}<small>${QUADS[t.matrix].short} · ${esc(t.priority)}${t.due?' · '+esc(dueLabel(t.due)):''}</small></span></label>`).join('')||'<div class="meta" style="padding:10px">暂无任务</div>';$('top3Picker').querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const checked=[...$('top3Picker').querySelectorAll('input:checked')];if(checked.length>3){cb.checked=false;alert('Top 3 最多选择 3 个任务。')}})}
+  function renderTopPicker(){const q=$('top3Search').value.trim().toLowerCase(),selected=new Set(getLS(TOP3,[]));const rows=sortRows(state.tasks.filter(t=>t.status!=='已完成'&&(!q||String([t.title,t.project].join(' ')).toLowerCase().includes(q))));$('top3Picker').innerHTML=rows.map(t=>`<label class="top3-option"><input type="checkbox" value="${esc(t.id)}" ${selected.has(t.id)?'checked':''}><span>${esc(t.title)}<small>${QUADS[t.matrix].short} · ${esc(({q1:'P0',q2:'P1',q3:'P2',q4:'P3'}[t.matrix]||'P1'))}${t.due?' · '+esc(dueLabel(t.due)):''}</small></span></label>`).join('')||'<div class="meta" style="padding:10px">暂无任务</div>';$('top3Picker').querySelectorAll('input').forEach(cb=>cb.onchange=()=>{const checked=[...$('top3Picker').querySelectorAll('input:checked')];if(checked.length>3){cb.checked=false;alert('Top 3 最多选择 3 个任务。')}})}
   function openTop3(){$('top3Search').value='';renderTopPicker();topDlg.showModal()}
   $('top3Search').oninput=renderTopPicker;$('top3Save').onclick=()=>{const ids=[...$('top3Picker').querySelectorAll('input:checked')].map(x=>x.value).slice(0,3);setLS(TOP3,ids);topDlg.close();renderHome()};
 

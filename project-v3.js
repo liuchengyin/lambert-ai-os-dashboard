@@ -2,7 +2,9 @@
 (function(){
   const projectStatuses=["待开始","进行中","已完成"];
   let projectEditIndex=-1;
-  const expandedDone=new Set(), previousStatuses=new Map();
+  const expandedMap=new Map(), previousStatuses=new Map();
+  function isExpanded(p){return expandedMap.has(p.id)?expandedMap.get(p.id):p.status!=="已完成"}
+  function setExpanded(p,val){expandedMap.set(p.id,val)}
   let showArchived=false;
   let createSelected=new Set();
   let editSelected=new Set();
@@ -30,6 +32,14 @@
     return {done,total:rows.length,pct:rows.length?Math.round(done/rows.length*100):0}
   }
   function statusClass(status){return status==="待开始"?"todo":status==="进行中"?"doing":"done"}
+  const projectCategories=["健康","工作","个人","习惯","金融"];
+  const categoryClassMap={"健康":"health","工作":"work","个人":"personal","习惯":"habit","金融":"finance"};
+  function categoryClass(cat){return categoryClassMap[cat]||"custom"}
+  function categoryOptions(selected){
+    const list=[...projectCategories];
+    if(selected&&!list.includes(selected))list.push(selected);
+    return `<option value="">未分类</option>`+list.map(c=>`<option value="${escapeHtml(c)}"${c===selected?" selected":""}>${escapeHtml(c)}</option>`).join("")
+  }
   function isOverdue(project){return project.due&&project.status!=="已完成"&&project.due<dateKey()}
   function actionButton(label,cls,onClick){
     const b=document.createElement("button");b.className=`project-card-action ${cls||""}`;b.textContent=label;
@@ -115,9 +125,22 @@
     })
   }
 
+  function renderCategoryPicker(id){
+    const sel=$(id);if(!sel)return;
+    const wrapId=id+"Picker";let wrap=$(wrapId);
+    if(!wrap){wrap=document.createElement('div');wrap.id=wrapId;wrap.className='project-category-picker';wrap.setAttribute('role','group');wrap.setAttribute('aria-label','项目分类');sel.insertAdjacentElement('afterend',wrap)}
+    const cats=[...projectCategories];
+    if(sel.value&&!cats.includes(sel.value))cats.push(sel.value);
+    Array.from(sel.options).forEach(o=>{if(o.value&&!cats.includes(o.value))cats.push(o.value)});
+    cats.forEach(c=>{if(!Array.from(sel.options).some(o=>o.value===c)){const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o)}});
+    wrap.textContent='';
+    const mk=(val,label,cls)=>{const b=document.createElement('button');b.type='button';b.className='project-category-chip '+cls;b.textContent=label;b.setAttribute('aria-pressed',String(sel.value===val));b.onclick=()=>{sel.value=val;renderCategoryPicker(id);wrap.querySelector('[aria-pressed="true"]')?.focus({preventScroll:true})};wrap.appendChild(b)};
+    mk('','未分类','cat-custom');
+    cats.forEach(c=>mk(c,c,'cat-'+categoryClass(c)));
+  }
   function clearProjectForm(){
     $("projectStartInput").value="";$("projectCategoryInput").value="";$("projectNameInput").value="";$("projectStatusInput").value="待开始";$("projectDueInput").value="";$("projectStandardInput").value="";
-    $("projectTaskSearch").value="";$("projectNewTaskTitle").value="";$("projectTaskPicker").open=false;createSelected=new Set();renderCreateTaskPicker()
+    $("projectTaskSearch").value="";$("projectNewTaskTitle").value="";$("projectTaskPicker").open=false;createSelected=new Set();renderCreateTaskPicker();renderCategoryPicker('projectCategoryInput')
   }
   function addProjectFromForm(){
     const name=$("projectNameInput").value.trim();if(!name){$("projectNameInput").focus();return}
@@ -145,7 +168,6 @@
     const card=document.createElement("article");card.className=`project-card project-card-${sClass}${isOverdue(project)?" project-card-overdue":""}`;card.onclick=()=>window.TaskCenter?TaskCenter.openProject(project.id):openProjectEditor(index);card.tabIndex=0;card.setAttribute("role","button");card.setAttribute("aria-label","打开项目 "+project.name);card.onkeydown=e=>{if(e.target===card&&(e.key==="Enter"||e.key===" ")){e.preventDefault();card.click()}};
     const top=document.createElement("div");top.className="project-card-top";
     top.innerHTML=`<span class="project-status status-${sClass}">${escapeHtml(project.status)}</span>${project.due?`<span class="project-due${isOverdue(project)?" overdue":""}">${isOverdue(project)?"已逾期 · ":"截止 "}${escapeHtml(project.due)}</span>`:""}`;card.appendChild(top);
-    if(project.category){const category=document.createElement("span");category.className="project-category-label";category.textContent=project.category;top.appendChild(category)}
     const title=document.createElement("h4");title.textContent=project.name;card.appendChild(title);
     if(project.standard){const standard=document.createElement("div");standard.className="project-standard";standard.innerHTML=`<span>完成交付标准</span><p>${escapeHtml(project.standard)}</p>`;card.appendChild(standard)}
     const progressWrap=document.createElement("div");progressWrap.className="project-progress-wrap";
@@ -165,30 +187,43 @@
     actions.appendChild(actionButton("编辑","",()=>openProjectEditor(index)));
     actions.appendChild(actionButton(project.archived?"取消归档":"归档","",()=>{project.archived=!project.archived;persistProjects()}));
     card.appendChild(actions);
-    if(project.status==="已完成"){
-      card.onclick=null;card.onkeydown=null;card.removeAttribute('role');card.removeAttribute('tabindex');card.removeAttribute('aria-label');
-      const detail=document.createElement('details');detail.className='completed-item';detail.open=expandedDone.has(project.id);
-      const summary=document.createElement('summary');summary.innerHTML=`<span class="tc-done-check" aria-hidden="true">✓</span><span>${escapeHtml(project.name)}</span>`;
-      title.remove();detail.append(summary);while(card.firstChild)detail.append(card.firstChild);card.append(detail);
-      detail.ontoggle=()=>{if(!detail.isConnected)return;if(detail.open)expandedDone.add(project.id);else expandedDone.delete(project.id)};
-      actions.prepend(actionButton("查看任务","",()=>window.TaskCenter?.openProject(project.id)));
-    }
+    card.onclick=null;card.onkeydown=null;card.removeAttribute('role');card.removeAttribute('tabindex');card.removeAttribute('aria-label');
+    const detail=document.createElement('details');detail.className='project-collapse-item';detail.open=isExpanded(project);
+    const summary=document.createElement('summary');summary.className='project-collapse-summary';
+    summary.addEventListener('click',e=>{e.preventDefault();if(!e.target.closest('button')){window.TaskCenter?TaskCenter.openProject(project.id):openProjectEditor(index)}});
+    const isDone=project.status==="已完成";
+    const head=document.createElement('span');head.className='project-collapse-head';
+    if(isDone){head.innerHTML=`<span class="tc-done-check" aria-hidden="true">✓</span>`}
+    const titleBtn=document.createElement('button');titleBtn.type='button';titleBtn.className='project-collapse-title';titleBtn.textContent=project.name;titleBtn.setAttribute('aria-label','打开项目 '+project.name);
+    titleBtn.onclick=e=>{e.stopPropagation();window.TaskCenter?TaskCenter.openProject(project.id):openProjectEditor(index)};
+    titleBtn.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();titleBtn.click()}};
+    head.appendChild(titleBtn);
+    const catTag=document.createElement('span');catTag.className=`project-category-tag cat-${categoryClass(project.category)}`;catTag.textContent=project.category||'';if(!project.category)catTag.hidden=true;
+    const toggle=document.createElement('button');toggle.type='button';toggle.className='project-collapse-toggle';toggle.setAttribute('aria-expanded',String(detail.open));toggle.setAttribute('aria-label',(detail.open?'折叠':'展开')+'项目 '+project.name);toggle.innerHTML='<span class="project-collapse-arrow" aria-hidden="true">▾</span>';
+    toggle.onclick=e=>{e.stopPropagation();detail.open=!detail.open;toggle.setAttribute('aria-expanded',String(detail.open));toggle.setAttribute('aria-label',(detail.open?'折叠':'展开')+'项目 '+project.name);setExpanded(project,detail.open)};
+    summary.append(head,catTag,toggle);
+    title.remove();
+    const body=document.createElement('div');body.className='project-collapse-body';
+    while(card.firstChild)body.append(card.firstChild);
+    body.addEventListener('click',e=>{if(e.target.closest('button,a,input,select,textarea,label'))return;window.TaskCenter?TaskCenter.openProject(project.id):openProjectEditor(index)});
+    detail.append(summary,body);card.append(detail);
+    actions.prepend(actionButton("查看任务","",()=>window.TaskCenter?.openProject(project.id)));
     return card
   }
 
   renderProjectBoard=function(){
     const board=$("projectBoard");board.innerHTML="";
-    state.projects.forEach(item=>{if(previousStatuses.get(item.id)!==item.status)expandedDone.delete(item.id);previousStatuses.set(item.id,item.status);});
-    if(!$("projectArchiveToggle")){const b=document.createElement('button');b.id='projectArchiveToggle';b.type='button';board.before(b);b.onclick=()=>{showArchived=!showArchived;renderProjectBoard()}}
-    $("projectArchiveToggle").textContent=showArchived?'返回未归档项目':'查看归档项目';$("projectArchiveToggle").setAttribute('aria-pressed',String(showArchived));
+    state.projects.forEach(item=>{if(previousStatuses.get(item.id)!==item.status){expandedMap.delete(item.id)}previousStatuses.set(item.id,item.status);});
+    if(!$("projectArchiveToggle")){const b=document.createElement('button');b.id='projectArchiveToggle';b.type='button';board.after(b);b.onclick=()=>{showArchived=!showArchived;renderProjectBoard()}}
+    board.after($("projectArchiveToggle"));$("projectArchiveToggle").textContent=showArchived?'返回未归档项目':'查看归档项目';$("projectArchiveToggle").setAttribute('aria-pressed',String(showArchived));
     projectStatuses.forEach(status=>{
       const sClass=statusClass(status),col=document.createElement("section");col.className=`project-col project-col-${sClass}`;
       const rows=state.projects.filter(p=>p.status===status&&!!p.archived===showArchived).sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999"));
       col.innerHTML=`<div class="project-col-head"><h3><span class="project-col-dot dot-${sClass}"></span>${status}</h3><span>${rows.length}</span></div><div class="project-col-body"></div>`;
       if(status==="已完成"){
-        const controls=document.createElement('div');controls.className='completed-controls';controls.innerHTML='<button type="button" data-project-expand>全部展开</button><button type="button" data-project-collapse>全部折叠</button>';
-        controls.querySelector('[data-project-expand]').onclick=()=>{rows.forEach(p=>expandedDone.add(p.id));renderProjectBoard()};
-        controls.querySelector('[data-project-collapse]').onclick=()=>{expandedDone.clear();renderProjectBoard()};col.querySelector('.project-col-head').after(controls);
+        const controls=document.createElement('div');controls.className='project-col-controls';controls.innerHTML='<button type="button" data-project-expand>全部展开</button><button type="button" data-project-collapse>全部折叠</button>';
+        controls.querySelector('[data-project-expand]').onclick=()=>{rows.forEach(p=>setExpanded(p,true));renderProjectBoard()};
+        controls.querySelector('[data-project-collapse]').onclick=()=>{rows.forEach(p=>setExpanded(p,false));renderProjectBoard()};col.querySelector('.project-col-head').after(controls);
       }
       const body=col.querySelector(".project-col-body");if(!rows.length)body.innerHTML=empty("暂无项目");
       rows.forEach(p=>body.appendChild(renderProjectCard(p,state.projects.indexOf(p))));board.appendChild(col)
@@ -196,7 +231,7 @@
     $("projectSummary").textContent=projectStatuses.map(s=>`${s} ${state.projects.filter(p=>p.status===s).length}`).join(" · ")
   };
 
-  function changeProjectStatus(index,status){expandedDone.delete(state.projects[index].id);state.projects[index].status=status;if(status!=="已完成")state.projects[index].archived=false;persistProjects()}
+  function changeProjectStatus(index,status){expandedMap.delete(state.projects[index].id);state.projects[index].status=status;if(status!=="已完成")state.projects[index].archived=false;persistProjects()}
   function completeProject(index){
     const p=state.projects[index],unfinished=projectTasks(p).filter(t=>t.status!=="已完成");
     if(unfinished.length&&!confirm(`还有 ${unfinished.length} 个关联任务未完成，仍要把项目标记为已完成吗？`))return;
@@ -205,8 +240,9 @@
 
   function openProjectEditor(index){
     projectEditIndex=index;const p=state.projects[index];
+    $("projectEditCategory").innerHTML=categoryOptions(p.category);
     $("projectEditStart").value=p.start?(p.start.length===10?p.start+"T00:00":p.start):"";$("projectEditCategory").value=p.category||"";$("projectEditName").value=p.name;$("projectEditStatus").value=p.status;$("projectEditDue").value=p.due?(p.due.length===10?p.due+"T23:59":p.due):"";$("projectEditStandard").value=p.standard||"";$("projectEditTaskSearch").value="";$("projectEditNewTaskTitle").value="";
-    editSelected=new Set(projectTasks(p).map(t=>t.id));renderEditTaskPicker();$("projectEditDlg").showModal()
+    editSelected=new Set(projectTasks(p).map(t=>t.id));renderEditTaskPicker();renderCategoryPicker('projectEditCategory');$("projectEditDlg").showModal()
   }
   // Close means cancel: keep the original project and all linked tasks unchanged.
   $("projectEditClose")?.addEventListener("click",()=>{
@@ -250,5 +286,6 @@
   };
 
   $("projectComposeDetails").open=false;
-  clearProjectForm();renderProjectDashboard();renderProjectBoard();renderHome();
+  $("projectCategoryInput").hidden=true;$("projectEditCategory").hidden=true;
+  clearProjectForm();renderCategoryPicker('projectCategoryInput');renderCategoryPicker('projectEditCategory');renderProjectDashboard();renderProjectBoard();renderHome();
 })();

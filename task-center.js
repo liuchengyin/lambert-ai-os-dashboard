@@ -16,13 +16,14 @@
   let filters = {q:'',status:'all',priority:'all',label:'all',date:'all',matrix:'all',sort:'priority'};
   let anchor = '', days = 28, editId = null, draggedId = null, creatingStatus = statuses[0];
   let renderCount = 0;
-  const expandedDone=new Set(), previousStatuses=new Map();
+  const expandedMap=new Map(), previousStatuses=new Map();
   let showArchived=false;
   function archiveTask(task){task.archived=!task.archived;save();}
   function remember() {try {localStorage.setItem(KEY, JSON.stringify({projectId:selected,view}));} catch {}}
   function today() {const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
   function offsetDay(date,n) {return new Date((M.dayNumber(date)+n)*86400000).toISOString().slice(0,10);}
   function localInput(value, end=false) {return /^\d{4}-\d{2}-\d{2}$/.test(value||'') ? value+(end?'T23:59':'T00:00') : value||'';}
+  const priorityCode = task => ({q1:'P0',q2:'P1',q3:'P2',q4:'P3'}[task?.matrix] || 'P1');
   const currentProject = () => state.projects.find(p=>String(p.id)===String(selected));
   const projectRows = () => state.tasks.filter(t=>String(M.resolveProject(t,state.projects))===String(selected));
   const allLabels = () => [...new Set([...presets,...state.tasks.flatMap(t=>Array.isArray(t.labels)?t.labels:[])])];
@@ -60,8 +61,8 @@
     return projectRows().filter(t=>{
       if(!!t.archived!==showArchived)return false;
       if(q&&![t.title,t.note,...(Array.isArray(t.labels)?t.labels:[])].join(' ').toLowerCase().includes(q))return false;
-      if(filters.status!=='all'&&t.status!==filters.status)return false;
-      if(filters.priority!=='all'&&t.priority!==filters.priority)return false;
+      if(!showArchived&&filters.status!=='all'&&t.status!==filters.status)return false;
+      if(filters.priority!=='all'&&priorityCode(t)!==filters.priority)return false;
       if(filters.matrix!=='all'&&t.matrix!==filters.matrix)return false;
       if(filters.label!=='all'&&!(Array.isArray(t.labels)&&t.labels.includes(filters.label)))return false;
       const due=M.day(t.due);
@@ -69,48 +70,119 @@
       if(filters.date==='overdue'&&!(due&&t.status!=='已完成'&&new Date(localInput(t.due,true)).getTime()<Date.now()))return false;
       if(filters.date==='nodate'&&M.range(t))return false;
       return true;
-    }).sort((a,b)=>filters.sort==='manual'?(ranks.get(a.id)??999999)-(ranks.get(b.id)??999999):filters.sort==='due'?(a.due||'9999').localeCompare(b.due||'9999'):filters.sort==='created'?String(b.createdAt||'').localeCompare(String(a.createdAt||'')):(Number((a.priority||'P2').slice(1))-Number((b.priority||'P2').slice(1)))||String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+    }).sort((a,b)=>filters.sort==='manual'?(ranks.get(a.id)??999999)-(ranks.get(b.id)??999999):filters.sort==='due'?(a.due||'9999').localeCompare(b.due||'9999'):filters.sort==='created'?String(b.createdAt||'').localeCompare(String(a.createdAt||'')):(Number(priorityCode(a).slice(1))-Number(priorityCode(b).slice(1)))||String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
   }
   function taskDates(task) {return task.start||task.due?`${task.start?.replace('T',' ')||'待定'} → ${task.due?.replace('T',' ')||'待定'}`:'待排期';}
-  function card(task) {
-    const el=document.createElement('article');el.className='tc-task'+(task.status==='已完成'?' tc-task-done':'');el.dataset.tcTask=task.id;el.draggable=true;
-    el.innerHTML=`<button class="tc-task-title" type="button">${task.status==='已完成'?'<span class="tc-done-check" role="img" aria-label="已完成">✓</span>':''}${esc(task.title)}</button><div class="tc-tags">${labelsHtml(task.labels)}<span class="tc-priority">${esc(task.priority||'P2')}</span></div><small>${esc(taskDates(task))}</small><div class="tc-task-actions"><select aria-label="${esc(task.title)}的状态">${options(statuses,task.status)}</select><button type="button" data-edit>编辑</button></div>`;
-    if(task.status==='已完成'){
-      const detail=document.createElement('details');detail.className='completed-item';detail.open=expandedDone.has(task.id);
-      const summary=document.createElement('summary');summary.innerHTML=`<span class="tc-done-check" aria-hidden="true">✓</span><span>${esc(task.title)}</span>`;
-      const title=el.querySelector('.tc-task-title');title.remove();
-      detail.append(summary);while(el.firstChild)detail.append(el.firstChild);el.append(detail);
-      detail.ontoggle=()=>{if(!detail.isConnected)return;if(detail.open)expandedDone.add(task.id);else expandedDone.delete(task.id);};
-      const reopen=document.createElement('button');reopen.type='button';reopen.textContent='重新打开';reopen.onclick=()=>{expandedDone.delete(task.id);task.status='进行中';task.archived=false;save();};detail.querySelector('.tc-task-actions').append(reopen);
-    }else el.querySelector('.tc-task-title').onclick=()=>editTask(task.id);
-    const archive=document.createElement('button');archive.type='button';archive.textContent=task.archived?'取消归档':'归档';archive.onclick=()=>archiveTask(task);el.querySelector('.tc-task-actions').append(archive);
-    el.querySelector('[data-edit]').onclick=()=>editTask(task.id);
-    el.querySelector('select').onchange=e=>{task.status=e.target.value;save();};
-    el.ondragstart=e=>{if(e.target.closest('button,select,input')){e.preventDefault();return;}draggedId=task.id;e.dataTransfer.setData('text/plain',task.id);e.dataTransfer.effectAllowed='move';el.classList.add('tc-dragging');};
-    el.ondragend=()=>{draggedId=null;el.classList.remove('tc-dragging');};
-    return el;
+function compactTaskDates(task){function p(s){if(!s||typeof s!=='string')return null;var m=s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::\d{2}(?:\.\d+)?)?)?$/);if(!m)return null;var mo=+m[2],d=+m[3];var y=+m[1],max=[31,(y%4===0&&(y%100!==0||y%400===0))?29:28,31,30,31,30,31,31,30,31,30,31][mo-1];if(y<1||mo<1||mo>12||d<1||d>max||(m[4]!=null&&(+m[4]>23||+m[5]>59)))return null;var r=mo+'月'+d+'日';if(m[4]!=null&&m[5]!=null)r+=' '+m[4]+':'+m[5];return r;}var a=p(task&&task.start),b=p(task&&task.due);if(!task||(!task.start&&!task.due))return '待排期';if(!a)a='待定';if(!b)b='待定';return a+'—'+b;}
+function taskExpanded(t){return expandedMap.has(t.id)?expandedMap.get(t.id):t.status!=='已完成';}
+function card(task){
+  const el=document.createElement('article');
+  el.className='tc-task'+(task.status==='已完成'?' tc-task-done':'');
+  el.dataset.tcTask=task.id;
+  el.draggable=true;
+  const detail=document.createElement('details');
+  detail.className='completed-item';
+  detail.open=taskExpanded(task);
+  const summary=document.createElement('summary');summary.onclick=e=>e.preventDefault();
+  const fold=document.createElement('button');
+  fold.type='button';
+  fold.className='tc-fold';
+  fold.setAttribute('aria-label','折叠/展开任务 '+task.title);
+  fold.setAttribute('aria-expanded',String(detail.open));
+  fold.innerHTML='<span aria-hidden="true">▸</span>';
+  const title=document.createElement('button');
+  title.type='button';
+  title.className='tc-task-title';
+  title.textContent=task.title;title.title=task.title;
+  title.onclick=e=>{e.preventDefault();e.stopPropagation();editTask(task.id);};
+  fold.onclick=e=>{e.preventDefault();e.stopPropagation();const next=!detail.open;detail.open=next;expandedMap.set(task.id,next);fold.setAttribute('aria-expanded',String(next));};
+  summary.append(title,fold);
+  if(task.status==='已完成'){const check=document.createElement('span');check.className='tc-done-check';check.setAttribute('aria-hidden','true');check.textContent='✓';summary.prepend(check);}
+  const body=document.createElement('div');
+  body.className='tc-task-body';
+  const prio=document.createElement('span');
+  prio.className='tc-priority tc-priority-'+(priorityCode(task)||'P2');
+  prio.textContent=priorityCode(task)||'P2';
+  const badges=document.createElement('div');badges.className='tc-card-badges';
+  const labels=Array.isArray(task.labels)?task.labels:[];
+  const labelGroup=document.createElement('span');labelGroup.className='tc-card-labels';labelGroup.innerHTML=labelsHtml(labels.slice(0,2));labelGroup.title=labels.join('、');
+  if(labels.length>2){const more=document.createElement('span');more.className='tc-tag tc-label-more';more.textContent='+'+(labels.length-2);labelGroup.append(more)}
+  if(labels.length)badges.append(labelGroup);badges.append(prio);summary.insertBefore(badges,fold);
+  if(task.note){const note=document.createElement('p');note.className='tc-task-note';note.textContent=task.note;note.title=task.note;body.append(note)}
+  const footer=document.createElement('div');footer.className='tc-task-footer';
+  const dates=document.createElement('small');dates.className='tc-task-dates';dates.textContent=compactTaskDates(task);dates.title=taskDates(task);footer.append(dates);body.append(footer);
+  const actions=document.createElement('div');
+  actions.className='tc-task-actions';
+  if(task.status!=='已完成'){
+    const adv=document.createElement('button');
+    adv.type='button';
+    adv.className='tc-advance';
+    adv.textContent='>';
+    adv.setAttribute('aria-label','推进任务 '+task.title);
+    adv.onclick=e=>{e.preventDefault();e.stopPropagation();const next=task.status==='待开始'?'进行中':'已完成';task.status=next;if(next==='已完成'){expandedMap.set(task.id,false);}else{expandedMap.set(task.id,true);}save();};
+    footer.append(adv);
   }
-  function board(rows) {
-    const board=document.createElement('div');board.className='tc-board';
-    statuses.forEach(status=>{
-      const col=document.createElement('section');col.className='tc-column';col.dataset.tcStatus=status;
-      const items=rows.filter(t=>t.status===status);
-      col.innerHTML=`<header><h3>${status==='已完成'?'<span class="tc-done-check" aria-hidden="true">✓</span> ':''}${status}</h3><span>${items.length}</span></header><div class="tc-cards"></div><button type="button" class="tc-column-add">＋ 添加任务</button>`;
-      if(status==='已完成'){
-        const controls=document.createElement('div');controls.className='completed-controls';
-        controls.innerHTML='<button type="button" data-tc-expand>全部展开</button><button type="button" data-tc-collapse>全部折叠</button>';
-        controls.querySelector('[data-tc-expand]').onclick=()=>{items.forEach(t=>expandedDone.add(t.id));render();};
-        controls.querySelector('[data-tc-collapse]').onclick=()=>{expandedDone.clear();render();};col.querySelector('header').after(controls);
-      }
-      const cards=col.querySelector('.tc-cards');items.forEach(t=>cards.append(card(t)));
-      if(!items.length)cards.innerHTML='<p class="tc-empty">暂无任务</p>';
-      col.querySelector('button.tc-column-add').onclick=()=>newTask(status);
-      col.ondragover=e=>{if(draggedId){e.preventDefault();e.dataTransfer.dropEffect='move';}};
-      col.ondrop=e=>{e.preventDefault();const task=projectRows().find(t=>t.id===draggedId);if(!task)return;const target=e.target.closest('[data-tc-task]')?.dataset.tcTask;draggedId=null;if(task.status!==status)expandedDone.delete(task.id);task.status=status;const ids=state.tasks.map(t=>t.id),stored=read('task_drag_order_v1',ids),order=[...new Set([...stored,...ids])].filter(id=>id!==task.id);const index=target?order.indexOf(target):-1;order.splice(index<0?order.length:index,0,task.id);try{localStorage.setItem('task_drag_order_v1',JSON.stringify(order));}catch{}filters.sort='manual';$('tcFilterSort').value='manual';save();};
-      board.append(col);
-    });
-    return board;
+  if(task.status==='已完成'){
+    const reopen=document.createElement('button');
+    reopen.type='button';
+    reopen.textContent='重新打开';
+    reopen.onclick=e=>{e.preventDefault();e.stopPropagation();task.status='进行中';task.archived=false;expandedMap.set(task.id,true);save();};
+    actions.append(reopen);
+    const archive=document.createElement('button');
+    archive.type='button';
+    archive.textContent=task.archived?'取消归档':'归档';
+    archive.onclick=e=>{e.preventDefault();e.stopPropagation();task.archived=!task.archived;save();};
+    actions.append(archive);
   }
+  if(actions.childElementCount)body.append(actions);
+  detail.append(summary,body);
+  el.append(detail);
+  detail.ontoggle=()=>{if(!detail.isConnected)return;expandedMap.set(task.id,detail.open);fold.setAttribute('aria-expanded',String(detail.open));};
+  el.ondragstart=e=>{if(e.target.closest('button,select,input')){e.preventDefault();return;}draggedId=task.id;e.dataTransfer.setData('text/plain',task.id);e.dataTransfer.effectAllowed='move';el.classList.add('tc-dragging');};
+  el.ondragend=()=>{draggedId=null;el.classList.remove('tc-dragging');};
+  return el;
+}
+function board(rows){
+  const board=document.createElement('div');
+  board.className='tc-board';
+  statuses.forEach(status=>{
+    const col=document.createElement('section');
+    col.className='tc-column';
+    col.dataset.tcStatus=status;
+    const items=rows.filter(t=>t.status===status);
+    const isDone=status==='已完成';
+    col.innerHTML='<header><h3>'+(isDone?'<span class="tc-done-check" aria-hidden="true">✓</span> ':'')+status+'</h3><span>'+items.length+'</span></header>'+(isDone?'<div class="completed-controls"><button type="button" data-tc-expand>全部展开</button><button type="button" data-tc-collapse>全部折叠</button></div>':'')+'<div class="tc-cards"></div><button type="button" class="tc-column-add">＋ 添加任务</button>';
+    if(isDone){
+      const controls=col.querySelector('.completed-controls');
+      controls.querySelector('[data-tc-expand]').onclick=()=>{items.forEach(t=>expandedMap.set(t.id,true));render();};
+      controls.querySelector('[data-tc-collapse]').onclick=()=>{items.forEach(t=>expandedMap.set(t.id,false));render();};
+    }
+    const cards=col.querySelector('.tc-cards');
+    items.forEach(t=>cards.append(card(t)));
+    if(!items.length)cards.innerHTML='<p class="tc-empty">暂无任务</p>';
+    col.querySelector('button.tc-column-add').onclick=()=>newTask(status);
+    col.ondragover=e=>{if(draggedId){e.preventDefault();e.dataTransfer.dropEffect='move';}};
+    col.ondrop=e=>{
+      e.preventDefault();
+      const task=projectRows().find(t=>t.id===draggedId);
+      if(!task)return;
+      const target=e.target.closest('[data-tc-task]')?.dataset.tcTask;
+      draggedId=null;
+      if(task.status!==status){expandedMap.set(task.id,status!=='已完成');}
+      task.status=status;
+      const ids=state.tasks.map(t=>t.id),stored=read('task_drag_order_v1',ids),order=[...new Set([...stored,...ids])].filter(id=>id!==task.id);
+      const index=target?order.indexOf(target):-1;
+      order.splice(index<0?order.length:index,0,task.id);
+      try{localStorage.setItem('task_drag_order_v1',JSON.stringify(order));}catch{}
+      filters.sort='manual';
+      const sortEl=document.getElementById('tcFilterSort');
+      if(sortEl)sortEl.value='manual';
+      save();
+    };
+    board.append(col);
+  });
+  return board;
+}
   function validDates(start,due) {
     if(start&&!M.day(start)||due&&!M.day(due))return '日期格式无效，请重新选择';
     if(start&&due&&localInput(start)>localInput(due,true))return '开始时间不能晚于截止时间';
@@ -122,13 +194,13 @@
     table.innerHTML='<caption class="tc-sr-only">当前项目任务，可编辑状态与排期</caption><thead><tr><th>任务</th><th>状态</th><th>标签</th><th>开始时间</th><th>截止时间</th><th>优先级</th><th>项目归属</th></tr></thead><tbody></tbody>';
     rows.forEach(task=>{
       const tr=document.createElement('tr');tr.dataset.tcRow=task.id;
-      tr.innerHTML=`<td><button type="button" class="tc-table-title">${esc(task.title)}</button></td><td><select data-field="status" aria-label="状态 ${esc(task.title)}">${options(statuses,task.status)}</select></td><td><button type="button" class="tc-label-edit">${labelsHtml(task.labels)||'添加标签'}</button></td><td><input data-field="start" type="datetime-local" aria-label="开始时间 ${esc(task.title)}" value="${esc(localInput(task.start))}"></td><td><input data-field="due" type="datetime-local" aria-label="截止时间 ${esc(task.title)}" value="${esc(localInput(task.due,true))}"></td><td><select data-field="priority" aria-label="优先级 ${esc(task.title)}">${options(['P1','P2','P3'],task.priority)}</select></td><td><select data-field="projectId" aria-label="项目归属 ${esc(task.title)}">${projectOptions(M.resolveProject(task,state.projects))}</select></td>`;
+      tr.innerHTML=`<td><button type="button" class="tc-table-title">${esc(task.title)}</button></td><td><select data-field="status" aria-label="状态 ${esc(task.title)}">${options(statuses,task.status)}</select></td><td><button type="button" class="tc-label-edit">${labelsHtml(task.labels)||'添加标签'}</button></td><td><input data-field="start" type="datetime-local" aria-label="开始时间 ${esc(task.title)}" value="${esc(localInput(task.start))}"></td><td><input data-field="due" type="datetime-local" aria-label="截止时间 ${esc(task.title)}" value="${esc(localInput(task.due,true))}"></td><td><select data-field="priority" aria-label="优先级 ${esc(task.title)}">${options(['P0','P1','P2','P3'],priorityCode(task))}</select></td><td><select data-field="projectId" aria-label="项目归属 ${esc(task.title)}">${projectOptions(M.resolveProject(task,state.projects))}</select></td>`;
       tr.querySelector('.tc-table-title').onclick=tr.querySelector('.tc-label-edit').onclick=()=>editTask(task.id);
       tr.querySelectorAll('[data-field]').forEach(input=>input.onchange=()=>{
         const field=input.dataset.field, value=input.value;
         const error=validDates(field==='start'?value:task.start,field==='due'?value:task.due);
         if(error){notice(error);input.value=localInput(task[field],field==='due');return;}
-        if(field==='projectId')assign(task,value);else task[field]=value;
+        if(field==='projectId')assign(task,value);else if(field==='priority'){task.matrix='q'+(Number(value.slice(1))+1);}else task[field]=value;
         save();
       });table.querySelector('tbody').append(tr);
     });
@@ -165,17 +237,35 @@
     const pending=document.createElement('section');pending.className='tc-unplanned';pending.innerHTML=`<h3>待排期 · ${unplanned.length}</h3><p>缺少起止日期或日期需要校正的任务保留在这里，不自动编造计划。</p>`;
     unplanned.forEach(t=>{const b=document.createElement('button');b.type='button';b.textContent=t.title;b.onclick=()=>editTask(t.id);pending.append(b);});fragment.append(pending);return fragment;
   }
+  function archiveList(rows) {
+    const wrap=document.createElement('div');wrap.className='tc-archive-list';
+    const head=document.createElement('div');head.className='tc-archive-head';head.innerHTML=`<h3>归档任务 · ${rows.length}</h3><p>归档任务不参与看板与状态筛选，取消归档后恢复原状态。</p>`;wrap.append(head);
+    if(!rows.length){const empty=document.createElement('p');empty.className='tc-empty';empty.textContent='暂无归档任务';wrap.append(empty);return wrap;}
+    rows.forEach(task=>{
+      const row=document.createElement('div');row.className='tc-archive-row';row.dataset.tcArchive=task.id;
+      const title=document.createElement('button');title.type='button';title.className='tc-archive-title';title.textContent=task.title;title.onclick=()=>editTask(task.id);
+      const meta=document.createElement('span');meta.className='tc-archive-meta';meta.textContent=`原状态：${task.status} · ${priorityCode(task)}`;
+      const actions=document.createElement('div');actions.className='tc-archive-actions';
+      const unarchive=document.createElement('button');unarchive.type='button';unarchive.textContent='取消归档';unarchive.onclick=()=>{task.archived=false;save();};
+      const reopen=document.createElement('button');reopen.type='button';reopen.textContent='重新打开';reopen.onclick=()=>{task.archived=false;task.status='进行中';save();};
+      actions.append(unarchive,reopen);row.append(title,meta,actions);wrap.append(row);
+    });
+    return wrap;
+  }
   function render() {
     renderCount++;migrate();summary();
-    state.tasks.forEach(item=>{if(previousStatuses.get(item.id)!==item.status)expandedDone.delete(item.id);previousStatuses.set(item.id,item.status);});
+    state.tasks.forEach(item=>{if(previousStatuses.get(item.id)!==item.status)expandedMap.delete(item.id);previousStatuses.set(item.id,item.status);});
     if(!$('tcArchiveToggle')){const b=document.createElement('button');b.id='tcArchiveToggle';b.type='button';$('tcClear').after(b);b.onclick=()=>{showArchived=!showArchived;render();};}
     $('tcArchiveToggle').textContent=showArchived?'返回未归档任务':'查看归档任务';
     $('tcArchiveToggle').setAttribute('aria-pressed',String(showArchived));
     root.querySelectorAll('[data-tc-view]').forEach(b=>{const active=b.dataset.tcView===view;b.setAttribute('aria-selected',String(active));b.tabIndex=active?0:-1;});
     const rows=visibleRows();$('tcCount').textContent=`当前显示 ${rows.length} / ${projectRows().length} 项`;
+    const newBtn=$('tcNewTask');if(newBtn)newBtn.hidden=showArchived;
+    const tablist=root.querySelector('[role="tablist"]');if(tablist)tablist.hidden=showArchived;
     const label=$('tcFilterLabel'),keep=filters.label;label.innerHTML=options([{value:'all',label:'全部标签'},...allLabels()],keep);
-    const content=$('tcContent');content.replaceChildren(view==='board'?board(rows):view==='table'?table(rows):gantt(rows));
+    const content=$('tcContent');content.replaceChildren(showArchived?archiveList(rows):view==='board'?board(rows):view==='table'?table(rows):gantt(rows));
     remember();document.dispatchEvent(new Event('tasks-updated'));
+    try{document.dispatchEvent(new CustomEvent('lambert:task-context',{detail:window.TaskCenter&&window.TaskCenter.getContext?window.TaskCenter.getContext():null}));}catch{}
   }
   function assign(task,id) {const p=state.projects.find(p=>String(p.id)===String(id));task.projectId=p?.id||'';task.project=p?.name||'';}
   function openProject(id) {selected=state.projects.some(p=>String(p.id)===String(id))?id:'inbox';anchor='';remember();openView('tasks');}
@@ -198,7 +288,7 @@
     const start=$('tcStart').value,due=$('tcDue').value,error=validDates(start,due);if(error){$('tcEditorError').textContent=error;return;}
     const old=editId?state.tasks.find(t=>t.id===editId):null;if(editId&&!old){$('tcEditorError').textContent='这条任务已不存在，请关闭后重新选择';return;}
     const labels=[...$('tcLabels').querySelectorAll('input:checked')].map(cb=>cb.value);
-    const task={...old,id:old?.id||`task_${crypto.randomUUID()}`,title,status:$('tcStatus').value,priority:$('tcPriority').value,matrix:$('tcMatrix').value,start,due,note:$('tcNote').value.trim(),labels,createdAt:old?.createdAt||new Date().toISOString()};
+    const task={...old,id:old?.id||`task_${crypto.randomUUID()}`,title,status:$('tcStatus').value,priority:old?.priority||'P2',matrix:$('tcMatrix').value,start,due,note:$('tcNote').value.trim(),labels,createdAt:old?.createdAt||new Date().toISOString()};
     assign(task,$('tcTaskProject').value);
     if(old)state.tasks[state.tasks.indexOf(old)]=task;else state.tasks.unshift(task);
     $('tcEditor').close();save();
@@ -206,10 +296,10 @@
   root.innerHTML=`<div class="tc-page-head"><div><p class="tc-eyebrow">PROJECT WORKSPACE</p><h2>任务中心</h2></div><button id="tcBackProjects" type="button">← 项目看板</button></div>
     <section class="tc-project-focus"><div class="tc-focus-top"><label>当前项目<select id="tcProjectSelect" aria-label="当前项目"></select></label><span id="tcProjectCategory" class="tc-category"></span></div><h3 id="tcProjectTitle"></h3><p id="tcProjectStandard"></p><div id="tcProjectDates" class="tc-meta"></div><div class="tc-progress-row"><progress id="tcProgress" max="1" value="0"></progress><span id="tcProgressLabel"></span></div><small id="tcProjectFootnote"></small></section>
     <div class="tc-viewbar"><div role="tablist" aria-label="任务浏览形式"><button role="tab" type="button" data-tc-view="board" aria-controls="tcContent">▦ 看板</button><button role="tab" type="button" data-tc-view="gantt" aria-controls="tcContent">▤ 甘特图</button><button role="tab" type="button" data-tc-view="table" aria-controls="tcContent">▥ 表格</button></div><button id="tcNewTask" type="button" class="tc-primary">＋ 新建任务</button></div>
-    <div class="tc-filters"><label class="tc-search">搜索<input id="tcFilterQ" type="search" placeholder="当前项目内搜索"></label><label>状态<select id="tcFilterStatus">${options([{value:'all',label:'全部状态'},...statuses],'all')}</select></label><label>标签<select id="tcFilterLabel"></select></label><label>优先级<select id="tcFilterPriority">${options([{value:'all',label:'全部优先级'},'P1','P2','P3'],'all')}</select></label><label>日期<select id="tv5Date">${options([{value:'all',label:'全部日期'},{value:'today',label:'今天到期'},{value:'overdue',label:'已逾期'},{value:'nodate',label:'待排期'}],'all')}</select></label><label>四象限<select id="tcFilterMatrix">${options([{value:'all',label:'全部象限'},{value:'q1',label:'重要且紧急'},{value:'q2',label:'重要不紧急'},{value:'q3',label:'紧急不重要'},{value:'q4',label:'不重要不紧急'}],'all')}</select></label><label>排序<select id="tcFilterSort">${options([{value:'manual',label:'手动顺序'},{value:'priority',label:'优先级'},{value:'due',label:'截止时间'},{value:'created',label:'最近创建'}],'priority')}</select></label><button id="tcClear" type="button">清空筛选</button></div>
+    <div class="tc-filters"><label class="tc-search">搜索<input id="tcFilterQ" type="search" placeholder="当前项目内搜索"></label><label>状态<select id="tcFilterStatus">${options([{value:'all',label:'全部状态'},...statuses],'all')}</select></label><label>标签<select id="tcFilterLabel"></select></label><label>优先级<select id="tcFilterPriority">${options([{value:'all',label:'全部优先级'},'P0','P1','P2','P3'],'all')}</select></label><label>日期<select id="tv5Date">${options([{value:'all',label:'全部日期'},{value:'today',label:'今天到期'},{value:'overdue',label:'已逾期'},{value:'nodate',label:'待排期'}],'all')}</select></label><label>四象限<select id="tcFilterMatrix">${options([{value:'all',label:'全部象限'},{value:'q1',label:'重要且紧急'},{value:'q2',label:'重要不紧急'},{value:'q3',label:'紧急不重要'},{value:'q4',label:'不重要不紧急'}],'all')}</select></label><label>排序<select id="tcFilterSort">${options([{value:'manual',label:'手动顺序'},{value:'priority',label:'优先级'},{value:'due',label:'截止时间'},{value:'created',label:'最近创建'}],'priority')}</select></label><button id="tcClear" type="button">清空筛选</button></div>
     <div class="tc-statusline"><span id="tcCount"></span><span id="tcNotice" role="status" aria-live="polite"></span></div><div id="tcContent" role="tabpanel"></div>`;
   const dialog=document.createElement('dialog');dialog.id='tcEditor';dialog.className='tc-editor';
-  dialog.innerHTML=`<form id="tcEditorForm"><div class="tc-dialog-head"><h3 id="tcEditorTitle"></h3><button id="tcCancel" type="button" aria-label="关闭任务编辑">×</button></div><label>任务名称<input id="tcTitle" autocomplete="off" required></label><div class="tc-editor-grid"><label>所属项目<select id="tcTaskProject"></select></label><label>状态<select id="tcStatus">${options(statuses,'待开始')}</select></label><label>开始时间<input id="tcStart" type="datetime-local"></label><label>截止时间<input id="tcDue" type="datetime-local"></label><label>优先级<select id="tcPriority">${options(['P1','P2','P3'],'P2')}</select></label><label>重要／紧急<select id="tcMatrix">${options([{value:'q1',label:'重要且紧急'},{value:'q2',label:'重要不紧急'},{value:'q3',label:'紧急不重要'},{value:'q4',label:'不重要不紧急'}],'q2')}</select></label></div><fieldset><legend>标签（可多选）</legend><div id="tcLabels" class="tc-label-checks"></div></fieldset><label>完成标准／备注<textarea id="tcNote" rows="3"></textarea></label><p id="tcEditorError" role="alert"></p><div class="tc-editor-actions"><button id="tcDeleteTask" type="button">删除任务</button><button id="tcCancelBottom" type="button">取消</button><button type="submit" class="tc-primary">保存任务</button></div></form>`;
+  dialog.innerHTML=`<form id="tcEditorForm"><div class="tc-dialog-head"><h3 id="tcEditorTitle"></h3><button id="tcCancel" type="button" aria-label="关闭任务编辑">×</button></div><label>任务名称<input id="tcTitle" autocomplete="off" required></label><div class="tc-editor-grid"><label>所属项目<select id="tcTaskProject"></select></label><label>状态<select id="tcStatus">${options(statuses,'待开始')}</select></label><label>开始时间<input id="tcStart" type="datetime-local"></label><label>截止时间<input id="tcDue" type="datetime-local"></label><label hidden>优先级<select id="tcPriority">${options(['P1','P2','P3'],'P2')}</select></label><label>重要／紧急<select id="tcMatrix">${options([{value:'q1',label:'重要且紧急（P0）'},{value:'q2',label:'重要不紧急（P1）'},{value:'q3',label:'紧急不重要（P2）'},{value:'q4',label:'不重要不紧急（P3）'}],'q2')}</select></label></div><fieldset><legend>标签（可多选）</legend><div id="tcLabels" class="tc-label-checks"></div></fieldset><label>完成标准／备注<textarea id="tcNote" rows="3"></textarea></label><p id="tcEditorError" role="alert"></p><div class="tc-editor-actions"><button id="tcDeleteTask" type="button">删除任务</button><button id="tcCancelBottom" type="button">取消</button><button type="submit" class="tc-primary">保存任务</button></div></form>`;
   document.body.append(dialog);
   $('tcDeleteTask').onclick=()=>{const task=state.tasks.find(t=>t.id===editId);if(task&&confirm('确认删除任务“'+task.title+'”吗？')){state.tasks.splice(state.tasks.indexOf(task),1);dialog.close();save();}};
   $('tcEditorForm').onsubmit=saveEditor;$('tcCancel').onclick=$('tcCancelBottom').onclick=()=>dialog.close();
@@ -219,6 +309,6 @@
   const bindings={tcFilterQ:'q',tcFilterStatus:'status',tcFilterLabel:'label',tcFilterPriority:'priority',tv5Date:'date',tcFilterMatrix:'matrix',tcFilterSort:'sort'};
   Object.entries(bindings).forEach(([id,key])=>$(id).addEventListener(key==='q'?'input':'change',e=>{filters[key]=e.target.value;render();}));
   $('tcClear').onclick=()=>{filters={q:'',status:'all',priority:'all',label:'all',date:'all',matrix:'all',sort:'priority'};Object.entries(bindings).forEach(([id,key])=>{$(id).value=filters[key];});render();};
-  window.TaskCenter={render,openProject,openTask,newTask,editTask,getState:()=>({projectId:selected,view,renderCount})};
+  window.TaskCenter={render,openProject,openTask,newTask,editTask,getContext:()=>({projectId:selected,project:currentProject()||null,tasks:projectRows().filter(t=>!t.archived&&t.status!=='已完成')}),getState:()=>({projectId:selected,view,renderCount})};
   render();
 })();

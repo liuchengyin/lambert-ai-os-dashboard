@@ -60,6 +60,7 @@ try{
   await page.waitForTimeout(250);
   check('Manual refresh makes another request',requests.filter(x=>x.action==='analyze').length===2);
   await page.locator('nav button[data-v="tasks"]').click();
+  await page.selectOption('#tcProjectSelect','p1');
   await page.locator('#aiTaskAction').waitFor({state:'visible'});
   check('Task board has AI analysis action',await page.locator('#aiTaskAction button').isVisible());
   await page.locator('#aiTaskAction button').click();
