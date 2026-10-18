@@ -1,0 +1,21 @@
+name: Compact bookmark Flash development
+on:
+  push:
+    branches: [feat/compact-bookmarks]
+    paths: ['scripts/compact-flash.mjs']
+permissions:
+  contents: read
+jobs:
+  draft:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: node scripts/compact-flash.mjs
