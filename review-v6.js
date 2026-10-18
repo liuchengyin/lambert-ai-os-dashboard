@@ -37,8 +37,7 @@
         <div class="review-v6-planstack">
           <section class="review-v6-card review-v6-goal">
             <div class="review-v6-card-head"><div><span>01</span><h3>今天最重要的结果</h3></div><small>计划 · Plan</small></div>
-            <label>目标<textarea id="rv6Goal" placeholder="今天最重要的结果是什么？"></textarea></label>
-            <div class="rv-task-picker"><div class="rv-task-picker-head"><strong>关联目标任务</strong><input id="rvTaskSearch" type="search" aria-label="搜索目标任务" placeholder="搜索任务或项目"></div><p>勾选今天要推进的任务，完成度自动跟随任务状态。</p><div id="rvTaskChoices"></div></div>
+            <div class="rv-goal-box"><details id="rvGoalDropdown"><summary>今日目标 · 点击选择任务</summary><label>项目筛选<select id="rvTaskProject" aria-label="按项目筛选任务"><option value="">全部项目</option></select></label><input id="rvTaskSearch" type="search" aria-label="搜索目标任务" placeholder="搜索任务或项目"><div id="rvTaskChoices"></div></details><div id="rvTaskSelected" aria-live="polite"></div><label>目标补充<textarea id="rv6Goal" placeholder="可选：补充目标说明"></textarea></label></div>
             <div class="review-v6-grid2">
               <label>完成标准<textarea id="rv6Standard" placeholder="做到什么程度算完成？"></textarea></label>
 
@@ -102,20 +101,47 @@
   function taskRows(){return typeof state!=='undefined'&&Array.isArray(state.tasks)?state.tasks:get('tasks',[]);}
   function taskStats(ids=linked){const tasks=taskRows();const done=ids.filter(id=>tasks.find(t=>t.id===id)?.status==='已完成').length;return {done,total:ids.length,percent:ids.length?Math.round(done/ids.length*100):0};}
   function renderTaskLinks(){
-    const tasks=taskRows(),q=$('rvTaskSearch').value.trim().toLowerCase();
-    const choices=$('rvTaskChoices');choices.replaceChildren();
-    const visible=tasks.filter(t=>!q||`${t.title} ${t.project||''}`.toLowerCase().includes(q));
-    visible.forEach(task=>{const row=document.createElement('label');row.className='rv-task-choice';const cb=document.createElement('input');cb.type='checkbox';cb.checked=linked.includes(task.id);cb.dataset.rvLink=task.id;cb.setAttribute('aria-label','关联目标：'+task.title);const text=document.createElement('span');text.textContent=task.title;const meta=document.createElement('small');meta.textContent=task.project||'收件箱';row.append(cb,text,meta);cb.onchange=()=>{linked=cb.checked?[...linked,task.id]:linked.filter(id=>id!==task.id);renderTaskLinks();save(true);};choices.append(row);});
-    if(!visible.length)choices.textContent=tasks.length?'没有匹配的任务':'先在任务中心创建任务，再回来关联。';
-    const stats=taskStats();$('rv6CompletionValue').textContent=stats.percent+'%';$('rv6Completion').value=stats.percent;$('rvTaskCount').textContent=stats.total?`完成 ${stats.done} / ${stats.total} 个目标`:'尚未选择目标任务';
-    const results=$('rvTaskResults');results.replaceChildren();
-    linked.forEach(id=>{const task=tasks.find(t=>t.id===id),snapshot=reviews[selected]?.taskSnapshots?.find(t=>t.id===id);const row=document.createElement('div');row.className='rv-task-result'+(task?.status==='已完成'?' is-done':'');const cb=document.createElement('input');cb.type='checkbox';cb.checked=task?.status==='已完成';cb.disabled=!task;cb.dataset.rvDone=id;cb.setAttribute('aria-label','完成任务：'+(task?.title||snapshot?.title||'已删除任务'));const label=document.createElement('label');label.append(cb,document.createTextNode(task?.title||snapshot?.title||'已删除任务'));const status=document.createElement('small');status.textContent=task?(task.status==='已完成'?'✓ 已完成':task.status):'任务已删除 · 保留目标';row.append(label,status);
-      if(!task){const remove=document.createElement('button');remove.type='button';remove.textContent='移出目标';remove.onclick=()=>{linked=linked.filter(x=>x!==id);renderTaskLinks();save(true);};row.append(remove);}
-      cb.onchange=()=>{task.status=cb.checked?'已完成':'待开始';if(typeof persistTasks==='function')persistTasks();else set('tasks',tasks);renderTaskLinks();save(true);};results.append(row);
-    });
-    $('rv6RealityNote').textContent=stats.total?'完成度 = 已完成关联任务 ÷ 目标任务总数；在任务中心修改状态也会同步。':'先选择目标任务，实际完成后自动计算进度。';
-  }
+  const rows=taskRows(); linked=[...new Set(linked)];
+  const rec=reviews[selected]||(reviews[selected]={});
+  const snaps=Array.isArray(rec.taskSnapshots)?rec.taskSnapshots:[];
+  const byId=Object.create(null);rows.forEach(t=>byId[t.id]=t);
+  const projects=(typeof state!=='undefined'&&state&&state.projects)||[];
+  const resolve=t=>{try{return TaskCenterModel.resolveProject(t,projects)||'inbox'}catch(e){return t.projectId||t.project||'inbox'}};
+  const projName=t=>{const id=resolve(t);return projects.find(p=>String(p.id)===String(id))?.name||(id==='inbox'?'收件箱':t.project||'收件箱')};
+  const projId=t=>{const p=resolve(t);if(p&&typeof p==='object')return p.id||p.name||'inbox';return p||'inbox'};
+  const isDone=t=>t&&t.status==='已完成';
+  const sel=$('rvTaskProject'),search=$('rvTaskSearch');
+  const curProj=sel?sel.value:'';const q=search?(search.value||'').trim().toLowerCase():'';
+  const allProj=Object.create(null);rows.forEach(t=>{const id=projId(t);allProj[id]=projName(t)});
+  if(sel){sel.textContent='';const o0=document.createElement('option');o0.value='';o0.textContent='全部项目';sel.appendChild(o0);Object.keys(allProj).sort().forEach(id=>{const o=document.createElement('option');o.value=id;o.textContent=allProj[id];sel.appendChild(o)});sel.value=curProj&&allProj[curProj]?curProj:'';}
+  const activeProj=sel?sel.value:'';
+  const match=t=>{if(activeProj&&projId(t)!==activeProj)return false;if(q){const s=((t.title||'')+' '+projName(t)).toLowerCase();if(s.indexOf(q)<0)return false}return true};
+  const choices=$('rvTaskChoices');
+  if(choices){choices.textContent='';const cand=rows.filter(t=>t.status!=='已完成'&&!t.archived&&match(t));
+    if(!cand.length){const e=document.createElement('div');e.className='rv-empty';e.textContent='无可选任务';choices.appendChild(e)}
+    const dateOf=t=>String(t.due||t.start||'').slice(0,10);
+    cand.sort((a,b)=>{const da=dateOf(a),db=dateOf(b);return (da===selected?0:da?1:2)-(db===selected?0:db?1:2)||da.localeCompare(db)||String(a.title).localeCompare(String(b.title));});
+    let lastDate=null;
+    cand.forEach(t=>{const day=dateOf(t);if(day!==lastDate){const h=document.createElement('div');h.className='rv-group-title';h.dataset.rvDateGroup=day||'unplanned';h.textContent=day===selected?(selected===dateKey()?'今日':'当日')+' · '+day:day||'未排期';choices.append(h);lastDate=day;}const lab=document.createElement('label');lab.className='rv-choice';const cb=document.createElement('input');cb.type='checkbox';cb.dataset.rvLink=t.id;cb.setAttribute('aria-label','关联目标：'+t.title);cb.checked=linked.indexOf(t.id)>=0;cb.addEventListener('change',()=>{if(cb.checked){if(linked.indexOf(t.id)<0)linked.push(t.id)}else{const i=linked.indexOf(t.id);if(i>=0)linked.splice(i,1)}renderTaskLinks();save(true)});const sp=document.createElement('span');sp.textContent=t.title||'(无标题)';lab.appendChild(cb);lab.appendChild(sp);choices.appendChild(lab)})}
+  const box=$('rvTaskSelected');
+  if(box){box.textContent='';const list=linked.slice();
+    if(!list.length){const e=document.createElement('div');e.className='rv-empty';e.textContent='尚未选择任务';box.appendChild(e)}
+    list.forEach(id=>{const t=byId[id];const done=isDone(t);const row=document.createElement('div');row.className='rv-sel'+(done?' rv-sel-done':'');const title=document.createElement('span');title.className='rv-sel-title';title.textContent=t?(t.title||'(无标题)'):(snaps.find(s=>s.id===id)?.title||'(已删除任务)');row.appendChild(title);if(done){const g=document.createElement('span');g.className='rv-check';g.textContent='✓';row.appendChild(g)}const rm=document.createElement('button');rm.type='button';rm.className='rv-remove';rm.textContent='移出';rm.addEventListener('click',()=>{const i=linked.indexOf(id);if(i>=0)linked.splice(i,1);renderTaskLinks();save(true)});row.appendChild(rm);box.appendChild(row)})}
+  const res=$('rvTaskResults');
+  if(res){res.textContent='';const list=linked.slice();
+    if(!list.length){const e=document.createElement('div');e.className='rv-empty';e.textContent='暂无已选任务';res.appendChild(e)}
+    const groups={};const today=dateKey();
+    list.forEach(id=>{const t=byId[id];const d=t?(t.due||t.start||''):'';const k=d?d.slice(0,10):'__none';if(!groups[k])groups[k]=[];groups[k].push({id,t})});
+    const keys=Object.keys(groups).sort((a,b)=>{if(a==='__none')return 1;if(b==='__none')return -1;if(a===selected)return -1;if(b===selected)return 1;return a<b?-1:a>b?1:0});
+    keys.forEach(k=>{const g=document.createElement('div');g.className='rv-group';const h=document.createElement('div');h.className='rv-group-title';h.textContent=k==='__none'?'未排期':(k===selected?'今日 / 当日 ('+k+')':k);g.appendChild(h);groups[k].forEach(it=>{const t=it.t;const done=isDone(t);const row=document.createElement('div');row.className='rv-res'+(done?' rv-sel-done':'');const sp=document.createElement('span');sp.className='rv-sel-title';sp.textContent=t?(t.title||'(无标题)'):(snaps.find(s=>s.id===it.id)?.title||'(已删除任务)');row.appendChild(sp);if(done){const c=document.createElement('span');c.className='rv-check';c.textContent='✓';row.appendChild(c)}g.appendChild(row)});res.appendChild(g)})}
+  const st=taskStats();const total=linked.length;let done=0;linked.forEach(id=>{if(isDone(byId[id]))done++});const pct=total?Math.round(done/total*100):0;
+  const cv=$('rv6CompletionValue');if(cv)cv.textContent=pct+'%';
+  const cb2=$('rv6Completion');if(cb2){if('value' in cb2&&cb2.tagName!=='DIV')cb2.value=pct;else cb2.textContent=pct+'%'}
+  const tc=$('rvTaskCount');if(tc)tc.textContent=`完成 ${done} / ${total} 个目标`;
+  const note=$('rv6RealityNote');if(note)note.textContent='完成度 = 已完成目标任务 ÷ 已选目标任务；任务状态由任务中心管理。';
+}
   $('rvTaskSearch').oninput=renderTaskLinks;
+  $('rvTaskProject').onchange=renderTaskLinks;
   document.addEventListener('tasks-updated',()=>{let changed=false;Object.values(reviews).forEach(r=>{if(Array.isArray(r.taskIds)){const value=String(taskStats(r.taskIds).percent);if(String(r.completion)!==value){r.completion=value;changed=true;}}});if(changed)set(STORE,reviews);renderTaskLinks();renderHistory();});
   $('rv6Save').onclick=()=>save(false);
   $('rv6Archive').onclick=()=>{reviews[selected]=read();reviews[selected].archived=!reviews[selected].archived;set(STORE,reviews);load(selected)};

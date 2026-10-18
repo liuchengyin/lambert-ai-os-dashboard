@@ -110,3 +110,27 @@
 #review .rv-task-results{display:grid;gap:7px;max-height:280px;overflow:auto}#review .rv-task-result{display:flex;align-items:center;gap:9px;border-bottom:1px solid #f0edf4;padding:9px 0;flex-wrap:wrap}#review .rv-task-result label{display:flex;align-items:center;gap:9px;flex:1;margin:0!important;min-width:0;overflow-wrap:anywhere;font-size:13px}#review .rv-task-result small{font-size:11px;color:#8e8799}#review .rv-task-result.is-done small{color:#23844e}#review .rv-task-result.is-done input{accent-color:#23844e}
 #review .review-v6-reality-note{margin-top:14px;font-size:12px!important;line-height:1.6}
 @media(max-width:650px){#review .review-v6-goal{grid-template-columns:1fr!important}#review .review-v6-goal>label:last-of-type{grid-column:1!important}#rvTaskChoices{grid-template-columns:1fr}#review .review-v6-card{padding:16px!important}}
+
+/* Goal selector implementation by DeepSeek Flash. */
+#review .rv-goal-box{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin-bottom:10px}
+#review details#rvGoalDropdown{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:8px 10px;margin-bottom:10px}
+#review details#rvGoalDropdown summary{cursor:pointer;font-weight:600;color:#111827}
+#review #rvTaskSearch,#review #rvTaskProject{width:100%;box-sizing:border-box;margin:6px 0;padding:7px 9px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;background:#fff}
+#review #rvTaskChoices{max-height:260px;overflow-y:auto;border:1px solid #eef0f3;border-radius:8px;padding:4px;margin-top:6px;background:#fafafa}
+#review .rv-choice{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:14px;color:#111827}
+#review .rv-choice:hover{background:#f1f5f9}
+#review .rv-choice input{flex:0 0 auto}
+#review .rv-choice span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#review #rvTaskSelected{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+#review .rv-sel{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #eef0f3;border-radius:8px;padding:7px 9px;font-size:14px}
+#review .rv-sel-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#111827}
+#review .rv-sel-done .rv-sel-title{text-decoration:line-through;color:#16a34a}
+#review .rv-check{color:#16a34a;font-weight:700}
+#review .rv-remove{flex:0 0 auto;border:1px solid #fecaca;background:#fff5f5;color:#dc2626;border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer}
+#review .rv-remove:hover{background:#fee2e2}
+#review #rvTaskResults{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+#review .rv-group{background:#fff;border:1px solid #eef0f3;border-radius:10px;padding:8px 10px}
+#review .rv-group-title{font-weight:700;font-size:13px;color:#374151;border-bottom:1px dashed #e5e7eb;padding-bottom:5px;margin-bottom:6px}
+#review .rv-res{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:14px}
+#review .rv-empty{color:#9ca3af;font-size:13px;padding:6px 2px}
+@media(max-width:600px){#review #rvTaskChoices{max-height:200px}#review .rv-sel,#review .rv-res{font-size:13px}}

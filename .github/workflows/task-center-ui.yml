@@ -1,7 +1,7 @@
 name: Project focused task center check
 on:
   push:
-    branches: [feat/project-focused-tasks, feat/completed-collapse]
+    branches: [feat/project-focused-tasks, feat/completed-collapse, feat/review-goal-picker]
     paths: ['task-center*', 'review-v6.js', 'review-layout-v7.css', 'project-date-picker.js', 'lib/task-center-model.js', 'dashboard-v5.js', 'project-v3.js', 'index.html', 'tests/task-center*', 'tests/completed-collapse.mjs', 'project-v3.css', '.github/workflows/task-center-ui.yml']
   workflow_dispatch:
 permissions:
