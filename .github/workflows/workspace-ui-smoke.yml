@@ -46,6 +46,7 @@ on:
       - 'project-v3.css'
       - 'sprint1-navigation.js'
       - 'tests/ui-batch.mjs'
+      - 'tests/task-filter-disclosure.mjs'
       - 'tests/dense-task-card.mjs'
       - 'task-center.js'
       - 'task-center.css'
@@ -90,6 +91,7 @@ jobs:
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
           node tests/dense-task-card.mjs
+          node tests/task-filter-disclosure.mjs
           node tests/ui-batch.mjs
           node tests/project-ai-ui.mjs
           node tests/audit-cleanup-ui.mjs

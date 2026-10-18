@@ -118,7 +118,7 @@
 
 #tasks .tc-column{min-height:0}
 
-.project-ai-panel{display:flex;flex-direction:column;gap:8px;min-width:0}.project-ai-panel .ai-task-action{display:flex;gap:8px}.project-ai-panel .ai-task-result{font-size:13px;line-height:1.5;display:flex;flex-direction:column;gap:6px}.project-ai-panel .ai-note{color:#6b7280;margin:0}.project-ai-panel .ai-secondary{cursor:pointer}.tc-project-focus{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:'top ai' 'h3 ai' 'p ai' 'meta ai' 'progress ai' 'small ai';gap:6px 16px;align-items:start}.tc-project-focus>.tc-focus-top{grid-area:top}.tc-project-focus>h3{grid-area:h3}.tc-project-focus>p{grid-area:p}.tc-project-focus>#tcProjectDates{grid-area:meta}.tc-project-focus>.tc-progress-row{grid-area:progress}.tc-project-focus>small{grid-area:small}.tc-project-focus>.project-ai-panel{grid-area:ai;align-self:start}@media(max-width:720px){.tc-project-focus{grid-template-columns:minmax(0,1fr);grid-template-areas:'top' 'h3' 'p' 'meta' 'progress' 'small' 'ai'}}
+.project-ai-panel{display:flex;flex-direction:column;gap:8px;min-width:0}.project-ai-panel .ai-task-action{display:flex;gap:8px}.project-ai-panel .ai-task-result{font-size:13px;line-height:1.5;display:flex;flex-direction:column;gap:6px}.project-ai-panel .ai-note{color:#6b7280;margin:0}.project-ai-panel .ai-secondary{cursor:pointer}.tc-project-focus{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:'top ai' 'h3 ai' 'p ai' 'meta ai' 'progress ai';gap:6px 16px;align-items:start}.tc-project-focus>.tc-focus-top{grid-area:top}.tc-project-focus>h3{grid-area:h3}.tc-project-focus>p{grid-area:p}.tc-project-focus>#tcProjectDates{grid-area:meta}.tc-project-focus>.tc-progress-row{grid-area:progress}.tc-project-focus>small{grid-area:small}.tc-project-focus>.project-ai-panel{grid-area:ai;align-self:start}@media(max-width:720px){.tc-project-focus{grid-template-columns:minmax(0,1fr);grid-template-areas:'top' 'h3' 'p' 'meta' 'progress' 'ai'}}
 
 #tasks .tc-task summary::after{display:none!important;content:none!important;}
 #tasks .tc-task summary{list-style:none;display:flex;align-items:center;gap:6px;padding:6px 8px;cursor:default;}
@@ -173,3 +173,10 @@
 #tasks .tc-task-footer .tc-advance{margin-left:auto;padding:0!important;width:24px;height:22px}
 #tasks .tc-task-note{line-height:1.4!important;color:#756a86}
 #tasks .tc-task-footer .tc-task-dates{line-height:1.5;font-variant-numeric:tabular-nums}
+
+#tasks .tc-filter-toolbar{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}#tasks #tcFilterPanel[hidden]{display:none!important}#tasks #tcArchiveToggle{margin-left:auto}#tasks #tcFilterToggle{font-size:12px;padding:6px 10px;cursor:pointer}#tasks #tcFilterToggle:focus-visible{outline:2px solid #2563eb;outline-offset:2px}@media(max-width:600px){#tasks .tc-filter-toolbar{flex-wrap:wrap}#tasks #tcFilterToggle{max-width:100%}}
+@media(min-width:1200px){#tasks .tc-project-focus{width:85%;max-width:85%}}
+#tasks .tc-filter-toolbar #tcArchiveToggle{font-size:12px;padding:6px 10px}
+@media(max-width:1199px){#tasks .tc-project-focus{width:100%;max-width:100%}}
+
+@media(min-width:1200px){#tasks .tc-focus-top label{flex:1;min-width:0;white-space:nowrap}#tasks .tc-focus-top select{min-width:120px;max-width:100%;width:100%;flex:1}}
