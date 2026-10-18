@@ -96,3 +96,13 @@
 .project-card:has(>.completed-item:not([open])){padding:10px 14px;min-height:0;cursor:default}
 .completed-item .tc-task-actions{flex-wrap:wrap}
 #projectArchiveToggle{margin:8px 0 14px}
+
+/* DeepSeek Flash: shared completion badge and individual disclosure arrow. */
+#projects details.completed-item>summary,#tasks details.completed-item>summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;flex-wrap:nowrap;min-width:0}
+#projects details.completed-item>summary::-webkit-details-marker,#tasks details.completed-item>summary::-webkit-details-marker{display:none}
+#projects details.completed-item>summary::marker,#tasks details.completed-item>summary::marker{content:''}
+#projects details.completed-item>summary>.tc-done-check,#tasks details.completed-item>summary>.tc-done-check{flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:#21a365;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1;text-align:center}
+#projects details.completed-item>summary>span:not(.tc-done-check),#tasks details.completed-item>summary>span:not(.tc-done-check){flex:1 1 auto;min-width:0;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+#projects details.completed-item>summary::after,#tasks details.completed-item>summary::after{content:'⌄';flex:0 0 auto;margin-left:auto;color:#888;font-size:16px;line-height:1;transition:transform .2s ease;transform-origin:center}
+#projects details.completed-item[open]>summary::after,#tasks details.completed-item[open]>summary::after{transform:rotate(180deg)}
+#projects details.completed-item>summary:focus-visible,#tasks details.completed-item>summary:focus-visible{outline:2px solid #21a365;outline-offset:2px;border-radius:4px}

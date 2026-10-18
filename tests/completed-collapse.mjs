@@ -9,6 +9,8 @@ const stored=key=>page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
 try{
  await page.goto('http://127.0.0.1:8000/');await page.waitForFunction(()=>window.TaskCenter);
  await page.locator('nav button[data-v="projects"]').click();
+ const badgeStyle=await page.locator('#projectBoard .completed-item summary .tc-done-check').first().evaluate(el=>({bg:getComputedStyle(el).backgroundColor,color:getComputedStyle(el).color,radius:getComputedStyle(el).borderRadius}));assert.equal(badgeStyle.bg,'rgb(33, 163, 101)');assert.equal(badgeStyle.color,'rgb(255, 255, 255)');assert.equal(badgeStyle.radius,'50%');
+ assert.equal(await page.locator('#projectBoard .completed-item summary').first().evaluate(el=>getComputedStyle(el,'::after').content),'"⌄"');
  const projects=page.locator('#projectBoard details.completed-item');assert.equal(await projects.count(),2);assert.equal(await projects.locator(':scope[open]').count(),0);
  await ensureOpen(projects.first());assert.ok(await projects.first().evaluate(e=>e.open));await page.getByRole('button',{name:'全部展开',exact:true}).click();assert.equal(await projects.locator(':scope[open]').count(),2);await page.getByRole('button',{name:'全部折叠',exact:true}).click();assert.equal(await projects.locator(':scope[open]').count(),0);
  await ensureOpen(projects.first());await projects.first().getByRole('button',{name:'编辑',exact:true}).click();assert.ok(await page.locator('#projectEditDlg').isVisible());await page.keyboard.press('Escape');
