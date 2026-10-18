@@ -24,7 +24,7 @@
       const card=node('section','s1-panel ai-daily-card');card.id='aiDailyCard';
       head.insertAdjacentElement('afterend',card);draw();
     }
-    const tasks=$('tasks'),taskHead=tasks?.querySelector('.task-v5-head');
+    const tasks=$('tasks'),taskHead=tasks?.querySelector('.tc-viewbar, .task-v5-head');
     if(taskHead&&!tasks.querySelector('#aiTaskAction')){
       const action=node('div','ai-task-action');action.id='aiTaskAction';
       action.append(button('✦ AI 分析任务',()=>analyze(true),'ai-secondary'));
@@ -159,7 +159,7 @@
   function start(){
     if(booted)return;booted=true;
     mount();autoAnalyze();
-    const observer=new MutationObserver(()=>{if(!$('aiDailyCard')||($('tasks')?.querySelector('.task-v5-head')&&!$('aiTaskAction')))mount()});
+    const observer=new MutationObserver(()=>{if(!$('aiDailyCard')||($('tasks')?.querySelector('.tc-viewbar, .task-v5-head')&&!$('aiTaskAction')))mount()});
     ['home','tasks'].forEach(id=>{const root=$(id);if(root)observer.observe(root,{childList:true,subtree:true})});
   }
   function errorMessage(out){
