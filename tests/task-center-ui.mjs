@@ -72,7 +72,7 @@ try{
  assert.equal((await tasks()).find(t=>t.id==='review_0').status,'待开始');
  assert.equal(await page.locator('#rv6CompletionValue').innerText(),'70%');
  await page.locator('nav button[data-v="tasks"]').click();await page.locator('#tcProjectSelect').selectOption('b');await tab('看板');
- await page.locator('[data-tc-task="review_0"]').dragTo(page.locator('[data-tc-status="已完成"] .tc-cards'),{sourcePosition:{x:8,y:8}});
+ await page.locator('[data-tc-task="review_0"]').dragTo(page.locator('[data-tc-status="已完成"] header'),{sourcePosition:{x:8,y:8}});
  assert.equal(await page.locator('[data-tc-task="review_0"] .tc-done-check').count(),1);
  await page.locator('nav button[data-v="review"]').click();assert.equal(await page.locator('#rv6CompletionValue').innerText(),'80%');
  const storedReview=await page.evaluate(()=>JSON.parse(localStorage.getItem('daily_reviews_v2'))['2026-10-18']);assert.equal(storedReview.taskIds.length,10);assert.equal(storedReview.deadline,'2026-10-18T18:00');assert.equal(storedReview.unknown,'keep');
