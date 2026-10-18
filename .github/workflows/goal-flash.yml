@@ -1,0 +1,26 @@
+name: Goal picker Flash development
+on:
+  push:
+    branches: [feat/review-goal-picker]
+    paths: ['scripts/goal-flash.mjs', '.github/workflows/goal-flash.yml']
+permissions:
+  contents: read
+jobs:
+  draft:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: node scripts/goal-flash.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: goal-picker-flash
+          path: review-output/
