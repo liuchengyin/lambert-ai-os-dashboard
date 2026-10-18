@@ -5,12 +5,12 @@
   nav.classList.add('s1-nav');
   nav.id='s1PrimaryNav';
   const groups=[
-    {id:'work',title:'执行区',pages:['home','projects','tasks','review']},
+    {id:'work',title:'执行区',pages:['home','projects','tasks','review','templates']},
     {id:'growth',title:'成长区',pages:['writing','reading','english']},
     {id:'tools',title:'工具区',pages:['knowledge','settings']}
   ];
-  const names={home:'今日总览',projects:'项目看板',tasks:'任务中心',review:'每日复盘',writing:'每日记录',reading:'每日阅读',english:'英语学习',knowledge:'常用链接',settings:'设置'};
-  const icons={home:'⌂',projects:'▦',tasks:'☑',review:'◷',writing:'✎',reading:'▤',english:'◎',knowledge:'↗',settings:'⚙'};
+  const names={home:'今日总览',projects:'项目看板',tasks:'任务中心',review:'每日复盘',templates:'工作模板',writing:'每日记录',reading:'每日阅读',english:'英语学习',knowledge:'常用链接',settings:'设置'};
+  const icons={home:'⌂',projects:'▦',tasks:'☑',review:'◷',templates:'▣',writing:'✎',reading:'▤',english:'◎',knowledge:'↗',settings:'⚙'};
   const stored=(()=>{try{return JSON.parse(localStorage.getItem('s1_nav_groups_v1'))||{}}catch{return {}}})();
   // Desktop compact rail: persist only presentation state, never alter module data.
   const COLLAPSE_KEY='s1_sidebar_collapsed_v1';
@@ -69,6 +69,14 @@
   const observer=new MutationObserver(()=>{if(!pending){pending=true;queueMicrotask(organize)}});
   observer.observe(nav,{childList:true,subtree:true});
   organize();
+
+  // Load the isolated work-template module without touching the main dashboard bundle.
+  if(!document.querySelector('script[data-work-templates-loader]')){
+    const script=document.createElement('script');
+    script.src='work-templates.js?v=1';
+    script.dataset.workTemplatesLoader='1';
+    document.body.appendChild(script);
+  }
 })();
 
 // GLM Flash navigation draft, corrected to use the existing view router and URL.
