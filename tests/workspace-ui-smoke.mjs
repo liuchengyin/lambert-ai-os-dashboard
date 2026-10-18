@@ -113,6 +113,7 @@ await page.getByRole('tab', { name: /看板/ }).click();
 await page.waitForSelector('[data-tc-task="drag-a"] .tc-done-check');
 check('刷新后状态保留', await page.locator('[data-tc-task="drag-a"] .tc-done-check').isVisible());
 const snapshot = await page.evaluate(() => { const t = JSON.parse(localStorage.getItem('tasks') || '[]').find(t=>t.id==='drag-a') || {}; const { status, ...rest } = t; return rest; });
+await page.locator('[data-tc-task="drag-a"] summary').click();
 await page.locator('[data-tc-task="drag-a"] select').selectOption('进行中');
 await page.waitForFunction(() => { const t = JSON.parse(localStorage.getItem('tasks') || '[]').find(t=>t.id==='drag-a'); return t && (t.status === '进行中' || t.status === 'in_progress'); });
 const after = await page.evaluate(() => { const t = JSON.parse(localStorage.getItem('tasks') || '[]').find(t=>t.id==='drag-a') || {}; const { status, ...rest } = t; return rest; });
