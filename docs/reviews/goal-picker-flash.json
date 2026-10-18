@@ -1,0 +1,21 @@
+{
+  "model": "deepseek-flash",
+  "usage": {
+    "prompt_tokens": 563,
+    "completion_tokens": 2415,
+    "total_tokens": 2978,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 563
+  },
+  "calls": 1,
+  "adopted": "Task candidate filtering, selected goal renderer, read-only result renderer, completion summary and CSS",
+  "corrections": [
+    "Use closure linked array",
+    "Group candidate tasks by date; today first",
+    "Resolve project names",
+    "Preserve array task snapshots"
+  ]
+}
