@@ -69,8 +69,8 @@
   }
   function taskDates(task) {return task.start||task.due?`${task.start?.replace('T',' ')||'待定'} → ${task.due?.replace('T',' ')||'待定'}`:'待排期';}
   function card(task) {
-    const el=document.createElement('article');el.className='tc-task';el.dataset.tcTask=task.id;el.draggable=true;
-    el.innerHTML=`<button class="tc-task-title" type="button">${esc(task.title)}</button><div class="tc-tags">${labelsHtml(task.labels)}<span class="tc-priority">${esc(task.priority||'P2')}</span></div><small>${esc(taskDates(task))}</small><div class="tc-task-actions"><select aria-label="${esc(task.title)}的状态">${options(statuses,task.status)}</select><button type="button" data-edit>编辑</button></div>`;
+    const el=document.createElement('article');el.className='tc-task'+(task.status==='已完成'?' tc-task-done':'');el.dataset.tcTask=task.id;el.draggable=true;
+    el.innerHTML=`<button class="tc-task-title" type="button">${task.status==='已完成'?'<span class="tc-done-check" role="img" aria-label="已完成">✓</span>':''}${esc(task.title)}</button><div class="tc-tags">${labelsHtml(task.labels)}<span class="tc-priority">${esc(task.priority||'P2')}</span></div><small>${esc(taskDates(task))}</small><div class="tc-task-actions"><select aria-label="${esc(task.title)}的状态">${options(statuses,task.status)}</select><button type="button" data-edit>编辑</button></div>`;
     el.querySelector('.tc-task-title').onclick=()=>editTask(task.id);
     el.querySelector('[data-edit]').onclick=()=>editTask(task.id);
     el.querySelector('select').onchange=e=>{task.status=e.target.value;save();};
@@ -83,7 +83,7 @@
     statuses.forEach(status=>{
       const col=document.createElement('section');col.className='tc-column';col.dataset.tcStatus=status;
       const items=rows.filter(t=>t.status===status);
-      col.innerHTML=`<header><h3>${status}</h3><span>${items.length}</span></header><div class="tc-cards"></div><button type="button" class="tc-column-add">＋ 添加任务</button>`;
+      col.innerHTML=`<header><h3>${status==='已完成'?'<span class="tc-done-check" aria-hidden="true">✓</span> ':''}${status}</h3><span>${items.length}</span></header><div class="tc-cards"></div><button type="button" class="tc-column-add">＋ 添加任务</button>`;
       const cards=col.querySelector('.tc-cards');items.forEach(t=>cards.append(card(t)));
       if(!items.length)cards.innerHTML='<p class="tc-empty">暂无任务</p>';
       col.querySelector('button.tc-column-add').onclick=()=>newTask(status);
@@ -153,7 +153,7 @@
     const rows=visibleRows();$('tcCount').textContent=`当前显示 ${rows.length} / ${projectRows().length} 项`;
     const label=$('tcFilterLabel'),keep=filters.label;label.innerHTML=options([{value:'all',label:'全部标签'},...allLabels()],keep);
     const content=$('tcContent');content.replaceChildren(view==='board'?board(rows):view==='table'?table(rows):gantt(rows));
-    remember();
+    remember();document.dispatchEvent(new Event('tasks-updated'));
   }
   function assign(task,id) {const p=state.projects.find(p=>String(p.id)===String(id));task.projectId=p?.id||'';task.project=p?.name||'';}
   function openProject(id) {selected=state.projects.some(p=>String(p.id)===String(id))?id:'inbox';anchor='';remember();openView('tasks');}

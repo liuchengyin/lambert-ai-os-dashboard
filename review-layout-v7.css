@@ -90,3 +90,23 @@
   #review .review-v6-datebar{width:100%;justify-content:space-between}
   #review .review-v6-datebar input{min-width:0;flex:1}
 }
+/* Task-linked daily review: simple, solid cards and derived progress. */
+#review .review-v7-kicker,#review .review-v7-steps{display:none}
+#review .review-v7-title h2{font-size:28px!important;letter-spacing:-.02em}#review .review-v7-title p{font-size:14px;margin-top:5px}
+#review .review-v6-card{background:#fff!important;backdrop-filter:none;border:1px solid #e7e6ef!important;box-shadow:0 3px 12px #302d4c05!important;padding:22px!important}
+#review .review-v6-goal{grid-template-columns:1fr 1fr!important;gap:10px 22px;border-left:0!important}
+#review .review-v6-card-head h3{font-size:18px!important}#review .review-v6-card-head small{display:none}
+#review .review-v6-card label{font-size:14px}#review .review-v6-card textarea{font-size:14px!important;background:#fafafd!important;border-color:#e1deeb!important}
+#review .review-v6-goal .review-v6-grid2{grid-template-columns:1fr!important}
+#review .rv-task-picker{grid-column:1/-1;padding:16px;background:#faf9fd;border:1px solid #ece8f4;border-radius:12px}
+#review .rv-task-picker-head{display:flex;align-items:center;gap:16px;flex-wrap:wrap}#review .rv-task-picker-head strong{margin-right:auto;font-size:14px}#review .rv-task-picker-head input{width:min(270px,100%);margin:0!important;padding:8px 10px!important}
+#review .rv-task-picker p{font-size:12px;color:#8a8298;margin:8px 0 12px}
+#rvTaskChoices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 16px;max-height:230px;overflow:auto;color:#7c7488;font-size:13px}
+#review .rv-task-choice{display:flex;align-items:center;gap:9px;padding:9px 10px;margin:0;background:white;border:1px solid #ebe7f1;border-radius:8px;cursor:pointer;min-width:0}
+#review .rv-task-choice input,#review .rv-task-result input{width:17px!important;height:17px!important;margin:0!important;padding:0!important;accent-color:#785eb8;flex-shrink:0}
+#review .rv-task-choice span{overflow-wrap:anywhere;flex:1;min-width:0}#review .rv-task-choice small{font-size:11px;color:#958d9f;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#review .rv-result-summary{padding:16px 0 10px}#review .rv-result-summary>div{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}#review .rv-result-summary span{font-size:14px;color:#6e687a}#review .rv-result-summary strong{color:#258451;font-size:32px!important;margin-left:auto}#review .rv-result-summary small{flex-basis:100%;font-size:13px;color:#8c8597}
+#review #rv6Completion{width:100%;height:10px;border:0;border-radius:10px;overflow:hidden;accent-color:#3b9a68;margin-top:12px;background:#edf1ef}#review #rv6Completion::-webkit-progress-bar{background:#edf1ef}#review #rv6Completion::-webkit-progress-value{background:#3b9a68;border-radius:10px}
+#review .rv-task-results{display:grid;gap:7px;max-height:280px;overflow:auto}#review .rv-task-result{display:flex;align-items:center;gap:9px;border-bottom:1px solid #f0edf4;padding:9px 0;flex-wrap:wrap}#review .rv-task-result label{display:flex;align-items:center;gap:9px;flex:1;margin:0!important;min-width:0;overflow-wrap:anywhere;font-size:13px}#review .rv-task-result small{font-size:11px;color:#8e8799}#review .rv-task-result.is-done small{color:#23844e}#review .rv-task-result.is-done input{accent-color:#23844e}
+#review .review-v6-reality-note{margin-top:14px;font-size:12px!important;line-height:1.6}
+@media(max-width:650px){#review .review-v6-goal{grid-template-columns:1fr!important}#review .review-v6-goal>label:last-of-type{grid-column:1!important}#rvTaskChoices{grid-template-columns:1fr}#review .review-v6-card{padding:16px!important}}

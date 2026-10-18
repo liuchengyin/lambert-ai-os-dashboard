@@ -2,7 +2,7 @@ name: Project focused task center check
 on:
   push:
     branches: [feat/project-focused-tasks]
-    paths: ['task-center*', 'project-date-picker.js', 'lib/task-center-model.js', 'dashboard-v5.js', 'project-v3.js', 'index.html', 'tests/task-center*', '.github/workflows/task-center-ui.yml']
+    paths: ['task-center*', 'review-v6.js', 'review-layout-v7.css', 'project-date-picker.js', 'lib/task-center-model.js', 'dashboard-v5.js', 'project-v3.js', 'index.html', 'tests/task-center*', '.github/workflows/task-center-ui.yml']
   workflow_dispatch:
 permissions:
   contents: read

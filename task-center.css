@@ -81,3 +81,5 @@
 #tasks .tc-gantt-bar.is-doing{--tc-bar-rgb:112,79,196;background:linear-gradient(90deg,rgba(var(--tc-bar-rgb),0),rgba(var(--tc-bar-rgb),.75) 24%,rgb(var(--tc-bar-rgb)) 65%);color:#fff}
 #tasks .tc-gantt-bar.is-done{--tc-bar-rgb:50,126,87;background:linear-gradient(90deg,rgba(var(--tc-bar-rgb),0),rgba(var(--tc-bar-rgb),.75) 24%,rgb(var(--tc-bar-rgb)) 65%);color:#fff}
 #tasks .tc-gantt-bar:focus-visible{clip-path:none;outline:2px solid #312345;outline-offset:2px}
+#tasks .tc-done-check{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;margin-right:6px;border-radius:50%;background:#e1f4e9;color:#23844e;font-weight:800;font-size:13px;vertical-align:middle;flex-shrink:0}
+#tasks .tc-task-done{border-color:#b7ddc6;background:#fcfffd}#tasks .tc-task-done .tc-task-title{color:#347353}
