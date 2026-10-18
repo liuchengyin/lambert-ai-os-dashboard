@@ -62,7 +62,7 @@
     <div class="project-compose-grid">
       <label class="project-name-field">项目名称<input id="projectNameInput" placeholder="例如：10 月完成物流岗位求职准备"></label>
       <label>状态<select id="projectStatusInput"><option>待开始</option><option>进行中</option><option>已完成</option></select></label>
-      <label>开始日期<input id="projectStartInput" type="date"></label><label>截止日期<input id="projectDueInput" type="date"></label><label>项目分类<select id="projectCategoryInput"><option value="">未分类</option><option>健康</option><option>工作</option><option>个人</option><option>习惯</option><option>金融</option></select></label>
+      <label>开始时间<input id="projectStartInput" type="date"></label><label>截止时间<input id="projectDueInput" type="date"></label><label>项目分类<select id="projectCategoryInput"><option value="">未分类</option><option>健康</option><option>工作</option><option>个人</option><option>习惯</option><option>金融</option></select></label>
       <label class="project-standard-field">完成交付标准（可衡量）<textarea id="projectStandardInput" placeholder="例如：完成 3 个面试案例稿 + 10 次模拟面试 + 获得 1 个目标 Offer"></textarea></label>
       <div class="project-task-field">
         <span class="project-field-label">关联任务</span>
@@ -138,7 +138,7 @@
 <div class="project-edit-dialog-head"><h3>编辑项目</h3><button id="projectEditClose" class="project-edit-close" type="button" aria-label="取消编辑并关闭窗口" title="取消编辑">×</button></div>
 <label>项目名称<input id="projectEditName"></label>
 <label>状态<select id="projectEditStatus"><option>待开始</option><option>进行中</option><option>已完成</option></select></label>
-<label>开始日期<input id="projectEditStart" type="date"></label><label>截止日期<input id="projectEditDue" type="date"></label><label>项目分类<select id="projectEditCategory"><option value="">未分类</option><option>健康</option><option>工作</option><option>个人</option><option>习惯</option><option>金融</option></select></label>
+<label>开始时间<input id="projectEditStart" type="date"></label><label>截止时间<input id="projectEditDue" type="date"></label><label>项目分类<select id="projectEditCategory"><option value="">未分类</option><option>健康</option><option>工作</option><option>个人</option><option>习惯</option><option>金融</option></select></label>
 <label>完成交付标准（可衡量）<textarea id="projectEditStandard"></textarea></label>
 <div class="project-task-field"><span class="project-field-label">关联任务</span><input id="projectEditTaskSearch" class="project-task-search" placeholder="搜索任务名称"><div class="project-inline-task-create"><input id="projectEditNewTaskTitle" placeholder="直接新建任务并自动关联"><button id="projectEditCreateTaskBtn" type="button">+ 新建任务</button></div><div id="projectEditTaskOptions" class="project-task-options project-edit-task-options"></div></div>
 <div class="dlgActions"><button value="cancel">取消</button><button id="projectDeleteBtn" type="button">删除</button><button id="projectEditSave" value="default">保存</button></div>
@@ -156,4 +156,5 @@
 <script src="sprint1-navigation.js?v=1"></script>
 <script src="deepseek-v1.js?v=2"></script>
 <script src="ai-chat.js?v=1"></script>
+<script src="project-date-picker.js"></script>
 </body></html>

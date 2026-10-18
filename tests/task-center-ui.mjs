@@ -25,7 +25,7 @@ try{
  const row=page.locator('[data-tc-row="ta"]');await row.locator('[data-field="status"]').selectOption('进行中');
  await page.locator('[data-tc-row="ta"] [data-field="due"]').fill('2026-10-22T20:00');await page.locator('[data-tc-row="ta"] [data-field="due"]').press('Tab');
  saved=await tasks();assert.equal(saved.find(t=>t.id==='ta').due,'2026-10-22T20:00');
- await tab('甘特图');assert.equal(await page.locator('[data-tc-gantt="ta"]').count(),1);assert.equal(await page.locator('.tc-gantt-bar').count(),1);assert.ok((await page.locator('.tc-unplanned').innerText()).includes('未排期任务'));
+ await tab('甘特图');assert.equal(await page.locator('[data-tc-gantt="ta"]').count(),1);assert.equal(await page.locator('.tc-gantt-bar').count(),1);assert.ok((await page.locator('.tc-gantt-bar').evaluate(el=>getComputedStyle(el).backgroundImage)).includes('linear-gradient'));assert.ok((await page.locator('.tc-gantt-bar').evaluate(el=>getComputedStyle(el).clipPath)).includes('polygon'));assert.ok((await page.locator('.tc-unplanned').innerText()).includes('未排期任务'));
  await page.locator('#tcFilterStatus').selectOption('进行中');assert.equal(await page.locator('.tc-gantt-bar').count(),1);await tab('看板');assert.equal(await page.locator('.tc-task').count(),1);
  await page.locator('#tcClear').click();
  await page.locator('#tcNewTask').click();await page.locator('#tcTitle').fill('每日阅读任务');await page.locator('#tcStart').fill('2026-10-24T10:00');await page.locator('#tcDue').fill('2026-10-23T10:00');await page.locator('#tcEditorForm button[type="submit"]').click();assert.ok((await page.locator('#tcEditorError').innerText()).includes('不能晚于'));assert.ok(await page.locator('#tcEditor').isVisible());
@@ -40,6 +40,17 @@ try{
  // Project card drilldown and rename retain stable identity.
  await page.locator('nav button[data-v="projects"]').click();const project=page.getByRole('button',{name:'打开项目 网络阅读',exact:true});await project.click();assert.equal(await page.locator('#tcProjectTitle').innerText(),'网络阅读');
  await page.locator('#tcBackProjects').click();await page.getByRole('button',{name:'打开项目 网络阅读',exact:true}).getByRole('button',{name:'编辑',exact:true}).click();
+ // Picker cancellation preserves the source; confirmation saves an explicit local time.
+ assert.equal(await page.locator('#projectEditDue').inputValue(),'2026-11-01T23:59');
+ await page.clock.install({time:new Date('2026-10-18T01:00:00Z')});
+ await page.locator('[data-date-for="projectEditStart"]').click();
+ await page.locator('[data-quick="nextweek"]').click();
+ assert.equal(await page.locator('#projectEditStart').inputValue(),'2026-10-18T00:00');
+ assert.ok((await page.locator('#pdSummary').innerText()).startsWith('2026-10-19'));
+ await page.getByRole('button',{name:'关闭日期选择',exact:true}).click();
+ await page.locator('[data-date-for="projectEditStart"]').click();await page.locator('[data-quick="monthend"]').click();await page.locator('[data-time="17:00"]').click();await page.locator('#pdConfirm').click();
+ assert.equal(await page.locator('#projectEditStart').inputValue(),'2026-10-31T17:00');
+ await page.locator('[data-date-for="projectEditStart"]').click();await page.locator('#pdClear').click();assert.equal(await page.locator('#projectEditStart').inputValue(),'');
  await page.locator('#projectEditName').fill('网络阅读新版');await page.locator('#projectEditSave').click();
  saved=await tasks();assert.equal(saved.find(t=>t.id==='ta').projectId,'a');assert.equal(saved.find(t=>t.id==='ta').project,'网络阅读新版');
  await nav();assert.equal(await page.locator('#tcProjectTitle').innerText(),'网络阅读新版');

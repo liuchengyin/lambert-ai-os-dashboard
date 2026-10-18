@@ -184,7 +184,7 @@
 
   function openProjectEditor(index){
     projectEditIndex=index;const p=state.projects[index];
-    $("projectEditStart").value=p.start||"";$("projectEditCategory").value=p.category||"";$("projectEditName").value=p.name;$("projectEditStatus").value=p.status;$("projectEditDue").value=p.due||"";$("projectEditStandard").value=p.standard||"";$("projectEditTaskSearch").value="";$("projectEditNewTaskTitle").value="";
+    $("projectEditStart").value=p.start?(p.start.length===10?p.start+"T00:00":p.start):"";$("projectEditCategory").value=p.category||"";$("projectEditName").value=p.name;$("projectEditStatus").value=p.status;$("projectEditDue").value=p.due?(p.due.length===10?p.due+"T23:59":p.due):"";$("projectEditStandard").value=p.standard||"";$("projectEditTaskSearch").value="";$("projectEditNewTaskTitle").value="";
     editSelected=new Set(projectTasks(p).map(t=>t.id));renderEditTaskPicker();$("projectEditDlg").showModal()
   }
   // Close means cancel: keep the original project and all linked tasks unchanged.
