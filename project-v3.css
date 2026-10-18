@@ -36,12 +36,12 @@
 .project-board .project-card .project-collapse-body:empty{display:none}
 .project-board .project-card .project-collapse-item:not([open]) .project-collapse-body{display:none}
 .project-board .project-card .project-category-select{flex:0 0 auto;max-width:96px;font-size:11px;padding:2px 6px;border-radius:6px;border:1px solid transparent;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:none;color:#334155}
-.project-board .project-card .project-category-select.cat-health{background:#e7f6ec!important;color:#2f7d4f!important;border-color:#cbe9d6!important}
-.project-board .project-card .project-category-select.cat-work{background:#e8efff!important;color:#3b5bb5!important;border-color:#d3e0fb!important}
-.project-board .project-card .project-category-select.cat-personal{background:#fdeef4!important;color:#a84b74!important;border-color:#f6d6e3!important}
-.project-board .project-card .project-category-select.cat-habit{background:#fff4e0!important;color:#a06a1e!important;border-color:#f6e2c0!important}
-.project-board .project-card .project-category-select.cat-finance{background:#e6f6f6!important;color:#2b7a7a!important;border-color:#c9eaea!important}
-.project-board .project-card .project-category-select.cat-custom{background:#eef1f5!important;color:#4b5563!important;border-color:#dde3ea!important}
+#projects .project-board .project-card .project-category-select.cat-health{background:#e7f6ec!important;color:#2f7d4f!important;border-color:#cbe9d6!important}
+#projects .project-board .project-card .project-category-select.cat-work{background:#e8efff!important;color:#3b5bb5!important;border-color:#d3e0fb!important}
+#projects .project-board .project-card .project-category-select.cat-personal{background:#fdeef4!important;color:#a84b74!important;border-color:#f6d6e3!important}
+#projects .project-board .project-card .project-category-select.cat-habit{background:#fff4e0!important;color:#a06a1e!important;border-color:#f6e2c0!important}
+#projects .project-board .project-card .project-category-select.cat-finance{background:#e6f6f6!important;color:#2b7a7a!important;border-color:#c9eaea!important}
+#projects .project-board .project-card .project-category-select.cat-custom{background:#eef1f5!important;color:#4b5563!important;border-color:#dde3ea!important}
 .project-board .project-card .project-collapse-body .project-card-top{margin:0}
 .project-board .project-card .project-collapse-body .project-card-actions{margin-top:2px}
 #projectArchiveToggle{margin:0 0 14px}
