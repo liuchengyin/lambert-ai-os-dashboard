@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [project, task, ai]
+        part: [task-card, task-data]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
