@@ -18,3 +18,35 @@
 @media(max-width:1180px){.project-dashboard{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:900px){.project-dashboard{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:680px){.project-dashboard{grid-template-columns:1fr}.project-inline-task-create{grid-template-columns:1fr}.project-compose-collapsible>summary{align-items:flex-start}}
+
+/* Collapsible project cards (all statuses) */
+.project-board .project-col .project-col-head{margin-bottom:6px}
+.project-board .project-col .project-col-controls{display:flex;gap:6px;margin:0 0 8px}
+.project-board .project-col .project-col-controls button{font-size:11px;padding:4px 9px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#475569;cursor:pointer}
+.project-board .project-col .project-col-controls button:hover{background:#f1f5f9}
+.project-board .project-card{padding:0!important;overflow:hidden}
+.project-board .project-card .project-collapse-item{border:0;margin:0;padding:0}
+.project-board .project-card .project-collapse-summary{list-style:none;display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;min-height:0}
+.project-board .project-card .project-collapse-summary::-webkit-details-marker{display:none}
+.project-board .project-card .project-collapse-head{display:flex;align-items:center;gap:6px;flex:1 1 auto;min-width:0}
+.project-board .project-card .project-collapse-title{font-weight:600;font-size:13px;color:#1f2937;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-board .project-card .project-collapse-arrow{flex:0 0 auto;font-size:11px;color:#94a3b8;transition:transform .15s ease}
+.project-board .project-card .project-collapse-item[open] .project-collapse-arrow{transform:rotate(180deg)}
+.project-board .project-card .project-collapse-body{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
+.project-board .project-card .project-collapse-body:empty{display:none}
+.project-board .project-card .project-collapse-item:not([open]) .project-collapse-body{display:none}
+.project-board .project-card .project-category-select{flex:0 0 auto;max-width:96px;font-size:11px;padding:2px 6px;border-radius:6px;border:1px solid transparent;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:none;color:#334155}
+.project-board .project-card .project-category-select.cat-health{background:#e7f6ec;color:#2f7d4f;border-color:#cbe9d6}
+.project-board .project-card .project-category-select.cat-work{background:#e8efff;color:#3b5bb5;border-color:#d3e0fb}
+.project-board .project-card .project-category-select.cat-personal{background:#fdeef4;color:#a84b74;border-color:#f6d6e3}
+.project-board .project-card .project-category-select.cat-habit{background:#fff4e0;color:#a06a1e;border-color:#f6e2c0}
+.project-board .project-card .project-category-select.cat-finance{background:#e6f6f6;color:#2b7a7a;border-color:#c9eaea}
+.project-board .project-card .project-category-select.cat-custom{background:#eef1f5;color:#4b5563;border-color:#dde3ea}
+.project-board .project-card .project-collapse-body .project-card-top{margin:0}
+.project-board .project-card .project-collapse-body .project-card-actions{margin-top:2px}
+#projectArchiveToggle{margin:0 0 14px}
+
+#projects .project-collapse-summary:focus-visible{outline:2px solid #7957d5;outline-offset:-2px;border-radius:8px}
+#projects .project-collapse-head>.tc-done-check{display:inline-flex;align-items:center;justify-content:center;flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:#21a365;color:#fff;font-weight:700;font-size:12px}
+#projects .project-collapse-title{white-space:normal;overflow-wrap:anywhere}
+#projects .project-category-select{min-width:0;width:auto;max-width:88px;margin:0;padding-right:15px;appearance:auto;-webkit-appearance:auto}

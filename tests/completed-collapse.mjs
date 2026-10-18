@@ -9,27 +9,27 @@ const stored=key=>page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
 try{
  await page.goto('http://127.0.0.1:8000/');await page.waitForFunction(()=>window.TaskCenter);
  await page.locator('nav button[data-v="projects"]').click();
- const badgeStyle=await page.locator('#projectBoard .completed-item summary .tc-done-check').first().evaluate(el=>({bg:getComputedStyle(el).backgroundColor,color:getComputedStyle(el).color,radius:getComputedStyle(el).borderRadius}));assert.equal(badgeStyle.bg,'rgb(33, 163, 101)');assert.equal(badgeStyle.color,'rgb(255, 255, 255)');assert.equal(badgeStyle.radius,'50%');
- assert.equal(await page.locator('#projectBoard .completed-item summary').first().evaluate(el=>getComputedStyle(el,'::after').content),'"⌄"');
- const projects=page.locator('#projectBoard details.completed-item');assert.equal(await projects.count(),2);assert.equal(await projects.locator(':scope[open]').count(),0);
- await ensureOpen(projects.first());assert.ok(await projects.first().evaluate(e=>e.open));await page.getByRole('button',{name:'全部展开',exact:true}).click();assert.equal(await projects.locator(':scope[open]').count(),2);await page.getByRole('button',{name:'全部折叠',exact:true}).click();assert.equal(await projects.locator(':scope[open]').count(),0);
+ const badgeStyle=await page.locator('#projectBoard .project-collapse-item summary .tc-done-check').first().evaluate(el=>({bg:getComputedStyle(el).backgroundColor,color:getComputedStyle(el).color,radius:getComputedStyle(el).borderRadius}));assert.equal(badgeStyle.bg,'rgb(33, 163, 101)');assert.equal(badgeStyle.color,'rgb(255, 255, 255)');assert.equal(badgeStyle.radius,'50%');
+ assert.equal(await page.locator('#projectBoard .project-collapse-arrow').first().textContent(),'▾');
+ const projects=page.locator('#projectBoard details.project-collapse-item');assert.equal(await projects.count(),2);assert.equal(await projects.locator(':scope[open]').count(),0);
+ await ensureOpen(projects.first());assert.ok(await projects.first().evaluate(e=>e.open));await page.locator('.project-col-done').getByRole('button',{name:'全部展开',exact:true}).click();assert.equal(await projects.locator(':scope[open]').count(),2);await page.locator('.project-col-done').getByRole('button',{name:'全部折叠',exact:true}).click();assert.equal(await projects.locator(':scope[open]').count(),0);
  await ensureOpen(projects.first());await projects.first().getByRole('button',{name:'编辑',exact:true}).click();assert.ok(await page.locator('#projectEditDlg').isVisible());await page.keyboard.press('Escape');
  await projects.first().getByRole('button',{name:'归档',exact:true}).click();assert.equal((await stored('projects')).length,2);assert.equal((await stored('projects')).filter(p=>p.archived).length,1);await page.locator('#projectArchiveToggle').click();assert.equal(await projects.count(),1);await ensureOpen(projects.first());await projects.first().getByRole('button',{name:'取消归档'}).click();await page.locator('#projectArchiveToggle').click();
  await ensureOpen(projects.first());await projects.first().getByRole('button',{name:'重新打开'}).click();assert.equal((await stored('projects')).find(p=>p.id==='p').status,'进行中');
  await page.locator('nav button[data-v="tasks"]').click();
  const tasks=page.locator('#tcContent details.completed-item');assert.equal(await tasks.count(),2);assert.equal(await tasks.locator(':scope[open]').count(),0);
- await page.locator('[data-tc-expand]').click();assert.equal(await tasks.locator(':scope[open]').count(),2);await page.locator('[data-tc-collapse]').click();assert.equal(await tasks.locator(':scope[open]').count(),0);
+ await page.locator('[data-tc-status="已完成"] [data-tc-expand]').click();assert.equal(await tasks.locator(':scope[open]').count(),2);await page.locator('[data-tc-status="已完成"] [data-tc-collapse]').click();assert.equal(await tasks.locator(':scope[open]').count(),0);
  await ensureOpen(tasks.first());await tasks.first().getByRole('button',{name:'编辑',exact:true}).click();assert.ok(await page.locator('#tcEditor').isVisible());await page.locator('#tcTitle').fill('完成任务已修改');await page.locator('#tcEditorForm button[type="submit"]').click();assert.equal((await stored('tasks')).find(t=>t.id==='t').note,'保留备注');
  await page.locator('[data-tc-task="t"]').getByRole('button',{name:'归档',exact:true}).click();assert.equal((await stored('tasks')).length,2);assert.equal(await page.locator('[data-tc-task="t"]').count(),0);await page.locator('#tcArchiveToggle').click();await ensureOpen(page.locator('[data-tc-task="t"] details'));await page.locator('[data-tc-task="t"]').getByRole('button',{name:'取消归档'}).click();await page.locator('#tcArchiveToggle').click();
- await ensureOpen(page.locator('[data-tc-task="t"] details'));await page.locator('[data-tc-task="t"]').getByRole('button',{name:'重新打开'}).click();assert.equal((await stored('tasks')).find(t=>t.id==='t').status,'进行中');assert.equal(await page.locator('[data-tc-task="t"] summary').count(),0);
+ await ensureOpen(page.locator('[data-tc-task="t"] details'));await page.locator('[data-tc-task="t"]').getByRole('button',{name:'重新打开'}).click();assert.equal((await stored('tasks')).find(t=>t.id==='t').status,'进行中');assert.equal(await page.locator('[data-tc-task="t"] summary').count(),1);
  await page.locator('[data-tc-task="t"]').dragTo(page.locator('[data-tc-status="已完成"] header'),{sourcePosition:{x:8,y:8}});assert.equal((await stored('tasks')).find(t=>t.id==='t').status,'已完成');assert.equal(await page.locator('[data-tc-task="t"] details').evaluate(e=>e.open),false);
  await page.reload();await page.waitForFunction(()=>window.TaskCenter);await page.locator('nav button[data-v="tasks"]').click();assert.equal(await page.locator('#tcContent details[open]').count(),0);
 
  // DeepSeek Flash draft, corrected bulk-control scope and strengthened all-item assertions.
  const items=page.locator('#tcContent details.completed-item');
-await page.locator('[data-tc-expand]').click();
+await page.locator('[data-tc-status="已完成"] [data-tc-expand]').click();
 assert(await items.evaluateAll(elements=>elements.length>0&&elements.every(e=>e.open)));
-await page.locator('[data-tc-collapse]').click();
+await page.locator('[data-tc-status="已完成"] [data-tc-collapse]').click();
 assert(await items.evaluateAll(elements=>elements.every(e=>!e.open)));
 await items.first().locator('summary').click();
 assert(await items.first().evaluate(e=>e.open));

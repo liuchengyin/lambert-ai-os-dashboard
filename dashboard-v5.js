@@ -57,7 +57,7 @@
   }
   function jumpToProject(id){
     if(window.TaskCenter){TaskCenter.openProject(id);return}
-    openView('projects');setTimeout(()=>{const p=(state.projects||[]).find(x=>x.id===id);if(!p)return;const card=[...document.querySelectorAll('.project-card')].find(x=>x.querySelector('h4')?.textContent===p.name);if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('highlight-jump');setTimeout(()=>card.classList.remove('highlight-jump'),1400)}},80)
+    openView('projects');setTimeout(()=>{const p=(state.projects||[]).find(x=>x.id===id);if(!p)return;const card=[...document.querySelectorAll('.project-card')].find(x=>x.querySelector('.project-collapse-title,h4')?.textContent===p.name);if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('highlight-jump');setTimeout(()=>card.classList.remove('highlight-jump'),1400)}},80)
   }
 
   // The project-focused task center owns task presentation and editing.

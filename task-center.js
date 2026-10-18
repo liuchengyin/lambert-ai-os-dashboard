@@ -74,18 +74,20 @@
   function taskDates(task) {return task.start||task.due?`${task.start?.replace('T',' ')||'待定'} → ${task.due?.replace('T',' ')||'待定'}`:'待排期';}
   function card(task) {
     const el=document.createElement('article');el.className='tc-task'+(task.status==='已完成'?' tc-task-done':'');el.dataset.tcTask=task.id;el.draggable=true;
-    el.innerHTML=`<button class="tc-task-title" type="button">${task.status==='已完成'?'<span class="tc-done-check" role="img" aria-label="已完成">✓</span>':''}${esc(task.title)}</button><div class="tc-tags">${labelsHtml(task.labels)}<span class="tc-priority">${esc(task.priority||'P2')}</span></div><small>${esc(taskDates(task))}</small><div class="tc-task-actions"><select aria-label="${esc(task.title)}的状态">${options(statuses,task.status)}</select><button type="button" data-edit>编辑</button></div>`;
+    const detail=document.createElement('details');detail.className='completed-item';detail.open=expandedDone.has(task.id);
+    const summary=document.createElement('summary');summary.innerHTML=`${task.status==='已完成'?'<span class="tc-done-check" aria-hidden="true">✓</span>':''}<span>${esc(task.title)}</span>`;
+    const body=document.createElement('div');body.className='tc-task-body';
+    body.innerHTML=`<div class="tc-tags">${labelsHtml(task.labels)}<span class="tc-priority">${esc(task.priority||'P2')}</span></div><small>${esc(taskDates(task))}</small><div class="tc-task-actions"><select aria-label="${esc(task.title)}的状态">${options(statuses,task.status)}</select><button type="button" data-edit>编辑</button></div>`;
+    detail.append(summary,body);el.append(detail);
+    detail.ontoggle=()=>{if(!detail.isConnected)return;if(detail.open)expandedDone.add(task.id);else expandedDone.delete(task.id);};
     if(task.status==='已完成'){
-      const detail=document.createElement('details');detail.className='completed-item';detail.open=expandedDone.has(task.id);
-      const summary=document.createElement('summary');summary.innerHTML=`<span class="tc-done-check" aria-hidden="true">✓</span><span>${esc(task.title)}</span>`;
-      const title=el.querySelector('.tc-task-title');title.remove();
-      detail.append(summary);while(el.firstChild)detail.append(el.firstChild);el.append(detail);
-      detail.ontoggle=()=>{if(!detail.isConnected)return;if(detail.open)expandedDone.add(task.id);else expandedDone.delete(task.id);};
-      const reopen=document.createElement('button');reopen.type='button';reopen.textContent='重新打开';reopen.onclick=()=>{expandedDone.delete(task.id);task.status='进行中';task.archived=false;save();};detail.querySelector('.tc-task-actions').append(reopen);
-    }else el.querySelector('.tc-task-title').onclick=()=>editTask(task.id);
-    const archive=document.createElement('button');archive.type='button';archive.textContent=task.archived?'取消归档':'归档';archive.onclick=()=>archiveTask(task);el.querySelector('.tc-task-actions').append(archive);
-    el.querySelector('[data-edit]').onclick=()=>editTask(task.id);
-    el.querySelector('select').onchange=e=>{task.status=e.target.value;save();};
+      const reopen=document.createElement('button');reopen.type='button';reopen.textContent='重新打开';reopen.onclick=()=>{expandedDone.delete(task.id);task.status='进行中';task.archived=false;save();};body.querySelector('.tc-task-actions').append(reopen);
+    }
+    if(task.status==='已完成'||task.archived){
+      const archive=document.createElement('button');archive.type='button';archive.textContent=task.archived?'取消归档':'归档';archive.onclick=()=>archiveTask(task);body.querySelector('.tc-task-actions').append(archive);
+    }
+    body.querySelector('[data-edit]').onclick=()=>editTask(task.id);
+    body.querySelector('select').onchange=e=>{task.status=e.target.value;save();};
     el.ondragstart=e=>{if(e.target.closest('button,select,input')){e.preventDefault();return;}draggedId=task.id;e.dataTransfer.setData('text/plain',task.id);e.dataTransfer.effectAllowed='move';el.classList.add('tc-dragging');};
     el.ondragend=()=>{draggedId=null;el.classList.remove('tc-dragging');};
     return el;
@@ -95,18 +97,15 @@
     statuses.forEach(status=>{
       const col=document.createElement('section');col.className='tc-column';col.dataset.tcStatus=status;
       const items=rows.filter(t=>t.status===status);
-      col.innerHTML=`<header><h3>${status==='已完成'?'<span class="tc-done-check" aria-hidden="true">✓</span> ':''}${status}</h3><span>${items.length}</span></header><div class="tc-cards"></div><button type="button" class="tc-column-add">＋ 添加任务</button>`;
-      if(status==='已完成'){
-        const controls=document.createElement('div');controls.className='completed-controls';
-        controls.innerHTML='<button type="button" data-tc-expand>全部展开</button><button type="button" data-tc-collapse>全部折叠</button>';
-        controls.querySelector('[data-tc-expand]').onclick=()=>{items.forEach(t=>expandedDone.add(t.id));render();};
-        controls.querySelector('[data-tc-collapse]').onclick=()=>{expandedDone.clear();render();};col.querySelector('header').after(controls);
-      }
+      col.innerHTML=`<header><h3>${status==='已完成'?'<span class="tc-done-check" aria-hidden="true">✓</span> ':''}${status}</h3><span>${items.length}</span></header><div class="completed-controls"><button type="button" data-tc-expand>全部展开</button><button type="button" data-tc-collapse>全部折叠</button></div><div class="tc-cards"></div><button type="button" class="tc-column-add">＋ 添加任务</button>`;
+      const controls=col.querySelector('.completed-controls');
+      controls.querySelector('[data-tc-expand]').onclick=()=>{items.forEach(t=>expandedDone.add(t.id));render();};
+      controls.querySelector('[data-tc-collapse]').onclick=()=>{items.forEach(t=>expandedDone.delete(t.id));render();};
       const cards=col.querySelector('.tc-cards');items.forEach(t=>cards.append(card(t)));
       if(!items.length)cards.innerHTML='<p class="tc-empty">暂无任务</p>';
       col.querySelector('button.tc-column-add').onclick=()=>newTask(status);
       col.ondragover=e=>{if(draggedId){e.preventDefault();e.dataTransfer.dropEffect='move';}};
-      col.ondrop=e=>{e.preventDefault();const task=projectRows().find(t=>t.id===draggedId);if(!task)return;const target=e.target.closest('[data-tc-task]')?.dataset.tcTask;draggedId=null;if(task.status!==status)expandedDone.delete(task.id);task.status=status;const ids=state.tasks.map(t=>t.id),stored=read('task_drag_order_v1',ids),order=[...new Set([...stored,...ids])].filter(id=>id!==task.id);const index=target?order.indexOf(target):-1;order.splice(index<0?order.length:index,0,task.id);try{localStorage.setItem('task_drag_order_v1',JSON.stringify(order));}catch{}filters.sort='manual';$('tcFilterSort').value='manual';save();};
+      col.ondrop=e=>{e.preventDefault();const task=projectRows().find(t=>t.id===draggedId);if(!task)return;const target=e.target.closest('[data-tc-task]')?.dataset.tcTask;draggedId=null;if(task.status!==status){expandedDone.delete(task.id);}task.status=status;const ids=state.tasks.map(t=>t.id),stored=read('task_drag_order_v1',ids),order=[...new Set([...stored,...ids])].filter(id=>id!==task.id);const index=target?order.indexOf(target):-1;order.splice(index<0?order.length:index,0,task.id);try{localStorage.setItem('task_drag_order_v1',JSON.stringify(order));}catch{}filters.sort='manual';$('tcFilterSort').value='manual';save();};
       board.append(col);
     });
     return board;

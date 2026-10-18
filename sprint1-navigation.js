@@ -70,3 +70,38 @@
   observer.observe(nav,{childList:true,subtree:true});
   organize();
 })();
+
+// GLM Flash navigation draft, corrected to use the existing view router and URL.
+(function(){
+  const original=window.openView,allowed=new Set(['home','projects','tasks','review','writing','reading','english','knowledge']);
+  if(typeof original!=='function')return;
+  const KEY='s1_last_view_v1';
+  const read=()=>{try{return localStorage.getItem(KEY)}catch{return null}};
+  const save=id=>{try{localStorage.setItem(KEY,id)}catch{}};
+  const fromUrl=()=>new URL(location.href).searchParams.get('view');
+  const valid=id=>allowed.has(id);
+  let current=null,pending=null,observer=null;
+  const writeUrl=(id,push)=>{try{const url=new URL(location.href);url.searchParams.set('view',id);if(push&&url.href!==location.href)history.pushState(history.state,'',url);else if(!push)history.replaceState(history.state,'',url)}catch{}};
+  const ready=id=>document.getElementById(id)?.classList.contains('view')&&document.querySelector('nav button[data-v="'+id+'"]');
+  function stop(){observer?.disconnect();observer=null;}
+  function restore(id){
+    pending=valid(id)?id:'home';
+    if(ready(pending)){
+      const target=pending;pending=null;stop();original(target);current=target;save(target);return;
+    }
+    if(!observer){
+      observer=new MutationObserver(()=>{if(pending&&ready(pending))restore(pending)});
+      observer.observe(document.querySelector('nav'),{childList:true,subtree:true});
+      observer.observe(document.querySelector('main'),{childList:true,subtree:true});
+    }
+  }
+  window.openView=function(id){
+    if(!valid(id))return original(id);
+    pending=null;stop();
+    if(!ready(id)){writeUrl(id,true);restore(id);return;}
+    original(id);save(id);if(current!==id||fromUrl()!==id)writeUrl(id,true);current=id;
+  };
+  window.addEventListener('popstate',()=>{const id=fromUrl();restore(valid(id)?id:'home')});
+  const requested=fromUrl(),stored=read(),initial=valid(requested)?requested:valid(stored)?stored:'home';
+  writeUrl(initial,false);restore(initial);
+})();

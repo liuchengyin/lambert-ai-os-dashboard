@@ -1,0 +1,52 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+import {mkdirSync} from 'node:fs';
+const base=process.env.TEST_BASE_URL||'http://127.0.0.1:8000/';
+const browser=await chromium.launch(),ctx=await browser.newContext({viewport:{width:1440,height:1000}}),errors=[];
+await ctx.addInitScript(()=>{
+ if(localStorage.getItem('batch_seed'))return;
+ localStorage.setItem('batch_seed','1');
+ const statuses=['待开始','进行中','已完成'];
+ localStorage.setItem('projects',JSON.stringify(statuses.map((status,i)=>({id:'bp'+i,name:'项目'+i,status,category:i===0?'自定义':'工作',standard:'原标准',extra:'保留字段'}))));
+ localStorage.setItem('tasks',JSON.stringify(statuses.map((status,i)=>({id:'bt'+i,title:'任务'+i,status,projectId:'bp0',project:'项目0',priority:'P2',note:'原备注',extra:'保留字段'}))));
+});
+const p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));
+const open=async id=>{await p.locator('nav button[data-v="'+id+'"]').click();await p.locator('#'+id+'.activeView').waitFor();};
+const countOpen=async col=>col.locator('details[open]').count();
+try{
+ await p.goto(base+'?view=projects&keep=yes#anchor');await p.locator('#projects.activeView').waitFor();
+ assert.equal(new URL(p.url()).searchParams.get('keep'),'yes');
+ assert.equal(await p.locator('#projectBoard details').count(),3);
+ assert.equal(await p.locator('#projectBoard details[open]').count(),0);
+ const cols=p.locator('#projectBoard .project-col');
+ await cols.nth(0).getByRole('button',{name:'全部展开',exact:true}).click();
+ await cols.nth(1).getByRole('button',{name:'全部展开',exact:true}).click();
+ await cols.nth(0).getByRole('button',{name:'全部折叠',exact:true}).click();
+ assert.equal(await countOpen(cols.nth(0)),0);assert.equal(await countOpen(cols.nth(1)),1);
+ await cols.nth(0).locator('summary').click();assert.equal(await countOpen(cols.nth(0)),1);
+ const category=cols.nth(0).locator('select').filter({has:p.locator('option[value="健康"]')}).first();
+ assert.equal(await category.inputValue(),'自定义');await category.selectOption('健康');
+ assert.equal(await p.locator('#taskDlg[open],#projectEditDlg[open]').count(),0);
+ assert.equal(await p.evaluate(()=>JSON.parse(localStorage.projects)[0].category),'健康');
+ assert.equal(await p.locator('#projectArchiveToggle').evaluate(e=>!!(document.getElementById('projectBoard').compareDocumentPosition(e)&Node.DOCUMENT_POSITION_FOLLOWING)),true);
+ await p.reload();await p.locator('#projects.activeView').waitFor();assert.equal(await p.locator('#projectBoard details[open]').count(),0);
+ await open('tasks');await p.selectOption('#tcProjectSelect','bp0');
+ const taskCols=p.locator('#tcContent .tc-column');assert.equal(await p.locator('#tcContent details').count(),3);
+ assert.equal(await p.locator('#tcContent details[open]').count(),0);
+ for(let i=0;i<3;i++)await taskCols.nth(i).getByRole('button',{name:'全部展开',exact:true}).click();
+ assert.equal(await p.locator('#tcContent details[open]').count(),3);
+ assert.equal(await taskCols.nth(0).getByRole('button',{name:'归档',exact:true}).count(),0);
+ assert.equal(await taskCols.nth(1).getByRole('button',{name:'归档',exact:true}).count(),0);
+ assert.equal(await taskCols.nth(2).getByRole('button',{name:'归档',exact:true}).count(),1);
+ await taskCols.nth(0).getByRole('button',{name:'全部折叠',exact:true}).click();assert.equal(await countOpen(taskCols.nth(1)),1);
+ const gaps=await taskCols.nth(2).evaluate(e=>{const h=e.querySelector('header').getBoundingClientRect(),c=e.querySelector('.completed-controls').getBoundingClientRect();return c.top-h.bottom;});assert.ok(gaps>=0&&gaps<=12,'compact heading controls gap');
+ await p.locator('[data-tc-task="bt1"] [data-edit]').click();await p.locator('#tcEditor[open]').waitFor();await p.locator('#tcEditor').evaluate(e=>e.close());
+ await p.reload();await p.locator('#tasks.activeView').waitFor();assert.equal(await p.locator('#tcProjectSelect').inputValue(),'bp0');
+ for(const id of ['writing','reading','english','review','knowledge']){await open(id);await p.reload();await p.locator('#'+id+'.activeView').waitFor();}
+ await open('projects');await open('tasks');await p.goBack();await p.locator('#projects.activeView').waitFor();await p.goForward();await p.locator('#tasks.activeView').waitFor();
+ await p.goto(base+'?view=bogus&keep=yes');await p.locator('.view.activeView').waitFor();assert.ok(await p.locator('nav button.active').count());
+ await p.goto(base+'?view=reading&import=1&sourceUrl=https%3A%2F%2Fexample.com&title=batch-import');await p.waitForFunction(()=>document.getElementById('rv2Status')?.textContent==='已从浏览器侧栏导入');assert.equal(await p.locator('#reading').isVisible(),true);
+ await open('projects');await p.setViewportSize({width:400,height:850});mkdirSync('tests/screenshots',{recursive:true});await p.screenshot({path:'tests/screenshots/ui-batch-projects-mobile.png',fullPage:true});assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+ const stored=await p.evaluate(()=>({p:JSON.parse(localStorage.projects),t:JSON.parse(localStorage.tasks)}));assert.equal(stored.p[0].extra,'保留字段');assert.equal(stored.t[0].extra,'保留字段');
+ assert.deepEqual(errors,[]);console.log('PASS all-state disclosures, column isolation, category persistence, archive controls, compact layout, navigation refresh/back/forward/import and mobile');
+}finally{await browser.close();}

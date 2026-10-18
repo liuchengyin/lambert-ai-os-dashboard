@@ -30,6 +30,14 @@
     return {done,total:rows.length,pct:rows.length?Math.round(done/rows.length*100):0}
   }
   function statusClass(status){return status==="待开始"?"todo":status==="进行中"?"doing":"done"}
+  const projectCategories=["健康","工作","个人","习惯","金融"];
+  const categoryClassMap={"健康":"health","工作":"work","个人":"personal","习惯":"habit","金融":"finance"};
+  function categoryClass(cat){return categoryClassMap[cat]||"custom"}
+  function categoryOptions(selected){
+    const list=[...projectCategories];
+    if(selected&&!list.includes(selected))list.push(selected);
+    return `<option value="">未分类</option>`+list.map(c=>`<option value="${escapeHtml(c)}"${c===selected?" selected":""}>${escapeHtml(c)}</option>`).join("")
+  }
   function isOverdue(project){return project.due&&project.status!=="已完成"&&project.due<dateKey()}
   function actionButton(label,cls,onClick){
     const b=document.createElement("button");b.className=`project-card-action ${cls||""}`;b.textContent=label;
@@ -145,7 +153,6 @@
     const card=document.createElement("article");card.className=`project-card project-card-${sClass}${isOverdue(project)?" project-card-overdue":""}`;card.onclick=()=>window.TaskCenter?TaskCenter.openProject(project.id):openProjectEditor(index);card.tabIndex=0;card.setAttribute("role","button");card.setAttribute("aria-label","打开项目 "+project.name);card.onkeydown=e=>{if(e.target===card&&(e.key==="Enter"||e.key===" ")){e.preventDefault();card.click()}};
     const top=document.createElement("div");top.className="project-card-top";
     top.innerHTML=`<span class="project-status status-${sClass}">${escapeHtml(project.status)}</span>${project.due?`<span class="project-due${isOverdue(project)?" overdue":""}">${isOverdue(project)?"已逾期 · ":"截止 "}${escapeHtml(project.due)}</span>`:""}`;card.appendChild(top);
-    if(project.category){const category=document.createElement("span");category.className="project-category-label";category.textContent=project.category;top.appendChild(category)}
     const title=document.createElement("h4");title.textContent=project.name;card.appendChild(title);
     if(project.standard){const standard=document.createElement("div");standard.className="project-standard";standard.innerHTML=`<span>完成交付标准</span><p>${escapeHtml(project.standard)}</p>`;card.appendChild(standard)}
     const progressWrap=document.createElement("div");progressWrap.className="project-progress-wrap";
@@ -165,31 +172,38 @@
     actions.appendChild(actionButton("编辑","",()=>openProjectEditor(index)));
     actions.appendChild(actionButton(project.archived?"取消归档":"归档","",()=>{project.archived=!project.archived;persistProjects()}));
     card.appendChild(actions);
-    if(project.status==="已完成"){
-      card.onclick=null;card.onkeydown=null;card.removeAttribute('role');card.removeAttribute('tabindex');card.removeAttribute('aria-label');
-      const detail=document.createElement('details');detail.className='completed-item';detail.open=expandedDone.has(project.id);
-      const summary=document.createElement('summary');summary.innerHTML=`<span class="tc-done-check" aria-hidden="true">✓</span><span>${escapeHtml(project.name)}</span>`;
-      title.remove();detail.append(summary);while(card.firstChild)detail.append(card.firstChild);card.append(detail);
-      detail.ontoggle=()=>{if(!detail.isConnected)return;if(detail.open)expandedDone.add(project.id);else expandedDone.delete(project.id)};
-      actions.prepend(actionButton("查看任务","",()=>window.TaskCenter?.openProject(project.id)));
-    }
+    card.onclick=null;card.onkeydown=null;card.removeAttribute('role');card.removeAttribute('tabindex');card.removeAttribute('aria-label');
+    const detail=document.createElement('details');detail.className='project-collapse-item';detail.open=expandedDone.has(project.id);
+    const summary=document.createElement('summary');summary.className='project-collapse-summary';
+    const isDone=project.status==="已完成";
+    const catSelect=document.createElement('select');catSelect.className=`project-category-select cat-${categoryClass(project.category)}`;catSelect.innerHTML=categoryOptions(project.category);catSelect.setAttribute('aria-label',project.name+'的分类');
+    catSelect.onclick=e=>e.stopPropagation();catSelect.onmousedown=e=>e.stopPropagation();catSelect.onchange=e=>{e.stopPropagation();project.category=catSelect.value;persistProjects()};
+    const head=document.createElement('span');head.className='project-collapse-head';
+    if(isDone){head.innerHTML=`<span class="tc-done-check" aria-hidden="true">✓</span><span class="project-collapse-title">${escapeHtml(project.name)}</span>`}
+    else{head.innerHTML=`<span class="project-collapse-title">${escapeHtml(project.name)}</span>`}
+    const arrow=document.createElement('span');arrow.className='project-collapse-arrow';arrow.setAttribute('aria-hidden','true');arrow.textContent='▾';
+    summary.append(head,catSelect,arrow);
+    title.remove();
+    const body=document.createElement('div');body.className='project-collapse-body';
+    while(card.firstChild)body.append(card.firstChild);
+    detail.append(summary,body);card.append(detail);
+    detail.ontoggle=()=>{if(!detail.isConnected)return;if(detail.open)expandedDone.add(project.id);else expandedDone.delete(project.id)};
+    actions.prepend(actionButton("查看任务","",()=>window.TaskCenter?.openProject(project.id)));
     return card
   }
 
   renderProjectBoard=function(){
     const board=$("projectBoard");board.innerHTML="";
     state.projects.forEach(item=>{if(previousStatuses.get(item.id)!==item.status)expandedDone.delete(item.id);previousStatuses.set(item.id,item.status);});
-    if(!$("projectArchiveToggle")){const b=document.createElement('button');b.id='projectArchiveToggle';b.type='button';board.before(b);b.onclick=()=>{showArchived=!showArchived;renderProjectBoard()}}
-    $("projectArchiveToggle").textContent=showArchived?'返回未归档项目':'查看归档项目';$("projectArchiveToggle").setAttribute('aria-pressed',String(showArchived));
+    if(!$("projectArchiveToggle")){const b=document.createElement('button');b.id='projectArchiveToggle';b.type='button';board.after(b);b.onclick=()=>{showArchived=!showArchived;renderProjectBoard()}}
+    board.after($("projectArchiveToggle"));$("projectArchiveToggle").textContent=showArchived?'返回未归档项目':'查看归档项目';$("projectArchiveToggle").setAttribute('aria-pressed',String(showArchived));
     projectStatuses.forEach(status=>{
       const sClass=statusClass(status),col=document.createElement("section");col.className=`project-col project-col-${sClass}`;
       const rows=state.projects.filter(p=>p.status===status&&!!p.archived===showArchived).sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999"));
       col.innerHTML=`<div class="project-col-head"><h3><span class="project-col-dot dot-${sClass}"></span>${status}</h3><span>${rows.length}</span></div><div class="project-col-body"></div>`;
-      if(status==="已完成"){
-        const controls=document.createElement('div');controls.className='completed-controls';controls.innerHTML='<button type="button" data-project-expand>全部展开</button><button type="button" data-project-collapse>全部折叠</button>';
-        controls.querySelector('[data-project-expand]').onclick=()=>{rows.forEach(p=>expandedDone.add(p.id));renderProjectBoard()};
-        controls.querySelector('[data-project-collapse]').onclick=()=>{expandedDone.clear();renderProjectBoard()};col.querySelector('.project-col-head').after(controls);
-      }
+      const controls=document.createElement('div');controls.className='project-col-controls';controls.innerHTML='<button type="button" data-project-expand>全部展开</button><button type="button" data-project-collapse>全部折叠</button>';
+      controls.querySelector('[data-project-expand]').onclick=()=>{rows.forEach(p=>expandedDone.add(p.id));renderProjectBoard()};
+      controls.querySelector('[data-project-collapse]').onclick=()=>{rows.forEach(p=>expandedDone.delete(p.id));renderProjectBoard()};col.querySelector('.project-col-head').after(controls);
       const body=col.querySelector(".project-col-body");if(!rows.length)body.innerHTML=empty("暂无项目");
       rows.forEach(p=>body.appendChild(renderProjectCard(p,state.projects.indexOf(p))));board.appendChild(col)
     });

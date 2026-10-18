@@ -43,6 +43,9 @@ on:
       - 'tests/audit-cleanup-ui.mjs'
       - 'project-v3.css'
       - 'sprint1-navigation.js'
+      - 'tests/ui-batch.mjs'
+      - 'task-center.js'
+      - 'task-center.css'
       - 'sprint1-hub.css'
       - 'english-app.html'
       - 'manifest.webmanifest'
@@ -83,6 +86,7 @@ jobs:
         run: |
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
+          node tests/ui-batch.mjs
           node tests/audit-cleanup-ui.mjs
           node tests/common-links-ui.mjs
           node tests/bookmark-density-ui.mjs

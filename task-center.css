@@ -26,7 +26,8 @@
 #tasks #tcNotice{color:#8e5a35}
 #tasks .tc-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:start}
 #tasks .tc-column{background:#eeebf480;border:1px solid #e3dfeb;border-radius:13px;padding:14px;min-height:240px;min-width:0}
-#tasks .tc-column>header{display:flex;justify-content:space-between;align-items:center;padding:0 0 14px;margin:0;background:none;border:0;min-height:0}
+#tasks .tc-column>header,#tasks .tc-column header{display:flex;justify-content:space-between;align-items:center;padding:0;margin:0;background:none;border:0;min-height:0;height:auto;line-height:1.4}
+#tasks .tc-column .completed-controls{margin:6px 0 10px;padding:0}
 #tasks .tc-column h3{font-size:15px;margin:0;font-weight:600}#tasks .tc-column>header>span{font-size:12px;background:#e2ddef;padding:1px 8px;border-radius:5px}
 #tasks .tc-task{background:white;border:1px solid #e7e2ee;border-radius:10px;padding:15px;margin-bottom:11px;box-shadow:0 3px 7px #38305006;min-width:0;cursor:grab}
 #tasks .tc-task-title{display:block;padding:0;background:none;border:0;box-shadow:none;color:#35324b;text-align:left;font:inherit;font-size:15px;font-weight:600;line-height:1.7;white-space:normal;overflow-wrap:anywhere;width:100%;cursor:pointer}
@@ -83,6 +84,10 @@
 #tasks .tc-gantt-bar:focus-visible{clip-path:none;outline:2px solid #312345;outline-offset:2px}
 #tasks .tc-done-check{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;margin-right:6px;border-radius:50%;background:#e1f4e9;color:#23844e;font-weight:800;font-size:13px;vertical-align:middle;flex-shrink:0}
 #tasks .tc-task-done{border-color:#b7ddc6;background:#fcfffd}#tasks .tc-task-done .tc-task-title{color:#347353}
+#tasks .tc-task>.completed-item>summary{font-size:15px;font-weight:600;color:#35324b}
+#tasks .tc-task>.completed-item[open]>summary{margin-bottom:10px}
+#tasks .tc-task>.completed-item:not([open]){padding:0}
+#tasks .tc-task-body{min-width:0}
 
 /* Completed items use the same compact disclosure in both modules. */
 .completed-item>summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;min-height:32px;color:var(--text,#27324a);font-weight:600;overflow-wrap:anywhere}
@@ -106,3 +111,7 @@
 #projects details.completed-item>summary::after,#tasks details.completed-item>summary::after{content:'⌄';flex:0 0 auto;margin-left:auto;color:#888;font-size:16px;line-height:1;transition:transform .2s ease;transform-origin:center}
 #projects details.completed-item[open]>summary::after,#tasks details.completed-item[open]>summary::after{transform:rotate(180deg)}
 #projects details.completed-item>summary:focus-visible,#tasks details.completed-item>summary:focus-visible{outline:2px solid #21a365;outline-offset:2px;border-radius:4px}
+
+#tasks .tc-column>header{margin:0 0 6px!important;padding:0!important;border:0!important;min-height:0!important}
+#tasks .tc-column>.completed-controls{margin:0 0 8px!important;padding:0!important;gap:6px}
+#tasks .tc-column>.completed-controls button{font-size:11px;padding:4px 9px}

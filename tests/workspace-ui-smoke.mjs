@@ -68,6 +68,7 @@ try{
   check('Sidebar expands back to original width',await page.locator('.shell>aside').evaluate((e,w)=>Math.abs(e.getBoundingClientRect().width-w)<2,expandedWidth));
 
   await page.waitForFunction(()=>!!window.TaskCenter);
+  await page.locator('nav button[data-v="home"]').click();
   await page.locator('#s1AddTask').click();
   check('Quick task creation opens task editor',await page.locator('#tasks').isVisible()&&await page.locator('#tcEditor').isVisible());
   await page.locator('#tcCancel').click();
@@ -122,6 +123,7 @@ await page.locator('[data-tc-task="drag-b"]').dragTo(page.locator('[data-tc-task
 const order = await page.evaluate(() => JSON.parse(localStorage.getItem('task_drag_order_v1') || '[]'));
 check('拖拽顺序包含两id', order.includes('drag-b') && order.includes('drag-c'));
   await page.locator('nav button[data-v="projects"]').click();
+  await page.locator('#projectBoard details summary').first().click();
   await page.locator('.project-card-actions button').filter({hasText:'编辑'}).first().click();
   await page.locator('#projectEditDlg[open]').waitFor({state:'visible'});
   check('Project dialog has a visible X cancel',await page.locator('#projectEditClose').isVisible());
