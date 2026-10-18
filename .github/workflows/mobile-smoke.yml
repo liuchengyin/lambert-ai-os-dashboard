@@ -1,0 +1,31 @@
+name: Mobile first version smoke
+on:
+  push:
+    branches: [feat/mobile-v1]
+    paths: ['mobile/**','tests/mobile*','.github/workflows/mobile-smoke.yml']
+permissions:
+  contents: read
+jobs:
+  mobile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --no-package-lock playwright@1.56.0
+      - run: npx playwright install --with-deps chromium
+      - run: |
+          node tests/mobile-store.mjs
+          python3 -m http.server 8000 --bind 127.0.0.1 &
+          sleep 2
+          node tests/mobile-ui.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-preview
+          path: tests/screenshots/mobile-v1.png
+          if-no-files-found: ignore
