@@ -1,0 +1,19 @@
+{
+  "model": "deepseek-flash",
+  "usage": {
+    "prompt_tokens": 2192,
+    "completion_tokens": 1394,
+    "total_tokens": 3586,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 2192
+  },
+  "calls": 1,
+  "adopted": "Manual edit state and network guards, preserving fields, icon preview and save path",
+  "corrections": [
+    "Automatically open manual fallback on failure",
+    "Manual save and title editing do not depend on disclosure open state"
+  ]
+}

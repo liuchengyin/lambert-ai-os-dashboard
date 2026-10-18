@@ -30,7 +30,7 @@
   const applyWallpaper=url=>{if(url){section.style.setProperty('--knowledge-wallpaper',`url("${url.replace(/"/g,'\\\"')}")`)}else section.style.removeProperty('--knowledge-wallpaper')};
   applyWallpaper(get(WALL,''));
 
-  const dlg=document.createElement('dialog');dlg.id='knowledgeLinkDlg';dlg.innerHTML=`<form class="knowledge-dialog"><h3 id="kDlgTitle">添加链接</h3><label id="kUrlLabel">链接地址<input id="kUrl" type="url" placeholder="粘贴网址，自动识别网站信息" required></label><div class="knowledge-icon-row"><div class="knowledge-icon-preview" id="kPreviewBox"></div><div class="knowledge-recognition-info"><strong id="kRecognizedName">等待粘贴网址</strong><p id="kPreviewDesc"></p><p id="kRecognitionStatus" role="status" aria-live="polite">自动获取网站名称和图标</p></div><button id="kAutoIcon" type="button">重新识别</button></div><label id="kTitleLabel">网站名称<input id="kTitle" placeholder="识别后自动填写" readonly></label><details id="kManual" hidden><summary>识别失败，手动补充</summary><p class="knowledge-manual-note">展开后可修改名称和图标地址。</p><label>图标链接（可选）<input id="kIcon" type="url" placeholder="https://… / 留空使用备用图标"></label></details><label id="kDescLabel">说明（可选）<input id="kDesc" placeholder="一句话说明用途"></label><label id="kGroupLabel">分组<select id="kGroup"></select></label><div class="dlgActions"><button id="kCancel" type="button">取消</button><button id="kSave" type="submit" class="task-primary-btn" disabled>保存</button></div></form>`;document.body.appendChild(dlg);
+  const dlg=document.createElement('dialog');dlg.id='knowledgeLinkDlg';dlg.innerHTML=`<form class="knowledge-dialog"><h3 id="kDlgTitle">添加链接</h3><label id="kUrlLabel">链接地址<input id="kUrl" type="url" placeholder="粘贴网址，自动识别网站信息" required></label><div class="knowledge-icon-row"><div class="knowledge-icon-preview" id="kPreviewBox"></div><div class="knowledge-recognition-info"><strong id="kRecognizedName">等待粘贴网址</strong><p id="kPreviewDesc"></p><p id="kRecognitionStatus" role="status" aria-live="polite">自动获取网站名称和图标</p></div><button id="kAutoIcon" type="button">重新识别</button></div><label id="kTitleLabel">网站名称<input id="kTitle" placeholder="识别后自动填写" readonly></label><details id="kManual" hidden><summary>手动填写</summary><p class="knowledge-manual-note">可修改名称和图标地址。</p><label>图标链接（可选）<input id="kIcon" type="url" placeholder="https://… / 留空使用备用图标"></label></details><label id="kDescLabel">说明（可选）<input id="kDesc" placeholder="一句话说明用途"></label><label id="kGroupLabel">分组<select id="kGroup"></select></label><div class="dlgActions"><button id="kCancel" type="button">取消</button><button id="kSave" type="submit" class="task-primary-btn" disabled>保存</button></div></form>`;document.body.appendChild(dlg);
   const groupDlg=document.createElement('dialog');groupDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>添加分组</h3><label>分组名称<input id="kgName" placeholder="例如：工具 / 工作 / 学习"></label><div class="dlgActions"><button value="cancel">取消</button><button id="kgSave" type="button" class="task-primary-btn">保存</button></div></form>`;document.body.appendChild(groupDlg);
   const wallDlg=document.createElement('dialog');wallDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>设置壁纸</h3><label>图片链接<input id="kwUrl" type="url" placeholder="https://.../wallpaper.jpg"></label><div class="dlgActions"><button id="kwClear" type="button">恢复默认</button><button value="cancel">取消</button><button id="kwSave" type="button" class="task-primary-btn">应用</button></div></form>`;document.body.appendChild(wallDlg);
 
@@ -51,9 +51,11 @@
   let autoDesc='';
   let recognition={status:'idle',url:''},recognitionVersion=0,recognitionTimer=null,recognitionController=null;
   function updateRecognition(){
-    $('kTitleLabel').hidden=recognition.status!=='failed';$('kTitle').readOnly=!(recognition.status==='failed'&&$('kManual').open);$('kIcon').disabled=$('kTitle').readOnly;$('kManual').hidden=recognition.status!=='failed';
-    $('kSave').disabled=recognition.status!=='ready'&&!(recognition.status==='failed'&&$('kManual').open);
+    const manual=recognition.status==='failed'||recognition.status==='manual';
+    $('kTitleLabel').hidden=!manual;$('kTitle').readOnly=!manual;$('kIcon').disabled=$('kTitle').readOnly;$('kManual').hidden=!manual;
+    $('kSave').disabled=recognition.status!=='ready'&&!manual;
     $('kAutoIcon').disabled=!safeUrl($('kUrl').value)||recognition.status==='pending';
+    $('kAutoIcon').hidden=recognition.status==='manual';
     $('kAutoIcon').textContent=recognition.status==='pending'?'识别中…':'重新识别';
   }
   function resetRecognition(){
@@ -62,6 +64,7 @@
     recognition={status:'idle',url:''};$('kTitle').value='';$('kIcon').value='';$('kPreviewDesc').textContent='';$('kManual').open=false;$('kPreviewBox').replaceChildren();$('kRecognizedName').textContent='等待识别';$('kRecognitionStatus').textContent='自动获取网站名称和图标';updateRecognition();
   }
   async function recognizeLink(){
+    if(editing)return;
     clearTimeout(recognitionTimer);const url=safeUrl($('kUrl').value);
     if(!url){resetRecognition();$('kRecognitionStatus').textContent='请粘贴完整的 http / https 网站地址。';return}
     if(recognition.status==='pending'&&recognition.url===url)return;
@@ -75,13 +78,14 @@
       recognition={status:'ready',url,title:data.title,icon:data.icon};$('kPreviewDesc').textContent=data.description||'';$('kTitle').value=data.title;$('kIcon').value=data.icon||'';if(!$('kDesc').value&&data.description){autoDesc=data.description;$('kDesc').value=autoDesc}$('kRecognizedName').textContent=data.title;$('kRecognitionStatus').textContent=data.source==='catalog'&&!data.direct?'已识别所属网站；此页面的具体标题暂未获取。':'已自动识别，确认分组后即可保存。';mountIcon($('kPreviewBox'),url,data.icon,data.title);
     }catch{
       if(version!==recognitionVersion||!dlg.open)return;
-      recognition={status:'failed',url};$('kTitle').value=host(url);$('kRecognizedName').textContent=host(url);$('kRecognitionStatus').textContent='未能获取网站信息，可重试或展开手动补充。';mountIcon($('kPreviewBox'),url,'',host(url));
+      recognition={status:'failed',url};$('kManual').open=true;$('kTitle').value=host(url);$('kRecognizedName').textContent=host(url);$('kRecognitionStatus').textContent='识别失败，已切换手动添加，填写后即可保存。';mountIcon($('kPreviewBox'),url,'',host(url));
     }finally{if(version===recognitionVersion)updateRecognition()}
   }
   function openLinkDlg(groupId,link=null,prefill='',quick=false){
     if(dlg.open)dlg.close();dlg.classList.toggle('knowledge-quick-capture',quick);if(quick)section.querySelector('.knowledge-searchbar').after(dlg);else document.body.append(dlg);
     resetRecognition();editing=link?.id?{groupId,linkId:link.id}:null;$('kDlgTitle').textContent=link?.id?'编辑链接':'添加链接';
-    const sel=$('kGroup');sel.replaceChildren();(groups.length?groups:[{id:'g_common',name:'常用'}]).forEach(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=g.name;sel.append(o)});sel.value=groupId||groups[0]?.id||'g_common';$('kUrl').value=link?.url||prefill;$('kDesc').value=link?.desc||'';if(quick)dlg.show();else dlg.showModal();if(!quick)$('kUrl').focus();if(link?.url||prefill)recognizeLink();else updateRecognition();
+    if(editing){recognition={status:'manual',url:link?.url||''};$('kManual').open=true;$('kTitle').value=link?.title||'';$('kIcon').value=link?.icon||'';$('kRecognizedName').textContent=link?.title||host(link?.url||'');$('kRecognitionStatus').textContent='编辑模式：手动修改名称和图标。';if(link?.url)mountIcon($('kPreviewBox'),link.url,link.icon,link.title);}
+    const sel=$('kGroup');sel.replaceChildren();(groups.length?groups:[{id:'g_common',name:'常用'}]).forEach(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=g.name;sel.append(o)});sel.value=groupId||groups[0]?.id||'g_common';$('kUrl').value=link?.url||prefill;$('kDesc').value=link?.desc||'';if(quick)dlg.show();else dlg.showModal();if(!quick)$('kUrl').focus();if(editing)updateRecognition();else if(link?.url||prefill)recognizeLink();else updateRecognition();
   }
   function renameGroup(g){const name=prompt('修改分组名称',g.name);if(name===null)return;const clean=name.trim();if(!clean)return;g.name=clean;persist();render()}
   function moveGroup(fromId,toId){if(!fromId||!toId||fromId===toId)return;const from=groups.findIndex(g=>g.id===fromId),to=groups.findIndex(g=>g.id===toId);if(from<0||to<0)return;const [item]=groups.splice(from,1);groups.splice(to,0,item);persist();render()}
@@ -106,13 +110,13 @@
   document.getElementById('kwClear').onclick=()=>{localStorage.removeItem(WALL);applyWallpaper('');wallDlg.close()};
   function searchUrl(){const value=search.value.trim();return /^(https?:\/\/|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[/:?#]|$))/i.test(value)?safeUrl(value):''}
   search.oninput=e=>{query=searchUrl()?'':e.target.value;render()};quickBtn.onclick=()=>openLinkDlg(groups[0]?.id,null,searchUrl(),!!searchUrl());search.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();quickBtn.click()}});
-  document.getElementById('knowledgeAddGroup').onclick=()=>{document.getElementById('kgName').value='';groupDlg.showModal();setTimeout(()=>document.getElementById('kgName').focus(),20)};document.getElementById('kgSave').onclick=()=>{const name=document.getElementById('kgName').value.trim();if(!name)return;groups.push({id:gid(),name,links:[]});persist();groupDlg.close();render()};$('kUrl').addEventListener('input',()=>{resetRecognition();if(safeUrl($('kUrl').value))recognitionTimer=setTimeout(recognizeLink,450)});$('kUrl').addEventListener('blur',()=>{if(recognition.status==='idle'&&safeUrl($('kUrl').value))recognizeLink()});$('kAutoIcon').onclick=recognizeLink;
-  $('kManual').addEventListener('toggle',updateRecognition);$('kIcon').oninput=()=>{if(recognition.status==='failed')mountIcon($('kPreviewBox'),safeUrl($('kUrl').value),$('kIcon').value,$('kTitle').value)};
+  document.getElementById('knowledgeAddGroup').onclick=()=>{document.getElementById('kgName').value='';groupDlg.showModal();setTimeout(()=>document.getElementById('kgName').focus(),20)};document.getElementById('kgSave').onclick=()=>{const name=document.getElementById('kgName').value.trim();if(!name)return;groups.push({id:gid(),name,links:[]});persist();groupDlg.close();render()};$('kUrl').addEventListener('input',()=>{if(editing){recognition={status:'manual',url:safeUrl($('kUrl').value)||''};updateRecognition();return}resetRecognition();if(safeUrl($('kUrl').value))recognitionTimer=setTimeout(recognizeLink,450)});$('kUrl').addEventListener('blur',()=>{if(editing)return;if(recognition.status==='idle'&&safeUrl($('kUrl').value))recognizeLink()});$('kAutoIcon').onclick=recognizeLink;
+  $('kManual').addEventListener('toggle',updateRecognition);$('kIcon').oninput=()=>{if(recognition.status==='failed'||recognition.status==='manual')mountIcon($('kPreviewBox'),safeUrl($('kUrl').value),$('kIcon').value,$('kTitle').value)};
   $('kCancel').onclick=()=>dlg.close();dlg.addEventListener('close',()=>{if(dlg.open)return;clearTimeout(recognitionTimer);recognitionController?.abort();recognitionVersion++});
   dlg.querySelector('form').onsubmit=e=>{
     e.preventDefault();const url=safeUrl($('kUrl').value);if(!url){$('kUrl').focus();return}
-    if(recognition.url!==url||recognition.status==='idle'){recognizeLink();return}
-    if(recognition.status==='pending'||recognition.status==='failed'&&!$('kManual').open)return;
+    if(!editing){if(recognition.url!==url||recognition.status==='idle'){recognizeLink();return}
+    if(recognition.status==='pending')return;}
     const groupId=$('kGroup').value,title=recognition.status==='ready'?recognition.title:$('kTitle').value.trim()||host(url),desc=$('kDesc').value.trim(),icon=recognition.status==='ready'?recognition.icon:usableIcon($('kIcon').value.trim());
     const next=groups.map(g=>({...g,links:[...g.links]}));if(!next.length)next.push({id:'g_common',name:'常用',links:[]});const target=next.find(g=>g.id===groupId);if(!target){$('kRecognitionStatus').textContent='分组不存在，请重新选择。';return}
     if(editing){const oldGroup=next.find(g=>g.id===editing.groupId),link=oldGroup?.links.find(l=>l.id===editing.linkId);if(!link){$('kRecognitionStatus').textContent='链接已变化，请取消后重新打开。';return}oldGroup.links=oldGroup.links.filter(x=>x.id!==link.id);target.links.unshift({...link,title,url,desc,icon})}
