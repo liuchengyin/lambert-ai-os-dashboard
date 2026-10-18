@@ -123,9 +123,22 @@
     })
   }
 
+  function renderCategoryPicker(id){
+    const sel=$(id);if(!sel)return;
+    const wrapId=id+"Picker";let wrap=$(wrapId);
+    if(!wrap){wrap=document.createElement('div');wrap.id=wrapId;wrap.className='project-category-picker';wrap.setAttribute('role','group');wrap.setAttribute('aria-label','项目分类');sel.insertAdjacentElement('afterend',wrap)}
+    const cats=[...projectCategories];
+    if(sel.value&&!cats.includes(sel.value))cats.push(sel.value);
+    Array.from(sel.options).forEach(o=>{if(o.value&&!cats.includes(o.value))cats.push(o.value)});
+    cats.forEach(c=>{if(!Array.from(sel.options).some(o=>o.value===c)){const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o)}});
+    wrap.textContent='';
+    const mk=(val,label,cls)=>{const b=document.createElement('button');b.type='button';b.className='project-category-chip '+cls;b.textContent=label;b.setAttribute('aria-pressed',String(sel.value===val));b.onclick=()=>{sel.value=val;renderCategoryPicker(id)};wrap.appendChild(b)};
+    mk('','未分类','cat-custom');
+    cats.forEach(c=>mk(c,c,'cat-'+categoryClass(c)));
+  }
   function clearProjectForm(){
     $("projectStartInput").value="";$("projectCategoryInput").value="";$("projectNameInput").value="";$("projectStatusInput").value="待开始";$("projectDueInput").value="";$("projectStandardInput").value="";
-    $("projectTaskSearch").value="";$("projectNewTaskTitle").value="";$("projectTaskPicker").open=false;createSelected=new Set();renderCreateTaskPicker()
+    $("projectTaskSearch").value="";$("projectNewTaskTitle").value="";$("projectTaskPicker").open=false;createSelected=new Set();renderCreateTaskPicker();renderCategoryPicker('projectCategoryInput')
   }
   function addProjectFromForm(){
     const name=$("projectNameInput").value.trim();if(!name){$("projectNameInput").focus();return}
@@ -176,13 +189,12 @@
     const detail=document.createElement('details');detail.className='project-collapse-item';detail.open=expandedDone.has(project.id);
     const summary=document.createElement('summary');summary.className='project-collapse-summary';
     const isDone=project.status==="已完成";
-    const catSelect=document.createElement('select');catSelect.className=`project-category-select cat-${categoryClass(project.category)}`;catSelect.innerHTML=categoryOptions(project.category);catSelect.setAttribute('aria-label',project.name+'的分类');
-    catSelect.onclick=e=>e.stopPropagation();catSelect.onmousedown=e=>e.stopPropagation();catSelect.onchange=e=>{e.stopPropagation();project.category=catSelect.value;persistProjects()};
+    const catTag=document.createElement('span');catTag.className=`project-category-tag cat-${categoryClass(project.category)}`;catTag.textContent=project.category||'';if(!project.category)catTag.hidden=true;
     const head=document.createElement('span');head.className='project-collapse-head';
     if(isDone){head.innerHTML=`<span class="tc-done-check" aria-hidden="true">✓</span><span class="project-collapse-title">${escapeHtml(project.name)}</span>`}
     else{head.innerHTML=`<span class="project-collapse-title">${escapeHtml(project.name)}</span>`}
     const arrow=document.createElement('span');arrow.className='project-collapse-arrow';arrow.setAttribute('aria-hidden','true');arrow.textContent='▾';
-    summary.append(head,catSelect,arrow);
+    summary.append(head,catTag,arrow);
     title.remove();
     const body=document.createElement('div');body.className='project-collapse-body';
     while(card.firstChild)body.append(card.firstChild);
@@ -219,8 +231,9 @@
 
   function openProjectEditor(index){
     projectEditIndex=index;const p=state.projects[index];
+    $("projectEditCategory").innerHTML=categoryOptions(p.category);
     $("projectEditStart").value=p.start?(p.start.length===10?p.start+"T00:00":p.start):"";$("projectEditCategory").value=p.category||"";$("projectEditName").value=p.name;$("projectEditStatus").value=p.status;$("projectEditDue").value=p.due?(p.due.length===10?p.due+"T23:59":p.due):"";$("projectEditStandard").value=p.standard||"";$("projectEditTaskSearch").value="";$("projectEditNewTaskTitle").value="";
-    editSelected=new Set(projectTasks(p).map(t=>t.id));renderEditTaskPicker();$("projectEditDlg").showModal()
+    editSelected=new Set(projectTasks(p).map(t=>t.id));renderEditTaskPicker();renderCategoryPicker('projectEditCategory');$("projectEditDlg").showModal()
   }
   // Close means cancel: keep the original project and all linked tasks unchanged.
   $("projectEditClose")?.addEventListener("click",()=>{
@@ -264,5 +277,6 @@
   };
 
   $("projectComposeDetails").open=false;
-  clearProjectForm();renderProjectDashboard();renderProjectBoard();renderHome();
+  $("projectCategoryInput").hidden=true;$("projectEditCategory").hidden=true;
+  clearProjectForm();renderCategoryPicker('projectCategoryInput');renderCategoryPicker('projectEditCategory');renderProjectDashboard();renderProjectBoard();renderHome();
 })();

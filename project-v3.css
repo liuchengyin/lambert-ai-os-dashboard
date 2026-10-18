@@ -35,13 +35,6 @@
 .project-board .project-card .project-collapse-body{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
 .project-board .project-card .project-collapse-body:empty{display:none}
 .project-board .project-card .project-collapse-item:not([open]) .project-collapse-body{display:none}
-.project-board .project-card .project-category-select{flex:0 0 auto;max-width:96px;font-size:11px;padding:2px 6px;border-radius:6px;border:1px solid transparent;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:none;color:#334155}
-#projects .project-board .project-card .project-category-select.cat-health{background:#e7f6ec!important;color:#2f7d4f!important;border-color:#cbe9d6!important}
-#projects .project-board .project-card .project-category-select.cat-work{background:#e8efff!important;color:#3b5bb5!important;border-color:#d3e0fb!important}
-#projects .project-board .project-card .project-category-select.cat-personal{background:#fdeef4!important;color:#a84b74!important;border-color:#f6d6e3!important}
-#projects .project-board .project-card .project-category-select.cat-habit{background:#fff4e0!important;color:#a06a1e!important;border-color:#f6e2c0!important}
-#projects .project-board .project-card .project-category-select.cat-finance{background:#e6f6f6!important;color:#2b7a7a!important;border-color:#c9eaea!important}
-#projects .project-board .project-card .project-category-select.cat-custom{background:#eef1f5!important;color:#4b5563!important;border-color:#dde3ea!important}
 .project-board .project-card .project-collapse-body .project-card-top{margin:0}
 .project-board .project-card .project-collapse-body .project-card-actions{margin-top:2px}
 #projectArchiveToggle{margin:0 0 14px}
@@ -49,5 +42,25 @@
 #projects .project-collapse-summary:focus-visible{outline:2px solid #7957d5;outline-offset:-2px;border-radius:8px}
 #projects .project-collapse-head>.tc-done-check{display:inline-flex;align-items:center;justify-content:center;flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:#21a365;color:#fff;font-weight:700;font-size:12px}
 #projects .project-collapse-title{white-space:normal;overflow-wrap:anywhere}
-#projects .project-category-select{min-width:0;width:auto;max-width:88px;margin:0;padding-right:15px;appearance:auto;-webkit-appearance:auto}
 #projects .project-col{min-height:0}
+
+.project-category-tag{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;max-width:96px;padding:3px 10px 3px 16px;font-size:11px;line-height:1.5;font-weight:600;color:#fff!important;background:#8a94a6!important;border:none!important;border-radius:0!important;clip-path:polygon(0 50%,8px 0,100% 0,100% 100%,8px 100%)!important;position:relative;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transform:none!important;letter-spacing:.02em;box-shadow:none!important;pointer-events:none;user-select:none}
+.project-category-tag::before{content:'';position:absolute;left:7px;top:50%;width:3px;height:3px;margin-top:-1.5px;border-radius:50%;background:rgba(255,255,255,.85)}
+.project-category-tag.cat-health{background:#22a06b!important}
+.project-category-tag.cat-work{background:#2f6fed!important}
+.project-category-tag.cat-personal{background:#8b5cf6!important}
+.project-category-tag.cat-habit{background:#f08c1a!important}
+.project-category-tag.cat-finance{background:#0ea5b7!important}
+.project-category-tag.cat-custom{background:#8a94a6!important}
+.project-category-picker{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 2px;padding:0;background:transparent!important;border:none!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;justify-content:center;padding:4px 12px!important;font-size:12px!important;line-height:1.4!important;font-weight:600!important;color:#fff!important;background:#8a94a6!important;border:2px solid transparent!important;border-radius:999px!important;cursor:pointer;box-shadow:none!important;transform:none!important;transition:border-color .15s,box-shadow .15s,opacity .15s;opacity:.72;min-height:0!important;height:auto!important;width:auto!important;margin:0!important;text-shadow:none!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip:hover{opacity:.9}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip[aria-pressed="true"]{opacity:1;border-color:#1f2937!important;box-shadow:0 0 0 2px rgba(31,41,55,.12)!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip:focus-visible{outline:none!important;border-color:#1f2937!important;box-shadow:0 0 0 3px rgba(47,111,237,.35)!important;opacity:1}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip.cat-health{background:#22a06b!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip.cat-work{background:#2f6fed!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip.cat-personal{background:#8b5cf6!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip.cat-habit{background:#f08c1a!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip.cat-finance{background:#0ea5b7!important}
+:is(#projectCategoryInputPicker,#projectEditCategoryPicker) .project-category-chip.cat-custom{background:#8a94a6!important}
+#projectCategoryInput[hidden],#projectEditCategory[hidden]{display:none!important}
