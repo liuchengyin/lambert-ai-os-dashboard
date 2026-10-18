@@ -52,92 +52,17 @@
   window.persistTasks=persistAll;
 
   function jumpToTask(id){
+    if(window.TaskCenter){TaskCenter.openTask(id);return}
     openView('tasks');setTimeout(()=>{const el=document.querySelector(`[data-task-id="${CSS.escape(id)}"]`);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.classList.add('highlight-jump');setTimeout(()=>el.classList.remove('highlight-jump'),1400)}},80)
   }
   function jumpToProject(id){
+    if(window.TaskCenter){TaskCenter.openProject(id);return}
     openView('projects');setTimeout(()=>{const p=(state.projects||[]).find(x=>x.id===id);if(!p)return;const card=[...document.querySelectorAll('.project-card')].find(x=>x.querySelector('h4')?.textContent===p.name);if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.classList.add('highlight-jump');setTimeout(()=>card.classList.remove('highlight-jump'),1400)}},80)
   }
 
-  function taskButton(label,cls,fn){const b=document.createElement('button');b.textContent=label;b.className=cls||'';b.onclick=e=>{e.stopPropagation();fn()};return b}
-  function renderTaskCard(t,index){
-    const c=document.createElement('article');c.className=`task-v5-card ${t.matrix}`;c.dataset.taskId=t.id;c.onclick=()=>openTaskEditor(index);c.title=t.title+' · '+QUADS[t.matrix].name;c.setAttribute('aria-label',t.title+'，'+t.status+'，'+QUADS[t.matrix].name);
-    // Details remain in task data and the editor; do not build hidden metadata.
-    c.innerHTML=`<div class="task-v5-title">${esc(t.title)}</div>`;
-    const a=document.createElement('div');a.className='task-v5-actions';
-    if(t.status==='待开始'){
-      const start=taskButton('>','task-start-arrow',()=>changeStatus(index,'进行中'));
-      start.title='开始任务';start.setAttribute('aria-label','开始任务');a.appendChild(start);
-    }
-    if(t.status==='进行中'){
-      const complete=taskButton('○','task-complete-edge',()=>changeStatus(index,'已完成'));
-      complete.title='完成任务';complete.setAttribute('aria-label','完成任务');a.appendChild(complete);
-    }
-    c.appendChild(a);return c
-  }
-
-  function renderTaskPageSkeleton(){
-    const sec=$('tasks');if(!sec)return;
-    sec.innerHTML=`<div class="task-v5-head"><div><h2>任务看板</h2><p>按状态推进；用优先级、日期和重要/紧急组合筛选。</p></div><div class="task-storage-pill">个人任务 · Todo</div></div>
-    <div class="card task-v5-toolbar">
-      <label>搜索<input id="tv5Search" placeholder="搜索任务 / 项目 / 备注"></label>
-      <label>优先级<select id="tv5Priority"><option value="all">全部优先级</option><option>P1</option><option>P2</option><option>P3</option></select></label>
-      <label>日期<select id="tv5Date"><option value="all">全部日期</option><option value="today">今天</option><option value="tomorrow">明天</option><option value="week">未来 7 天</option><option value="overdue">已逾期</option><option value="nodate">无截止时间</option></select></label>
-      <label>四象限<select id="tv5Matrix"><option value="all">全部象限</option><option value="q1">重要且紧急</option><option value="q2">重要不紧急</option><option value="q3">紧急不重要</option><option value="q4">不重要不紧急</option></select></label>
-      <label>排序<select id="tv5Sort"><option value="smart">智能排序</option><option value="due">截止时间</option><option value="priority">优先级</option><option value="created">新建时间</option></select></label>
-      <button id="tv5Clear" class="task-v5-clear">清空筛选</button>
-    </div>
-    <div id="taskBoard" class="task-v5-board"></div>
-    <details id="taskAddDetails" class="card task-add-details"><summary><span><strong>添加任务</strong><small>需要时展开填写，默认收起</small></span><span>展开 / 收起</span></summary><div class="task-v5-form">
-      <div class="task-v5-form-grid">
-        <label>任务名称<input id="tv5Title" placeholder="例如：完成物流版简历第 1 版"></label>
-        <label>所属项目<select id="tv5Project"><option value="">无项目</option></select></label>
-        <label>优先级<select id="tv5P"><option value="P1">P1 · 高</option><option value="P2" selected>P2 · 中</option><option value="P3">P3 · 低</option></select></label>
-        <label>重要 / 紧急<select id="tv5Q"><option value="q1">重要且紧急</option><option value="q2" selected>重要不紧急</option><option value="q3">紧急不重要</option><option value="q4">不重要不紧急</option></select></label>
-        <label>截止时间<input id="tv5Due" type="datetime-local"></label>
-        <label class="task-v5-form-note">完成标准 / 备注<input id="tv5Note" placeholder="做到什么程度算完成？"></label>
-      </div>
-      <div class="matrix-preview"><div class="matrix-mini q1">Q1 重要且紧急</div><div class="matrix-mini q2">Q2 重要不紧急</div><div class="matrix-mini q3">Q3 紧急不重要</div><div class="matrix-mini q4">Q4 不重要不紧急</div></div>
-      <div class="task-v5-form-actions"><button id="tv5Add" class="task-primary-btn">添加任务</button></div>
-    </div></details>`;
-    bindTaskPage();
-  }
-  function projectOptions(select,value=''){select.innerHTML='<option value="">无项目</option>';state.projects.forEach(p=>{const o=document.createElement('option');o.value=p.name;o.textContent=p.name;select.appendChild(o)});select.value=value}
-  function bindTaskPage(){
-    const sync=()=>{filter={q:$('tv5Search').value,priority:$('tv5Priority').value,date:$('tv5Date').value,matrix:$('tv5Matrix').value,sort:$('tv5Sort').value};renderTaskBoard()};
-    ['tv5Search','tv5Priority','tv5Date','tv5Matrix','tv5Sort'].forEach(id=>$(id).addEventListener(id==='tv5Search'?'input':'change',sync));
-    $('tv5Clear').onclick=()=>{filter={q:'',priority:'all',date:'all',matrix:'all',sort:'smart'};$('tv5Search').value='';$('tv5Priority').value='all';$('tv5Date').value='all';$('tv5Matrix').value='all';$('tv5Sort').value='smart';renderTaskBoard()};
-    projectOptions($('tv5Project'));
-    $('tv5Add').onclick=addTask;
-    $('tv5Title').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addTask()}})
-  }
-  function addTask(){
-    const title=$('tv5Title').value.trim();if(!title){$('tv5Title').focus();return}
-    state.tasks.unshift({id:`task_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,title,status:'待开始',project:$('tv5Project').value,priority:$('tv5P').value,matrix:$('tv5Q').value,due:$('tv5Due').value,note:$('tv5Note').value.trim(),createdAt:new Date().toISOString()});
-    $('tv5Title').value='';$('tv5Due').value='';$('tv5Note').value='';persistAll();$('tv5Title').focus()
-  }
-
-  renderTaskBoard=function(){
-    const board=$('taskBoard');if(!board||!board.classList.contains('task-v5-board'))return;
-    board.innerHTML='';const visible=filterRows(state.tasks);['待开始','进行中','已完成'].forEach(status=>{
-      const rows=sortRows(visible.filter(t=>t.status===status));const col=document.createElement('section');col.className=`task-v5-col ${status==='进行中'?'doing':status==='已完成'?'done':''}`;
-      col.innerHTML=`<div class="task-v5-col-head"><h3>${status}</h3><span class="task-v5-count">${rows.length}</span></div><div class="task-v5-body"></div>`;const body=col.querySelector('.task-v5-body');
-      if(!rows.length)body.innerHTML='<div class="meta" style="padding:12px 0">暂无任务</div>';rows.forEach(t=>body.appendChild(renderTaskCard(t,state.tasks.indexOf(t))));board.appendChild(col)
-    });
-    const p=$('tv5Project');if(p){const keep=p.value;projectOptions(p,keep)}
-  };
-  function changeStatus(index,status){state.tasks[index].status=status;persistAll()}
-
-  const editDlg=document.createElement('dialog');editDlg.id='taskV5EditDlg';editDlg.innerHTML=`<form method="dialog" class="task-v5-dialog"><h3>编辑任务</h3><label>任务名称<input id="ev5Title"></label><label>状态<select id="ev5Status"><option>待开始</option><option>进行中</option><option>已完成</option></select></label><label>所属项目<select id="ev5Project"></select></label><label>优先级<select id="ev5P"><option>P1</option><option>P2</option><option>P3</option></select></label><label>重要 / 紧急<select id="ev5Q"><option value="q1">重要且紧急</option><option value="q2">重要不紧急</option><option value="q3">紧急不重要</option><option value="q4">不重要不紧急</option></select></label><label>截止时间<input id="ev5Due" type="datetime-local"></label><label>完成标准 / 备注<textarea id="ev5Note"></textarea></label><div class="dlgActions"><button value="cancel">取消</button><button id="ev5Delete" type="button">删除</button><button id="ev5Save" type="button" class="task-primary-btn">保存</button></div></form>`;document.body.appendChild(editDlg);
-  const reopenButton=document.createElement('button');reopenButton.type='button';reopenButton.id='ev5Reopen';reopenButton.textContent='退回进行中';reopenButton.hidden=true;
-  $('ev5Save').before(reopenButton);
-  reopenButton.onclick=()=>{
-    const status=state.tasks[editTaskIndex]?.status;
-    if(editTaskIndex<0||!['已完成','进行中'].includes(status))return;
-    const index=editTaskIndex;editDlg.close();changeStatus(index,status==='已完成'?'进行中':'待开始');
-  };
-  function openTaskEditor(index){editTaskIndex=index;const t=state.tasks[index];$('ev5Title').value=t.title;$('ev5Status').value=t.status;projectOptions($('ev5Project'),t.project||'');$('ev5P').value=t.priority;$('ev5Q').value=t.matrix;$('ev5Due').value=t.due||'';$('ev5Note').value=t.note||'';reopenButton.hidden=!['已完成','进行中'].includes(t.status);reopenButton.textContent=t.status==='已完成'?'退回进行中':'退回待开始';editDlg.showModal()}
-  $('ev5Save').onclick=()=>{if(editTaskIndex<0)return;const title=$('ev5Title').value.trim();if(!title)return;const old=state.tasks[editTaskIndex];state.tasks[editTaskIndex]={...old,title,status:$('ev5Status').value,project:$('ev5Project').value,priority:$('ev5P').value,matrix:$('ev5Q').value,due:$('ev5Due').value,note:$('ev5Note').value.trim()};editDlg.close();persistAll()};
-  $('ev5Delete').onclick=()=>{if(editTaskIndex<0)return;const t=state.tasks[editTaskIndex];if(!confirm(`确认删除任务“${t.title}”吗？`))return;state.tasks.splice(editTaskIndex,1);editDlg.close();persistAll()};
+  // The project-focused task center owns task presentation and editing.
+  function openTaskEditor(index){if(window.TaskCenter&&state.tasks[index])TaskCenter.editTask(state.tasks[index].id)}
+  renderTaskBoard=function(){if(window.TaskCenter)TaskCenter.render()};
 
   // Overview
   const MAINLINE='mainline_project_id_v1',TOP3='top3_task_ids_v1';
@@ -182,7 +107,7 @@
     ].join('');
     $('homeMainlineSelect').onchange=e=>{setLS(MAINLINE,e.target.value);renderHome()};
     $('defineTop3').onclick=openTop3;
-    $('s1AddTask').onclick=()=>{openView('tasks');const d=$('taskAddDetails');if(d)d.open=true;$('tv5Title')?.focus()};
+    $('s1AddTask').onclick=()=>{if(window.TaskCenter){TaskCenter.newTask();return}openView('tasks');const d=$('taskAddDetails');if(d)d.open=true;$('tv5Title')?.focus()};
     $('s1AllTasks').onclick=()=>{openView('tasks');const d=$('tv5Date');if(d){d.value=overdue.length?'overdue':'all';d.dispatchEvent(new Event('change'))}};
     $('s1Projects').onclick=()=>openView('projects');
     $('s1Review').onclick=()=>openView('review');
@@ -200,5 +125,6 @@
   // Main navigation: ensure new task renderer is called after switching view.
   document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.v==='tasks')setTimeout(renderTaskBoard,0);if(b.dataset.v==='home')setTimeout(renderHome,0)}));
 
-  renderTaskPageSkeleton();renderTaskBoard();renderHome();
+  renderHome();
+  const module=document.createElement('script');module.src='task-center.js';module.async=false;document.body.appendChild(module);
 })();

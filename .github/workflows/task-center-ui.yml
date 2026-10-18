@@ -1,0 +1,38 @@
+name: Project focused task center check
+on:
+  push:
+    branches: [feat/project-focused-tasks]
+    paths: ['task-center*', 'lib/task-center-model.js', 'dashboard-v5.js', 'project-v3.js', 'index.html', 'tests/task-center*', '.github/workflows/task-center-ui.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  focused:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Model and syntax
+        run: |
+          node --check task-center.js
+          node --check dashboard-v5.js
+          node --check project-v3.js
+          node tests/task-center-model.mjs
+      - name: Browser runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Target browser flow
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 &
+          node tests/task-center-ui.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: project-focused-task-center-screens
+          path: test-artifacts/task-center/
