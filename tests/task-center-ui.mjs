@@ -44,8 +44,8 @@ try{
  await page.locator('#tcProjectSelect').selectOption('inbox');assert.equal(await page.locator('[data-tc-row]').count(),2);
  await page.locator('#tcProjectSelect').selectOption('b');await page.reload();await page.waitForFunction(()=>!!window.TaskCenter);await nav();assert.equal(await page.locator('#tcProjectSelect').inputValue(),'b');assert.equal(await page.getByRole('tab',{name:'▥ 表格'}).getAttribute('aria-selected'),'true');
  // Project card drilldown and rename retain stable identity.
- await page.locator('nav button[data-v="projects"]').click();const project=page.getByRole('button',{name:'打开项目 网络阅读',exact:true});await project.click();assert.equal(await page.locator('#tcProjectTitle').innerText(),'网络阅读');
- await page.locator('#tcBackProjects').click();await page.getByRole('button',{name:'打开项目 网络阅读',exact:true}).getByRole('button',{name:'编辑',exact:true}).click();
+ await page.locator('nav button[data-v="projects"]').click();const project=page.locator('.project-card').filter({has:page.locator('.project-collapse-title',{hasText:'网络阅读'})});await project.locator('summary').click();await project.getByRole('button',{name:'查看任务',exact:true}).click();assert.equal(await page.locator('#tcProjectTitle').innerText(),'网络阅读');
+ await page.locator('#tcBackProjects').click();await page.locator('.project-card').filter({has:page.locator('.project-collapse-title',{hasText:'网络阅读'})}).getByRole('button',{name:'编辑',exact:true}).click();
  // Picker cancellation preserves the source; confirmation saves an explicit local time.
  assert.equal(await page.locator('#projectEditDue').inputValue(),'2026-11-01T23:59');
  await page.clock.install({time:new Date('2026-10-18T01:00:00Z')});
