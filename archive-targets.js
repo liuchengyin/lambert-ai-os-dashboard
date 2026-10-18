@@ -152,7 +152,7 @@
       ['reading','extension'].forEach(function(src){
         var lab=document.createElement('label');
         lab.textContent=(src==='reading'?'每日阅读 ':'插件笔记 ');
-        var s=document.createElement('select');
+        var s=document.createElement('select');s.id='archive-default-'+src;s.setAttribute('aria-label',src==='reading'?'每日阅读默认归档位置':'插件笔记默认归档位置');
         var prev=defSel[src];
         var ids=rows.map(function(r){return r.id;});
         var keep=ids.indexOf(prev)>=0?prev:'';var empty=document.createElement('option');empty.value='';empty.textContent='请选择归档位置';s.appendChild(empty);
