@@ -33,6 +33,7 @@ try{
  await editPicker.getByRole('button',{name:'健康',exact:true}).click();
  assert.equal(await p.locator('#projectEditCategory').inputValue(),'健康');
  assert.equal(await p.evaluate(()=>JSON.parse(localStorage.projects)[0].category),'自定义','choice does not save before form confirmation');
+ mkdirSync('tests/screenshots',{recursive:true});await p.screenshot({path:'tests/screenshots/category-form-desktop.png',fullPage:true});
  await p.locator('#projectEditSave').click();
  assert.equal(await p.evaluate(()=>JSON.parse(localStorage.projects)[0].category),'健康');
  const tag=cols.nth(0).locator('.project-category-tag');

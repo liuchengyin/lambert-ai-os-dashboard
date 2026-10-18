@@ -132,7 +132,7 @@
     Array.from(sel.options).forEach(o=>{if(o.value&&!cats.includes(o.value))cats.push(o.value)});
     cats.forEach(c=>{if(!Array.from(sel.options).some(o=>o.value===c)){const o=document.createElement('option');o.value=c;o.textContent=c;sel.appendChild(o)}});
     wrap.textContent='';
-    const mk=(val,label,cls)=>{const b=document.createElement('button');b.type='button';b.className='project-category-chip '+cls;b.textContent=label;b.setAttribute('aria-pressed',String(sel.value===val));b.onclick=()=>{sel.value=val;renderCategoryPicker(id)};wrap.appendChild(b)};
+    const mk=(val,label,cls)=>{const b=document.createElement('button');b.type='button';b.className='project-category-chip '+cls;b.textContent=label;b.setAttribute('aria-pressed',String(sel.value===val));b.onclick=()=>{sel.value=val;renderCategoryPicker(id);wrap.querySelector('[aria-pressed="true"]')?.focus({preventScroll:true})};wrap.appendChild(b)};
     mk('','未分类','cat-custom');
     cats.forEach(c=>mk(c,c,'cat-'+categoryClass(c)));
   }
