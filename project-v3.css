@@ -66,3 +66,22 @@
 #projectCategoryInput[hidden],#projectEditCategory[hidden]{display:none!important}
 
 .project-category-tag[hidden]{display:none!important}
+
+/* project-v3 additions: title button + toggle button + tag notch */
+.project-board .project-card .project-collapse-summary{cursor:default}
+.project-board .project-card .project-collapse-title{appearance:none;-webkit-appearance:none;background:none;border:0;padding:0;margin:0;font:inherit;font-weight:600;font-size:13px;color:#1f2937;text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1 1 auto;min-width:0}
+.project-board .project-card .project-collapse-title:hover{color:#2f6fed;text-decoration:underline}
+.project-board .project-card .project-collapse-title:focus-visible{outline:2px solid #7957d5;outline-offset:2px;border-radius:4px}
+.project-board .project-card .project-collapse-toggle{appearance:none;-webkit-appearance:none;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;margin:0;border:1px solid #e2e8f0;border-radius:7px;background:#fff;color:#94a3b8;cursor:pointer}
+.project-board .project-card .project-collapse-toggle:hover{background:#f1f5f9;color:#475569}
+.project-board .project-card .project-collapse-toggle:focus-visible{outline:2px solid #7957d5;outline-offset:1px}
+.project-board .project-card .project-collapse-toggle .project-collapse-arrow{display:inline-block;font-size:11px;transition:transform .15s ease}
+.project-board .project-card .project-collapse-item[open] .project-collapse-toggle .project-collapse-arrow{transform:rotate(180deg)}
+.project-board .project-card .project-collapse-body{cursor:pointer}
+.project-category-tag{clip-path:polygon(0 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,0 100%)!important;padding:3px 16px 3px 10px!important}
+.project-category-tag::before{left:auto!important;right:7px!important}
+#projects .project-collapse-head>.tc-done-check{flex:0 0 20px}
+
+#projects .project-collapse-title{background:transparent!important;border:0!important;padding:0!important;text-align:left;white-space:normal!important}
+#projects .project-category-tag{clip-path:polygon(0 0,100% 0,calc(100% - 7px) 50%,100% 100%,0 100%)!important}
+#projects .project-category-tag::before{display:none}

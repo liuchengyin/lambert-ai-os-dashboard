@@ -82,7 +82,7 @@ export default async function handler(req,res){
     if(!session(req))return send(res,401,{ok:false,code:'auth_required'});
     if(body.action==='status')return send(res,200,{ok:true,authenticated:true});
     if(!['analyze','chat'].includes(body.action))return send(res,400,{ok:false,code:'invalid_action'});
-    if(!Array.isArray(body.tasks)||!Array.isArray(body.projects)||body.tasks.length>30||body.projects.length>15||!Array.isArray(body.top3Ids)||body.top3Ids.length>3)
+    if(!Array.isArray(body.tasks)||!Array.isArray(body.projects)||body.tasks.length>(typeof body.projectScope==='string'?200:30)||body.projects.length>15||!Array.isArray(body.top3Ids)||body.top3Ids.length>3)
       return send(res,400,{ok:false,code:'invalid_payload'});
     const chat=body.action==='chat'?chatInput(body):null;
     if(body.action==='chat'&&!chat)return send(res,400,{ok:false,code:'invalid_payload'});
@@ -94,14 +94,14 @@ export default async function handler(req,res){
     const tasks=body.tasks.map(cleanTask).filter(Boolean),projects=body.projects.map(cleanProject).filter(Boolean);
     if(!tasks.length&&!chat)return send(res,200,{ok:true,result:{summary:'当前没有待分析的任务。',focus:[],alerts:[],observations:[]}});
     const ids=new Set(tasks.map(t=>t.id));
-    const input={date:text(body.localDate,10),tasks,projects,top3Ids:body.top3Ids.filter(x=>typeof x==='string'&&ids.has(x)),...(chat||{})};
+    const input={date:text(body.localDate,10),...(typeof body.projectScope==='string'?{projectScope:text(body.projectScope,90)}:{}),tasks,projects,top3Ids:body.top3Ids.filter(x=>typeof x==='string'&&ids.has(x)),...(chat||{})};
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),19000);
     let response,json;
     try{
       response=await fetch('https://api.deepseek.com/chat/completions',{
         method:'POST',headers:{Authorization:'Bearer '+process.env.DEEPSEEK_API_KEY,'Content-Type':'application/json'},
         body:JSON.stringify({model:MODEL,thinking:{type:'disabled'},temperature:0.3,max_tokens:chat?2200:1200,response_format:{type:'json_object'},messages:[
-          {role:'system',content:chat?CHAT_SYSTEM:'你是个人工作台的任务参谋。只依据输入的真实任务和项目进行分析。返回合法 JSON 对象：{"summary":"不超过60字","focus":[{"taskId":"输入中存在的ID","why":"不超过65字","nextAction":"5-10分钟可执行动作"}],"alerts":[{"taskId":"可选输入ID","severity":"high或medium","reason":"不超过70字"}],"observations":["不超过65字"]}。focus最多3项，alerts最多3项，observations最多2项。优先用户手动指定的top3Ids，不可编造任务、日期或承诺。不输出markdown。'},
+          {role:'system',content:chat?CHAT_SYSTEM:'你是个人工作台的任务参谋。只依据输入的真实任务和项目进行分析。若有projectScope，仅就该项目指出先做的任务和具体下一步，不复述空泛背景。返回合法 JSON 对象：{"summary":"不超过60字","focus":[{"taskId":"输入中存在的ID","why":"不超过65字","nextAction":"5-10分钟可执行动作"}],"alerts":[{"taskId":"可选输入ID","severity":"high或medium","reason":"不超过70字"}],"observations":["不超过65字"]}。focus最多3项，alerts最多3项，observations最多2项。优先用户手动指定的top3Ids，不可编造任务、日期或承诺。不输出markdown。'},
           {role:'user',content:JSON.stringify(input)}
         ]}),signal:controller.signal
       });
