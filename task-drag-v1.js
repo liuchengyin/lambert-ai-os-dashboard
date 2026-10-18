@@ -1,5 +1,6 @@
 // Task board drag V2: stable cross-column and in-column drag without DOM reparenting until drop.
 (function(){
+  if(document.getElementById('tasks')?.dataset.taskCenter)return;
   const KEY='task_drag_order_v1';
   let BOARD=document.getElementById('taskBoard');
   if(!BOARD)return;

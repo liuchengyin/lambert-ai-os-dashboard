@@ -1,0 +1,29 @@
+{
+  "model": "deepseek-flash",
+  "usage": {
+    "prompt_tokens": 184,
+    "completion_tokens": 537,
+    "total_tokens": 721,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 184
+  },
+  "result": {
+    "code": "#tasks .tc-gantt-bar{position:absolute;box-sizing:border-box;padding:0 10px 0 0;text-align:right;white-space:nowrap;overflow:hidden;color:#fff;background:linear-gradient(90deg,rgba(124,58,237,0) 0%,rgba(124,58,237,.55) 18%,#7c3aed 100%);clip-path:polygon(0 0,calc(100% - 8px) 0,100% 50%,calc(100% - 8px) 100%,0 100%);cursor:pointer;min-width:12px;animation:none;transition:none}#tasks .tc-gantt-bar.is-active{background:linear-gradient(90deg,rgba(124,58,237,0) 0%,rgba(124,58,237,.55) 18%,#7c3aed 100%)}#tasks .tc-gantt-bar.is-done{background:linear-gradient(90deg,rgba(22,163,74,0) 0%,rgba(22,163,74,.55) 18%,#16a34a 100%)}#tasks .tc-gantt-bar:focus-visible{outline:2px solid #111827;outline-offset:2px}#tasks .tc-gantt-bar>*{pointer-events:none}",
+    "cases": [
+      "周日选择：当前为周日时，下周按钮应跳到下周一而非本周一，且不改变原字段直到确认。",
+      "月末选择：1月31日点下周应落到2月首周对应日，避免溢出成3月，确认前原字段不变。",
+      "闰年：2月29日（闰年）点下周应正确进入3月，非闰年2月28日行为一致且不写入原字段。",
+      "确认前不写入：选择器内切换日期仅更新草稿，点确认才提交到原字段，取消则丢弃。",
+      "清空：清空后草稿为空且原字段不被覆盖，确认后才写入空值，focus-visible仍可见。"
+    ],
+    "notes": [
+      "仅提供局部CSS草案与边界用例，未运行任何测试。",
+      "时间几何仍由绝对定位left/width控制，未使用transform或改width。",
+      "箭头由clip-path实现，短条保留min-width与padding保证可点。",
+      "禁用动画与过渡，focus-visible使用outline。"
+    ]
+  }
+}

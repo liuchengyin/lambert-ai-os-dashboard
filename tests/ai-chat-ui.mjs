@@ -25,7 +25,7 @@ const check=(label,value)=>{assert.ok(value,label);console.log('PASS:',label)};
 const submit=async text=>{await page.locator('#aiChatInput').fill(text);await page.locator('#aiChatPanel').getByRole('button',{name:'发送',exact:true}).click()};
 const rows=key=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
 try{
-  await page.goto(BASE);await page.locator('#aiChatInput').waitFor({state:'visible'});
+  await page.goto(BASE);await page.locator('#aiChatInput').waitFor({state:'visible'});await page.waitForFunction(()=>!!window.TaskCenter);
   const initial=await rows('tasks');
   await submit('创建英语学习项目与听力任务');
   check('Sending disables the button',await page.locator('#aiChatPanel').getByRole('button',{name:'发送',exact:true}).isDisabled());
