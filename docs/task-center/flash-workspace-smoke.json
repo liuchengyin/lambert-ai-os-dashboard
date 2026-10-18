@@ -1,0 +1,29 @@
+{
+  "model": "deepseek-flash",
+  "usage": {
+    "prompt_tokens": 309,
+    "completion_tokens": 1051,
+    "total_tokens": 1360,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 309
+  },
+  "result": {
+    "code": "await page.waitForFunction(() => window.TaskCenter && window.TaskCenter.ready !== false, null, { timeout: 15000 });\nawait page.click('nav button[data-v=\"tasks\"]');\nawait page.waitForSelector('#tcProjectSelect');\nawait page.selectOption('#tcProjectSelect', 'project-test');\nconst kanbanTab = page.getByRole('tab', { name: /看板/ });\nawait kanbanTab.click();\nawait page.waitForSelector('[data-tc-task=\"drag-a\"]');\ncheck('卡片可拖拽', await page.locator('[data-tc-task=\"drag-a\"]').getAttribute('draggable') === 'true');\nconst cardA = page.locator('[data-tc-task=\"drag-a\"]');\nconst inProgressHeader = page.locator('[data-tc-status=\"进行中\"] header, [data-tc-status=\"进行中\"] .tc-col-header').first();\nconst doneHeader = page.locator('[data-tc-status=\"已完成\"] header, [data-tc-status=\"已完成\"] .tc-col-header').first();\nawait cardA.dragTo(inProgressHeader, { sourcePosition: { x: 8, y: 8 } });\nawait cardA.dragTo(doneHeader, { sourcePosition: { x: 8, y: 8 } });\nawait page.waitForSelector('[data-tc-task=\"drag-a\"] .tc-done-check');\nconst storedStatus = await page.evaluate(() => JSON.parse(localStorage.getItem('task_center_state_v1') || '{}').tasks?.['drag-a']?.status);\ncheck('storage状态为已完成', storedStatus === 'done' || storedStatus === '已完成');\ncheck('绿色完成勾选可见', await page.locator('[data-tc-task=\"drag-a\"] .tc-done-check').isVisible());\nawait page.reload();\nawait page.waitForFunction(() => window.TaskCenter && window.TaskCenter.ready !== false, null, { timeout: 15000 });\nawait page.click('nav button[data-v=\"tasks\"]');\nawait page.selectOption('#tcProjectSelect', 'project-test');\nawait page.getByRole('tab', { name: /看板/ }).click();\nawait page.waitForSelector('[data-tc-task=\"drag-a\"] .tc-done-check');\ncheck('刷新后状态保留', await page.locator('[data-tc-task=\"drag-a\"] .tc-done-check').isVisible());\nconst snapshot = await page.evaluate(() => { const t = JSON.parse(localStorage.getItem('task_center_state_v1') || '{}').tasks?.['drag-a'] || {}; const { status, ...rest } = t; return rest; });\nawait page.locator('[data-tc-task=\"drag-a\"] select').selectOption('进行中');\nawait page.waitForFunction(() => { const t = JSON.parse(localStorage.getItem('task_center_state_v1') || '{}').tasks?.['drag-a']; return t && (t.status === '进行中' || t.status === 'in_progress'); });\nconst after = await page.evaluate(() => { const t = JSON.parse(localStorage.getItem('task_center_state_v1') || '{}').tasks?.['drag-a'] || {}; const { status, ...rest } = t; return rest; });\ncheck('其他字段不变', JSON.stringify(snapshot) === JSON.stringify(after));\nawait page.locator('[data-tc-task=\"drag-b\"]').dragTo(page.locator('[data-tc-task=\"drag-c\"]'), { sourcePosition: { x: 8, y: 8 } });\nconst order = await page.evaluate(() => JSON.parse(localStorage.getItem('task_drag_order_v1') || '[]'));\ncheck('拖拽顺序包含两id', order.includes('drag-b') && order.includes('drag-c'));",
+    "cases": [
+      "TaskCenter加载后进入任务中心并选择project-test看板",
+      "drag-a卡片draggable为true",
+      "drag-a拖到进行中再拖到已完成，storage状态更新且绿色.tc-done-check可见",
+      "刷新重选项目后drag-a仍显示完成勾选",
+      "通过卡片select改回进行中，除status外其他字段快照一致",
+      "drag-b拖到drag-c后task_drag_order_v1包含两id"
+    ],
+    "notes": [
+      "仅使用真实用户交互与storage断言，不伪造事件或调用API",
+      "列header作为拖拽目标，源位置固定{x:8,y:8}",
+      "未测试旧CSS装饰，未声称实际执行结果"
+    ]
+  }
+}
