@@ -1,0 +1,23 @@
+{
+  "model": "deepseek-flash",
+  "usage": {
+    "prompt_tokens": 6394,
+    "completion_tokens": 4297,
+    "total_tokens": 10691,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 6394
+  },
+  "calls": 1,
+  "adopted": "Three-source settings form, visible destination links and daily writing payload integration",
+  "corrections": [
+    "Validate editable preview links before making clickable",
+    "Refresh writing sidebar independently of existing document link",
+    "Migration preserves writing legacy target",
+    "Typed missing-password/config/storage diagnostics"
+  ],
+  "tests": "Mocked backend/browser tests; no live Feishu documents created",
+  "limitation": "Vercel environment metadata inspection denied 403; exact live configuration fault not independently confirmed"
+}

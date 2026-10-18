@@ -158,8 +158,8 @@ let extensionSelection='';
 async function loadExtensionTargets(){
   const r=await fetch(DASHBOARD+'/api/feishu-targets',{signal:AbortSignal.timeout(10000)});const d=await r.json();if(!r.ok||!d.ok)throw Error(d.message||'无法加载归档位置');
   const locations=d.config?.locations||[],chosen=locations.find(x=>x.id===extensionSelection)||locations.find(x=>x.id===d.config?.defaults?.extension);if(!chosen)throw Error('请先设置插件笔记归档位置');
-  const select=$('extensionArchiveTarget');select.replaceChildren();locations.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name;o.selected=l.id===chosen.id;select.append(o)});$('extensionArchiveConfigStatus').textContent='';return chosen;
+  const select=$('extensionArchiveTarget');select.replaceChildren();locations.forEach(l=>{const o=document.createElement('option');o.value=l.id;o.textContent=l.name;o.selected=l.id===chosen.id;select.append(o)});$('extensionArchiveConfigStatus').textContent='';$('extensionArchiveLocation').href=chosen.url;$('extensionArchiveLocation').textContent=chosen.name+' · '+chosen.url;return chosen;
 }
-$('extensionArchiveTarget').onchange=e=>{extensionSelection=e.target.value};
+$('extensionArchiveTarget').onchange=e=>{extensionSelection=e.target.value;loadExtensionTargets().catch(e=>{$('extensionArchiveConfigStatus').textContent=e.message})};
 $('extensionArchiveSettings').onclick=e=>{e.preventDefault();chrome.tabs.create({url:DASHBOARD+'/?view=reading&archiveSettings=1'})};
 loadExtensionTargets().catch(e=>{$('extensionArchiveConfigStatus').textContent=e.message});

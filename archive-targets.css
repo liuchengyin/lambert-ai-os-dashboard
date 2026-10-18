@@ -10,3 +10,9 @@
 .archive-target-settings button{max-width:100%}
 .archive-target-settings [role=alert]{color:#c00;word-break:break-word}
 @media(max-width:480px){.archive-target-settings form>div>div{flex-direction:column}.archive-target-settings input{flex:1 1 auto;width:100%}}
+
+.archive-target-control .archive-target-link{flex:0 0 100%;width:100%;white-space:normal;overflow-wrap:anywhere;font-size:12px}
+.archive-target-settings .archive-default-link{flex-basis:100%;max-width:100%;font-size:12px;white-space:normal;overflow-wrap:anywhere}
+#daily-feishu-target{display:block;white-space:normal;overflow-wrap:anywhere}
+
+.archive-target-settings{max-height:85dvh;overflow:auto}

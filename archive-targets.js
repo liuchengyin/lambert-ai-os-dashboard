@@ -28,10 +28,22 @@
       cache=d.config||{locations:[],defaults:{}};
       if(!cache.locations)cache.locations=[];
       if(!cache.defaults)cache.defaults={};
+      cache.diagnostics=d.diagnostics||null;
       pending=null;
       return cache;
     }).catch(function(e){pending=null;throw e;});
     return pending;
+  }
+
+  function refreshDestinationLink(state,cfg,source){
+    if(!state||!state.link)return;
+    var locs=cfg.locations||[];
+    var id=state.selectedId||(cfg.defaults&&cfg.defaults[source]);
+    var loc=null;
+    for(var i=0;i<locs.length;i++){if(locs[i].id===id){loc=locs[i];break;}}
+    if(!loc){var def=cfg.defaults&&cfg.defaults[source];for(var j=0;j<locs.length;j++){if(locs[j].id===def){loc=locs[j];break;}}}
+    if(loc&&loc.url){state.link.href=loc.url;state.link.textContent=(loc.name||loc.id)+' · '+loc.url;state.link.style.display='';}
+    else{state.link.removeAttribute('href');state.link.textContent='未选择归档位置';}
   }
 
   function getDestination(source){
@@ -46,7 +58,7 @@
         for(var j=0;j<locs.length;j++){if(locs[j].id===def){loc=locs[j];break;}}
       }
       if(!loc)throw new Error('未找到可用的归档位置');
-      if(mounted[source]){fillSelect(mounted[source].select,cfg,source,loc.id);mounted[source].selectedId=loc.id;}
+      if(mounted[source]){fillSelect(mounted[source].select,cfg,source,loc.id);mounted[source].selectedId=loc.id;refreshDestinationLink(mounted[source],cfg,source);}
       return loc;
     });
   }
@@ -84,14 +96,21 @@
     btn.type='button';
     btn.textContent='归档位置设置';
     btn.addEventListener('click',function(){openSettings();});
+    var link=document.createElement('a');
+    link.className='archive-target-link';
+    link.target='_blank';
+    link.rel='noopener';
+    link.textContent='加载中…';
     wrap.appendChild(sel);
     wrap.appendChild(btn);
+    wrap.appendChild(link);
     parent.appendChild(wrap);
-    var state={selectedId:null,explicit:false,el:wrap,select:sel,promise:null};
+    var state={selectedId:null,explicit:false,el:wrap,select:sel,link:link,promise:null};
     mounted[source]=state;
-    sel.addEventListener('change',function(){state.selectedId=sel.value;state.explicit=true;document.dispatchEvent(new CustomEvent('archive-target-changed',{detail:{source:source}}));});
+    sel.addEventListener('change',function(){state.selectedId=sel.value;state.explicit=true;load(false).then(function(cfg){refreshDestinationLink(state,cfg,source);}).catch(function(){});document.dispatchEvent(new CustomEvent('archive-target-changed',{detail:{source:source}}));});
     state.promise=load(false).then(function(cfg){
       state.selectedId=fillSelect(sel,cfg,source,state.selectedId);
+      refreshDestinationLink(state,cfg,source);
     }).catch(function(e){
       var o=document.createElement('option');
       o.textContent='加载失败: '+e.message;
@@ -104,6 +123,7 @@
     Object.keys(mounted).forEach(function(src){
       var st=mounted[src];
       st.explicit=false;st.selectedId=fillSelect(st.select,cfg,src,null);
+      refreshDestinationLink(st,cfg,src);
     });
   }
 
@@ -145,14 +165,25 @@
     document.body.appendChild(dlg);
 
     var rows=[];
-    var defSel={reading:null,extension:null};
+    var defSel={writing:null,reading:null,extension:null};
+    var defLink={writing:null,reading:null,extension:null};
+    var SRC_LABELS={writing:'每日记录',reading:'每日阅读（阅读笔记）',extension:'插件阅读笔记'};
+
+    function validLocationUrl(raw){try{var u=new URL(raw);return u.protocol==='https:'&&/(^|\.)feishu\.cn$/.test(u.hostname)&&/^\/wiki\/[A-Za-z0-9]{10,80}\/?$/.test(u.pathname)?u.href:''}catch{return ''}}
+    function updateDefLink(src){
+      var link=defLink[src];if(!link)return;
+      var id=defSel[src];var loc=null;
+      for(var i=0;i<rows.length;i++){if(rows[i].id===id){loc=rows[i];break;}}
+      if(loc&&loc.urlInput.value.trim()){var safe=validLocationUrl(loc.urlInput.value.trim());if(safe)link.href=safe;else link.removeAttribute('href');link.textContent=loc.urlInput.value.trim();link.style.display='';}
+      else{link.removeAttribute('href');link.textContent='未选择归档位置';}
+    }
 
     function buildDefaults(){
       while(defBox.firstChild)defBox.removeChild(defBox.firstChild);
-      ['reading','extension'].forEach(function(src){
+      ['writing','reading','extension'].forEach(function(src){
         var lab=document.createElement('label');
-        lab.textContent=(src==='reading'?'每日阅读 ':'插件笔记 ');
-        var s=document.createElement('select');s.id='archive-default-'+src;s.setAttribute('aria-label',src==='reading'?'每日阅读默认归档位置':'插件笔记默认归档位置');
+        lab.textContent=SRC_LABELS[src]+' ';
+        var s=document.createElement('select');s.id='archive-default-'+src;s.setAttribute('aria-label',SRC_LABELS[src]+'默认归档位置');
         var prev=defSel[src];
         var ids=rows.map(function(r){return r.id;});
         var keep=ids.indexOf(prev)>=0?prev:'';var empty=document.createElement('option');empty.value='';empty.textContent='请选择归档位置';s.appendChild(empty);
@@ -163,10 +194,17 @@
           if(r.id===keep)o.selected=true;
           s.appendChild(o);
         });
-        s.addEventListener('change',function(){defSel[src]=s.value;});
+        s.addEventListener('change',function(){defSel[src]=s.value;updateDefLink(src);});
         defSel[src]=keep;
         lab.appendChild(s);
+        var link=document.createElement('a');
+        link.className='archive-default-link';
+        link.target='_blank';
+        link.rel='noopener';
+        defLink[src]=link;
+        lab.appendChild(link);
         defBox.appendChild(lab);
+        updateDefLink(src);
       });
     }
 
@@ -191,6 +229,7 @@
         buildDefaults();
       });
       nameInput.addEventListener('input',buildDefaults);
+      urlInput.addEventListener('input',function(){['writing','reading','extension'].forEach(updateDefLink);});
       row.appendChild(nameInput);
       row.appendChild(urlInput);
       row.appendChild(del);
@@ -199,7 +238,7 @@
     }
 
     addBtn.addEventListener('click',function(){
-      if(rows.length>=20){err.textContent='最多20个位置';return;}
+      if(rows.length>=30){err.textContent='最多30个位置';return;}
       addRow({id:crypto.randomUUID(),name:'',url:''});
       buildDefaults();
     });
@@ -211,7 +250,7 @@
       ev.preventDefault();
       err.textContent='';
       if(rows.length<1){err.textContent='至少需要一个位置';return;}
-      if(rows.length>20){err.textContent='最多20个位置';return;}
+      if(rows.length>30){err.textContent='最多30个位置';return;}
       var locations=[];
       for(var i=0;i<rows.length;i++){
         var nm=rows[i].nameInput.value.trim();
@@ -221,16 +260,22 @@
         locations.push({id:rows[i].id,name:nm,url:u});
       }
       var ids=locations.map(function(l){return l.id;});
-      if(ids.indexOf(defSel.reading)<0||ids.indexOf(defSel.extension)<0){
-        err.textContent='请为两个默认位置重新选择';return;
+      if(ids.indexOf(defSel.writing)<0||ids.indexOf(defSel.reading)<0||ids.indexOf(defSel.extension)<0){
+        err.textContent='请为三个默认位置重新选择';return;
       }
-      var defaults={reading:defSel.reading,extension:defSel.extension};
+      if(!pw.value.trim()){err.textContent='请输入与AI入口相同的密码';return;}
+      var defaults={writing:defSel.writing,reading:defSel.reading,extension:defSel.extension};
+      var diag=cache&&cache.diagnostics;
+      if(diag&&diag.missing&&diag.missing.length){
+        err.textContent='当前部署缺少保存配置所需设置：'+diag.missing.join('、');
+        saveBtn.disabled=false;return;
+      }
       saveBtn.disabled=true;
       fetchJSON('PUT',{locations:locations,defaults:defaults,password:pw.value}).then(function(d){
         cache=d.config||{locations:locations,defaults:defaults};
         if(!cache.locations)cache.locations=locations;
         if(!cache.defaults)cache.defaults=defaults;
-        refreshAll(cache);document.dispatchEvent(new CustomEvent('archive-target-changed',{detail:{source:'reading'}}));
+        refreshAll(cache);['writing','reading','extension'].forEach(function(src){document.dispatchEvent(new CustomEvent('archive-target-changed',{detail:{source:src}}));});
         dlg.close();
       }).catch(function(e){
         err.textContent=e.message;
@@ -240,9 +285,10 @@
 
     load(true).then(function(cfg){
       (cfg.locations||[]).forEach(function(l){addRow(l);});
+      defSel.writing=cfg.defaults&&cfg.defaults.writing;
       defSel.reading=cfg.defaults&&cfg.defaults.reading;
       defSel.extension=cfg.defaults&&cfg.defaults.extension;
-      buildDefaults();
+      buildDefaults();if(cfg.diagnostics&&cfg.diagnostics.missing&&cfg.diagnostics.missing.length)err.textContent='当前部署缺少保存配置所需设置：'+cfg.diagnostics.missing.join('、');
     }).catch(function(e){
       err.textContent=e.message;
     });
@@ -250,5 +296,5 @@
     if(dlg.showModal)dlg.showModal();else dlg.setAttribute('open','');
   }
 
-  window.ArchiveTargets={load:load,getDestination:getDestination,mount:mount,openSettings:openSettings};
+  window.ArchiveTargets={load:load,getDestination:getDestination,mount:mount,openSettings:openSettings,refreshDestinationLink:refreshDestinationLink};
 })();
