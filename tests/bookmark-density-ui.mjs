@@ -8,7 +8,7 @@ try{await page.goto('http://127.0.0.1:8000/');await page.locator('nav button[dat
  const cards=page.locator('#knowledge .knowledge-link-card');assert.equal(await cards.count(),300);const box=await cards.first().boundingBox();assert.ok(box.width<=222&&box.height<=100,JSON.stringify(box));
  const link=cards.first().locator('a');const title=await link.getAttribute('aria-label');assert.equal(await link.getAttribute('data-tooltip'),title);assert.equal(await link.getAttribute('title'),null);
  await link.hover();await page.waitForTimeout(200);assert.equal(await link.evaluate(el=>getComputedStyle(el,'::after').opacity),'1');assert.equal(await link.evaluate(el=>getComputedStyle(el,'::after').content),JSON.stringify(title));
- await page.mouse.move(0,0);await link.focus();await page.waitForTimeout(200);assert.equal(await link.evaluate(el=>getComputedStyle(el,'::after').opacity),'1');
+ await page.mouse.move(0,0);await link.focus();await page.keyboard.press('Shift+Tab');await page.keyboard.press('Tab');await page.waitForTimeout(200);assert.equal(await link.evaluate(el=>getComputedStyle(el,'::after').opacity),'1');
  await mkdir('tests/screenshots',{recursive:true});await page.screenshot({path:'tests/screenshots/bookmark-density-tooltip.png'});
  await page.locator('#knowledgeLock').click();await cards.first().getByRole('button',{name:'编辑',exact:true}).click();assert.ok(await page.locator('#kTitle').isEditable());await page.locator('#kCancel').click();
  for(const width of [390,320]){await page.setViewportSize({width,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'overflow '+width);const b=await cards.first().boundingBox();assert.ok(b.width<=width-32);}
