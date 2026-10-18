@@ -115,3 +115,5 @@
 #tasks .tc-column>header{margin:0 0 6px!important;padding:0!important;border:0!important;min-height:0!important}
 #tasks .tc-column>.completed-controls{margin:0 0 8px!important;padding:0!important;gap:6px}
 #tasks .tc-column>.completed-controls button{font-size:11px;padding:4px 9px}
+
+#tasks .tc-column{min-height:0}

@@ -28,6 +28,7 @@ try{
  assert.equal(await category.inputValue(),'自定义');await category.selectOption('健康');
  assert.equal(await p.locator('#taskDlg[open],#projectEditDlg[open]').count(),0);
  assert.equal(await p.evaluate(()=>JSON.parse(localStorage.projects)[0].category),'健康');
+ assert.equal(await cols.nth(0).locator('.project-category-select').evaluate(e=>getComputedStyle(e).backgroundColor),'rgb(231, 246, 236)');
  assert.equal(await p.locator('#projectArchiveToggle').evaluate(e=>!!(document.getElementById('projectBoard').compareDocumentPosition(e)&Node.DOCUMENT_POSITION_FOLLOWING)),true);
  await p.reload();await p.locator('#projects.activeView').waitFor();assert.equal(await p.locator('#projectBoard details[open]').count(),0);
  await open('tasks');await p.selectOption('#tcProjectSelect','bp0');
@@ -46,7 +47,7 @@ try{
  await open('projects');await open('tasks');await p.goBack();await p.locator('#projects.activeView').waitFor();await p.goForward();await p.locator('#tasks.activeView').waitFor();
  await p.goto(base+'?view=bogus&keep=yes');await p.locator('.view.activeView').waitFor();assert.ok(await p.locator('nav button.active').count());
  await p.goto(base+'?view=reading&import=1&sourceUrl=https%3A%2F%2Fexample.com&title=batch-import');await p.waitForFunction(()=>document.getElementById('rv2Status')?.textContent==='已从浏览器侧栏导入');assert.equal(await p.locator('#reading').isVisible(),true);
- await open('projects');await p.setViewportSize({width:400,height:850});mkdirSync('tests/screenshots',{recursive:true});await p.screenshot({path:'tests/screenshots/ui-batch-projects-mobile.png',fullPage:true});assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+ await open('projects');await p.setViewportSize({width:400,height:850});mkdirSync('tests/screenshots',{recursive:true});await p.screenshot({path:'tests/screenshots/ui-batch-projects-mobile.png',fullPage:true});assert.ok(await cols.nth(0).evaluate(e=>e.getBoundingClientRect().height<200));assert.ok(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
  const stored=await p.evaluate(()=>({p:JSON.parse(localStorage.projects),t:JSON.parse(localStorage.tasks)}));assert.equal(stored.p[0].extra,'保留字段');assert.equal(stored.t[0].extra,'保留字段');
  assert.deepEqual(errors,[]);console.log('PASS all-state disclosures, column isolation, category persistence, archive controls, compact layout, navigation refresh/back/forward/import and mobile');
 }finally{await browser.close();}
