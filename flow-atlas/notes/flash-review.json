@@ -1,0 +1,85 @@
+{
+  "requestedModel": "deepseek-flash",
+  "reportedModel": "deepseek-flash",
+  "commit": "8d117d8fd96d80c3c6a50cbc2fb95a6f126f680f",
+  "providerCalls": 1,
+  "testsExecuted": false,
+  "generatedAt": "2026-10-17T11:30:19.191Z",
+  "usage": {
+    "prompt_tokens": 5737,
+    "completion_tokens": 1058,
+    "total_tokens": 6795,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 5737
+  },
+  "result": {
+    "summary": "静态审查发现3个有代码证据的功能问题：L1展开后L2步骤点击会重建整张地图并丢失焦点；播放状态与阅读状态虽分离，但播放会改写L1高亮，且离开页面仅暂停不重置；ResizeObserver回调经rAF绘制，但draw()写SVG viewBox与canvas尺寸无关，未形成自触发循环，移动端列数切换会重建地图但未保留滚动位置。概念文案已按DNS递归/迭代、TCP握手与TLS、IP路由与ARP区分改写。",
+    "findings": [
+      {
+        "line": 1,
+        "problem": "点击L2步骤会重建整张L1地图，导致展开区DOM被替换、焦点丢失，且移动端scrollIntoView在重建后可能滚到错误位置。",
+        "evidence": "selectConcept()在state.opened===item.node.id时只更新aria-pressed并renderConcept()，但renderMap()中步骤按钮点击回调为selectConcept(step.id,true)；若opened不同则openNode()→renderMap()重建route.replaceChildren()，原步骤按钮被销毁。",
+        "suggestion": "selectConcept中仅更新步骤按钮aria-pressed与renderConcept()，不调用renderMap()；openNode仅在opened变化时重建地图。"
+      },
+      {
+        "line": 1,
+        "problem": "播放动画会改写L1节点current高亮，与“播放与阅读独立”冲突；阅读选中L2时播放仍切换L1视觉焦点。",
+        "evidence": "updatePlayback()中buttons.forEach((b,index)=>b.classList.toggle('current',index===current()))，current()由state.phase/state.index决定，与state.selected无关；play()/advance()均调用updatePlayback()。",
+        "suggestion": "将current高亮改为独立class（如playing-current），阅读选中用selected class，二者互不覆盖。"
+      },
+      {
+        "line": 1,
+        "problem": "离开页面仅pause()不重置播放进度；pagehide持久化时暂停但state.index/progress保留，返回后“播放”从中间继续，且complete状态可能残留。",
+        "evidence": "on(window,'pagehide',event=>{if(event.persisted)pause();else destroy();})；pause()只置running=false、progress=0、start=0，未重置state.index/phase/complete。",
+        "suggestion": "pagehide时调用pause()并重置state.index=0、state.phase='request'、state.complete=false，再updatePlayback()。"
+      }
+    ],
+    "conceptDrafts": [
+      {
+        "id": "dns-3",
+        "what": "解析器沿DNS委派链逐级询问，直到权威服务器给出该域名的记录。",
+        "why": "域名空间分层管理，根和顶级域只保存下一层委派线索，不保存每个站点的最终IP。",
+        "how": [
+          "向根服务器询问，得到.com的委派线索",
+          "向.com顶级域询问，得到example.com权威服务器地址",
+          "向权威服务器询问，得到A/AAAA或CNAME记录"
+        ],
+        "input": "待查询域名（如www.example.com）",
+        "output": "权威记录（如A 93.184.216.34）",
+        "example": "根 → .com → example.com权威 → 返回A记录",
+        "pitfall": "这是缓存未命中时的迭代查询示意；递归查询是解析器替客户端跑完整条链，二者不要混为一谈。"
+      },
+      {
+        "id": "tcp-2",
+        "what": "通过SYN、SYN-ACK、ACK三次报文交换，建立双方都确认的TCP连接状态。",
+        "why": "双方需同步初始序号并确认对端可达且愿意连接，为可靠传输建立起点。",
+        "how": [
+          "客户端发送SYN(seq=x)",
+          "服务端回复SYN-ACK(seq=y,ack=x+1)",
+          "客户端发送ACK(ack=y+1)，连接进入ESTABLISHED"
+        ],
+        "input": "两端连接请求与初始序号",
+        "output": "已建立的TCP连接（双向序号已同步）",
+        "example": "客户端→SYN；服务端→SYN+ACK；客户端→ACK",
+        "pitfall": "三次握手只建立TCP连接，不负责加密；加密是TLS握手在TCP建立之后另做的协商。"
+      },
+      {
+        "id": "ip-3",
+        "what": "主机根据路由表为数据包选择出口接口和下一跳IP。",
+        "why": "远端服务器通常不在同一局域网，不能直接把帧交给最终主机，必须逐跳转发。",
+        "how": [
+          "用目标IP匹配路由表最长前缀",
+          "确定出口接口与下一跳IP",
+          "用ARP（IPv4）或邻居发现（IPv6）解析下一跳的链路地址"
+        ],
+        "input": "目标IP + 路由表",
+        "output": "出口接口 + 下一跳IP（及其链路地址）",
+        "example": "目标8.8.8.8不在本地子网 → 匹配默认路由 → 下一跳192.168.1.1 → ARP得到网关MAC",
+        "pitfall": "下一跳的MAC是网关的，不是最终服务器的；IP路由选路径，ARP只解析同一链路上的下一跳地址。"
+      }
+    ]
+  }
+}
