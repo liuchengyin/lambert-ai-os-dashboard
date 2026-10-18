@@ -1,0 +1,56 @@
+name: Android test APK
+on:
+  push:
+    branches: [feat/mobile-v1]
+    paths: ['android/**','mobile/**','.github/workflows/android-test-apk.yml']
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: lambert-preview-signing-v1
+      - name: Bundle offline web assets
+        run: |
+          mkdir -p android/app/src/main/assets/mobile
+          cp mobile/app.js mobile/store.js mobile/style.css mobile/icon.svg android/app/src/main/assets/mobile/
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('mobile/index.html').read_text()
+          start=p.index("<script>if('serviceWorker'")
+          end=p.index('</script>',start)+len('</script>')
+          p=p[:start]+p[end:]
+          p=p.replace('<link rel="manifest" href="manifest.webmanifest">','')
+          Path('android/app/src/main/assets/mobile/index.html').write_text(p)
+          PY
+      - name: Build installable test APK
+        working-directory: android
+        run: gradle --no-daemon :app:assembleDebug :app:lintDebug
+      - name: Verify signature and permissions
+        run: |
+          mkdir -p apk-output
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-Tasks-0.1.0-test.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs apk-output/*.apk > apk-output/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions apk-output/*.apk > apk-output/permissions.txt
+          if grep -E "android.permission.(INTERNET|CAMERA|READ_CONTACTS|READ_EXTERNAL_STORAGE|RECORD_AUDIO|ACCESS_FINE_LOCATION)" apk-output/permissions.txt; then exit 1; fi
+          cd apk-output
+          sha256sum Lambert-Tasks-0.1.0-test.apk > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lambert-Android-test
+          path: apk-output/
+          retention-days: 30
