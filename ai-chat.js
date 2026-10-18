@@ -89,7 +89,7 @@
       if(newTasks.length||newProjects.length){api().markChanged();if(api().hasConsent())api().analyze(false)}
       feedback('已创建 '+newProjects.length+' 个项目、'+newTasks.length+' 个任务。已有同名条目已跳过。');
       const actions=el('div','ai-chat-actions');
-      actions.append(button('查看任务',()=>openView('tasks')),button('查看项目',()=>openView('projects')),button('分析更新后的任务',()=>{document.querySelector('#aiDailyCard .ai-secondary')?.click();document.getElementById('aiDailyCard')?.scrollIntoView({behavior:'smooth',block:'start'})}));draft.append(actions);
+      actions.append(button('查看任务',()=>{const task=newTasks[0]&&state.tasks.find(t=>t.id===newTasks[0].id);if(task&&window.TaskCenter&&window.TaskCenterModel)TaskCenter.openProject(TaskCenterModel.resolveProject(task,state.projects));else openView('tasks')}),button('查看项目',()=>openView('projects')),button('分析更新后的任务',()=>{document.querySelector('#aiDailyCard .ai-secondary')?.click();document.getElementById('aiDailyCard')?.scrollIntoView({behavior:'smooth',block:'start'})}));draft.append(actions);
     }catch{feedback(committed.has(requestId)?'数据已保存，但页面未能刷新。请刷新后查看任务和项目。':'保存失败，草稿已保留。请检查浏览器存储空间后重试。')}
     finally{committing=false}
   }
