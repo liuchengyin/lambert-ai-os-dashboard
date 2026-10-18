@@ -28,7 +28,7 @@ try{
  await page.locator('[data-tc-row="ta"] [data-field="due"]').fill('2026-10-22T20:00');await page.locator('[data-tc-row="ta"] [data-field="due"]').press('Tab');
  saved=await tasks();assert.equal(saved.find(t=>t.id==='ta').due,'2026-10-22T20:00');
  await tab('甘特图');assert.equal(await page.locator('[data-tc-gantt="ta"]').count(),1);assert.equal(await page.locator('.tc-gantt-bar').count(),1);assert.ok((await page.locator('.tc-gantt-bar').evaluate(el=>getComputedStyle(el).backgroundImage)).includes('linear-gradient'));assert.ok((await page.locator('.tc-gantt-bar').evaluate(el=>getComputedStyle(el).clipPath)).includes('polygon'));assert.ok((await page.locator('.tc-unplanned').innerText()).includes('未排期任务'));
- await page.locator('#tcFilterStatus').selectOption('进行中');assert.equal(await page.locator('.tc-gantt-bar').count(),1);await tab('看板');assert.equal(await page.locator('.tc-task').count(),1);
+await page.locator('#tcFilterToggle').click(); await page.locator('#tcFilterStatus').selectOption('进行中');assert.equal(await page.locator('.tc-gantt-bar').count(),1);await tab('看板');assert.equal(await page.locator('.tc-task').count(),1);
  await page.locator('#tcClear').click();
  await page.locator('#tcNewTask').click();await page.locator('#tcTitle').fill('每日阅读任务');await page.locator('#tcStart').fill('2026-10-24T10:00');await page.locator('#tcDue').fill('2026-10-23T10:00');await page.locator('#tcEditorForm button[type="submit"]').click();assert.ok((await page.locator('#tcEditorError').innerText()).includes('不能晚于'));assert.ok(await page.locator('#tcEditor').isVisible());
  await page.locator('#tcDue').fill('2026-10-25T10:00');await page.locator('#tcEditorForm button[type="submit"]').click();
