@@ -1,0 +1,14 @@
+{
+  "model": "deepseek-flash",
+  "calls": 1,
+  "result": "Response truncated during repetitive CSS; complete JS replacements and bounded CSS prefix recovered and reviewed",
+  "usage": "Unavailable because original output JSON parse failed",
+  "adopted": "Automatic recognition input, spinner, manual interrupt, modal promotion and local icon upload",
+  "corrections": [
+    "No extra recognition request when switching existing draft",
+    "Remove inline class on modal promotion",
+    "Stop spinner on completion",
+    "Guard empty URL preview",
+    "Invalidate image token for every selection"
+  ]
+}
