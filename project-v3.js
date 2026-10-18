@@ -190,7 +190,7 @@
     card.onclick=null;card.onkeydown=null;card.removeAttribute('role');card.removeAttribute('tabindex');card.removeAttribute('aria-label');
     const detail=document.createElement('details');detail.className='project-collapse-item';detail.open=isExpanded(project);
     const summary=document.createElement('summary');summary.className='project-collapse-summary';
-    summary.addEventListener('click',e=>{e.preventDefault()});
+    summary.addEventListener('click',e=>{e.preventDefault();if(!e.target.closest('button')){window.TaskCenter?TaskCenter.openProject(project.id):openProjectEditor(index)}});
     const isDone=project.status==="已完成";
     const head=document.createElement('span');head.className='project-collapse-head';
     if(isDone){head.innerHTML=`<span class="tc-done-check" aria-hidden="true">✓</span>`}
