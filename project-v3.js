@@ -2,6 +2,8 @@
 (function(){
   const projectStatuses=["待开始","进行中","已完成"];
   let projectEditIndex=-1;
+  const expandedDone=new Set(), previousStatuses=new Map();
+  let showArchived=false;
   let createSelected=new Set();
   let editSelected=new Set();
 
@@ -160,22 +162,41 @@
       actions.appendChild(actionButton("退回","",()=>changeProjectStatus(index,"待开始")))
     }
     if(project.status==="已完成")actions.appendChild(actionButton("重新打开","",()=>changeProjectStatus(index,"进行中")));
-    actions.appendChild(actionButton("编辑","",()=>openProjectEditor(index)));card.appendChild(actions);return card
+    actions.appendChild(actionButton("编辑","",()=>openProjectEditor(index)));
+    actions.appendChild(actionButton(project.archived?"取消归档":"归档","",()=>{project.archived=!project.archived;persistProjects()}));
+    card.appendChild(actions);
+    if(project.status==="已完成"){
+      card.onclick=null;card.onkeydown=null;card.removeAttribute('role');card.removeAttribute('tabindex');card.removeAttribute('aria-label');
+      const detail=document.createElement('details');detail.className='completed-item';detail.open=expandedDone.has(project.id);
+      const summary=document.createElement('summary');summary.innerHTML=`<span class="tc-done-check" aria-hidden="true">✓</span><span>${escapeHtml(project.name)}</span>`;
+      title.remove();detail.append(summary);while(card.firstChild)detail.append(card.firstChild);card.append(detail);
+      detail.ontoggle=()=>{if(!detail.isConnected)return;if(detail.open)expandedDone.add(project.id);else expandedDone.delete(project.id)};
+      actions.prepend(actionButton("查看任务","",()=>window.TaskCenter?.openProject(project.id)));
+    }
+    return card
   }
 
   renderProjectBoard=function(){
     const board=$("projectBoard");board.innerHTML="";
+    state.projects.forEach(item=>{if(previousStatuses.get(item.id)!==item.status)expandedDone.delete(item.id);previousStatuses.set(item.id,item.status);});
+    if(!$("projectArchiveToggle")){const b=document.createElement('button');b.id='projectArchiveToggle';b.type='button';board.before(b);b.onclick=()=>{showArchived=!showArchived;renderProjectBoard()}}
+    $("projectArchiveToggle").textContent=showArchived?'返回未归档项目':'查看归档项目';$("projectArchiveToggle").setAttribute('aria-pressed',String(showArchived));
     projectStatuses.forEach(status=>{
       const sClass=statusClass(status),col=document.createElement("section");col.className=`project-col project-col-${sClass}`;
-      const rows=state.projects.filter(p=>p.status===status).sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999"));
+      const rows=state.projects.filter(p=>p.status===status&&!!p.archived===showArchived).sort((a,b)=>(a.due||"9999").localeCompare(b.due||"9999"));
       col.innerHTML=`<div class="project-col-head"><h3><span class="project-col-dot dot-${sClass}"></span>${status}</h3><span>${rows.length}</span></div><div class="project-col-body"></div>`;
+      if(status==="已完成"){
+        const controls=document.createElement('div');controls.className='completed-controls';controls.innerHTML='<button type="button" data-project-expand>全部展开</button><button type="button" data-project-collapse>全部折叠</button>';
+        controls.querySelector('[data-project-expand]').onclick=()=>{rows.forEach(p=>expandedDone.add(p.id));renderProjectBoard()};
+        controls.querySelector('[data-project-collapse]').onclick=()=>{expandedDone.clear();renderProjectBoard()};col.querySelector('.project-col-head').after(controls);
+      }
       const body=col.querySelector(".project-col-body");if(!rows.length)body.innerHTML=empty("暂无项目");
       rows.forEach(p=>body.appendChild(renderProjectCard(p,state.projects.indexOf(p))));board.appendChild(col)
     });
     $("projectSummary").textContent=projectStatuses.map(s=>`${s} ${state.projects.filter(p=>p.status===s).length}`).join(" · ")
   };
 
-  function changeProjectStatus(index,status){state.projects[index].status=status;persistProjects()}
+  function changeProjectStatus(index,status){expandedDone.delete(state.projects[index].id);state.projects[index].status=status;if(status!=="已完成")state.projects[index].archived=false;persistProjects()}
   function completeProject(index){
     const p=state.projects[index],unfinished=projectTasks(p).filter(t=>t.status!=="已完成");
     if(unfinished.length&&!confirm(`还有 ${unfinished.length} 个关联任务未完成，仍要把项目标记为已完成吗？`))return;

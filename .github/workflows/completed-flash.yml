@@ -1,0 +1,22 @@
+name: Completed cards Flash tests
+on:
+  push:
+    branches: [feat/completed-collapse]
+    paths: ['scripts/completed-flash.mjs', '.github/workflows/completed-flash.yml']
+permissions:
+  contents: read
+jobs:
+  draft:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: node scripts/completed-flash.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: completed-flash
+          path: review-output/completed-flash.json
