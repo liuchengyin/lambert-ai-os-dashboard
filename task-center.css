@@ -154,3 +154,11 @@
 #tasks .tc-task:has(>.completed-item:not([open])){padding:0!important}
 #tcNewTask[hidden],#tasks [role=tablist][hidden],.tc-editor label[hidden]{display:none!important}
 #tasks .tc-column h3{margin:0!important}
+/* Compact disclosure overrides shared legacy span and empty tag spacing. */
+#tasks .tc-task summary>.tc-task-title{width:auto!important;flex:1 1 auto!important;min-width:0}
+#tasks .tc-task summary>.tc-priority{width:auto!important;min-width:28px!important;max-width:none!important;white-space:nowrap!important;overflow-wrap:normal!important;word-break:normal!important;line-height:18px;text-align:center;flex:0 0 auto!important}
+#tasks .tc-task-body>.tc-tags{min-height:0;margin:0!important;padding:0!important}
+#tasks .tc-task-body>.tc-tags:empty{display:none!important}
+#tasks .tc-task-body{gap:4px!important;padding:0 8px 8px!important}
+#tasks .tc-task-actions{margin-top:0!important}
+#tasks .tc-task{margin-bottom:0!important}
