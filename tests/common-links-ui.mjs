@@ -67,6 +67,20 @@ try{
   check('Uploaded icon survives edit',await page.locator('#kIcon').inputValue()===(await rows())[0].links[0].icon);
   await page.waitForTimeout(500);check('Manual re-edit is recognition free',requests.length===reeditRequests);await page.locator('#kCancel').click();await page.locator('#knowledgeLock').click();
 
+
+  await page.locator('#knowledgeWallpaper').click();
+  await page.locator('#kwUrl').fill('https://unsplash.com/photos/the-moon-floats-against-a-blurred-green-background-KCujjJQGlF0');await page.locator('#kwSave').click();
+  check('Wallpaper photo page shows actionable error',(await page.locator('#kwError').innerText()).includes('照片页面链接'));
+  check('Photo page never saved as wallpaper',await page.evaluate(()=>!localStorage.getItem('knowledge_wallpaper_v1')));
+  const wallPNG=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=c.height=8;return c.toDataURL('image/png').split(',')[1]});
+  await page.route('https://wallpaper.example/**',async route=>{if(route.request().url().includes('slow'))await new Promise(r=>setTimeout(r,500));try{await route.fulfill(route.request().url().includes('bad')?{status:200,contentType:'text/html',body:'not an image'}:{contentType:'image/png',body:Buffer.from(wallPNG,'base64')})}catch{}});
+  await page.locator('#kwUrl').fill('https://wallpaper.example/good.png');await page.locator('#kwSave').click();await page.waitForFunction(()=>localStorage.getItem('knowledge_wallpaper_v1')===JSON.stringify('https://wallpaper.example/good.png'));
+  await page.locator('#knowledgeWallpaper').click();await page.locator('#kwUrl').fill('https://wallpaper.example/bad.html');await page.locator('#kwSave').click();await page.waitForFunction(()=>document.getElementById('kwError').textContent.includes('图片加载失败'));
+  check('Failed wallpaper preserves previous image',await page.evaluate(()=>JSON.parse(localStorage.getItem('knowledge_wallpaper_v1'))==='https://wallpaper.example/good.png'));
+  await page.locator('#kwUrl').fill('https://wallpaper.example/slow.png');await page.locator('#kwSave').click();await page.getByRole('button',{name:'取消',exact:true}).click();await page.waitForTimeout(700);
+  check('Cancelled wallpaper cannot apply late result',await page.evaluate(()=>JSON.parse(localStorage.getItem('knowledge_wallpaper_v1'))==='https://wallpaper.example/good.png'));
+  await page.locator('#knowledgeWallpaper').click();await page.locator('#kwClear').click();check('Wallpaper restore default clears saved image',await page.evaluate(()=>!localStorage.getItem('knowledge_wallpaper_v1')));
+
   await page.setViewportSize({width:390,height:844});check('Mobile locked quick add stays visible',await page.locator('#knowledgeQuickAdd').isVisible());await open();await url('https://myaccount.google.com');await page.waitForFunction(()=>document.getElementById('kTitle').value==='Google 账号');
   mkdirSync('tests/screenshots',{recursive:true});await page.screenshot({path:'tests/screenshots/common-links-mobile.png'});check('Mobile dialog fits the screen',await page.locator('#knowledgeLinkDlg').evaluate(e=>e.scrollWidth<=innerWidth-10));await page.locator('#kCancel').click();await page.setViewportSize({width:1440,height:1000});await page.screenshot({path:'tests/screenshots/common-links-desktop.png'});
   mode='fail';const beforeKnown=requests.length;

@@ -1,0 +1,20 @@
+{
+  "model": "deepseek-flash",
+  "usage": {
+    "prompt_tokens": 312,
+    "completion_tokens": 615,
+    "total_tokens": 927,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 312
+  },
+  "calls": 1,
+  "adopted": "Image preload validation, timeout, persistence guard and cancellation",
+  "corrections": [
+    "Explicit DOM bindings",
+    "Exact Unsplash hostname detection",
+    "Invalidate pending load when input changes"
+  ]
+}

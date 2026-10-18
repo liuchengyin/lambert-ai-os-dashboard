@@ -32,7 +32,7 @@
 
   const dlg=document.createElement('dialog');dlg.id='knowledgeLinkDlg';dlg.innerHTML=`<form class="knowledge-dialog"><h3 id="kDlgTitle">添加链接</h3><label id="kUrlLabel">链接地址<input id="kUrl" type="url" placeholder="粘贴网址，自动识别网站信息" required></label><div class="knowledge-icon-row"><div class="knowledge-icon-preview" id="kPreviewBox"></div><div class="knowledge-recognition-info"><strong id="kRecognizedName">等待粘贴网址</strong><p id="kPreviewDesc"></p><p id="kRecognitionStatus" role="status" aria-live="polite">自动获取网站名称和图标</p></div><span id="kDlgSpinner" class="knowledge-spinner" aria-label="识别中" hidden></span><button id="kAutoIcon" type="button">重新识别</button><button id="kManualCreate" type="button" hidden>手动创建</button></div><label id="kTitleLabel">网站名称<input id="kTitle" placeholder="识别后自动填写" readonly></label><details id="kManual" hidden><summary>手动填写</summary><p class="knowledge-manual-note">可修改名称和图标地址。</p><label>图标链接（可选）<input id="kIcon" type="text" placeholder="https://… / 留空使用备用图标"></label><label>上传图标（可选，PNG/JPEG/WebP，≤2MB）<input id="kIconFile" type="file" accept="image/png,image/jpeg,image/webp"></label><p id="kIconFileError" class="knowledge-icon-file-error" role="alert" hidden></p></details><label id="kDescLabel">说明（可选）<textarea id="kDesc" rows="2" placeholder="一句话说明用途"></textarea></label><label id="kGroupLabel">分组<select id="kGroup"></select></label><div class="dlgActions"><button id="kCancel" type="button">取消</button><button id="kSave" type="submit" class="task-primary-btn" disabled>保存</button></div></form>`;document.body.appendChild(dlg);
   const groupDlg=document.createElement('dialog');groupDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>添加分组</h3><label>分组名称<input id="kgName" placeholder="例如：工具 / 工作 / 学习"></label><div class="dlgActions"><button value="cancel">取消</button><button id="kgSave" type="button" class="task-primary-btn">保存</button></div></form>`;document.body.appendChild(groupDlg);
-  const wallDlg=document.createElement('dialog');wallDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>设置壁纸</h3><label>图片链接<input id="kwUrl" type="url" placeholder="https://.../wallpaper.jpg"></label><div class="dlgActions"><button id="kwClear" type="button">恢复默认</button><button value="cancel">取消</button><button id="kwSave" type="button" class="task-primary-btn">应用</button></div></form>`;document.body.appendChild(wallDlg);
+  const wallDlg=document.createElement('dialog');wallDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>设置壁纸</h3><label>图片链接<input id="kwUrl" type="url" placeholder="https://.../wallpaper.jpg"></label><p id="kwError" role="status" aria-live="polite"></p><div class="dlgActions"><button id="kwClear" type="button">恢复默认</button><button value="cancel">取消</button><button id="kwSave" type="button" class="task-primary-btn">应用</button></div></form>`;document.body.appendChild(wallDlg);
 
   const $=id=>document.getElementById(id);
   function safeUrl(raw){let v=(raw||'').trim();if(!v||v.length>2048)return '';if(!/^https?:\/\//i.test(v))v='https://'+v;try{const u=new URL(v);if(!['http:','https:'].includes(u.protocol)||u.username||u.password||!u.hostname.includes('.'))return '';return u.href}catch{return ''}}
@@ -130,9 +130,41 @@
     if(!root.children.length)root.innerHTML='<div class="knowledge-empty-large">没有匹配结果。</div>'
   }
   lockBtn.onclick=()=>{locked=!locked;set(LOCK,locked);updateLock();render()};
-  wallBtn.onclick=()=>{document.getElementById('kwUrl').value=get(WALL,'');wallDlg.showModal()};
-  document.getElementById('kwSave').onclick=()=>{const url=safeUrl(document.getElementById('kwUrl').value);if(!url){document.getElementById('kwUrl').focus();return}set(WALL,url);applyWallpaper(url);wallDlg.close()};
-  document.getElementById('kwClear').onclick=()=>{localStorage.removeItem(WALL);applyWallpaper('');wallDlg.close()};
+const kwSave=document.getElementById('kwSave'),kwClear=document.getElementById('kwClear'),kwUrl=document.getElementById('kwUrl'),kwError=document.getElementById('kwError');
+let wallToken=0,wallTimer=null,wallImg=null;
+function wallReset(){wallToken++;if(wallTimer){clearTimeout(wallTimer);wallTimer=null}if(wallImg){wallImg.onload=wallImg.onerror=null;wallImg=null}kwSave.disabled=false;kwSave.textContent='应用';}
+function wallErr(m){kwError.textContent=m||'';}
+wallBtn.onclick=function(){wallReset();wallErr('');kwUrl.value=get(WALL,'')||'';wallDlg.showModal();};
+wallDlg.addEventListener('close',function(){wallReset();wallErr('');});
+kwSave.onclick=function(){
+  wallErr('');
+  const raw=(kwUrl.value||'').trim();
+  const url=safeUrl(raw);
+  if(!url){wallErr('请输入有效的 http/https 图片链接。');return;}
+  if(['unsplash.com','www.unsplash.com'].includes(new URL(url).hostname)&&new URL(url).pathname.startsWith('/photos/')){wallErr('这是照片页面链接，请打开照片后复制图片地址（通常以 images.unsplash.com 开头）。');return;}
+  const token=++wallToken;
+  if(wallTimer){clearTimeout(wallTimer);wallTimer=null}
+  if(wallImg){wallImg.onload=wallImg.onerror=null;wallImg=null}
+  kwSave.disabled=true;kwSave.textContent='加载中…';
+  const img=new Image();wallImg=img;
+  function fail(msg){if(token!==wallToken)return;wallReset();wallErr(msg);}
+  img.onload=function(){
+    if(token!==wallToken)return;
+    if(!(img.naturalWidth>0)){fail('图片加载失败，请检查链接是否可直接访问。');return;}
+    try{set(WALL,url);}catch(e){fail('保存失败，壁纸未更新。');return;}
+    if(token!==wallToken)return;
+    applyWallpaper(url);wallReset();wallErr('');wallDlg.close();
+  };
+  img.onerror=function(){fail('图片加载失败，请确认链接指向可访问的图片文件。');};
+  wallTimer=setTimeout(function(){if(token!==wallToken)return;fail('加载超时（12秒），壁纸未更新。');},12000);
+  img.src=url;
+};
+kwClear.onclick=function(){
+  wallErr('');
+  try{localStorage.removeItem(WALL);}catch(e){wallErr('清除失败，请稍后重试。');return;}
+  wallReset();applyWallpaper('');wallDlg.close();
+};
+kwUrl.addEventListener('input',()=>{wallReset();wallErr('')});
   function searchUrl(){const value=search.value.trim();return /^(https?:\/\/|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[/:?#]|$))/i.test(value)?safeUrl(value):''}
   let searchAutoTimer=null,searchAutoUrl='';
   function clearSearchAuto(){clearTimeout(searchAutoTimer);searchAutoTimer=null;searchAutoUrl='';searchSpinner.hidden=true;manualBtn.hidden=true}
