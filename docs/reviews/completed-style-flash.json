@@ -1,0 +1,17 @@
+{
+  "model": "deepseek-flash",
+  "usage": {
+    "prompt_tokens": 196,
+    "completion_tokens": 525,
+    "total_tokens": 721,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 196
+  },
+  "result": {
+    "code": "#projects details.completed-item>summary,#tasks details.completed-item>summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;flex-wrap:nowrap;min-width:0}\n#projects details.completed-item>summary::-webkit-details-marker,#tasks details.completed-item>summary::-webkit-details-marker{display:none}\n#projects details.completed-item>summary::marker,#tasks details.completed-item>summary::marker{content:''}\n#projects details.completed-item>summary>.tc-done-check,#tasks details.completed-item>summary>.tc-done-check{flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:#21a365;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1;text-align:center}\n#projects details.completed-item>summary>span:not(.tc-done-check),#tasks details.completed-item>summary>span:not(.tc-done-check){flex:1 1 auto;min-width:0;white-space:normal;overflow-wrap:anywhere;word-break:break-word}\n#projects details.completed-item>summary::after,#tasks details.completed-item>summary::after{content:'⌄';flex:0 0 auto;margin-left:auto;color:#888;font-size:16px;line-height:1;transition:transform .2s ease;transform-origin:center}\n#projects details.completed-item[open]>summary::after,#tasks details.completed-item[open]>summary::after{transform:rotate(180deg)}\n#projects details.completed-item>summary:focus-visible,#tasks details.completed-item>summary:focus-visible{outline:2px solid #21a365;outline-offset:2px;border-radius:4px}",
+    "notes": "共享选择器同时覆盖#projects与#tasks，含#tasks .tc-done-check；图标20px绿圆白勾居中，summary为flex且整行可点；标题flex:1可换行不被箭头挤压；::after独立灰色下箭头margin-left:auto，[open]旋转180deg；隐藏原生marker并保留原生summary键盘折叠，focus-visible有可见轮廓；未改动其他卡片或功能。"
+  }
+}

@@ -1,8 +1,8 @@
 name: Project focused task center check
 on:
   push:
-    branches: [feat/project-focused-tasks]
-    paths: ['task-center*', 'review-v6.js', 'review-layout-v7.css', 'project-date-picker.js', 'lib/task-center-model.js', 'dashboard-v5.js', 'project-v3.js', 'index.html', 'tests/task-center*', '.github/workflows/task-center-ui.yml']
+    branches: [feat/project-focused-tasks, feat/completed-collapse]
+    paths: ['task-center*', 'review-v6.js', 'review-layout-v7.css', 'project-date-picker.js', 'lib/task-center-model.js', 'dashboard-v5.js', 'project-v3.js', 'index.html', 'tests/task-center*', 'tests/completed-collapse.mjs', 'project-v3.css', '.github/workflows/task-center-ui.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -31,8 +31,9 @@ jobs:
         run: |
           python3 -m http.server 8000 --bind 127.0.0.1 &
           node tests/task-center-ui.mjs
+          node tests/completed-collapse.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: project-focused-task-center-screens
-          path: test-artifacts/task-center/
+          path: test-artifacts/

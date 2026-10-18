@@ -1,0 +1,20 @@
+{
+  "model": "deepseek-flash",
+  "actualCalls": 2,
+  "successfulCallUsage": {
+    "prompt_tokens": 158,
+    "completion_tokens": 203,
+    "total_tokens": 361,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 158
+  },
+  "firstCall": "Output truncated; usage unavailable from failed job",
+  "adopted": "Reload/default-collapse and bulk/individual disclosure test fragment",
+  "corrections": [
+    "Bulk controls are siblings of disclosures; scoped to page",
+    "Assert every disclosure state rather than only first"
+  ]
+}

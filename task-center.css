@@ -83,3 +83,26 @@
 #tasks .tc-gantt-bar:focus-visible{clip-path:none;outline:2px solid #312345;outline-offset:2px}
 #tasks .tc-done-check{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;margin-right:6px;border-radius:50%;background:#e1f4e9;color:#23844e;font-weight:800;font-size:13px;vertical-align:middle;flex-shrink:0}
 #tasks .tc-task-done{border-color:#b7ddc6;background:#fcfffd}#tasks .tc-task-done .tc-task-title{color:#347353}
+
+/* Completed items use the same compact disclosure in both modules. */
+.completed-item>summary{display:flex;align-items:center;gap:10px;cursor:pointer;list-style:none;min-height:32px;color:var(--text,#27324a);font-weight:600;overflow-wrap:anywhere}
+.completed-item>summary::-webkit-details-marker{display:none}
+.completed-item>summary:focus-visible{outline:2px solid #7957d5;outline-offset:3px;border-radius:5px}
+.completed-item[open]>summary{margin-bottom:12px}
+.completed-item .tc-done-check{flex-shrink:0;color:#169b60}
+.completed-controls{display:flex;gap:8px;flex-wrap:wrap;padding:4px 0 10px}
+.completed-controls button{font-size:12px;padding:4px 8px}
+.tc-task:has(>.completed-item:not([open])){padding:8px 12px}
+.project-card:has(>.completed-item:not([open])){padding:10px 14px;min-height:0;cursor:default}
+.completed-item .tc-task-actions{flex-wrap:wrap}
+#projectArchiveToggle{margin:8px 0 14px}
+
+/* DeepSeek Flash: shared completion badge and individual disclosure arrow. */
+#projects details.completed-item>summary,#tasks details.completed-item>summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;flex-wrap:nowrap;min-width:0}
+#projects details.completed-item>summary::-webkit-details-marker,#tasks details.completed-item>summary::-webkit-details-marker{display:none}
+#projects details.completed-item>summary::marker,#tasks details.completed-item>summary::marker{content:''}
+#projects details.completed-item>summary>.tc-done-check,#tasks details.completed-item>summary>.tc-done-check{flex:0 0 20px;width:20px;height:20px;border-radius:50%;background:#21a365;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;line-height:1;text-align:center}
+#projects details.completed-item>summary>span:not(.tc-done-check),#tasks details.completed-item>summary>span:not(.tc-done-check){flex:1 1 auto;min-width:0;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+#projects details.completed-item>summary::after,#tasks details.completed-item>summary::after{content:'⌄';flex:0 0 auto;margin-left:auto;color:#888;font-size:16px;line-height:1;transition:transform .2s ease;transform-origin:center}
+#projects details.completed-item[open]>summary::after,#tasks details.completed-item[open]>summary::after{transform:rotate(180deg)}
+#projects details.completed-item>summary:focus-visible,#tasks details.completed-item>summary:focus-visible{outline:2px solid #21a365;outline-offset:2px;border-radius:4px}
