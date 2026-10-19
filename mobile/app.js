@@ -6,6 +6,7 @@ var tabsEl=document.getElementById('tabs');
 var syncEl=document.getElementById('syncStatus');
 var tab='tasks';
 var filterScope='all';
+var reviewDate=null;
 var filterProject=null;
 var foldDone=true;
 var TABS=[['tasks','任务','✓'],['projects','项目','▦'],['review','复盘','✎']];
@@ -38,7 +39,7 @@ function renderTabs(){
 
 function render(){
   renderTabs();
-  app.textContent='';
+  app.textContent='';app.className=tab==='review'?'review-page':'';
   if(tab==='tasks')renderTasks();
   else if(tab==='projects')renderProjects();
   else renderReview();
@@ -101,44 +102,7 @@ function renderTasks(){
 }
 
 function renderProjects(){
-  var ps=projects().filter(function(p){return !p.archived;});
-  var c=el('div','card');
-  var h=el('h2');h.appendChild(el('span',null,'项目'));
-  var add=el('button','btn sm pri','+ 新增');
-  add.onclick=function(){openProjectDialog(null);};
-  h.appendChild(add);
-  c.appendChild(h);
-  if(!ps.length)c.appendChild(el('div','empty','暂无项目'));
-  var groups={};
-  ps.forEach(function(p){var s=p.status||'进行中';(groups[s]=groups[s]||[]).push(p);});
-  Object.keys(groups).forEach(function(s){
-    c.appendChild(el('div','grp',s));
-    groups[s].forEach(function(p){
-      var row=el('div','proj'+(filterProject===p.id?' on':''));
-      var nm=el('div','nm',p.name);
-      row.appendChild(nm);
-      var cnt=tasks().filter(function(t){return pid(t)===p.id&&t.status!=='已完成';}).length;
-      row.appendChild(el('span','mut',cnt+' 待办'));
-      row.onclick=function(){filterProject=filterProject===p.id?null:p.id;render();};
-      var ed=el('button','btn sm','✎');
-      ed.onclick=function(e){e.stopPropagation();openProjectDialog(p);};
-      row.appendChild(ed);
-      c.appendChild(row);
-    });
-  });
-  app.appendChild(c);
-  if(filterProject){
-    var tc=el('div','card');
-    var th=el('h2');th.appendChild(el('span',null,projName(filterProject)+' 任务'));
-    var clr=el('button','btn sm','清除');
-    clr.onclick=function(){filterProject=null;render();};
-    th.appendChild(clr);
-    tc.appendChild(th);
-    var list=tasks().filter(function(t){return pid(t)===filterProject;});
-    if(!list.length)tc.appendChild(el('div','empty','该项目暂无任务'));
-    list.forEach(function(t){tc.appendChild(taskRow(t));});
-    app.appendChild(tc);
-  }
+ app.appendChild(window.MobileProjectBoard.render({projects:projects(),tasks:tasks(),projectId:pid,selectedId:filterProject,today:today(),onSelect:function(id){filterProject=id;render();},onEdit:openProjectDialog,onAddProject:function(){openProjectDialog(null);},onAddTask:function(id){filterProject=id;openTaskDialog(null);},taskRow:taskRow}));
 }
 
 function goalCard(date){
@@ -151,9 +115,10 @@ function goalCard(date){
  function choices(){list.textContent='';all.filter(function(t){return t.status!=='已完成'&&(!filter.value||pid(t)===filter.value);}).sort(function(a,b){var ad=(a.due||'').slice(0,10),bd=(b.due||'').slice(0,10);return (ad===date?0:1)-(bd===date?0:1)||ad.localeCompare(bd);}).forEach(function(t){var lab=el('label','goal-choice');var cb=el('input');cb.type='checkbox';cb.checked=ids.includes(t.id);cb.setAttribute('aria-label','目标：'+t.title);cb.onchange=function(){var r=reviews(),cur=r[date]||{},set=new Set(cur.taskIds||[]);cb.checked?set.add(t.id):set.delete(t.id);cur.taskIds=Array.from(set);cur.updatedAt=new Date().toISOString();r[date]=cur;try{saveReviews(r);if(tab==='review'){c.replaceWith(goalCard(date));}else render();}catch(e){cb.checked=!cb.checked;alert('保存失败：'+e.message);}};lab.append(cb,el('span',null,t.title+' · '+((t.due||'').slice(0,10)||'未排期')));list.appendChild(lab);});}filter.onchange=choices;choices();c.appendChild(d);return c;
 }
 
-function renderReview(){renderReviewFor(today());}
+function renderReview(){renderReviewFor(reviewDate||today());}
 
 function renderReviewFor(date){
+  reviewDate=date;
   var rv=reviews()[date]||{taskIds:[],goal:'',gap:'',reason:'',restart:'',updatedAt:0};
   var all=tasks();
   app.textContent='';

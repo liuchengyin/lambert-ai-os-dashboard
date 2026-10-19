@@ -21,11 +21,13 @@ jobs:
       - run: |
           node tests/mobile-store.mjs
           node tests/mobile-task-model.mjs
+          node tests/mobile-project-stats.mjs
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
           node tests/mobile-ui.mjs
           node tests/mobile-details-ui.mjs
           node tests/mobile-swipe-ui.mjs
+          node tests/mobile-project-board-ui.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
