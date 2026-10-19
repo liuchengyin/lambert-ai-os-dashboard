@@ -1,6 +1,6 @@
 /* Daily Review V7 — compact one-page journal, informed by Bullet Journal / Obsidian daily notes.
    Data and field IDs remain from V6; this is layout/typography only. */
-#review .review-v6-page{max-width:1067px;margin:0 auto;padding:0!important}
+#review .review-v6-page{max-width:1280px;margin:0 auto;padding:0!important}
 #review .review-v6-head{align-items:center;gap:18px;margin:0 0 18px}
 #review .review-v7-title{display:flex;flex-direction:column;gap:3px}
 #review .review-v7-kicker{font-size:10px;font-weight:800;letter-spacing:.15em;color:#7d86a6}
