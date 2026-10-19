@@ -29,6 +29,7 @@ function wrap(row,title,onDelete,onComplete){
  });
  row.addEventListener('pointerup',function(e){
   if(e.pointerId!==id)return;id=null;if(!drag)return;drag=false;w.classList.remove('swipe-dragging');
+  if(wasOpen&&e.clientX-sx>10){close();return;}
   if(x<=-36){open();return;}
   if(!wasOpen&&onComplete&&x>=Math.max(64,w.clientWidth*.25)){
    busy=true;
