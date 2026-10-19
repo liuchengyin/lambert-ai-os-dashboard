@@ -1,0 +1,21 @@
+.lambert-auth-trigger{border:1px solid #7255b3;background:rgba(125,91,219,.15);color:#eee7ff;border-radius:12px;padding:8px 13px;font-size:13px;cursor:pointer}
+.lambert-auth-chip{display:inline-flex;align-items:center;gap:8px}
+.lambert-auth-chip img{height:22px;width:22px;border-radius:50%}
+#lambertAuthDialog{max-width:min(380px,calc(100vw - 32px));width:100%;padding:26px;border:1px solid #343049;border-radius:20px;background:#15141f;color:#f1edff;box-shadow:0 20px 80px #0009}
+#lambertAuthDialog::backdrop{background:#08070ec9}
+.lambert-auth-inner{display:grid;gap:16px}
+.lambert-auth-head{display:flex;align-items:center;justify-content:space-between}
+.lambert-auth-head strong{font-size:22px}
+.lambert-auth-close{background:transparent;border:0;color:#c3bad6;font-size:24px;cursor:pointer}
+.lambert-auth-option{width:100%;padding:13px 12px;border-radius:12px;border:1px solid #514768;color:#f1ecfa;background:#272136;cursor:pointer;font-weight:600}
+.lambert-auth-option[disabled]{opacity:.46;cursor:not-allowed}
+.lambert-auth-note{font-size:12px;color:#b4a9c9;line-height:1.6}
+.lambert-auth-error{color:#ff9f9f;font-size:12px}
+.lambert-auth-controls{display:flex;justify-content:flex-end;gap:8px}
+
+/* Compact account entry aligned horizontally with the brand name. */
+.shell>aside .lambert-brand-copy{flex:1;min-width:0}
+.shell>aside .lambert-auth-title-row{display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap}
+.shell>aside .lambert-auth-title-row h2{flex:0 1 auto;min-width:0;font-size:14px!important;letter-spacing:-.035em!important}
+.shell>aside .lambert-auth-title-row .lambert-auth-trigger{flex:0 0 auto;width:auto;max-width:72px;min-height:25px;padding:3px 6px;border-radius:7px;font-size:10px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:680px){.shell>aside .lambert-auth-title-row h2{font-size:13px!important}.shell>aside .lambert-auth-title-row .lambert-auth-trigger{padding:3px 5px;font-size:10px}}
