@@ -4,10 +4,11 @@ var S=window.MobileStore;
 var app=document.getElementById('app');
 var tabsEl=document.getElementById('tabs');
 var syncEl=document.getElementById('syncStatus');
-var tab='today';
+var tab='tasks';
+var filterScope='all';
 var filterProject=null;
 var foldDone=true;
-var TABS=[['today','今日','☀'],['tasks','任务','✓'],['projects','项目','▦'],['review','复盘','✎']];
+var TABS=[['tasks','任务','✓'],['projects','项目','▦'],['review','复盘','✎']];
 
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
 function today(){return S.date();}
@@ -38,8 +39,7 @@ function renderTabs(){
 function render(){
   renderTabs();
   app.textContent='';
-  if(tab==='today')renderToday();
-  else if(tab==='tasks')renderTasks();
+  if(tab==='tasks')renderTasks();
   else if(tab==='projects')renderProjects();
   else renderReview();
   refreshStatus();
@@ -58,10 +58,10 @@ function taskRow(t,opts){
   var meta=el('div','meta');
   if(pid(t))meta.appendChild(el('span','tag',projName(pid(t))));
   if(t.due){var over=t.due<today()&&t.status!=='已完成';meta.appendChild(el('span','tag'+(over?' over':''),t.due.slice(5,10).replace('-','/')));}
-  body.appendChild(meta);
-  if(t.note)body.appendChild(el('div','mut',t.note));
+  if(t.steps&&t.steps.length)meta.appendChild(el('span','task-step-count',t.steps.filter(function(s){return s.done;}).length+'/'+t.steps.length+' 步骤'));
+  if(meta.childNodes.length)body.appendChild(meta);
   d.appendChild(body);
-  if(tab==='tasks'&&window.MobileTaskSwipe)return window.MobileTaskSwipe.wrap(d,t.title,function(){softDeleteTask(t.id);});
+  if(tab==='tasks'&&window.MobileTaskSwipe)return window.MobileTaskSwipe.wrap(d,t.title,function(){softDeleteTask(t.id);},t.status==='已完成'?null:function(){var rows=S.read('tasks',[]),current=rows.find(function(x){return x.id===t.id;});if(!current||current.deletedAt||current.archived)throw Error('任务不存在');if(current.status==='已完成')return;S.write('tasks',window.MobileTaskModel.toggle(rows,t.id,today()));setTimeout(render,200);});
   return d;
 }
 
@@ -75,24 +75,11 @@ function softDeleteTask(id){
  undoTimer=setTimeout(function(){bar.remove();if(undoBar===bar)undoBar=null;},8000);
 }
 
-function renderToday(){
- app.appendChild(goalCard(today()));
-  var c=el('div','card');
-  var h=el('h2');h.appendChild(el('span',null,'今日任务'));h.appendChild(el('span','mut',today()));
-  c.appendChild(h);
-  var all=tasks();
-  var list=all.filter(function(t){return t.status!=='已完成'&&(!t.due||t.due.slice(0,10)<=today());});
-  list.sort(function(a,b){var ad=(a.due||'').slice(0,10)===today()?0:1,bd=(b.due||'').slice(0,10)===today()?0:1;return ad-bd;});
-  if(!list.length)c.appendChild(el('div','empty','今日无待办任务'));
-  list.forEach(function(t){c.appendChild(taskRow(t));});
-  app.appendChild(c);
-
-
-}
-
 function renderTasks(){
-  var all=tasks().filter(function(t){return !filterProject||pid(t)===filterProject;});
+  var targetIds=(reviews()[today()]||{}).taskIds||[];
+  var all=tasks().filter(function(t){return (!filterProject||pid(t)===filterProject)&&(filterScope!=='today'||(t.due||'').slice(0,10)===today()||targetIds.includes(t.id));});
   var c=el('div','task-list');
+  var scopes=el('div','task-scopes');scopes.setAttribute('role','group');scopes.setAttribute('aria-label','任务日期筛选');[['all','全部'],['today','今日']].forEach(function(item){var btn=el('button',filterScope===item[0]?'on':'',item[1]);btn.type='button';btn.setAttribute('aria-pressed',String(filterScope===item[0]));btn.onclick=function(){filterScope=item[0];render();};scopes.appendChild(btn);});c.appendChild(scopes);
   var picker=el('select');picker.setAttribute('aria-label','任务项目筛选');var any=el('option',null,'全部项目');any.value='';picker.appendChild(any);projects().forEach(function(p){var o=el('option',null,p.name);o.value=p.id;picker.appendChild(o);});picker.value=filterProject||'';picker.onchange=function(){filterProject=picker.value;render();};c.appendChild(picker);
   var h=el('h2');h.appendChild(el('span',null,'任务'));
   var add=el('button','task-fab','＋');add.type='button';add.setAttribute('aria-label','新增任务');

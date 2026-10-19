@@ -35,3 +35,5 @@
 .mtd-save{min-height:48px;border:0;border-radius:8px;background:#5b2d90;color:#fff;font-size:17px;font-weight:600;cursor:pointer;margin-bottom:16px;}
 @media(max-width:360px){.mtd-title{font-size:20px;}.mtd-body{padding:8px;}.mtd-card{padding:6px 8px;}}
 .mtd-done{width:44px;height:44px;padding:0;background:transparent;color:#8a8886;border:0;font-size:26px}.mtd-done.on{color:#16a34a}.mtd-check.on::before{background:#16a34a;border-color:#16a34a}.mtd-error{color:#b91c1c;margin:0;font-size:14px}.mtd-head{flex-wrap:wrap}.mtd-title{width:0;min-width:80px}.mtd-body{overflow:visible}.mtd-dialog{height:100dvh;max-height:100%;overflow-y:auto}.mtd-steptext{font-size:18px}.mtd-created{font-size:13px}.mtd-steptext:focus-visible,.mtd-title:focus-visible{outline:2px solid #7357d7;outline-offset:-2px}
+
+.mtd-root{font-family:inherit}.mtd-title{font-size:21px}.mtd-steptext{font-size:17px}

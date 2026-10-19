@@ -21,7 +21,7 @@ public class KeyboardTest {
   try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
    scenario.onActivity(a->web=find(a.getWindow().getDecorView()));assertNotNull(web);
    for(int i=0;i<60&&!"true".equals(js("!!document.querySelector('#tabs button')"));i++)Thread.sleep(250);
-   js("document.querySelectorAll('#tabs button')[1].click(); document.querySelector('.task-fab').click(); true");
+   js("document.querySelectorAll('#tabs button')[0].click(); document.querySelector('.task-fab').click(); true");
    scenario.onActivity(a->{web.requestFocus();((InputMethodManager)a.getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(web,InputMethodManager.SHOW_IMPLICIT);});
    // A programmatic JS focus is not a trusted user gesture in WebView.
    // Tap the actual input on screen before asserting IME visibility.

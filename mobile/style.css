@@ -54,3 +54,21 @@ dialog{margin:auto} .btn.sm{min-height:44px;min-width:44px}.task .chk{min-width:
 /* Larger readable task text, small circle inside a full touch target. */
 #app .task .tt{font-size:18px;line-height:1.5}#app .task .meta{font-size:12px}#app .task .tag{font-size:12px}#app .task>.chk{position:relative;isolation:isolate;border:0!important;background:transparent!important;min-width:44px;min-height:44px;flex:0 0 44px;color:white;font-size:15px;padding:0;margin:0}#app .task>.chk::before{content:'';position:absolute;z-index:-1;width:22px;height:22px;left:11px;top:11px;border:2px solid #9b90b8;border-radius:50%;background:white;box-sizing:border-box}#app .task.done>.chk::before{background:#16a34a;border-color:#16a34a}#app .task.done>.chk{color:white}.task-list>.task{padding:8px 10px;gap:6px}
 .task-list>.task-swipe{margin:8px 0}.task-list>.task-swipe>.task{background:white;border:1px solid var(--bd);border-radius:12px;margin:0;padding:8px 10px;gap:6px;align-items:center}.task-undo{position:fixed;left:16px;right:16px;bottom:calc(150px + env(safe-area-inset-bottom));z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:480px;margin:auto;padding:8px 12px;background:#292337;color:white;border-radius:10px;box-shadow:0 4px 18px #0003;font-size:15px}.task-undo button{min-height:44px;min-width:64px;background:transparent;border:0;color:#d8c9ff;font-size:16px;font-weight:600}
+
+/* Compact task list: shared type scale, two lines at most, 44px touch targets. */
+button,input,select,textarea{font-family:inherit}
+:root{--task-type:17px}
+.task-list h2{font-size:22px;font-weight:600;margin:12px 0}
+#app .task .tt,.task-list .grp,.task-list .fold{font-size:var(--task-type);line-height:1.35;font-weight:400}
+#app .task .tt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.task-list>.task-swipe{margin:5px 0;border-radius:8px}
+.task-list>.task-swipe>.task,.task-list>.task{padding:2px 8px 2px 4px;gap:4px;border-radius:8px;min-height:50px}
+.task-edit{padding:2px 0;display:flex;flex-direction:column;justify-content:center}
+#app .task .meta{line-height:1.3;margin-top:2px;flex-wrap:nowrap;overflow:hidden;white-space:nowrap;font-size:12px;gap:6px}
+#app .task .tag{border:0;background:transparent;border-radius:0;padding:0;font-size:12px;max-width:45%;overflow:hidden;text-overflow:ellipsis}
+.task-list .grp{margin:12px 0 6px;color:var(--mut)}
+.task-list .fold{padding:4px 0;margin-top:10px}.task-list .fold span:last-child{font-size:13px}
+.task-scopes{display:flex;gap:4px;background:#ede8fa;border-radius:10px;padding:3px;margin-bottom:8px}
+.task-scopes button{flex:1;min-height:44px;border:0;border-radius:8px;background:transparent;color:var(--mut);font-size:16px;font-weight:400}
+.task-scopes button.on{background:white;color:var(--p);box-shadow:0 1px 4px #33215514}
+@media(prefers-reduced-motion:reduce){.task-swipe .task-swipe-front{transition:none!important}}

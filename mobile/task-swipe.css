@@ -1,6 +1,9 @@
-.task-swipe{position:relative;overflow:hidden;border-radius:12px}
+.task-swipe{position:relative;overflow:hidden;border-radius:8px}
 .task-swipe .task-swipe-front{position:relative;z-index:1;background:#fff;touch-action:pan-y}
-.task-swipe .task-swipe-delete{position:absolute;right:0;top:0;width:calc(280px / 3);height:100%;min-height:44px;z-index:0;border:0;background:linear-gradient(90deg,#ff5252 0%,#e53935 55%,#c62828 100%);color:#fff;font-size:14px;cursor:pointer}
+.task-swipe .task-swipe-delete,.task-swipe .task-swipe-complete{position:absolute;top:0;bottom:0;width:50%;min-height:44px;display:flex;align-items:center;justify-content:center;border:0;color:white;font:inherit;font-size:17px}
+.task-swipe .task-swipe-delete{right:0;background:linear-gradient(90deg,#ff6262,#e53935 55%,#b71c1c);cursor:pointer}
+.task-swipe .task-swipe-complete{left:0;background:linear-gradient(90deg,#16a34a,#4ade80);pointer-events:none}
 .task-swipe .task-swipe-delete[hidden]{display:none}
-
 .task-swipe.swipe-dragging .task-swipe-front{will-change:transform}
+.task-swipe.swipe-ready .task-swipe-complete{background:linear-gradient(90deg,#15803d,#22c55e)}
+@media(prefers-reduced-motion:reduce){.task-swipe .task-swipe-front{transition:none!important}}
