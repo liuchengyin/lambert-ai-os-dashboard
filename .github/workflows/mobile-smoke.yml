@@ -25,6 +25,7 @@ jobs:
           sleep 2
           node tests/mobile-ui.mjs
           node tests/mobile-details-ui.mjs
+          node tests/mobile-swipe-ui.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

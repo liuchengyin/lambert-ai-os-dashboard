@@ -61,7 +61,18 @@ function taskRow(t,opts){
   body.appendChild(meta);
   if(t.note)body.appendChild(el('div','mut',t.note));
   d.appendChild(body);
+  if(tab==='tasks'&&window.MobileTaskSwipe)return window.MobileTaskSwipe.wrap(d,t.title,function(){softDeleteTask(t.id);});
   return d;
+}
+
+var undoTimer=null,undoBar=null;
+function softDeleteTask(id){
+ var all=S.read('tasks',[]),t=all.find(function(t){return t.id===id;});if(!t||t.deletedAt||t.archived)throw Error('任务不存在或已删除');
+ var stamp=new Date().toISOString();t.deletedAt=stamp;t.updatedAt=stamp;S.write('tasks',all);render();
+ if(undoTimer)clearTimeout(undoTimer);if(undoBar)undoBar.remove();
+ var bar=el('div','task-undo'),msg=el('span',null,'任务已删除'),undo=el('button',null,'撤销');undo.type='button';bar.setAttribute('role','status');undo.setAttribute('aria-label','撤销删除');bar.append(msg,undo);document.body.appendChild(bar);undoBar=bar;
+ undo.onclick=function(){try{var rows=S.read('tasks',[]),current=rows.find(function(t){return t.id===id;});if(!current||current.deletedAt!==stamp)throw Error('任务已变化，请重新查看');delete current.deletedAt;current.updatedAt=new Date().toISOString();S.write('tasks',rows);clearTimeout(undoTimer);bar.remove();undoBar=null;render();}catch(e){msg.textContent='撤销失败：'+e.message;}};
+ undoTimer=setTimeout(function(){bar.remove();if(undoBar===bar)undoBar=null;},8000);
 }
 
 function renderToday(){
