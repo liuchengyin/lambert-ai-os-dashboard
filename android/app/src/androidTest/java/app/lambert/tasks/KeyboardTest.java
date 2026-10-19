@@ -23,6 +23,14 @@ public class KeyboardTest {
    for(int i=0;i<60&&!"true".equals(js("!!document.querySelector('#tabs button')"));i++)Thread.sleep(250);
    js("document.querySelectorAll('#tabs button')[1].click(); document.querySelector('.task-fab').click(); true");
    scenario.onActivity(a->{web.requestFocus();((InputMethodManager)a.getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(web,InputMethodManager.SHOW_IMPLICIT);});
+   // A programmatic JS focus is not a trusted user gesture in WebView.
+   // Tap the actual input on screen before asserting IME visibility.
+   org.json.JSONObject rect=new org.json.JSONObject(js("(()=>{const r=document.querySelector('#mobileTaskTitle').getBoundingClientRect();return {x:r.x+r.width/2,y:r.y+r.height/2,w:innerWidth}})()"));
+   float[] tap=new float[2];scenario.onActivity(a->{int[] loc=new int[2];web.getLocationOnScreen(loc);float scale=web.getWidth()/(float)rect.optDouble("w");tap[0]=loc[0]+(float)rect.optDouble("x")*scale;tap[1]=loc[1]+(float)rect.optDouble("y")*scale;});
+   long eventTime=android.os.SystemClock.uptimeMillis();
+   android.view.MotionEvent down=android.view.MotionEvent.obtain(eventTime,eventTime,android.view.MotionEvent.ACTION_DOWN,tap[0],tap[1],0);
+   android.view.MotionEvent up=android.view.MotionEvent.obtain(eventTime,eventTime+50,android.view.MotionEvent.ACTION_UP,tap[0],tap[1],0);
+   InstrumentationRegistry.getInstrumentation().sendPointerSync(down);InstrumentationRegistry.getInstrumentation().sendPointerSync(up);down.recycle();up.recycle();
    boolean visible=false;
    for(int i=0;i<40;i++){AtomicReference<Boolean> v=new AtomicReference<>(false);scenario.onActivity(a->{WindowInsets insets=a.getWindow().getDecorView().getRootWindowInsets();v.set(insets!=null&&insets.isVisible(WindowInsets.Type.ime()));});if(v.get()){visible=true;break;}Thread.sleep(250);}
    assertTrue("Software keyboard must actually open",visible);Thread.sleep(700);
