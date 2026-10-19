@@ -13,6 +13,8 @@
     return n;
   }
 
+  function dismiss(d){d.close();d.remove();}
+
   function makeDialog(cls){
     var d = el('dialog', cls);d.setAttribute('aria-label',cls==='polish-sheet'?'筛选项目':'我的账户');
     d.addEventListener('close', function(){
@@ -72,7 +74,7 @@
           b.addEventListener('click', function(){
             var ok = true;
             try { if(onSelect) onSelect(id); } catch(e){ ok = false; }
-            if(ok){ d.close(); }
+            if(ok){ dismiss(d); }
             else { alert('\u9009\u62e9\u5931\u8d25\uff0c\u8bf7\u91cd\u8bd5'); }
           });
         })(it.id);
@@ -82,7 +84,7 @@
     }
 
     search.addEventListener('input', render);
-    cb.addEventListener('click', function(){ d.close(); });
+    cb.addEventListener('click', function(){ dismiss(d); });
     render();
     d.showModal();
     cb.focus();
@@ -119,7 +121,7 @@
     var gnote = el('p', 'polish-note', {text:'Google \u767b\u5f55\u5c1a\u672a\u63a5\u5165\u3002'});
     body.appendChild(g); body.appendChild(gnote);
     d.appendChild(head); d.appendChild(body);
-    cb.addEventListener('click', function(){ d.close(); });
+    cb.addEventListener('click', function(){ dismiss(d); });
     d.showModal();
     cb.focus();
   }
