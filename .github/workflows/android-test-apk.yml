@@ -70,12 +70,12 @@ jobs:
       - name: Verify signature and permissions
         run: |
           mkdir -p apk-output
-          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-Tasks-0.1.7-test.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-Tasks-0.1.8-test.apk
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs apk-output/*.apk > apk-output/signature.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions apk-output/*.apk > apk-output/permissions.txt
           if grep -E "android.permission.(INTERNET|CAMERA|READ_CONTACTS|READ_EXTERNAL_STORAGE|RECORD_AUDIO|ACCESS_FINE_LOCATION)" apk-output/permissions.txt; then exit 1; fi
           cd apk-output
-          sha256sum Lambert-Tasks-0.1.7-test.apk > SHA256SUMS.txt
+          sha256sum Lambert-Tasks-0.1.8-test.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
