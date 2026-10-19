@@ -5,7 +5,15 @@
   const trigger=document.createElement('button');
   trigger.type='button';trigger.className='lambert-auth-trigger';trigger.textContent='登录';
   trigger.setAttribute('aria-label','打开个人账号登录');
-  root.insertAdjacentElement('afterend',trigger);
+  // Keep the account entry next to the Lambert AI OS title, never as an extra sidebar row.
+  const copy=root.querySelector('.lambert-brand-copy');
+  const title=copy?.querySelector('h2');
+  if(!title)return;
+  const titleRow=document.createElement('div');
+  titleRow.className='lambert-auth-title-row';
+  title.parentNode.insertBefore(titleRow,title);
+  titleRow.appendChild(title);
+  titleRow.appendChild(trigger);
   const dialog=document.createElement('dialog');dialog.id='lambertAuthDialog';
   dialog.innerHTML=`<div class="lambert-auth-inner">
     <div class="lambert-auth-head"><strong>登录 Lambert AI OS</strong><button class="lambert-auth-close" type="button" aria-label="关闭登录窗口">×</button></div>
