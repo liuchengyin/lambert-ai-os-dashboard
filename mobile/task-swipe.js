@@ -1,5 +1,5 @@
 (function(){
-  var OPEN=80,TH=36,cur=null;
+  var OPEN=280/3,TH=36,cur=null;
   function wrap(row,title,onDelete){
     var w=document.createElement('div');w.className='task-swipe';
     var b=document.createElement('button');b.className='task-swipe-delete';b.type='button';

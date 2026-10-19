@@ -1,4 +1,4 @@
-const CACHE='lambert-mobile-v5';
+const CACHE='lambert-mobile-v6';
 const FILES=['./','./index.html','./style.css','./store.js','./app.js','./task-model.js','./task-details.js','./task-details.css','./task-swipe.js','./task-swipe.css','./icon.svg','./manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES))));
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
