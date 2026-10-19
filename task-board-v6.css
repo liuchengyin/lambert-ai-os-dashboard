@@ -5,7 +5,7 @@
 #tasks .task-v5-card.q3{--task-ring:#e5b16a;--task-glow:rgba(224,145,39,.25)}
 #tasks .task-v5-card.q4{--task-ring:#b6bdc7;--task-glow:rgba(119,130,146,.20)}
 /* Specificity intentionally overrides the retained shared theme's left border. */
-#tasks .task-v5-col .task-v5-card[class]{position:relative;width:83.3333%;box-sizing:border-box;padding:10px 42px 10px 12px!important;min-height:42px;border:1px solid var(--task-ring)!important;box-shadow:0 0 0 1px var(--task-ring),0 0 12px var(--task-glow)!important;cursor:pointer}
+#tasks .task-v5-col .task-v5-card[class]{position:relative;padding:10px 42px 10px 12px!important;min-height:42px;border:1px solid var(--task-ring)!important;box-shadow:0 0 0 1px var(--task-ring),0 0 12px var(--task-glow)!important;cursor:pointer}
 #tasks .task-v5-col .task-v5-card[class]:hover{box-shadow:0 0 0 1px var(--task-ring),0 0 17px var(--task-glow)!important}
 #tasks .task-v5-card .task-v5-title{display:block;min-width:0;margin:0;font-size:14px;line-height:21px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #tasks .task-v5-card .task-v5-actions{position:absolute;right:5px;top:50%;transform:translateY(-50%);display:flex;margin:0;padding:0;gap:0}
