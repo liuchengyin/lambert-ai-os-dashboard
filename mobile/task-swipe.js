@@ -9,8 +9,8 @@ function wrap(row,title,onDelete,onComplete){
  var id=null,sx=0,sy=0,x=0,drag=false,suppress=false,opened=false,wasOpen=false,busy=false;
  function half(){return w.clientWidth/2;}
  function move(value,animate){row.style.transition=animate?'transform 200ms cubic-bezier(.22,.61,.36,1),opacity 200ms':'none';row.style.transform='translateX('+value+'px)';}
- function close(){opened=false;move(0,true);remove.hidden=true;remove.tabIndex=-1;w.classList.remove('swipe-dragging','swipe-ready');if(current===state)current=null;}
- function open(){if(current&&current!==state)current.close();opened=true;remove.hidden=false;remove.tabIndex=0;move(-half(),true);current=state;w.classList.remove('swipe-dragging','swipe-ready');}
+ function close(){opened=false;move(0,true);remove.hidden=true;remove.tabIndex=-1;w.classList.remove('swipe-dragging','swipe-ready','swipe-right');if(current===state)current=null;}
+ function open(){if(current&&current!==state)current.close();opened=true;remove.hidden=false;remove.tabIndex=0;move(-half(),true);current=state;w.classList.remove('swipe-dragging','swipe-ready','swipe-right');}
  var state={w:w,close:close};
  row.addEventListener('pointerdown',function(e){
   if(busy||id!==null||(e.pointerType==='mouse'&&e.button!==0))return;
@@ -24,7 +24,7 @@ function wrap(row,title,onDelete,onComplete){
    else if(Math.abs(dy)>10){id=null;return;}else return;
   }
   x=Math.max(-half(),Math.min(wasOpen?0:(onComplete?half():0),(wasOpen?-half():0)+dx));
-  remove.hidden=x>=0;remove.tabIndex=-1;
+  w.classList.toggle('swipe-right',x>0);remove.hidden=x>=0;remove.tabIndex=-1;
   w.classList.toggle('swipe-ready',x>=Math.max(64,w.clientWidth*.25));move(x,false);
  });
  row.addEventListener('pointerup',function(e){

@@ -7,3 +7,5 @@
 .task-swipe.swipe-dragging .task-swipe-front{will-change:transform}
 .task-swipe.swipe-ready .task-swipe-complete{background:linear-gradient(90deg,#15803d,#22c55e)}
 @media(prefers-reduced-motion:reduce){.task-swipe .task-swipe-front{transition:none!important}}
+
+.task-swipe .task-swipe-complete{visibility:hidden}.task-swipe.swipe-right .task-swipe-complete{visibility:visible}
