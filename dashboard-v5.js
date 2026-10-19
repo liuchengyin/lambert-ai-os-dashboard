@@ -126,5 +126,5 @@
   document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.v==='tasks')setTimeout(renderTaskBoard,0);if(b.dataset.v==='home')setTimeout(renderHome,0)}));
 
   renderHome();
-  const module=document.createElement('script');module.src='task-center.js?v=20261019-focus1';module.async=false;document.body.appendChild(module);
+  const module=document.createElement('script');module.src='task-center.js?v=20261019-focus2';module.async=false;document.body.appendChild(module);
 })();
