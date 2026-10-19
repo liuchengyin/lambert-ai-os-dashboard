@@ -381,3 +381,19 @@
     overflow:visible;
   }
 }
+
+
+/* Task header refinement: project name in heading, selector at half width. */
+#tasks .tc-page-head>div{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:16px}
+#tasks .tc-page-head .tc-eyebrow{flex-basis:100%}
+#tasks .tc-current-project-title{margin:0;font-size:19px;line-height:1.35;font-weight:650;color:#7260ad}
+#tasks .tc-overview-row>.tc-project-focus{grid-template-areas:'top' 'p' 'meta' 'progress';grid-template-rows:auto minmax(0,1fr) auto auto}
+@media(min-width:721px){
+  #tasks .tc-overview-row>.tc-project-focus>.tc-focus-top label{
+    flex:0 1 50%;width:50%;max-width:50%;min-width:0;
+  }
+}
+@media(max-width:720px){
+  #tasks .tc-overview-row>.tc-project-focus{grid-template-areas:'top' 'p' 'meta' 'progress'}
+  #tasks .tc-overview-row>.tc-project-focus>.tc-focus-top label{flex:1 1 100%;width:100%;max-width:100%}
+}
