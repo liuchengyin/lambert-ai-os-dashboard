@@ -19,6 +19,19 @@ try{
   await page.waitForFunction(()=>[...document.querySelectorAll('#knowledge img')].every(i=>i.complete));
   check('Existing known sites use local sharp assets',await page.locator('#knowledge img[src="brand/links/deepseek.svg"]').count()===1&&await page.locator('#knowledge img[src="brand/links/google.png"]').evaluate(i=>i.naturalWidth===128));
   check('Opening does not rewrite existing link data',JSON.stringify(await rows())===JSON.stringify(original));
+  // Two bookmark libraries must never overwrite each other's localStorage data.
+  await page.locator('#knowledgeTabSwitch').click();
+  check('Personal bookmark label shown',await page.locator('#knowledgeLibraryTag').innerText()==='个人');
+  await open();await url('platform.deepseek.com/usage');
+  await page.waitForFunction(()=>document.getElementById('kTitle').value==='DeepSeek 余额与用量');
+  await page.locator('#kSave').click();
+  check('Personal bookmark saved separately',await page.evaluate(()=>JSON.parse(localStorage.getItem('knowledge_link_personal_v1'))?.[0]?.links?.length===1));
+  check('Original common bookmarks remain unchanged',JSON.stringify(await rows())===JSON.stringify(original));
+  await page.reload();await page.locator('nav button[data-v="knowledge"]').click();
+  check('Personal library restored after reload',await page.locator('#knowledgeLibraryTag').innerText()==='个人');
+  await page.locator('#knowledgeTabSwitch').click();
+  check('Switch restores common label and data',await page.locator('#knowledgeLibraryTag').innerText()==='常用'&&JSON.stringify(await rows())===JSON.stringify(original));
+
   await open();await url('platform.deepseek.com/usage');await page.waitForFunction(()=>document.getElementById('kTitle').value==='DeepSeek 余额与用量');
   check('Pasted bare domain automatically recognizes without clicking',await page.locator('#kTitle').getAttribute('readonly')!==null&&!await page.locator('#kManual').isVisible());
   await page.locator('#kTitle').evaluate(e=>e.value='不应该保存这个值');await page.locator('#kSave').click();
