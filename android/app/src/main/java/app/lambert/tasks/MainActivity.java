@@ -12,12 +12,19 @@ public final class MainActivity extends Activity {
  private boolean local(android.net.Uri u){return "https".equals(u.getScheme())&&HOST.equals(u.getHost())&&u.getPath()!=null&&u.getPath().startsWith("/assets/mobile/");}
  @Override public void onCreate(Bundle state){
   super.onCreate(state);
-  web=new WebView(this);setContentView(web);
-  web.setOnApplyWindowInsetsListener((view,insets)->{
-   if(android.os.Build.VERSION.SDK_INT>=30){android.graphics.Insets bars=insets.getInsets(android.view.WindowInsets.Type.systemBars()|android.view.WindowInsets.Type.displayCutout());view.setPadding(bars.left,bars.top,bars.right,bars.bottom);}
-   else view.setPadding(insets.getSystemWindowInsetLeft(),insets.getSystemWindowInsetTop(),insets.getSystemWindowInsetRight(),insets.getSystemWindowInsetBottom());
-   return insets;
-  });
+  android.widget.FrameLayout root=new android.widget.FrameLayout(this);
+  web=new WebView(this);root.addView(web,new android.widget.FrameLayout.LayoutParams(-1,-1));setContentView(root);
+  if(android.os.Build.VERSION.SDK_INT>=30){
+   getWindow().setDecorFitsSystemWindows(false);
+   root.setOnApplyWindowInsetsListener((view,insets)->{
+    int types=android.view.WindowInsets.Type.systemBars()|android.view.WindowInsets.Type.displayCutout()|android.view.WindowInsets.Type.ime();
+    android.graphics.Insets safe=insets.getInsets(types);
+    view.setPadding(safe.left,safe.top,safe.right,safe.bottom);
+    // Resize the WebView itself; do not pad inside WebView or apply insets twice.
+    return new android.view.WindowInsets.Builder(insets).setInsets(types,android.graphics.Insets.NONE).build();
+   });
+  }else root.setFitsSystemWindows(true);
+  root.requestApplyInsets();
   getWindow().setStatusBarColor(0xff7357d7);getWindow().setNavigationBarColor(0xfff5f3ff);
   WebView.setWebContentsDebuggingEnabled(false);
   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);
