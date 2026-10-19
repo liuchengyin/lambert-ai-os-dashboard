@@ -6,7 +6,7 @@ var tabsEl=document.getElementById('tabs');
 var syncEl=document.getElementById('syncStatus');
 var tab='today';
 var filterProject=null;
-var foldDone=true,foldOpen=false;
+var foldDone=true;
 var TABS=[['today','今日','☀'],['tasks','任务','✓'],['projects','项目','▦'],['review','复盘','✎']];
 
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
@@ -55,18 +55,14 @@ function taskRow(t,opts){
     try{saveTasks(arr);render();}catch(e){alert('保存失败：'+e.message);}
   };
   d.appendChild(chk);
-  var body=el('div','body');
+  var body=el('button','body task-edit');body.type='button';body.setAttribute('aria-label','编辑：'+t.title);body.onclick=function(){openTaskDialog(t);};
   body.appendChild(el('div','tt',t.title));
   var meta=el('div','meta');
-  if(t.priority)meta.appendChild(el('span','tag p1',t.priority));
-  meta.appendChild(el('span','tag',projName(pid(t))));
-  if(t.due){var over=t.due<today()&&t.status!=='已完成';meta.appendChild(el('span','tag'+(over?' over':''),t.due));}
+  if(pid(t))meta.appendChild(el('span','tag',projName(pid(t))));
+  if(t.due){var over=t.due<today()&&t.status!=='已完成';meta.appendChild(el('span','tag'+(over?' over':''),t.due.slice(5,10).replace('-','/')));}
   body.appendChild(meta);
   if(t.note)body.appendChild(el('div','mut',t.note));
   d.appendChild(body);
-  var ed=el('button','btn sm','✎');
-  ed.onclick=function(){openTaskDialog(t);};
-  d.appendChild(ed);
   return d;
 }
 
@@ -87,19 +83,19 @@ function renderToday(){
 
 function renderTasks(){
   var all=tasks().filter(function(t){return !filterProject||pid(t)===filterProject;});
-  var c=el('div','card');
+  var c=el('div','task-list');
   var picker=el('select');picker.setAttribute('aria-label','任务项目筛选');var any=el('option',null,'全部项目');any.value='';picker.appendChild(any);projects().forEach(function(p){var o=el('option',null,p.name);o.value=p.id;picker.appendChild(o);});picker.value=filterProject||'';picker.onchange=function(){filterProject=picker.value;render();};c.appendChild(picker);
   var h=el('h2');h.appendChild(el('span',null,'任务'));
-  var add=el('button','btn sm pri','+ 新增');
+  var add=el('button','task-fab','＋');add.type='button';add.setAttribute('aria-label','新增任务');
   add.onclick=function(){openTaskDialog(null);};
-  h.appendChild(add);
+  app.appendChild(add);
   c.appendChild(h);
   var open=all.filter(function(t){return t.status!=='已完成';});
   var done=all.filter(function(t){return t.status==='已完成';});
   c.appendChild(el('div','grp','未完成 '+open.length));
   if(!open.length)c.appendChild(el('div','empty','无未完成任务'));
   open.forEach(function(t){c.appendChild(taskRow(t));});
-  var f=el('button','fold');f.type='button';
+  var f=el('button','fold');f.type='button';f.setAttribute('aria-expanded',String(!foldDone));
   f.appendChild(el('span',null,'已完成 '+done.length));
   f.appendChild(el('span',null,foldDone?'展开 ▾':'收起 ▸'));
   f.onclick=function(){foldDone=!foldDone;render();};
@@ -189,39 +185,19 @@ function renderReviewFor(date){
 }
 
 function openTaskDialog(t){
-  var dlg=document.createElement('dialog');
-  var form=document.createElement('form');form.method='dialog';
-  form.appendChild(el('h3',null,t?'编辑任务':'新增任务'));
-  form.appendChild(el('label',null,'标题'));
-  var ti=el('input');ti.value=t?t.title:'';ti.required=true;form.appendChild(ti);
-  form.appendChild(el('label',null,'项目'));
-  var ps=projects().filter(function(p){return !p.archived;});
-  var sel=el('select');
-  var o0=el('option',null,'未分类');o0.value='';sel.appendChild(o0);
-  ps.forEach(function(p){var o=el('option',null,p.name);o.value=p.id;if(t&&pid(t)===p.id)o.selected=true;sel.appendChild(o);});
-  form.appendChild(sel);
-  form.appendChild(el('label',null,'截止日期'));
-  var di=el('input');di.type='date';di.value=t&&t.due?t.due.slice(0,10):'';form.appendChild(di);
-  form.appendChild(el('label',null,'备注'));
-  var ni=el('textarea');ni.value=t&&t.note?t.note:'';form.appendChild(ni);
-  var acts=el('div','dlg-actions');
-  var cancel=el('button','btn','取消');cancel.type='button';cancel.onclick=function(){dlg.close();};
-  var ok=el('button','btn pri','保存');ok.type='submit';
-  acts.appendChild(cancel);acts.appendChild(ok);form.appendChild(acts);
-  dlg.appendChild(form);document.body.appendChild(dlg);
-  form.onsubmit=function(e){
-    e.preventDefault();
-    if(!ti.value.trim())return;
-    var arr=tasks();
-    if(t){
-      arr.forEach(function(x){if(x.id===t.id){x.title=ti.value.trim();assign(x,sel.value);if((x.due||'').slice(0,10)!==di.value)x.due=di.value;x.note=ni.value.trim();}});
-    }else{
-      var item={id:uid(),title:ti.value.trim(),status:'待开始',priority:'P1',matrix:'q2',due:di.value,note:ni.value.trim(),createdAt:new Date().toISOString()};assign(item,sel.value);arr.push(item);
-    }
-    try{saveTasks(arr);dlg.close();render();}catch(err){alert('保存失败：'+err.message);}
-  };
-  dlg.addEventListener('close',function(){dlg.remove();},{once:true});
-  dlg.showModal();
+ var dlg=el('dialog',t?'task-editor':'task-composer');dlg.setAttribute('aria-label',t?'编辑任务':'新增任务');
+ var form=el('form');form.method='dialog';var head=el('div','task-dialog-head');
+ var cancel=el('button','btn',t?'返回':'取消');cancel.type='button';cancel.onclick=function(){dlg.close();};head.appendChild(cancel);head.appendChild(el('h3',null,t?'编辑任务':'添加任务'));form.appendChild(head);
+ var titleLabel=el('label',null,'任务标题');titleLabel.htmlFor='mobileTaskTitle';form.appendChild(titleLabel);
+ var title=el('input');title.id='mobileTaskTitle';title.setAttribute('aria-label','任务标题');title.placeholder='添加任务';title.required=true;title.maxLength=300;title.value=t?t.title:'';form.appendChild(title);
+ var fields=el('div','task-optional');var dateLabel=el('label',null,'日期');var date=el('input');date.type='date';date.setAttribute('aria-label','任务日期');date.value=t&&t.due?t.due.slice(0,10):'';dateLabel.appendChild(date);fields.appendChild(dateLabel);
+ var projectLabel=el('label',null,'关联项目');var project=el('select');project.setAttribute('aria-label','关联项目');var blank=el('option',null,'不关联项目');blank.value='';project.appendChild(blank);
+ var ps=projects().filter(function(p){return !p.archived||(t&&p.id===pid(t));});ps.forEach(function(p){var o=el('option',null,p.name);o.value=p.id;project.appendChild(o);});project.value=t?pid(t):(filterProject||'');projectLabel.appendChild(project);fields.appendChild(projectLabel);form.appendChild(fields);
+ var error=el('p','task-error');error.setAttribute('role','alert');form.appendChild(error);
+ var save=el('button','btn pri',t?'保存修改':'创建任务');save.type='submit';form.appendChild(save);dlg.appendChild(form);document.body.appendChild(dlg);
+ form.onsubmit=function(e){e.preventDefault();if(!title.value.trim()){error.textContent='请输入任务标题';title.focus();return;}var arr=tasks();var item=t?arr.find(function(x){return x.id===t.id;}):{id:uid(),status:'待开始',priority:'P1',matrix:'q2',createdAt:new Date().toISOString()};if(!item){error.textContent='任务不存在，请重新打开';return;}item.title=title.value.trim();if((item.due||'').slice(0,10)!==date.value)item.due=date.value;assign(item,project.value);item.updatedAt=new Date().toISOString();if(!t)arr.push(item);try{saveTasks(arr);dlg.close();render();}catch(err){error.textContent='保存失败，请重试：'+err.message;}};
+ dlg.addEventListener('close',function(){dlg.remove();},{once:true});dlg.showModal();title.focus();
+ if(window.visualViewport){var viewport=window.visualViewport;var resize=function(){if(!t){dlg.style.bottom=Math.max(0,innerHeight-viewport.height-viewport.offsetTop)+'px';dlg.style.maxHeight=Math.max(180,viewport.height-20)+'px';}};viewport.addEventListener('resize',resize);resize();dlg.addEventListener('close',function(){viewport.removeEventListener('resize',resize);},{once:true});}
 }
 
 function openProjectDialog(p){
