@@ -12,3 +12,10 @@
 .lambert-auth-note{font-size:12px;color:#b4a9c9;line-height:1.6}
 .lambert-auth-error{color:#ff9f9f;font-size:12px}
 .lambert-auth-controls{display:flex;justify-content:flex-end;gap:8px}
+
+/* Compact account entry aligned horizontally with the brand name. */
+.shell>aside .lambert-brand-copy{flex:1;min-width:0}
+.shell>aside .lambert-auth-title-row{display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap}
+.shell>aside .lambert-auth-title-row h2{flex:0 1 auto;min-width:0;font-size:14px!important;letter-spacing:-.035em!important}
+.shell>aside .lambert-auth-title-row .lambert-auth-trigger{flex:0 0 auto;width:auto;max-width:72px;min-height:25px;padding:3px 6px;border-radius:7px;font-size:10px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:680px){.shell>aside .lambert-auth-title-row h2{font-size:13px!important}.shell>aside .lambert-auth-title-row .lambert-auth-trigger{padding:3px 5px;font-size:10px}}
