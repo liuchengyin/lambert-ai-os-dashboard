@@ -306,3 +306,78 @@
   #tasks .tc-project-focus>.tc-focus-top label{flex-basis:100%}
   #tasks .project-ai-panel .ai-task-result{max-height:160px}
 }
+
+/* DeepSeek Flash compact-height draft (run 39228952286), reviewed and
+   adapted to preserve all text via inner scrolling rather than line-clamping.
+   Keep the project-board's 12px gap and the equal-width two-column layout. */
+@media(min-width:721px){
+  #tasks .tc-overview-row{
+    grid-template-rows:225px;
+    align-items:stretch;
+    gap:12px;
+  }
+  #tasks .tc-overview-row>.tc-project-focus{
+    box-sizing:border-box;
+    min-height:0;
+    height:225px;
+    max-height:225px;
+    padding:12px 14px;
+    gap:5px;
+    grid-template-rows:auto auto minmax(0,1fr) auto auto;
+    overflow:hidden;
+  }
+  #tasks .tc-overview-row>.tc-project-focus>.tc-focus-top{gap:6px}
+  #tasks .tc-overview-row>.tc-project-focus>#tcProjectTitle{
+    margin:0;
+    font-size:17px;
+    line-height:1.3;
+    max-height:48px;
+    overflow-y:auto;
+  }
+  #tasks .tc-overview-row>.tc-project-focus>#tcProjectStandard{
+    min-height:0;
+    margin:0;
+    line-height:1.4;
+    overflow-y:auto;
+    overflow-wrap:anywhere;
+  }
+  #tasks .tc-overview-row>.tc-project-focus>#tcProjectDates{
+    min-height:0;
+    margin:0;
+    line-height:1.35;
+  }
+  #tasks .tc-overview-row>.tc-project-focus>.tc-progress-row{
+    margin:0;
+    gap:7px;
+  }
+  #tasks .tc-overview-row>.project-ai-panel{
+    box-sizing:border-box;
+    min-height:0;
+    height:225px;
+    max-height:225px;
+    padding:12px 14px;
+    gap:9px;
+    overflow:hidden;
+  }
+  #tasks .tc-overview-row>.project-ai-panel .ai-task-head{
+    flex:0 0 auto;
+    gap:6px;
+  }
+  #tasks .tc-overview-row>.project-ai-panel .ai-task-result{
+    flex:1 1 auto;
+    min-height:0;
+    max-height:none;
+    margin:0;
+    overflow-y:auto;
+  }
+}
+@media(max-width:720px){
+  #tasks .tc-overview-row{grid-template-rows:none}
+  #tasks .tc-overview-row>.tc-project-focus,
+  #tasks .tc-overview-row>.project-ai-panel{
+    height:auto;
+    min-height:0;
+    max-height:none;
+    overflow:visible;
+  }
+}
