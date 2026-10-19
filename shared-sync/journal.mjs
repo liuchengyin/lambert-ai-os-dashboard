@@ -14,11 +14,12 @@ export class WorkspaceJournal {
   load(key,fallback){const raw=this.storage.getItem(this.prefix+key);return raw===null?copy(fallback):JSON.parse(raw);}
   save(key,value){this.storage.setItem(this.prefix+key,JSON.stringify(value));}
   batches(){const rows=[];for(let i=0;i<this.storage.length;i++){const k=this.storage.key(i);if(k?.startsWith(this.prefix+'batch:'))rows.push({key:k,ops:JSON.parse(this.storage.getItem(k))});}return rows.sort((a,b)=>a.key.localeCompare(b.key));}
+  nextBatchKey(){const last=this.batches().reduce((n,b)=>Math.max(n,Number(b.key.slice((this.prefix+'batch:').length).split(':')[0])||0),0);return 'batch:'+String(Math.max(this.clock()*1000,last+1)).padStart(16,'0')+':'+this.uuid();}
   entries(){const map=new Map(this.load('base',[]).map(r=>[keyFor(r.kind,r.item_id),copy(r)]));
     for(const batch of this.batches())for(const op of batch.ops){const key=keyFor(op.kind,op.itemId);map.set(key,{kind:op.kind,item_id:op.itemId,payload:copy(op.payload),version:op.expectedVersion+1,deleted_at:op.deleted?'local':null});}
     return map;
   }
-  read(key,fallback){if(!DATA_KEYS.includes(key))return fallback;const kind=kindFor(key);const rows=[...this.entries().values()].filter(r=>r.kind===kind);this.views.set(key,new Map(rows.map(r=>[r.item_id,copy(r)])));
+  read(key,fallback){if(!DATA_KEYS.includes(key))return fallback;const kind=kindFor(key);const rows=this.views.has(key)?[...this.views.get(key).values()]:[...this.entries().values()].filter(r=>r.kind===kind);if(!this.views.has(key))this.views.set(key,new Map(rows.map(r=>[r.item_id,copy(r)])));
     return kind==='reviews'?Object.fromEntries(rows.filter(r=>!r.deleted_at).map(r=>[r.item_id,copy(r.payload)])):rows.filter(r=>!r.deleted_at).map(r=>copy(r.payload));
   }
   changesFor(key,value){
@@ -39,8 +40,10 @@ export class WorkspaceJournal {
     const changes=Object.entries(values).flatMap(([key,value])=>this.changesFor(key,value));
     if(!changes.length)return;
     // One storage write durably commits the whole local edit before callers report success.
-    this.save('batch:'+String(this.clock()).padStart(16,'0')+':'+this.uuid(),changes);
-    for(const key of Object.keys(values))this.read(key,key==='daily_reviews_v2'?{}:[]);
+    this.save(this.nextBatchKey(),changes);
+    // Keep each page's rendered snapshot stable until refresh. Background reads
+    // must not advance versions underneath stale form/state objects.
+    for(const op of changes){const key=op.kind==='reviews'?'daily_reviews_v2':op.kind;this.views.get(key).set(op.itemId,{kind:op.kind,item_id:op.itemId,payload:copy(op.payload),version:op.expectedVersion+1,deleted_at:op.deleted?'local':null});}
   }
   mergeRemote(rows){const map=new Map(this.load('base',[]).map(r=>[keyFor(r.kind,r.item_id),r]));for(const row of rows){if(row.user_id!==this.userId)throw Error('account_mismatch');const key=keyFor(row.kind,row.item_id);if((map.get(key)?.version||0)<=row.version)map.set(key,copy(row));}this.save('base',[...map.values()]);}
   pending(){return this.batches().flatMap(b=>b.ops).filter(op=>!op.conflict);}
@@ -57,7 +60,7 @@ export class WorkspaceJournal {
     // Resolution is itself a durable journal batch; old conflicting mutations are only removed afterwards.
     const remote=all.find(op=>op.conflict).conflict;const latest=all[all.length-1];
     if(remote.user_id)this.mergeRemote([remote]);
-    if(choice==='local')this.save('batch:'+String(this.clock()).padStart(16,'0')+':'+this.uuid(),[{...latest,conflict:undefined,expectedVersion:remote.version||0,mutationId:this.uuid(),resolves:all.map(op=>op.mutationId)}]);
+    if(choice==='local')this.save(this.nextBatchKey(),[{...latest,conflict:undefined,expectedVersion:remote.version||0,mutationId:this.uuid(),resolves:all.map(op=>op.mutationId)}]);
     else if(choice!=='remote')throw Error('invalid_resolution');
     for(const b of batches){const next=b.ops.filter(op=>op.kind!==kind||op.itemId!==itemId);if(next.length)this.storage.setItem(b.key,JSON.stringify(next));else this.storage.removeItem(b.key);}
     this.views.clear();

@@ -12,10 +12,12 @@ const root=new URL('../',import.meta.url);
 if(!document.querySelector('link[data-lambert-account]')){const css=node('link');css.rel='stylesheet';css.href=new URL('account.css',import.meta.url);css.dataset.lambertAccount='';document.head.append(css);}
 let account,config,user,journal,dialog,body,message,mode='login',busy=false,recovery=false,lastSync='',syncError='',inFlight=false,flushTimer;
 const accountPage=document.body.dataset.accountPage!==undefined;
+let leaving=false;function leaveWorkspace(){if(leaving)return;leaving=true;localStorage.removeItem(ACTIVE_KEY);location.reload();}
 let resolveReady;const ready=new Promise(r=>{resolveReady=r;});
 function tell(text){if(message)message.textContent=text;}
+function enforceWorkspaceUser(){const active=localStorage.getItem(ACTIVE_KEY);if(active&&user&&active!==user.id){leaveWorkspace();return false;}return true;}
 function readGuest(){const snapshot={};for(const key of DATA_KEYS){const raw=localStorage.getItem(key);snapshot[key]=raw===null?(key==='daily_reviews_v2'?{}:[]):JSON.parse(raw);}return snapshot;}
-function backup(){const text=JSON.stringify({format:'lambert-local-backup-v1',createdAt:new Date().toISOString(),data:readGuest()},null,2);const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));const a=node('a');a.href=url;a.download='Lambert-local-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
+function backup(){const raw=Object.fromEntries([...DATA_KEYS,'daily_reviews_v1'].map(key=>[key,localStorage.getItem(key)]));const text=JSON.stringify({format:'lambert-local-backup-v1',createdAt:new Date().toISOString(),raw},null,2);const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));const a=node('a');a.href=url;a.download='Lambert-local-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
 function status(){if(!user)return '未登录 · 本地模式';if(localStorage.getItem(ACTIVE_KEY)!==user.id)return '已登录 · 尚未启用同步';if(syncError)return syncError;const conflicts=journal?.conflicts().length||0;if(conflicts)return '有 '+conflicts+' 条冲突待处理';const pending=journal?.pending().length||0;if(pending)return '本地已保存 · 待上传 '+pending+' 条';return lastSync?'已同步 · '+lastSync:'云端工作台 · 等待同步';}
 function updateEntry(){if(entry){entry.setAttribute('aria-label',user?'我的账户：'+user.email:'邮箱登录');if(entry.id==='lambertAccountButton')entry.textContent=user?'我的账户':'登录';}const s=document.getElementById('lambertCloudStatus');if(s)s.textContent=status();}
 function changed(){let b=document.getElementById('lambertCloudRefresh');if(!b){b=button('云端数据已更新，点击刷新',()=>location.reload());b.id='lambertCloudRefresh';b.className='lambert-cloud-refresh';document.body.append(b);}}
@@ -33,8 +35,8 @@ function showForm(){
   if(mode==='password')email.closest('label').remove();
   const submit=node('button',({login:'登录',register:'注册',reset:'发送重置邮件',password:'保存新密码'})[mode]);submit.type='submit';body.append(submit);
   body.onsubmit=event=>{event.preventDefault();action(async()=>{const secret=password?.value;try{
-    if(mode==='login'){const data=await account.login(email.value,secret);user=data.user;journal=new WorkspaceJournal(localStorage,user.id);renderBody();schedule();return;}
-    if(mode==='register'){const data=await account.register(email.value,secret);if(data.session){user=data.user;journal=new WorkspaceJournal(localStorage,user.id);renderBody();}else tell('如果此邮箱可以注册，我们已发送验证邮件。验证后回到这里登录。');return;}
+    if(mode==='login'){const data=await account.login(email.value,secret);user=data.user;if(!enforceWorkspaceUser())return;journal=new WorkspaceJournal(localStorage,user.id);renderBody();schedule();return;}
+    if(mode==='register'){const data=await account.register(email.value,secret);if(data.session){user=data.user;if(!enforceWorkspaceUser())return;journal=new WorkspaceJournal(localStorage,user.id);renderBody();}else tell('如果此邮箱可以注册，我们已发送验证邮件。验证后回到这里登录。');return;}
     if(mode==='reset'){await account.reset(email.value);tell('如果该邮箱已注册，我们会发送重置密码邮件，请检查收件箱。');return;}
     await account.changePassword(secret);recovery=false;mode='login';renderBody();tell('密码已更新。手机端可使用新密码登录。');
   }finally{if(password)password.value='';}});};
@@ -72,7 +74,7 @@ function renderBody(){
       const conflicts=journal.conflicts();for(const op of conflicts){const box=node('section');box.append(node('strong',op.payload.title||op.payload.name||op.itemId),node('p','本地和云端都有修改，请选择保留内容。'));
         for(const [label,choice] of [['保留云端','remote'],['使用本地','local']])box.append(button(label,()=>action(async()=>{journal.resolve(op.kind,op.itemId,choice);renderBody();changed();await flush();})));body.append(box);}
     }
-    body.append(button('退出登录',()=>action(async()=>{await account.logout();localStorage.removeItem(ACTIVE_KEY);location.reload();})));
+    body.append(button('退出登录',()=>action(async()=>{await account.logout();leaveWorkspace();})));
   }
   message=node('p','','lambert-account-message');message.setAttribute('role','status');message.setAttribute('aria-live','polite');body.append(message);updateEntry();
 }
@@ -89,12 +91,13 @@ async function start(){
     if(config.configured){if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.url)||!/^sb_publishable_[A-Za-z0-9_-]+$/.test(config.publishableKey)||!/^https:\/\/[^/?#]+$/.test(config.siteUrl))throw Error('invalid_public_config');
       account=createAccount(createClient(config.url,config.publishableKey,{auth:{storageKey:SESSION_KEY+':'+new URL(config.url).host,persistSession:true,autoRefreshToken:true,detectSessionInUrl:accountPage,flowType:'implicit'}}),{redirectTo:config.siteUrl+'/account.html'});
       // Subscribe before getSession so PASSWORD_RECOVERY is not missed on the callback page.
-      account.subscribe((event,session)=>{setTimeout(()=>{user=session?.user||null;if(user)journal=new WorkspaceJournal(localStorage,user.id);if(event==='PASSWORD_RECOVERY'){recovery=true;open();}if(event==='SIGNED_OUT'){localStorage.removeItem(ACTIVE_KEY);if(window.LambertData?.active)location.reload();}renderBody();updateEntry();schedule();},0);});
-      const session=await account.session();user=session?.user||null;if(user)journal=new WorkspaceJournal(localStorage,user.id);
+      account.subscribe((event,session)=>{setTimeout(()=>{if(leaving)return;const changedUser=(user?.id||null)!==(session?.user?.id||null);user=session?.user||null;if(!enforceWorkspaceUser())return;if(user&&(!journal||changedUser))journal=new WorkspaceJournal(localStorage,user.id);if(event==='PASSWORD_RECOVERY'){recovery=true;open();}if(event==='SIGNED_OUT'){if(window.LambertData?.active){leaveWorkspace();return;}localStorage.removeItem(ACTIVE_KEY);}if(changedUser||event==='PASSWORD_RECOVERY')renderBody();updateEntry();schedule();},0);});
+      const session=await account.session();user=session?.user||null;if(!enforceWorkspaceUser())return;if(user)journal=new WorkspaceJournal(localStorage,user.id);
     }
   }catch{config={configured:false};}
   updateEntry();resolveReady();if(accountPage)open();else if(dialog)renderBody();schedule();
 }
+window.addEventListener('storage',event=>{if(user&&event.key?.startsWith('lambert_workspace_v1:'+user.id+':')){changed();updateEntry();}});
 window.addEventListener('lambert-local-change',schedule);
 window.addEventListener('online',()=>{if(account)schedule();else start();});document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
 setInterval(()=>{if(!document.hidden)flush();},30000);
