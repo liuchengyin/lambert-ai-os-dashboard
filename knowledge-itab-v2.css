@@ -58,3 +58,8 @@ background-size:cover;background-position:center;background-attachment:fixed}
 #knowledge .knowledge-library-tag{display:inline-flex;align-items:center;justify-content:center;min-height:26px;padding:4px 11px;border-radius:8px;font-size:12px;font-weight:650;line-height:1.2;background:#ede6fb;color:#7253a6;border:1px solid #ded0f7}
 #knowledge .knowledge-library-tag[data-library="personal"]{background:#e4eefb;color:#426fa6;border-color:#cddff7}
 @media(max-width:640px){#knowledge .knowledge-tab-switch{min-width:56px;padding:0 9px}#knowledge .knowledge-library-indicator{padding:0 6px}}
+
+/* Bookmark-shaped category marker inspired by the provided Iconfont reference. */
+#knowledge .knowledge-library-tag{gap:8px;background:transparent!important;border:0!important;border-radius:0;padding:3px 2px;color:#334155!important;font-size:13px;font-weight:700}
+#knowledge .knowledge-library-tag::before{content:'';display:block;width:15px;height:19px;flex:0 0 15px;background:#1296db;clip-path:polygon(0 0,100% 0,100% 100%,50% 70%,0 100%);border-radius:2px 2px 0 0}
+#knowledge .knowledge-library-tag[data-library="personal"]::before{background:#1296db}
