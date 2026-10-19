@@ -126,3 +126,12 @@ body.knowledge-unlocked #knowledge .knowledge-link-card{min-height:96px;height:a
 #knowledge .knowledge-link-card>a[data-tooltip]::after{max-width:calc(100% - 8px);box-sizing:border-box}
 body.knowledge-unlocked #knowledge .knowledge-card-actions{top:auto;right:auto;justify-content:flex-end;padding:0 8px 6px}
 #knowledge .knowledge-link-card>a:focus-visible{outline:2px solid #7957d5;outline-offset:2px;border-radius:5px}
+
+/* Bookmark library switch: header remains unchanged between Common and Personal. */
+#knowledge .knowledge-tab-switch{height:36px;min-width:64px;padding:0 12px;border-radius:7px;background:#fff;border:1px solid #e6e6ea;color:#585863;font-size:13px;font-weight:600;cursor:pointer}
+#knowledge .knowledge-tab-switch:hover{border-color:#9a83cc;color:#6e50a5}
+#knowledge .knowledge-tab-switch:focus-visible{outline:2px solid #7957d5;outline-offset:2px}
+#knowledge .knowledge-library-indicator{display:flex;align-items:center;margin:0 0 14px;padding:0 6px}
+#knowledge .knowledge-library-tag{display:inline-flex;align-items:center;gap:8px;min-height:25px;padding:3px 2px;color:#334155;font-size:13px;font-weight:700;line-height:1.2}
+#knowledge .knowledge-library-tag::before{content:'';display:block;width:15px;height:19px;flex:0 0 15px;background:#1296db;clip-path:polygon(0 0,100% 0,100% 100%,50% 70%,0 100%);border-radius:2px 2px 0 0}
+@media(max-width:640px){#knowledge .knowledge-head-actions{gap:6px}#knowledge .knowledge-tab-switch{min-width:56px;padding:0 9px;font-size:12px}}
