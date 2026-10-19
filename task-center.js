@@ -9,7 +9,7 @@
   const presets = ['健康','工作','个人','习惯','金融'];
   const statuses = ['待开始','进行中','已完成'];
   const KEY = 'task_center_preferences_v1';
-  const read = (key, fallback) => {try {return JSON.parse(localStorage.getItem(key)) ?? fallback;} catch {return fallback;}};
+  const read = (key, fallback) => {try {return (window.LambertData?window.LambertData.read(key,fallback):JSON.parse(localStorage.getItem(key))) ?? fallback;} catch {return fallback;}};
   const initial = read(KEY, {});
   let selected = initial.projectId || 'inbox';
   let view = ['board','gantt','table'].includes(initial.view) ? initial.view : 'board';

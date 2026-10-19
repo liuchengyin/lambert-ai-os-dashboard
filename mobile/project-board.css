@@ -1,0 +1,62 @@
+.project-page{font:inherit;color:inherit;padding:12px;box-sizing:border-box;max-width:100%;overflow-x:hidden;font-family:inherit}
+.project-page *{box-sizing:border-box;font-family:inherit}
+.project-head{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.project-title{font-size:22px;font-weight:600;margin:0;flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.project-actions{display:flex;flex-wrap:wrap;gap:8px}
+.project-page button{min-height:44px;min-width:44px;padding:0 14px;font-size:16px;border:1px solid #d0d5dd;border-radius:8px;background:#fff;color:inherit;cursor:pointer;touch-action:manipulation}
+.project-page button:active{background:#f2f4f7}
+.project-kanban{display:flex;gap:10px;overflow-x:auto;min-width:0;max-width:100%;padding-bottom:8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.project-column{flex:0 0 clamp(240px,78vw,280px);min-width:0;scroll-snap-align:start;display:flex;flex-direction:column;gap:8px}
+.project-col-title{font-size:17px;font-weight:400;margin:0;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.project-col-count{font-size:13px;color:#667085}
+.project-col-body{display:flex;flex-direction:column;gap:8px;min-width:0}
+.project-tile{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid #e4e7ec;border-radius:10px;background:#fff;min-width:0}
+.project-tile .project-view{text-align:left;font-size:17px;font-weight:400;overflow-wrap:anywhere;white-space:normal;height:auto;padding:8px 10px}
+.project-tile .project-edit{align-self:flex-start;font-size:13px;min-height:44px;padding:0 10px}
+.project-meta,.project-nums,.project-summary{display:flex;flex-wrap:wrap;gap:8px;font-size:13px;color:#475467;min-width:0}
+.project-percent{font-weight:600;color:#101828}
+.project-progress{width:100%;min-width:0}
+.project-bar{height:8px;border-radius:4px;background:#eaecf0;overflow:hidden;width:100%}
+.project-bar-fill{height:100%;background:#12b76a;border-radius:4px}
+.project-empty{font-size:13px;color:#98a2b3;padding:8px 0}
+.project-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}
+.project-stat{display:flex;flex-direction:column;gap:2px;padding:10px;border:1px solid #e4e7ec;border-radius:8px;background:#fff;min-width:0}
+.project-stat-num{font-size:22px;font-weight:600}
+.project-stat-label{font-size:13px;color:#667085}
+.project-summary{margin-bottom:6px}
+.project-page .task{background:#fff;border:1px solid #e4e7ec;border-radius:8px;padding:8px;min-width:0;max-width:100%;overflow:hidden}
+.project-page .task .tt{font-size:17px;font-weight:400;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;max-width:100%}
+.project-page .task .body{font-size:13px;overflow-wrap:anywhere;max-width:100%}
+.project-page .task .chk,.project-page .task .style{min-width:44px;min-height:44px}
+#app .project-page .task .tt{font-size:17px;font-weight:400;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;max-width:100%}
+@media (max-width:340px){.project-page{padding:8px}.project-column{flex-basis:clamp(220px,86vw,280px)}}
+
+.project-page{padding:0;font-size:16px}.project-title{line-height:1.35}
+.project-board-hint{font-size:13px;color:var(--mut);margin:10px 0 8px}
+.project-tile{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 4px}
+.project-tile>.project-view{grid-column:1;grid-row:1;border:0;padding:0;background:transparent}
+.project-tile>.project-edit{grid-column:2;grid-row:1;border:0;padding:0 6px;color:var(--p)}
+.project-tile>.project-meta,.project-tile>.project-progress,.project-tile>.project-nums,.project-tile>.project-empty{grid-column:1/-1}
+.project-meta,.project-summary{justify-content:space-between;font-size:16px}
+.project-nums{font-size:13px}.project-percent{font-weight:400;color:var(--p)}
+.project-bar-fill{background:linear-gradient(90deg,#7c3aed,#b99cf7)}
+#app .project-page .task{padding:2px 6px 2px 2px;gap:4px;align-items:center;min-height:50px}
+#app .project-page .task-edit{border:0;background:transparent;padding:2px 0;min-width:0;text-align:left;font:inherit;display:flex;align-items:stretch;flex-direction:column}
+#app .project-page .task .tt{font-size:17px;white-space:normal;line-height:1.35;text-overflow:clip}
+#app .project-page .task .meta{font-size:12px}
+@media(max-width:340px){.project-page{padding:0}}
+
+/* Single-column status filters use the same control as the task home page. */
+.project-status-filter{margin:12px 0}.project-page .project-status-filter button{border:0;padding:0 4px;background:transparent;font-size:17px;font-weight:400;min-width:0;display:flex;justify-content:center;align-items:center;gap:5px}
+.project-page .project-status-filter button.on{background:white;color:var(--p)}
+.project-filter-count{font-size:13px;color:var(--mut)}
+.project-items,.project-task-items{display:flex;flex-direction:column;gap:8px;min-width:0}
+.project-task-items>.task{width:100%}.project-task-items .empty{font-size:16px}
+.project-page .project-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.project-page .project-stat{padding:9px 6px}.project-page .project-stat-label{font-size:13px}
+
+.project-head{flex-wrap:nowrap;gap:6px}.project-head .project-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-head .project-actions{flex-wrap:nowrap;gap:4px;flex-shrink:0}
+.project-head .project-back{width:44px;min-width:44px;padding:0;border:0;background:transparent;font-size:32px;color:var(--p)}
+.project-head .project-actions button{min-width:44px;min-height:44px;padding:0 7px;font-size:14px;border-radius:9px}
+.project-head .project-add-task{background:var(--p);border-color:var(--p);color:white}

@@ -4,8 +4,8 @@
   if(!section)return;
   const STORE='daily_reviews_v2';
   const LEGACY='daily_reviews_v1';
-  const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
-  const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+  const get=(k,d)=>{try{return (window.LambertData?window.LambertData.read(k,null):JSON.parse(localStorage.getItem(k)))??d}catch{return d}};
+  const set=(k,v)=>(window.LambertData?window.LambertData.write(k,v):localStorage.setItem(k,JSON.stringify(v)));
   const esc=v=>String(v??'').replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
 
   function dateKey(d=new Date()){
