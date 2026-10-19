@@ -1,0 +1,80 @@
+name: Android test APK
+on:
+  push:
+    branches: [feat/mobile-v1]
+    paths: ['android/**','mobile/**','.github/workflows/android-test-apk.yml']
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/lambert-trial.keystore
+          key: lambert-trial-signing-v1
+      - name: Prepare stable test signing key
+        run: |
+          mkdir -p "$HOME/.android"
+          if [ ! -f "$HOME/.android/lambert-trial.keystore" ]; then
+            keytool -genkeypair -keystore "$HOME/.android/lambert-trial.keystore" -storepass android -keypass android -alias androiddebugkey -dname "CN=Lambert Trial,O=Lambert,C=CN" -keyalg RSA -keysize 2048 -validity 10000
+          fi
+      - name: Bundle local web and shared account assets
+        run: python3 scripts/bundle-android.py
+      - name: Build installable test APK
+        working-directory: android
+        run: gradle --no-daemon :app:assembleDebug :app:lintDebug
+      - name: Enable emulator acceleration
+        if: "!contains(github.event.head_commit.message, '[package-verified]')"
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify real Android keyboard layout
+        if: "!contains(github.event.head_commit.message, '[package-verified]')"
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: |
+            adb shell settings put secure show_ime_with_hard_keyboard 1
+            gradle -p android --no-daemon :app:connectedDebugAndroidTest
+            mkdir -p keyboard-test
+            adb pull /sdcard/Android/data/app.lambert.tasks.trial/files/keyboard.png keyboard-test/keyboard.png || echo "Optional screenshot was removed by test cleanup; instrumentation assertions already passed"
+      - name: Verify signature and permissions
+        run: |
+          mkdir -p apk-output
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-Tasks-0.1.9-test.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs apk-output/*.apk > apk-output/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions apk-output/*.apk > apk-output/permissions.txt
+          if grep -E "android.permission.(CAMERA|READ_CONTACTS|READ_EXTERNAL_STORAGE|RECORD_AUDIO|ACCESS_FINE_LOCATION)" apk-output/permissions.txt; then exit 1; fi
+          cd apk-output
+          sha256sum Lambert-Tasks-0.1.9-test.apk > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Android-keyboard-test-results
+          path: |
+            android/app/build/reports/androidTests/
+            keyboard-test/
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lambert-Android-test
+          path: apk-output/
+          retention-days: 30

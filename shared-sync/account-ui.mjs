@@ -53,7 +53,7 @@ async function prepareWorkspace(importLocal){
     const save=button('下载本机原始备份',backup);body.append(save);
     const label=node('label');const check=node('input');check.type='checkbox';label.append(check,node('span','我已保存备份，确认导入到 '+user.email));body.append(label);
     body.append(button('确认导入并启用同步',()=>{if(!check.checked){tell('请先保存备份并勾选确认。');return;}action(async()=>{
-      // Re-read server state just before importing: new conflicts become version errors, never silent overwrites.
+      // New server edits after this preflight become version conflicts, never silent overwrites.
       const values={};for(const key of DATA_KEYS){const kind=key==='daily_reviews_v2'?'reviews':key;const current=journal.read(key,key==='daily_reviews_v2'?{}:[]);const adds=plan.create.filter(r=>r.kind===kind);const merged=kind==='reviews'?{...current,...Object.fromEntries(adds.map(r=>[r.itemId,r.payload]))}:current.concat(adds.map(r=>r.payload));values[key]=merged;}journal.writeMany(values);
       localStorage.setItem(ACTIVE_KEY,user.id);location.reload();
     });}),button('返回',renderBody));
@@ -84,7 +84,8 @@ function open(){
 window.LambertAccount={open,ready,status};if(entry)entry.onclick=open;
 async function start(){
   try{
-    const response=await fetch(configUrl,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error('config_failed');config=await response.json();
+    try{const response=await fetch(configUrl,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error('config_failed');config=await response.json();localStorage.setItem('lambert_public_config_v1',JSON.stringify(config));}
+    catch{config=JSON.parse(localStorage.getItem('lambert_public_config_v1')||'{"configured":false}');}
     if(config.configured){if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.url)||!/^sb_publishable_[A-Za-z0-9_-]+$/.test(config.publishableKey)||!/^https:\/\/[^/?#]+$/.test(config.siteUrl))throw Error('invalid_public_config');
       account=createAccount(createClient(config.url,config.publishableKey,{auth:{storageKey:SESSION_KEY+':'+new URL(config.url).host,persistSession:true,autoRefreshToken:true,detectSessionInUrl:accountPage,flowType:'implicit'}}),{redirectTo:config.siteUrl+'/account.html'});
       // Subscribe before getSession so PASSWORD_RECOVERY is not missed on the callback page.
@@ -95,6 +96,6 @@ async function start(){
   updateEntry();resolveReady();if(accountPage)open();else if(dialog)renderBody();schedule();
 }
 window.addEventListener('lambert-local-change',schedule);
-window.addEventListener('online',schedule);document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
+window.addEventListener('online',()=>{if(account)schedule();else start();});document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
 setInterval(()=>{if(!document.hidden)flush();},30000);
 start();

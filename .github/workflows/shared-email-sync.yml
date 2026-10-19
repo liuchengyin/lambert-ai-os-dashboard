@@ -1,0 +1,57 @@
+name: Shared email account and sync checks
+on:
+  push:
+    branches: [feat/shared-email-sync]
+    paths: ['shared-sync/**','supabase/**','api/account-config.js','tests/shared-sync/**','mobile/**','android/**','index.html','app.js','review-v6.js','.github/workflows/shared-email-sync.yml']
+  pull_request:
+    paths: ['shared-sync/**','supabase/**','api/account-config.js','tests/shared-sync/**']
+permissions:
+  contents: read
+concurrency:
+  group: email-sync-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  account-and-data:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix shared-sync/tooling --no-audit --no-fund
+      - run: node --test tests/shared-sync/*.test.mjs
+      - name: Browser dependencies
+        run: shared-sync/tooling/node_modules/.bin/playwright install --with-deps chromium
+      - name: Browser login and two client synchronization (mock hosted service)
+        run: |
+          ln -s shared-sync/tooling/node_modules node_modules
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/lambert-sync-http.log 2>&1 &
+          node tests/shared-sync/browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: email-sync-browser-evidence
+          path: tests/screenshots/email-login.png
+          if-no-files-found: ignore
+  android-compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Bundle local assets with common account modules
+        run: python3 scripts/bundle-android.py
+      - name: Compile and lint without distributing an unconfigured APK
+        working-directory: android
+        run: gradle --no-daemon :app:compileDebugJavaWithJavac :app:lintDebug
