@@ -1,0 +1,33 @@
+name: Web Flash scoped development review
+on:
+  push:
+    branches: [feat/deepseek-v1-plan]
+    paths:
+      - '.github/workflows/web-flash.yml'
+      - 'scripts/web-flash.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: web-flash-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  scoped-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [deepseek, glm]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Scoped code proposal (read only)
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+        run: node scripts/web-flash.mjs ${{ matrix.provider }}
