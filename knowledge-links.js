@@ -1,9 +1,9 @@
 // Common links dashboard: iTab-style launcher + editable groups + wallpaper
 (function(){
   const section=document.getElementById('knowledge');if(!section)return;
-  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261017-2';document.head.appendChild(l)}
+  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261019-prod-links1';document.head.appendChild(l)}
   const navBtn=document.querySelector('nav button[data-v="knowledge"]');if(navBtn)navBtn.textContent='常用链接';
-  const STORAGE='knowledge_link_library_v1',LOCK='knowledge_link_locked_v1',WALL='knowledge_wallpaper_v1';
+  const STORAGE='knowledge_link_library_v1',PERSONAL='knowledge_link_personal_v1',ACTIVE_TAB='knowledge_active_tab_v1',LOCK='knowledge_link_locked_v1',WALL='knowledge_wallpaper_v1';
   const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
   const esc=v=>String(v||'').replace(/[&<>'\"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
   const id=()=>`link_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,gid=()=>`group_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
@@ -14,19 +14,27 @@
       {id:'l_feishu',title:'飞书',url:'https://www.feishu.cn/',desc:'任务与工作资料'}]},
     {id:'g_common',name:'常用',links:[]},{id:'g_learning',name:'学习',links:[]}
   ];
-  let groups=get(STORAGE,defaults),locked=get(LOCK,true),query='',draggingGroupId=null,editing=null;
-  if(!Array.isArray(groups)||!groups.length)groups=defaults;
-  groups=groups.map(g=>({...g,links:(g.links||[]).map(l=>({...l,icon:l.icon||''}))}));
+  const personalDefaults=[{id:'g_personal',name:'个人',links:[]}];
+  let activeTab=get(ACTIVE_TAB,'common')==='personal'?'personal':'common';
+  const tabStorage=()=>activeTab==='personal'?PERSONAL:STORAGE;
+  const tabDefaults=()=>activeTab==='personal'?personalDefaults:defaults;
+  function loadGroups(){
+    const stored=get(tabStorage(),tabDefaults());
+    const list=Array.isArray(stored)&&stored.length?stored:tabDefaults();
+    return list.map(g=>({...g,links:(Array.isArray(g.links)?g.links:[]).map(l=>({...l,icon:l.icon||''}))}));
+  }
+  let groups=loadGroups(),locked=get(LOCK,true),query='',draggingGroupId=null,editing=null;
 
   section.innerHTML=`<div class="knowledge-page">
-    <div class="knowledge-head"><div><h2>常用链接</h2><p>个人快捷启动台</p></div><div class="knowledge-head-actions"><button id="knowledgeWallpaper" class="knowledge-wallpaper-btn" type="button">壁纸</button><button id="knowledgeLock" class="knowledge-lock"></button></div></div>
+    <div class="knowledge-head"><div><h2>常用链接</h2><p>个人快捷启动台</p></div><div class="knowledge-head-actions"><button id="knowledgeTabSwitch" class="knowledge-tab-switch" type="button" aria-label="切换链接分类">切换</button><button id="knowledgeWallpaper" class="knowledge-wallpaper-btn" type="button">壁纸</button><button id="knowledgeLock" class="knowledge-lock"></button></div></div>
     <div class="knowledge-searchbar"><input id="knowledgeSearch" placeholder="搜索 / 粘贴网址，回车快速添加"><button id="knowledgeQuickAdd" type="button">添加链接</button><button id="knowledgeManualCreate" type="button" hidden>手动创建</button><span id="knowledgeSearchSpinner" class="knowledge-spinner" aria-label="识别中" hidden></span></div>
     <div id="knowledgeEditBar" class="knowledge-editbar"><button id="knowledgeAddGroup" type="button">+ 添加分组</button><span>编辑模式：可改名、拖动分组、编辑链接</span></div>
+    <div class="knowledge-library-indicator"><span id="knowledgeLibraryTag" class="knowledge-library-tag" data-library="common">常用</span></div>
     <div id="knowledgeGroups"></div>
     <div id="knowledgeLinks" style="display:none"></div>
   </div>`;
 
-  const lockBtn=document.getElementById('knowledgeLock'),wallBtn=document.getElementById('knowledgeWallpaper'),search=document.getElementById('knowledgeSearch'),root=document.getElementById('knowledgeGroups'),editBar=document.getElementById('knowledgeEditBar'),quickBtn=document.getElementById('knowledgeQuickAdd'),manualBtn=document.getElementById('knowledgeManualCreate'),searchSpinner=document.getElementById('knowledgeSearchSpinner');
+  const tabBtn=document.getElementById('knowledgeTabSwitch'),libraryTag=document.getElementById('knowledgeLibraryTag'),lockBtn=document.getElementById('knowledgeLock'),wallBtn=document.getElementById('knowledgeWallpaper'),search=document.getElementById('knowledgeSearch'),root=document.getElementById('knowledgeGroups'),editBar=document.getElementById('knowledgeEditBar'),quickBtn=document.getElementById('knowledgeQuickAdd'),manualBtn=document.getElementById('knowledgeManualCreate'),searchSpinner=document.getElementById('knowledgeSearchSpinner');
   const applyWallpaper=url=>{if(url){section.style.setProperty('--knowledge-wallpaper',`url("${url.replace(/"/g,'\\\"')}")`)}else section.style.removeProperty('--knowledge-wallpaper')};
   applyWallpaper(get(WALL,''));
 
@@ -42,11 +50,12 @@
   function mountIcon(box,url,icon,title){
     box.replaceChildren();const fallback=document.createElement('span');fallback.className='knowledge-icon-fallback';fallback.textContent=Array.from(title||host(url))[0]?.toUpperCase()||'↗';fallback.setAttribute('aria-hidden','true');box.append(fallback);
     const custom=usableIcon(icon);const brand=brandFor(url);const candidates=[custom,brand?.icon,safeUrl(url)?new URL('/apple-touch-icon.png',url).href:''].filter((v,i,a)=>v&&a.indexOf(v)===i);let i=0;
-    const img=document.createElement('img');img.alt='';img.decoding='async';img.referrerPolicy='no-referrer';img.hidden=true;box.append(img);
+    const img=document.createElement('img');img.alt='';img.decoding='async';img.loading='lazy';img.referrerPolicy='no-referrer';img.hidden=true;box.append(img);
     function next(){if(i<candidates.length){img.hidden=true;fallback.hidden=false;img.src=candidates[i++]}else{img.remove();fallback.hidden=false}}
     img.onload=()=>{if(!/\.svg(?:[?#]|$)/i.test(img.src)&&img.naturalWidth<64){next();return}img.hidden=false;fallback.hidden=true};img.onerror=next;next();
   }
-  function persist(){set(STORAGE,groups)}
+  function persist(){set(tabStorage(),groups)}
+  function updateTab(){const personal=activeTab==='personal';libraryTag.textContent=personal?'个人':'常用';libraryTag.dataset.library=personal?'personal':'common';tabBtn.textContent='切换';tabBtn.title=personal?'切换到常用':'切换到个人';tabBtn.setAttribute('aria-label',tabBtn.title)}
   function updateLock(){lockBtn.textContent=locked?'🔒':'🔓';lockBtn.title=locked?'点击解锁编辑':'点击锁定';editBar.style.display=locked?'none':'flex';quickBtn.style.display='inline-block';document.body.classList.toggle('knowledge-unlocked',!locked)}
   let autoDesc='';
   let recognition={status:'idle',url:''},recognitionVersion=0,recognitionTimer=null,recognitionController=null,iconUploadVersion=0;
@@ -129,6 +138,12 @@
     });
     if(!root.children.length)root.innerHTML='<div class="knowledge-empty-large">没有匹配结果。</div>'
   }
+  tabBtn.onclick=()=>{
+    clearSearchAuto();if(dlg.open)dlg.close();
+    const next=activeTab==='common'?'personal':'common';
+    set(ACTIVE_TAB,next);activeTab=next;groups=loadGroups();editing=null;
+    clearTimeout(searchRenderTimer);query='';search.value='';updateTab();render();
+  };
   lockBtn.onclick=()=>{locked=!locked;set(LOCK,locked);updateLock();render()};
   wallBtn.onclick=()=>{document.getElementById('kwUrl').value=get(WALL,'');wallDlg.showModal()};
   document.getElementById('kwSave').onclick=()=>{const url=safeUrl(document.getElementById('kwUrl').value);if(!url){document.getElementById('kwUrl').focus();return}set(WALL,url);applyWallpaper(url);wallDlg.close()};
@@ -143,7 +158,17 @@
     searchAutoUrl=url;searchSpinner.hidden=false;manualBtn.hidden=false;
     openLinkDlg(groups[0]?.id,null,url,true);
   }
-  search.oninput=e=>{query=searchUrl()?'':e.target.value;render();clearTimeout(searchAutoTimer);const url=searchUrl();if(!url){clearSearchAuto();return}searchSpinner.hidden=false;manualBtn.hidden=false;searchAutoTimer=setTimeout(()=>{searchAutoTimer=null;if(searchUrl()===url)triggerSearchAuto()},450)};
+  let searchRenderTimer=null;
+  search.oninput=e=>{
+    const previousQuery=query,url=searchUrl();query=url?'':e.target.value;
+    clearTimeout(searchRenderTimer);
+    if(url){if(previousQuery)render()}
+    else searchRenderTimer=setTimeout(()=>{searchRenderTimer=null;render()},130);
+    clearTimeout(searchAutoTimer);
+    if(!url){clearSearchAuto();return}
+    searchSpinner.hidden=false;manualBtn.hidden=false;
+    searchAutoTimer=setTimeout(()=>{searchAutoTimer=null;if(searchUrl()===url)triggerSearchAuto()},450);
+  };
   quickBtn.onclick=()=>{clearSearchAuto();openLinkDlg(groups[0]?.id,null,searchUrl(),!!searchUrl())};
   manualBtn.onclick=()=>{const url=searchUrl();clearSearchAuto();if(dlg.open&&safeUrl($('kUrl').value)===url)switchToManual();else openLinkDlg(groups[0]?.id,null,url,false,true)};
   search.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();clearSearchAuto();quickBtn.click()}});
@@ -195,9 +220,9 @@
     const next=groups.map(g=>({...g,links:[...g.links]}));if(!next.length)next.push({id:'g_common',name:'常用',links:[]});const target=next.find(g=>g.id===groupId);if(!target){$('kRecognitionStatus').textContent='分组不存在，请重新选择。';return}
     if(editing){const oldGroup=next.find(g=>g.id===editing.groupId),link=oldGroup?.links.find(l=>l.id===editing.linkId);if(!link){$('kRecognitionStatus').textContent='链接已变化，请取消后重新打开。';return}oldGroup.links=oldGroup.links.filter(x=>x.id!==link.id);target.links.unshift({...link,title,url,desc,icon})}
     else target.links.unshift({id:id(),title,url,desc,icon});
-    try{set(STORAGE,next)}catch{$('kRecognitionStatus').textContent='保存失败，内容已保留。请检查浏览器存储后重试。';return}groups=next;dlg.close();search.value='';query='';render();
+    try{set(tabStorage(),next)}catch{$('kRecognitionStatus').textContent='保存失败，内容已保留。请检查浏览器存储后重试。';return}groups=next;dlg.close();search.value='';query='';render();
   };
-  updateLock();render();
+  updateTab();updateLock();render();
 })();
 
 // Load V5 overview/task enhancements last so they can safely override the MVP renderers.
