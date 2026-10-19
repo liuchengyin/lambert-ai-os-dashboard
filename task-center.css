@@ -312,15 +312,15 @@
    Keep the project-board's 12px gap and the equal-width two-column layout. */
 @media(min-width:721px){
   #tasks .tc-overview-row{
-    grid-template-rows:225px;
+    grid-template-rows:165px;
     align-items:stretch;
     gap:12px;
   }
   #tasks .tc-overview-row>.tc-project-focus{
     box-sizing:border-box;
     min-height:0;
-    height:225px;
-    max-height:225px;
+    height:165px;
+    max-height:165px;
     padding:12px 14px;
     gap:5px;
     grid-template-rows:auto auto minmax(0,1fr) auto auto;
@@ -353,8 +353,8 @@
   #tasks .tc-overview-row>.project-ai-panel{
     box-sizing:border-box;
     min-height:0;
-    height:225px;
-    max-height:225px;
+    height:165px;
+    max-height:165px;
     padding:12px 14px;
     gap:9px;
     overflow:hidden;
