@@ -1,0 +1,30 @@
+name: Google Login V1 Tests
+on:
+  pull_request:
+    paths:
+      - 'api/auth/**'
+      - 'lib/auth-session.js'
+      - 'auth-ui.*'
+      - 'tests/auth-session.mjs'
+      - '.github/workflows/auth-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  auth-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check auth-ui.js
+      - run: node --check lib/auth-session.js
+      - run: node --check api/auth/start.js
+      - run: node --check api/auth/callback.js
+      - run: node --check api/auth/me.js
+      - run: node --check api/auth/logout.js
+      - run: node tests/auth-session.mjs
