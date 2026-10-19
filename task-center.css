@@ -180,3 +180,220 @@
 @media(max-width:1199px){#tasks .tc-project-focus{width:100%;max-width:100%}}
 
 @media(min-width:1200px){#tasks .tc-focus-top label{flex:1;min-width:0;white-space:nowrap}#tasks .tc-focus-top select{min-width:120px;max-width:100%;width:100%;flex:1}}
+
+
+/* Project board uses a 12px grid gap. Match that spacing between the two
+   equally-sized overview modules; neither card contains empty columns. */
+#tasks .tc-overview-row{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+  align-items:stretch;
+  margin-bottom:18px;
+  min-width:0;
+}
+#tasks .tc-overview-row>.tc-project-focus{
+  grid-column:1;
+  box-sizing:border-box;
+  width:100%;
+  max-width:100%;
+  margin:0;
+  padding:16px 18px;
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  grid-template-areas:'top' 'h3' 'p' 'meta' 'progress';
+  grid-template-rows:auto auto 1fr auto auto;
+  gap:8px;
+  min-width:0;
+  min-height:240px;
+  align-items:start;
+  border-radius:18px;
+}
+#tasks .tc-project-focus>.tc-focus-top{
+  grid-area:top;display:flex;align-items:center;justify-content:flex-start;
+  gap:8px;min-width:0;flex-wrap:wrap;
+}
+#tasks .tc-project-focus>.tc-focus-top label{
+  display:flex;align-items:center;gap:8px;
+  flex:1 1 220px;min-width:0;max-width:100%;
+  white-space:nowrap;font-size:12px;
+}
+#tasks .tc-project-select-wrap{
+  display:inline-flex;position:relative;flex:1 1 auto;min-width:0;max-width:100%;align-items:center;
+}
+#tasks .tc-project-select-wrap::after{
+  content:'';position:absolute;right:13px;top:calc(50% - 4px);
+  width:7px;height:7px;border-right:1.8px solid #6b6480;border-bottom:1.8px solid #6b6480;
+  transform:rotate(45deg);pointer-events:none;
+}
+#tasks .tc-focus-top .tc-project-select-wrap select{
+  box-sizing:border-box;appearance:none;-webkit-appearance:none;
+  min-width:0;max-width:100%;width:100%;height:36px;
+  padding:6px 34px 6px 12px;background:#fff;
+  border:1px solid #dcd8e9;border-radius:9px;
+  color:#3e3b50;font-size:13px;line-height:1.3;
+}
+#tasks .tc-focus-top .tc-project-select-wrap select:focus-visible{outline:2px solid #8c7bd5;outline-offset:2px}
+#tasks .tc-overview-row>.tc-project-focus>#tcProjectTitle{
+  grid-area:h3;font-size:19px;line-height:1.35;margin:4px 0 0;
+}
+#tasks .tc-overview-row>.tc-project-focus>#tcProjectStandard{
+  grid-area:p;font-size:12.5px;line-height:1.55;margin:0;min-width:0;
+}
+#tasks .tc-overview-row>.tc-project-focus>#tcProjectDates{
+  grid-area:meta;display:flex;align-items:center;flex-wrap:wrap;
+  gap:5px 8px;font-size:12px;line-height:1.5;font-variant-numeric:tabular-nums;
+}
+#tasks .tc-project-date-range{color:#6b647d}
+#tasks .tc-project-status{
+  display:inline-flex;align-items:center;padding:2px 7px;
+  border-radius:6px;background:#eee9fa;color:#6853a2;font-size:11px;
+}
+#tasks .tc-overview-row>.tc-project-focus>.tc-progress-row{
+  grid-area:progress;display:flex;align-items:center;gap:10px;
+  margin:2px 0 0;font-size:12px;flex-wrap:wrap;
+}
+#tasks .tc-overview-row>.tc-project-focus>.tc-progress-row progress{
+  flex:0 1 125px;width:40%;max-width:125px;height:6px;
+}
+#tasks .tc-overview-row>.project-ai-panel{
+  grid-column:2;
+  box-sizing:border-box;
+  display:flex;flex-direction:column;
+  min-width:0;min-height:240px;
+  padding:16px 18px;
+  border:1px solid #e0deeb;
+  border-radius:18px;
+  background:linear-gradient(120deg,#fff,#f8f6ff);
+  box-shadow:0 3px 12px #473f6c08;
+  gap:12px;
+}
+#tasks .project-ai-panel .ai-task-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  flex-wrap:wrap;min-width:0;
+}
+#tasks .project-ai-panel .ai-task-heading{
+  margin:0;font-size:16px;line-height:1.4;font-weight:650;color:#34344b;
+}
+#tasks .project-ai-panel .ai-task-action{display:flex;justify-content:flex-end;gap:8px;margin-left:auto}
+#tasks .project-ai-panel .ai-task-action button{
+  padding:7px 10px;font-size:12px;border-radius:8px;
+}
+#tasks .project-ai-panel .ai-task-result{
+  box-sizing:border-box;
+  width:100%;min-width:0;flex:1 1 auto;
+  max-height:220px;overflow-y:auto;overscroll-behavior:contain;
+  font-size:12.5px;line-height:1.6;
+  padding:12px 14px;
+  border:1px solid #ebe6f5;border-radius:10px;
+  background:#ffffffc7;
+  overflow-wrap:anywhere;
+}
+#tasks .project-ai-panel .ai-task-result p{margin:0}
+@media(min-width:721px) and (max-width:1199px){
+  #tasks .tc-overview-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:720px){
+  #tasks .tc-overview-row{
+    grid-template-columns:minmax(0,1fr);
+    gap:12px;
+  }
+  #tasks .tc-overview-row>.tc-project-focus,
+  #tasks .tc-overview-row>.project-ai-panel{
+    grid-column:1;width:100%;max-width:100%;min-height:0;
+    padding:14px 13px;
+  }
+  #tasks .tc-project-focus>.tc-focus-top label{flex-basis:100%}
+  #tasks .project-ai-panel .ai-task-result{max-height:160px}
+}
+
+/* DeepSeek Flash compact-height draft (run 39228952286), reviewed and
+   adapted to preserve all text via inner scrolling rather than line-clamping.
+   Keep the project-board's 12px gap and the equal-width two-column layout. */
+@media(min-width:721px){
+  #tasks .tc-overview-row{
+    grid-template-rows:165px;
+    align-items:stretch;
+    gap:12px;
+  }
+  #tasks .tc-overview-row>.tc-project-focus{
+    box-sizing:border-box;
+    min-height:0;
+    height:165px;
+    max-height:165px;
+    padding:12px 14px;
+    gap:5px;
+    grid-template-rows:auto auto minmax(0,1fr) auto auto;
+    overflow:hidden;
+  }
+  #tasks .tc-overview-row>.tc-project-focus>.tc-focus-top{gap:6px}
+  #tasks .tc-overview-row>.tc-project-focus>#tcProjectTitle{
+    margin:0;
+    font-size:17px;
+    line-height:1.3;
+    max-height:48px;
+    overflow-y:auto;
+  }
+  #tasks .tc-overview-row>.tc-project-focus>#tcProjectStandard{
+    min-height:0;
+    margin:0;
+    line-height:1.4;
+    overflow-y:auto;
+    overflow-wrap:anywhere;
+  }
+  #tasks .tc-overview-row>.tc-project-focus>#tcProjectDates{
+    min-height:0;
+    margin:0;
+    line-height:1.35;
+  }
+  #tasks .tc-overview-row>.tc-project-focus>.tc-progress-row{
+    margin:0;
+    gap:7px;
+  }
+  #tasks .tc-overview-row>.project-ai-panel{
+    box-sizing:border-box;
+    min-height:0;
+    height:165px;
+    max-height:165px;
+    padding:12px 14px;
+    gap:9px;
+    overflow:hidden;
+  }
+  #tasks .tc-overview-row>.project-ai-panel .ai-task-head{
+    flex:0 0 auto;
+    gap:6px;
+  }
+  #tasks .tc-overview-row>.project-ai-panel .ai-task-result{
+    flex:1 1 auto;
+    min-height:0;
+    max-height:none;
+    margin:0;
+    overflow-y:auto;
+  }
+}
+@media(max-width:720px){
+  #tasks .tc-overview-row{grid-template-rows:none}
+  #tasks .tc-overview-row>.tc-project-focus,
+  #tasks .tc-overview-row>.project-ai-panel{
+    height:auto;
+    min-height:0;
+    max-height:none;
+    overflow:visible;
+  }
+}
+
+
+/* Task header refinement: project name in heading, selector at half width. */
+#tasks .tc-page-head>div{display:flex;align-items:baseline;flex-wrap:wrap;column-gap:16px}
+#tasks .tc-page-head .tc-eyebrow{flex-basis:100%}
+#tasks .tc-current-project-title{margin:0;font-size:19px;line-height:1.35;font-weight:650;color:#7260ad}
+#tasks .tc-overview-row>.tc-project-focus{grid-template-areas:'top' 'p' 'meta' 'progress';grid-template-rows:auto minmax(0,1fr) auto auto}
+@media(min-width:721px){
+  #tasks .tc-overview-row>.tc-project-focus>.tc-focus-top label{
+    flex:0 1 50%;width:50%;max-width:50%;min-width:0;
+  }
+}
+@media(max-width:720px){
+  #tasks .tc-overview-row>.tc-project-focus{grid-template-areas:'top' 'p' 'meta' 'progress'}
+  #tasks .tc-overview-row>.tc-project-focus>.tc-focus-top label{flex:1 1 100%;width:100%;max-width:100%}
+}

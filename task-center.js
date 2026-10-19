@@ -44,13 +44,31 @@
   function options(items, value, first='') {return (first?`<option value="">${esc(first)}</option>`:'')+items.map(x=>`<option value="${esc(x.value??x)}" ${String(x.value??x)===String(value)?'selected':''}>${esc(x.label??x)}</option>`).join('');}
   function projectOptions(value) {return options([{value:'inbox',label:'收件箱'},...state.projects.map(p=>({value:p.id,label:p.name}))],value);}
   function labelsHtml(labels) {return (Array.isArray(labels)?labels:[]).map(x=>`<span class="tc-tag tc-tag-${Math.max(0,presets.indexOf(x))}">${esc(x)}</span>`).join('');}
+  // Presentation only: preserve stored project start/due values, including any time component.
+  function projectDateLabel(value, fallback, includeYear=true) {
+    const match=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if(!match)return fallback;
+    return (includeYear?Number(match[1])+'年':'')+Number(match[2])+'月'+Number(match[3])+'日';
+  }
+  function projectDateRange(p) {
+    const start=String(p.start||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const due=String(p.due||'').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    const endYear=!start||!due||start[1]!==due[1];
+    return projectDateLabel(p.start,'未设开始日期')+' → '+projectDateLabel(p.due,'未设截止日期',endYear);
+  }
   function summary() {
     const rows=projectRows(), p=currentProject(), done=rows.filter(t=>t.status==='已完成').length;
     $('tcProjectSelect').innerHTML=projectOptions(selected);
     $('tcProjectTitle').textContent=p?.name||'收件箱';
     $('tcProjectCategory').textContent=p?.category|| (p?'未分类':'零散任务');
     $('tcProjectStandard').textContent=p?.standard|| (p?'尚未填写完成交付标准':'先收集下一步行动，需要时再移入项目。');
-    $('tcProjectDates').textContent=p?`${p.start||'未设开始日期'} → ${p.due||'未设截止日期'} · ${p.status}`:'这里的任务暂未归属项目';
+    const dates=$('tcProjectDates');
+    dates.replaceChildren();
+    if(p){
+      const range=document.createElement('span');range.className='tc-project-date-range';range.textContent=projectDateRange(p);
+      const status=document.createElement('span');status.className='tc-project-status';status.textContent=p.status;
+      dates.append(range,status);
+    }else dates.textContent='这里的任务暂未归属项目';
     $('tcProgressLabel').textContent=`任务完成 ${done}/${rows.length} · 进行中 ${rows.filter(t=>t.status==='进行中').length}`;
     $('tcProgress').value=rows.length?done/rows.length:0;
     const category=$('tcProjectCategory');category.className='tc-category tc-tag-'+Math.max(0,presets.indexOf(p?.category));
@@ -294,8 +312,8 @@ function board(rows){
     if(old)state.tasks[state.tasks.indexOf(old)]=task;else state.tasks.unshift(task);
     $('tcEditor').close();save();
   }
-  root.innerHTML=`<div class="tc-page-head"><div><p class="tc-eyebrow">PROJECT WORKSPACE</p><h2>任务中心</h2></div><button id="tcBackProjects" type="button">← 项目看板</button></div>
-    <section class="tc-project-focus"><div class="tc-focus-top"><label>当前项目<select id="tcProjectSelect" aria-label="当前项目"></select></label><span id="tcProjectCategory" class="tc-category"></span></div><h3 id="tcProjectTitle"></h3><p id="tcProjectStandard"></p><div id="tcProjectDates" class="tc-meta"></div><div class="tc-progress-row"><progress id="tcProgress" max="1" value="0"></progress><span id="tcProgressLabel"></span></div></section>
+  root.innerHTML=`<div class="tc-page-head"><div><p class="tc-eyebrow">PROJECT WORKSPACE</p><h2>任务中心</h2><h3 id="tcProjectTitle" class="tc-current-project-title"></h3></div><button id="tcBackProjects" type="button">← 项目看板</button></div>
+    <div class="tc-overview-row"><section class="tc-project-focus"><div class="tc-focus-top"><label>当前项目<span class="tc-project-select-wrap"><select id="tcProjectSelect" aria-label="当前项目"></select></span></label><span id="tcProjectCategory" class="tc-category"></span></div><p id="tcProjectStandard"></p><div id="tcProjectDates" class="tc-meta"></div><div class="tc-progress-row"><progress id="tcProgress" max="1" value="0"></progress><span id="tcProgressLabel"></span></div></section><aside class="project-ai-panel" aria-label="AI 项目分析"></aside></div>
     <div class="tc-viewbar"><div role="tablist" aria-label="任务浏览形式"><button role="tab" type="button" data-tc-view="board" aria-controls="tcContent">▦ 看板</button><button role="tab" type="button" data-tc-view="gantt" aria-controls="tcContent">▤ 甘特图</button><button role="tab" type="button" data-tc-view="table" aria-controls="tcContent">▥ 表格</button></div><button id="tcNewTask" type="button" class="tc-primary">＋ 新建任务</button></div>
     <div class="tc-filters" id="tcFilterPanel" hidden><label class="tc-search">搜索<input id="tcFilterQ" type="search" placeholder="当前项目内搜索"></label><label>状态<select id="tcFilterStatus">${options([{value:'all',label:'全部状态'},...statuses],'all')}</select></label><label>标签<select id="tcFilterLabel"></select></label><label>优先级<select id="tcFilterPriority">${options([{value:'all',label:'全部优先级'},'P0','P1','P2','P3'],'all')}</select></label><label>日期<select id="tv5Date">${options([{value:'all',label:'全部日期'},{value:'today',label:'今天到期'},{value:'overdue',label:'已逾期'},{value:'nodate',label:'待排期'}],'all')}</select></label><label>四象限<select id="tcFilterMatrix">${options([{value:'all',label:'全部象限'},{value:'q1',label:'重要且紧急'},{value:'q2',label:'重要不紧急'},{value:'q3',label:'紧急不重要'},{value:'q4',label:'不重要不紧急'}],'all')}</select></label><label>排序<select id="tcFilterSort">${options([{value:'manual',label:'手动顺序'},{value:'priority',label:'优先级'},{value:'due',label:'截止时间'},{value:'created',label:'最近创建'}],'priority')}</select></label><button id="tcClear" type="button">清空筛选</button></div>
     <div class="tc-statusline"><span id="tcCount"></span><span id="tcNotice" role="status" aria-live="polite"></span></div><div id="tcContent" role="tabpanel"></div>`;
