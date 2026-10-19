@@ -1,7 +1,7 @@
 // Common links dashboard: iTab-style launcher + editable groups + wallpaper
 (function(){
   const section=document.getElementById('knowledge');if(!section)return;
-  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261019-tabs1';document.head.appendChild(l)}
+  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261019-tabs2';document.head.appendChild(l)}
   const navBtn=document.querySelector('nav button[data-v="knowledge"]');if(navBtn)navBtn.textContent='常用链接';
   const STORAGE='knowledge_link_library_v1',PERSONAL='knowledge_link_personal_v1',ACTIVE_TAB='knowledge_active_tab_v1',LOCK='knowledge_link_locked_v1',WALL='knowledge_wallpaper_v1';
   const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
@@ -25,11 +25,12 @@
     <div class="knowledge-head"><div><h2 id="knowledgePageTitle">常用链接</h2><p>个人快捷启动台</p></div><div class="knowledge-head-actions"><button id="knowledgeTabSwitch" class="knowledge-tab-switch" type="button" aria-label="切换常用链接分类"></button><button id="knowledgeWallpaper" class="knowledge-wallpaper-btn" type="button">壁纸</button><button id="knowledgeLock" class="knowledge-lock"></button></div></div>
     <div class="knowledge-searchbar"><input id="knowledgeSearch" placeholder="搜索常用网站"><button id="knowledgeQuickAdd" type="button">添加链接</button></div>
     <div id="knowledgeEditBar" class="knowledge-editbar"><button id="knowledgeAddGroup" type="button">+ 添加分组</button><span>编辑模式：可改名、拖动分组、编辑链接</span></div>
+    <div class="knowledge-library-indicator"><span id="knowledgeLibraryTag" class="knowledge-library-tag">常用</span></div>
     <div id="knowledgeGroups"></div>
     <div id="knowledgeLinks" style="display:none"></div>
   </div>`;
 
-  const lockBtn=document.getElementById('knowledgeLock'),tabBtn=document.getElementById('knowledgeTabSwitch'),pageTitle=document.getElementById('knowledgePageTitle'),wallBtn=document.getElementById('knowledgeWallpaper'),search=document.getElementById('knowledgeSearch'),root=document.getElementById('knowledgeGroups'),editBar=document.getElementById('knowledgeEditBar'),quickBtn=document.getElementById('knowledgeQuickAdd');
+  const lockBtn=document.getElementById('knowledgeLock'),tabBtn=document.getElementById('knowledgeTabSwitch'),libraryTag=document.getElementById('knowledgeLibraryTag'),wallBtn=document.getElementById('knowledgeWallpaper'),search=document.getElementById('knowledgeSearch'),root=document.getElementById('knowledgeGroups'),editBar=document.getElementById('knowledgeEditBar'),quickBtn=document.getElementById('knowledgeQuickAdd');
   const applyWallpaper=url=>{if(url){section.style.setProperty('--knowledge-wallpaper',`url("${url.replace(/"/g,'\\\"')}")`)}else section.style.removeProperty('--knowledge-wallpaper')};
   applyWallpaper(get(WALL,''));
 
@@ -42,7 +43,7 @@
   function favicon(url){return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host(url))}&sz=128`}
   function iconFor(link){return link.icon||favicon(link.url)}
   function persist(){set(tabStorage(),groups)}
-  function updateTab(){const isPersonal=activeTab==='personal';pageTitle.textContent=isPersonal?'个人常用':'常用链接';tabBtn.textContent=isPersonal?'⇄ 常用':'⇄ 个人常用';tabBtn.title=isPersonal?'切换到常用链接':'切换到个人常用链接';tabBtn.setAttribute('aria-label',tabBtn.title)}
+  function updateTab(){const isPersonal=activeTab==='personal';tabBtn.textContent='切换';tabBtn.title=isPersonal?'切换到常用':'切换到个人';tabBtn.setAttribute('aria-label',tabBtn.title);libraryTag.textContent=isPersonal?'个人':'常用';libraryTag.dataset.library=isPersonal?'personal':'common'}
   function updateLock(){lockBtn.textContent=locked?'🔒':'🔓';lockBtn.title=locked?'点击解锁编辑':'点击锁定';editBar.style.display=locked?'none':'flex';quickBtn.style.display=locked?'none':'inline-block';document.body.classList.toggle('knowledge-unlocked',!locked)}
   function updateIconPreview(){const url=safeUrl(document.getElementById('kUrl').value),custom=document.getElementById('kIcon').value.trim(),img=document.getElementById('kIconPreview');img.src=custom||(url?favicon(url):'');img.style.visibility=img.src?'visible':'hidden'}
   function openLinkDlg(groupId,link=null){editing=link?.id?{groupId,linkId:link.id}:null;document.getElementById('kDlgTitle').textContent=link?.id?'编辑链接':'添加链接';const sel=document.getElementById('kGroup');sel.innerHTML='';groups.forEach(g=>{const o=document.createElement('option');o.value=g.id;o.textContent=g.name;sel.appendChild(o)});sel.value=groupId||groups[0]?.id||'';document.getElementById('kUrl').value=link?.url||'';document.getElementById('kTitle').value=link?.title||'';document.getElementById('kDesc').value=link?.desc||'';document.getElementById('kIcon').value=link?.icon||'';updateIconPreview();dlg.showModal()}
