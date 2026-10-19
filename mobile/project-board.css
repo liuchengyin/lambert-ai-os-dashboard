@@ -45,3 +45,12 @@
 #app .project-page .task .tt{font-size:17px;white-space:normal;line-height:1.35;text-overflow:clip}
 #app .project-page .task .meta{font-size:12px}
 @media(max-width:340px){.project-page{padding:0}}
+
+/* Single-column status filters use the same control as the task home page. */
+.project-status-filter{margin:12px 0}.project-page .project-status-filter button{border:0;padding:0 4px;background:transparent;font-size:17px;font-weight:400;min-width:0;display:flex;justify-content:center;align-items:center;gap:5px}
+.project-page .project-status-filter button.on{background:white;color:var(--p)}
+.project-filter-count{font-size:13px;color:var(--mut)}
+.project-items,.project-task-items{display:flex;flex-direction:column;gap:8px;min-width:0}
+.project-task-items>.task{width:100%}.project-task-items .empty{font-size:16px}
+.project-page .project-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.project-page .project-stat{padding:9px 6px}.project-page .project-stat-label{font-size:13px}

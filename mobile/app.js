@@ -32,7 +32,7 @@ function renderTabs(){
     var b=el('button',tab===t[0]?'on':'');
     b.appendChild(el('span','ic',t[2]));
     b.appendChild(el('span',null,t[1]));
-    b.onclick=function(){tab=t[0];filterProject=null;render();};
+    b.onclick=function(){tab=t[0];filterProject=null;if(tab==='projects')window.MobileProjectBoard.reset();render();};
     tabsEl.appendChild(b);
   });
 }
