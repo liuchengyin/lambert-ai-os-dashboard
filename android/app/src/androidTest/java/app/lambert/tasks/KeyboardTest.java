@@ -26,7 +26,7 @@ public class KeyboardTest {
    boolean visible=false;
    for(int i=0;i<40;i++){AtomicReference<Boolean> v=new AtomicReference<>(false);scenario.onActivity(a->{WindowInsets insets=a.getWindow().getDecorView().getRootWindowInsets();v.set(insets!=null&&insets.isVisible(WindowInsets.Type.ime()));});if(v.get()){visible=true;break;}Thread.sleep(250);}
    assertTrue("Software keyboard must actually open",visible);Thread.sleep(700);
-   java.io.File shot=new java.io.File(InstrumentationRegistry.getInstrumentation().getContext().getExternalFilesDir(null),"keyboard.png");
+   java.io.File shot=new java.io.File(InstrumentationRegistry.getInstrumentation().getTargetContext().getExternalFilesDir(null),"keyboard.png");
    try(java.io.FileOutputStream out=new java.io.FileOutputStream(shot)){InstrumentationRegistry.getInstrumentation().getUiAutomation().takeScreenshot().compress(android.graphics.Bitmap.CompressFormat.PNG,100,out);}
    scenario.onActivity(a->{int[] location=new int[2];web.getLocationOnScreen(location);WindowInsets insets=a.getWindow().getDecorView().getRootWindowInsets();int bottom=insets.getInsets(WindowInsets.Type.ime()).bottom;assertTrue("WebView above IME",location[1]+web.getHeight()<=a.getWindow().getDecorView().getHeight()-bottom+2);assertTrue("WebView below status bar",location[1]>=insets.getInsets(WindowInsets.Type.statusBars()).top);});
    assertEquals("Input visible above keyboard","true",js("(()=>{const r=document.querySelector('#mobileTaskTitle').getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight})()"));

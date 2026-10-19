@@ -12,7 +12,7 @@ public final class MainActivity extends Activity {
  private boolean local(android.net.Uri u){return "https".equals(u.getScheme())&&HOST.equals(u.getHost())&&u.getPath()!=null&&u.getPath().startsWith("/assets/mobile/");}
  @Override public void onCreate(Bundle state){
   super.onCreate(state);
-  android.widget.FrameLayout root=new android.widget.FrameLayout(this);
+  android.widget.FrameLayout root=new android.widget.FrameLayout(this);root.setBackgroundColor(0xff7357d7);
   web=new WebView(this);root.addView(web,new android.widget.FrameLayout.LayoutParams(-1,-1));setContentView(root);
   if(android.os.Build.VERSION.SDK_INT>=30){
    getWindow().setDecorFitsSystemWindows(false);
