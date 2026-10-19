@@ -45,3 +45,9 @@ background-size:cover;background-position:center;background-attachment:fixed}
 @media(max-width:1120px){#knowledge .knowledge-grid{grid-template-columns:repeat(6,minmax(76px,1fr))}}
 @media(max-width:860px){#knowledge .knowledge-grid{grid-template-columns:repeat(5,minmax(72px,1fr))}#knowledge .knowledge-searchbar{width:90%}}
 @media(max-width:640px){#knowledge{border-radius:18px}#knowledge .knowledge-page{padding-inline:8px}#knowledge .knowledge-grid{grid-template-columns:repeat(4,minmax(64px,1fr));gap:18px 8px}#knowledge .knowledge-searchbar{width:100%;grid-template-columns:auto 1fr}#knowledge .knowledge-searchbar button{display:none!important}#knowledge .knowledge-link-icon,#knowledge .knowledge-add-icon{width:58px;height:58px;border-radius:16px}#knowledge .knowledge-wallpaper-btn{padding:0 10px}}
+
+/* Common / Personal link libraries: small switch beside Wallpaper. */
+#knowledge .knowledge-tab-switch{height:38px;min-width:108px;padding:0 12px;border-radius:11px;border:1px solid rgba(124,88,215,.35);background:rgba(255,255,255,.65);color:#6042a2;font-size:12px;font-weight:650;white-space:nowrap;cursor:pointer;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+#knowledge .knowledge-tab-switch:hover{background:rgba(245,240,255,.92);border-color:#9274d5}
+#knowledge .knowledge-tab-switch:focus-visible{outline:2px solid #7e5ad1;outline-offset:2px}
+@media(max-width:640px){#knowledge .knowledge-tab-switch{min-width:0;padding:0 8px;font-size:11px}#knowledge .knowledge-head-actions{gap:5px}}
