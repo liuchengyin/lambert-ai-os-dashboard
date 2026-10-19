@@ -54,3 +54,9 @@
 .project-task-items>.task{width:100%}.project-task-items .empty{font-size:16px}
 .project-page .project-stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .project-page .project-stat{padding:9px 6px}.project-page .project-stat-label{font-size:13px}
+
+.project-head{flex-wrap:nowrap;gap:6px}.project-head .project-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.project-head .project-actions{flex-wrap:nowrap;gap:4px;flex-shrink:0}
+.project-head .project-back{width:44px;min-width:44px;padding:0;border:0;background:transparent;font-size:32px;color:var(--p)}
+.project-head .project-actions button{min-width:44px;min-height:44px;padding:0 7px;font-size:14px;border-radius:9px}
+.project-head .project-add-task{background:var(--p);border-color:var(--p);color:white}

@@ -5,7 +5,7 @@ var app=document.getElementById('app');
 var tabsEl=document.getElementById('tabs');
 var syncEl=document.getElementById('syncStatus');
 var tab='tasks';
-var filterScope='all';
+var filterScope='today';
 var reviewDate=null;
 var filterProject=null;
 var foldDone=true;
@@ -80,8 +80,8 @@ function renderTasks(){
   var targetIds=(reviews()[today()]||{}).taskIds||[];
   var all=tasks().filter(function(t){return (!filterProject||pid(t)===filterProject)&&(filterScope!=='today'||(t.due||'').slice(0,10)===today()||targetIds.includes(t.id));});
   var c=el('div','task-list');
-  var scopes=el('div','task-scopes');scopes.setAttribute('role','group');scopes.setAttribute('aria-label','任务日期筛选');[['all','全部'],['today','今日']].forEach(function(item){var btn=el('button',filterScope===item[0]?'on':'',item[1]);btn.type='button';btn.setAttribute('aria-pressed',String(filterScope===item[0]));btn.onclick=function(){filterScope=item[0];render();};scopes.appendChild(btn);});c.appendChild(scopes);
-  var picker=el('select');picker.setAttribute('aria-label','任务项目筛选');var any=el('option',null,'全部项目');any.value='';picker.appendChild(any);projects().forEach(function(p){var o=el('option',null,p.name);o.value=p.id;picker.appendChild(o);});picker.value=filterProject||'';picker.onchange=function(){filterProject=picker.value;render();};c.appendChild(picker);
+  var scopes=el('div','task-scopes');scopes.setAttribute('role','group');scopes.setAttribute('aria-label','任务日期筛选');[['today','今日'],['all','全部']].forEach(function(item){var btn=el('button',filterScope===item[0]?'on':'',item[1]);btn.type='button';btn.setAttribute('aria-pressed',String(filterScope===item[0]));btn.onclick=function(){filterScope=item[0];render();};scopes.appendChild(btn);});c.appendChild(scopes);
+  var picker=el('button','task-project-picker',filterProject?projName(filterProject):'全部项目');picker.type='button';picker.setAttribute('aria-label','任务项目筛选');picker.setAttribute('aria-haspopup','dialog');picker.appendChild(el('span',null,'⌄'));picker.onclick=function(){window.MobilePolish.openProjectPicker({projects:projects(),currentId:filterProject||'',onSelect:function(id){filterProject=id;render();}});};c.appendChild(picker);
   var h=el('h2');h.appendChild(el('span',null,'任务'));
   var add=el('button','task-fab','＋');add.type='button';add.setAttribute('aria-label','新增任务');
   add.onclick=function(){openTaskDialog(null);};
@@ -153,7 +153,7 @@ function openTaskDialog(t){
  var cancel=el('button','btn',t?'返回':'取消');cancel.type='button';cancel.onclick=function(){dlg.close();};head.appendChild(cancel);head.appendChild(el('h3',null,t?'编辑任务':'添加任务'));form.appendChild(head);
  var titleLabel=el('label',null,'任务标题');titleLabel.htmlFor='mobileTaskTitle';form.appendChild(titleLabel);
  var title=el('input');title.id='mobileTaskTitle';title.setAttribute('aria-label','任务标题');title.placeholder='添加任务';title.required=true;title.maxLength=300;title.value=t?t.title:'';form.appendChild(title);
- var fields=el('div','task-optional');var dateLabel=el('label',null,'日期');var date=el('input');date.type='date';date.setAttribute('aria-label','任务日期');date.value=t&&t.due?t.due.slice(0,10):'';dateLabel.appendChild(date);fields.appendChild(dateLabel);
+ var fields=el('div','task-optional');var dateLabel=el('label',null,'日期');var date=el('input');date.type='date';date.setAttribute('aria-label','任务日期');date.value=t&&t.due?t.due.slice(0,10):(tab==='tasks'&&filterScope==='today'?today():'');dateLabel.appendChild(date);fields.appendChild(dateLabel);
  var projectLabel=el('label',null,'关联项目');var project=el('select');project.setAttribute('aria-label','关联项目');var blank=el('option',null,'不关联项目');blank.value='';project.appendChild(blank);
  var ps=projects().filter(function(p){return !p.archived||(t&&p.id===pid(t));});ps.forEach(function(p){var o=el('option',null,p.name);o.value=p.id;project.appendChild(o);});project.value=t?pid(t):(filterProject||'');projectLabel.appendChild(project);fields.appendChild(projectLabel);form.appendChild(fields);
  var error=el('p','task-error');error.setAttribute('role','alert');form.appendChild(error);
@@ -190,6 +190,7 @@ function openProjectDialog(p){
   dlg.showModal();
 }
 
+document.getElementById('accountButton').onclick=function(){window.MobilePolish.openAccount({pendingCount:(S.pending()||[]).length,counts:{tasks:tasks().length,projects:projects().filter(function(p){return !p.archived&&!p.deletedAt;}).length,reviews:Object.keys(reviews()).length}});};
 window.addEventListener('mobile-change',function(){refreshStatus();});
 window.addEventListener('storage',function(e){if(['tasks','projects','daily_reviews_v2'].includes(e.key))render();});
 window.addEventListener('online',refreshStatus);

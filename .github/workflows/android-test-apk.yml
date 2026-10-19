@@ -33,7 +33,7 @@ jobs:
       - name: Bundle offline web assets
         run: |
           mkdir -p android/app/src/main/assets/mobile
-          cp mobile/app.js mobile/store.js mobile/style.css mobile/icon.svg mobile/task-model.js mobile/task-details.js mobile/task-details.css mobile/task-swipe.js mobile/task-swipe.css mobile/project-stats.js mobile/project-board.js mobile/project-board.css android/app/src/main/assets/mobile/
+          cp mobile/app.js mobile/store.js mobile/style.css mobile/icon.svg mobile/task-model.js mobile/task-details.js mobile/task-details.css mobile/task-swipe.js mobile/task-swipe.css mobile/project-stats.js mobile/project-board.js mobile/project-board.css mobile/interface-polish.js mobile/interface-polish.css android/app/src/main/assets/mobile/
           python3 - <<'PY'
           from pathlib import Path
           p=Path('mobile/index.html').read_text()
