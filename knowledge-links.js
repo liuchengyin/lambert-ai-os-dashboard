@@ -50,7 +50,7 @@
   function mountIcon(box,url,icon,title){
     box.replaceChildren();const fallback=document.createElement('span');fallback.className='knowledge-icon-fallback';fallback.textContent=Array.from(title||host(url))[0]?.toUpperCase()||'↗';fallback.setAttribute('aria-hidden','true');box.append(fallback);
     const custom=usableIcon(icon);const brand=brandFor(url);const candidates=[custom,brand?.icon,safeUrl(url)?new URL('/apple-touch-icon.png',url).href:''].filter((v,i,a)=>v&&a.indexOf(v)===i);let i=0;
-    const img=document.createElement('img');img.alt='';img.decoding='async';img.loading='lazy';img.referrerPolicy='no-referrer';img.hidden=true;box.append(img);
+    const img=document.createElement('img');img.alt='';img.decoding='async';img.referrerPolicy='no-referrer';img.hidden=true;box.append(img);
     function next(){if(i<candidates.length){img.hidden=true;fallback.hidden=false;img.src=candidates[i++]}else{img.remove();fallback.hidden=false}}
     img.onload=()=>{if(!/\.svg(?:[?#]|$)/i.test(img.src)&&img.naturalWidth<64){next();return}img.hidden=false;fallback.hidden=true};img.onerror=next;next();
   }
