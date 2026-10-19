@@ -11,7 +11,7 @@ var TABS=[['today','今日','☀'],['tasks','任务','✓'],['projects','项目'
 
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
 function today(){return S.date();}
-function tasks(){return S.read('tasks',[]).filter(function(t){return !t.archived;});}
+function tasks(){return S.read('tasks',[]).filter(function(t){return !t.archived&&!t.deletedAt;});}
 function pid(t){return t.projectId||((projects().find(function(p){return p.name===t.project||p.id===t.project;})||{}).id)||'';}
 function assign(t,id){var p=projects().find(function(p){return p.id===id;});t.projectId=id;t.project=p?p.name:'';}
 function projects(){return S.read('projects',[]);}
@@ -47,12 +47,10 @@ function render(){
 
 function taskRow(t,opts){
   opts=opts||{};
-  var d=el('div','task'+(t.status==='已完成'?' done':''));
+  var d=el('div','task'+(t.status==='已完成'?' done':''));d.dataset.taskId=t.id;
   var chk=el('button','chk',t.status==='已完成'?'✓':'');chk.type='button';chk.setAttribute('aria-label',(t.status==='已完成'?'重开：':'完成：')+t.title);
   chk.onclick=function(){
-    var arr=tasks();
-    arr.forEach(function(x){if(x.id===t.id){x.status=x.status==='已完成'?'进行中':'已完成';x.updatedAt=new Date().toISOString();}});
-    try{saveTasks(arr);render();}catch(e){alert('保存失败：'+e.message);}
+    try{S.write('tasks',window.MobileTaskModel.toggle(S.read('tasks',[]),t.id,today()));render();}catch(e){alert('保存失败：'+e.message);}
   };
   d.appendChild(chk);
   var body=el('button','body task-edit');body.type='button';body.setAttribute('aria-label','编辑：'+t.title);body.onclick=function(){openTaskDialog(t);};
@@ -185,6 +183,8 @@ function renderReviewFor(date){
 }
 
 function openTaskDialog(t){
+ if(t&&window.MobileTaskDetails){window.MobileTaskDetails.open(t.id,{readTasks:function(){return S.read('tasks',[]);},writeTasks:function(arr){S.write('tasks',arr);},projects:projects,projectId:pid,render:render,newId:uid,today:today});return;}
+
  var dlg=el('dialog',t?'task-editor':'task-composer');dlg.setAttribute('aria-label',t?'编辑任务':'新增任务');
  var form=el('form');form.method='dialog';var head=el('div','task-dialog-head');
  var cancel=el('button','btn',t?'返回':'取消');cancel.type='button';cancel.onclick=function(){dlg.close();};head.appendChild(cancel);head.appendChild(el('h3',null,t?'编辑任务':'添加任务'));form.appendChild(head);
