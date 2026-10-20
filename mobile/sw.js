@@ -1,4 +1,4 @@
-const CACHE='lambert-mobile-sync-v2';
+const CACHE='lambert-mobile-sync-logo-v3';
 const FILES=['../shared-sync/storage-bridge.js','../shared-sync/bootstrap.mjs','../shared-sync/account-ui.mjs','../shared-sync/account.css','../shared-sync/auth.mjs','../shared-sync/backup.mjs','../shared-sync/engine.mjs','../shared-sync/journal.mjs','../shared-sync/import-plan.mjs','../shared-sync/vendor/supabase-2.118.0.mjs','./','./index.html','./style.css','./store.js','./app.js','./task-model.js','./task-details.js','./task-details.css','./task-swipe.js','./task-swipe.css','./project-stats.js','./project-board.js','./project-board.css','./interface-polish.js','./interface-polish.css','./icon.svg','./manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES))));
 self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));

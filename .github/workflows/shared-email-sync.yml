@@ -4,7 +4,7 @@ on:
     branches: [feat/shared-email-sync]
     paths: ['shared-sync/**','supabase/**','api/account-config.js','api/feishu-review.js','lib/feishu-review.js','tests/shared-sync/**','mobile/**','android/**','index.html','app.js','review-v6.js','.github/workflows/shared-email-sync.yml']
   pull_request:
-    paths: ['shared-sync/**','supabase/**','api/account-config.js','api/feishu-review.js','lib/feishu-review.js','tests/shared-sync/**']
+    paths: ['shared-sync/**','supabase/**','api/account-config.js','api/feishu-review.js','lib/feishu-review.js','tests/shared-sync/**','android/**','mobile/**','index.html','tests/startup-speed.mjs']
 permissions:
   contents: read
 concurrency:
@@ -30,6 +30,8 @@ jobs:
           ln -s shared-sync/tooling/node_modules node_modules
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/lambert-sync-http.log 2>&1 &
           node tests/shared-sync/browser.mjs
+          if [ -f tests/startup-readiness.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/startup-readiness.mjs; fi
+          if [ -f tests/startup-speed.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/startup-speed.mjs; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

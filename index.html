@@ -1,9 +1,61 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-lambert-boot="loading">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Lambert AI OS</title>
+<style>
+html[data-lambert-boot] .shell{visibility:hidden}
+#lambertStartup{position:fixed;inset:0;z-index:99999;display:grid;place-content:center;text-align:center;gap:12px;background:#f5f4fa;color:#49415f;font:15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+#lambertStartup strong{font-size:22px;color:#7047c9}#lambertStartup p{margin:0}#lambertStartup button{justify-self:center;padding:10px 18px;border:0;border-radius:10px;background:#7047c9;color:white;cursor:pointer}
+html:not([data-lambert-boot]) #lambertStartup{display:none}
+</style>
+<script>
+(function(){var timer;function error(){document.documentElement.dataset.lambertBoot='error';var text=document.getElementById('lambertStartupMessage'),button=document.getElementById('lambertStartupRetry');if(text)text.textContent='页面加载未完成，请检查网络后重试。';if(button)button.hidden=false;}window.LambertStartup={ready:function(){clearTimeout(timer);document.documentElement.removeAttribute('data-lambert-boot');},error:error};timer=setTimeout(error,20000);})();
+</script>
 <meta name="theme-color" content="#17212c">
+<!-- startup-prefetch-start -->
+<link rel="modulepreload" href="shared-sync/bootstrap.mjs">
+<link rel="modulepreload" href="shared-sync/journal.mjs">
+<link rel="modulepreload" href="shared-sync/import-plan.mjs">
+<link rel="preload" as="script" href="lib/task-center-model.js">
+<link rel="preload" as="script" href="app.js">
+<link rel="preload" as="script" href="project-v3.js">
+<link rel="preload" as="script" href="archive-targets.js">
+<link rel="preload" as="script" href="project-v4.js">
+<link rel="preload" as="script" href="lib/link-sites.js?v=20261017-2">
+<link rel="preload" as="script" href="knowledge-links.js?v=20261019-prod-links2">
+<link rel="preload" as="script" href="english-learning.js">
+<link rel="preload" as="script" href="sprint1-navigation.js?v=1">
+<link rel="preload" as="script" href="deepseek-v1.js?v=2">
+<link rel="preload" as="script" href="project-ai.js?v=20261020-compact-restore1">
+<link rel="preload" as="script" href="ai-chat.js?v=1">
+<link rel="preload" as="script" href="project-date-picker.js">
+<link rel="preload" as="style" href="review-v6.css">
+<link rel="preload" as="script" href="review-v6.js">
+<link rel="preload" as="style" href="theme-linear.css">
+<link rel="preload" as="style" href="daily-modules.css">
+<link rel="preload" as="script" href="daily-modules.js">
+<link rel="preload" as="style" href="reading-v2.css">
+<link rel="preload" as="script" href="reading-v2.js">
+<link rel="preload" as="script" href="reading-extension-import.js">
+<link rel="preload" as="style" href="reading-history-bridge.css">
+<link rel="preload" as="script" href="reading-history-bridge.js">
+<link rel="preload" as="style" href="writing-history-link.css">
+<link rel="preload" as="script" href="writing-history-link.js">
+<link rel="preload" as="script" href="project-board-polish.js">
+<link rel="preload" as="style" href="ui-polish-v3.css">
+<link rel="preload" as="script" href="ui-polish-v3.js">
+<link rel="preload" as="script" href="task-drag-v1.js">
+<link rel="preload" as="style" href="workspace-glass-v1.css">
+<link rel="preload" as="style" href="review-layout-v7.css">
+<link rel="preload" as="style" href="reading-polish-v5.css">
+<link rel="preload" as="script" href="reading-polish-v5.js">
+<link rel="preload" as="style" href="english-learning-v1.css">
+<link rel="preload" as="style" href="knowledge-itab-v2.css?v=20261019-prod-links1">
+<link rel="preload" as="style" href="dashboard-v5.css">
+<link rel="preload" as="script" href="dashboard-v5.js">
+<link rel="preload" as="script" href="task-center.js?v=20261020-compact-restore1">
+<!-- startup-prefetch-end -->
 <link rel="icon" type="image/svg+xml" href="brand/logo-mark.svg?v=purple-white-1">
 <link rel="mask-icon" href="brand/logo-mark-black.svg" color="#090c0f">
 <link rel="manifest" href="manifest.webmanifest">
@@ -13,6 +65,7 @@
 <link rel="stylesheet" href="web-home.css?v=20261020-home1">
 </head>
 <body>
+<div id="lambertStartup" role="status" aria-live="polite"><strong>Lambert AI OS</strong><p id="lambertStartupMessage">正在打开工作台…</p><button id="lambertStartupRetry" type="button" hidden onclick="location.reload()">重新加载</button></div>
 <div class="shell">
 <aside>
 <div class="lambert-brand">
