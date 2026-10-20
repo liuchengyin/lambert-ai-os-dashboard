@@ -32,6 +32,7 @@ jobs:
           node tests/shared-sync/browser.mjs
           if [ -f tests/startup-readiness.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/startup-readiness.mjs; fi
           if [ -f tests/startup-speed.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/startup-speed.mjs; fi
+          if [ -f tests/mobile-compact-compose.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-compact-compose.mjs; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

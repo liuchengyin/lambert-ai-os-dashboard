@@ -1,1 +1,1 @@
-{"id":"/mobile/","name":"Lambert 随身任务","short_name":"Lambert","start_url":"/mobile/","scope":"/mobile/","display":"standalone","background_color":"#f6f5fa","theme_color":"#7357d7","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}
+{"id":"/mobile/","name":"Lambert","short_name":"Lambert","start_url":"/mobile/","scope":"/mobile/","display":"standalone","background_color":"#f6f5fa","theme_color":"#7357d7","icons":[{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]}

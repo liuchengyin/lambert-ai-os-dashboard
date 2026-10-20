@@ -8,6 +8,7 @@ import java.io.ByteArrayInputStream;
 
 public final class MainActivity extends Activity {
  private WebView web;
+ private boolean backPending;
  private static final String HOST="appassets.androidplatform.net";
  private boolean local(android.net.Uri u){return "https".equals(u.getScheme())&&HOST.equals(u.getHost())&&u.getPath()!=null&&(u.getPath().startsWith("/assets/mobile/")||u.getPath().startsWith("/assets/shared-sync/"));}
  private boolean cloud(android.net.Uri u){
@@ -49,8 +50,10 @@ public final class MainActivity extends Activity {
    @Override public boolean onJsAlert(WebView v,String url,String msg,JsResult result){new AlertDialog.Builder(MainActivity.this).setMessage(msg).setPositiveButton("确定",(d,w)->result.confirm()).setOnCancelListener(d->result.cancel()).show();return true;}
    @Override public void onPermissionRequest(PermissionRequest request){request.deny();}
   });
+  if(android.os.Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,()->handleBack());
   web.loadUrl("https://"+HOST+"/assets/mobile/index.html");
  }
- @Override public void onBackPressed(){if(web.canGoBack())web.goBack();else super.onBackPressed();}
+ private void handleBack(){if(backPending)return;backPending=true;web.evaluateJavascript("Boolean(window.MobileNavigation&&window.MobileNavigation.back())", handled->{backPending=false;if(!"true".equals(handled)){if(web.canGoBack())web.goBack();else finish();}});}
+ @Override public void onBackPressed(){handleBack();}
  @Override protected void onDestroy(){if(web!=null)web.destroy();super.onDestroy();}
 }
