@@ -30,7 +30,7 @@
     head.appendChild(el('h2','project-title','项目'));
     head.appendChild(btn('project-add','新增项目','新增项目',function(){api.onAddProject&&api.onAddProject();}));
     sec.appendChild(head);
-    sec.appendChild(filters('项目状态筛选',projectFilter,projects,norm,function(status){projectFilter=status;api.onSelect(null);},['进行中','待开始']));
+    sec.appendChild(filters('项目状态筛选',projectFilter,projects,norm,function(status){projectFilter=status;api.onSelect(null);},['进行中','待开始','已完成']));
     var board=el('div','project-items');board.setAttribute('role','region');board.setAttribute('aria-label','项目列表');
     projects.forEach(function(p){
       if(norm(p.status)!==projectFilter)return;
@@ -39,6 +39,7 @@
       var card=el('section','project-tile');
       var view=btn('project-view','查看项目：'+p.name,p.name,function(){api.onSelect&&api.onSelect(p.id);});
       card.appendChild(view);
+      var context=el('div','project-context');if(p.category)context.appendChild(el('span','project-category',p.category));if(p.start||p.due)context.appendChild(el('span',null,(p.start||'').slice(5,10).replace('-','/')+' — '+(p.due||'').slice(5,10).replace('-','/')));if(context.childNodes.length)card.appendChild(context);
       var edit=btn('project-edit','编辑项目：'+p.name,'编辑',function(){api.onEdit&&api.onEdit(p);});
       card.appendChild(edit);
       var meta=el('div','project-meta');
@@ -58,9 +59,10 @@
     sec.appendChild(board);
   }
   function detail(sec,api,p,tasks){
+    sec.classList.add('project-detail');
     var head=el('div','project-head');
     head.appendChild(btn('project-back','返回项目','‹',function(){api.onSelect&&api.onSelect(null);},['进行中','待开始']));
-    head.appendChild(el('h2','project-title',p.name+' 任务'));
+    head.appendChild(el('h2','project-title',p.name));
     var acts=el('div','project-actions');
     acts.appendChild(btn('project-edit','编辑项目：'+p.name,'编辑',function(){api.onEdit&&api.onEdit(p);}));
     acts.appendChild(btn('project-add-task','新增项目任务','新增',function(){api.onAddTask&&api.onAddTask(p.id);}));
@@ -78,7 +80,7 @@
     sec.appendChild(progress(p.name,st));
     sec.appendChild(filters('项目任务状态筛选',taskFilter,rows,tstat,function(status){taskFilter=status;api.onSelect(p.id);}));
     var board=el('div','project-task-items');board.setAttribute('role','region');board.setAttribute('aria-label','项目任务列表');board.setAttribute('data-task-status',taskFilter);
-    rows.filter(function(t){return tstat(t.status)===taskFilter;}).forEach(function(t){board.appendChild(api.taskRow(t));});
+    rows.filter(function(t){return tstat(t.status)===taskFilter;}).sort(api.compareTasks).forEach(function(t){board.appendChild(api.taskRow(t));});
     if(!board.children.length)board.appendChild(el('p','empty','暂无'+taskFilter+'任务'));
     sec.appendChild(board);
   }
