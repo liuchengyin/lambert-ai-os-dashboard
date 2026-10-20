@@ -2,9 +2,9 @@ name: Shared email account and sync checks
 on:
   push:
     branches: [feat/shared-email-sync]
-    paths: ['shared-sync/**','supabase/**','api/account-config.js','tests/shared-sync/**','mobile/**','android/**','index.html','app.js','review-v6.js','.github/workflows/shared-email-sync.yml']
+    paths: ['shared-sync/**','supabase/**','api/account-config.js','api/feishu-review.js','lib/feishu-review.js','tests/shared-sync/**','mobile/**','android/**','index.html','app.js','review-v6.js','.github/workflows/shared-email-sync.yml']
   pull_request:
-    paths: ['shared-sync/**','supabase/**','api/account-config.js','tests/shared-sync/**']
+    paths: ['shared-sync/**','supabase/**','api/account-config.js','api/feishu-review.js','lib/feishu-review.js','tests/shared-sync/**']
 permissions:
   contents: read
 concurrency:

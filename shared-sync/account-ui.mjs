@@ -83,7 +83,15 @@ function open(){
   dialog=node('dialog',undefined,'lambert-account');dialog.setAttribute('aria-label','我的账户');
   const header=node('div',undefined,'lambert-account-head');header.append(node('h2','我的账户'),button('关闭',()=>dialog.close()));body=node('form');header.lastChild.setAttribute('aria-label','关闭账户');dialog.append(header,body);document.body.append(dialog);dialog.addEventListener('close',()=>{dialog.remove();dialog=null;body=null;message=null;},{once:true});renderBody();dialog.showModal();header.lastChild.focus();
 }
-window.LambertAccount={open,ready,status};if(entry)entry.onclick=open;
+async function prepareCloudAction(){
+  await ready;if(!account||!user||localStorage.getItem(ACTIVE_KEY)!==user.id)throw Error('请先登录邮箱并启用云端工作台');
+  if(!navigator.onLine)throw Error('当前离线，请联网后再归档');
+  const current=journal;const run=async()=>{await synchronize(account.client,current);if(current.pending().length||current.conflicts().length)throw Error('请先完成同步并处理冲突，再归档飞书');};
+  if(navigator.locks)await navigator.locks.request('lambert-sync:'+user.id,run);else await run();
+  const session=await account.session();if(session?.user?.id!==current.userId||!session.access_token)throw Error('账号已变化，请重新打开复盘');
+  return {accessToken:session.access_token};
+}
+window.LambertAccount={open,ready,status,prepareCloudAction};if(entry)entry.onclick=open;
 async function start(){
   try{
     try{const response=await fetch(configUrl,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error('config_failed');config=await response.json();localStorage.setItem('lambert_public_config_v1',JSON.stringify(config));}
