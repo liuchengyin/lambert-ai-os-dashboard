@@ -10,6 +10,7 @@ const node=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefi
 const button=(text,fn)=>{const b=node('button',text);b.type='button';b.onclick=fn;return b;};
 const root=new URL('../',import.meta.url);
 if(!document.querySelector('link[data-lambert-account]')){const css=node('link');css.rel='stylesheet';css.href=new URL('account.css',import.meta.url);css.dataset.lambertAccount='';document.head.append(css);}
+let registrationEmail='',loginEmail='',resendAt=0;
 let account,config,user,journal,dialog,body,message,mode='login',busy=false,recovery=false,lastSync='',syncError='',inFlight=false,flushTimer;
 const accountPage=document.body.dataset.accountPage!==undefined;
 let leaving=false;function leaveWorkspace(){if(leaving)return;leaving=true;localStorage.removeItem(ACTIVE_KEY);location.reload();}
@@ -28,20 +29,39 @@ async function flush(){
   try{if(navigator.locks)await navigator.locks.request('lambert-sync:'+user.id,{ifAvailable:true},lock=>lock?run():undefined);else await run();}finally{inFlight=false;}
 }
 function schedule(){clearTimeout(flushTimer);flushTimer=setTimeout(flush,400);updateEntry();}
-function field(label,type,value=''){const l=node('label',label);const input=node('input');input.type=type;input.value=value;input.required=true;input.autocomplete=type==='email'?'email':mode==='login'?'current-password':'new-password';if(type==='password'&&mode!=='login')input.minLength=8;l.append(input);body.append(l);return input;}
+function field(label,type,value=''){const l=node('label',label);const input=node('input');input.type=type;input.setAttribute('aria-label',label);input.value=value;input.required=true;input.autocomplete=type==='email'?'email':mode==='login'?'current-password':'new-password';if(type==='password'&&mode!=='login')input.minLength=8;l.append(input);body.append(l);return input;}
 async function action(fn,done){if(busy)return;busy=true;for(const e of body.querySelectorAll('button'))e.disabled=true;tell('正在处理…');try{const result=await fn();done?.(result);}catch(e){tell(friendlyAuthError(e));}finally{busy=false;if(body)for(const e of body.querySelectorAll('button'))e.disabled=false;}}
 function showForm(){
-  const email=field('邮箱','email');let password;if(mode!=='reset')password=field(mode==='password'?'新密码':'密码','password');
-  if(mode==='password')email.closest('label').remove();
-  const submit=node('button',({login:'登录',register:'注册',reset:'发送重置邮件',password:'保存新密码'})[mode]);submit.type='submit';body.append(submit);
-  body.onsubmit=event=>{event.preventDefault();action(async()=>{const secret=password?.value;try{
-    if(mode==='login'){const data=await account.login(email.value,secret);user=data.user;if(!enforceWorkspaceUser())return;journal=new WorkspaceJournal(localStorage,user.id);renderBody();schedule();return;}
-    if(mode==='register'){const data=await account.register(email.value,secret);if(data.session){user=data.user;if(!enforceWorkspaceUser())return;journal=new WorkspaceJournal(localStorage,user.id);renderBody();}else tell('如果此邮箱可以注册，我们已发送验证邮件。验证后回到这里登录。');return;}
-    if(mode==='reset'){await account.reset(email.value);tell('如果该邮箱已注册，我们会发送重置密码邮件，请检查收件箱。');return;}
-    await account.changePassword(secret);recovery=false;mode='login';renderBody();tell('密码已更新。手机端可使用新密码登录。');
-  }finally{if(password)password.value='';}});};
-  if(mode==='login'){body.append(button('注册账号',()=>{mode='register';renderBody();}),button('忘记密码',()=>{mode='reset';renderBody();}),button('重发验证邮件',()=>{if(!email.reportValidity())return;action(()=>account.resend(email.value),()=>tell('如果需要验证，我们已发送邮件，请检查收件箱。'));}));}
-  else if(mode!=='password')body.append(button('返回登录',()=>{mode='login';renderBody();}));
+  const verify=mode==='verify';
+  const headings={login:['登录你的工作台','手机与电脑，共用一个工作台。'],register:['创建你的账号','填写邮箱，获取注册验证码。'],verify:['验证邮箱，设置密码','验证码已发送至 '+registrationEmail],reset:['找回密码','输入注册邮箱，获取重置指引。'],password:['设置新密码','更新后可在手机与电脑使用。']};
+  const [title,subtitle]=headings[mode];body.append(node('h3',title),node('p',subtitle));
+  const email=field('邮箱','email',verify?registrationEmail:loginEmail);
+  if(verify||mode==='password')email.closest('label').hidden=true;
+  let code,password;
+  if(verify){code=field('邮箱验证码','text');code.inputMode='numeric';code.autocomplete='one-time-code';code.maxLength=10;code.pattern='[0-9]{6,10}';code.placeholder='输入邮件中的验证码';}
+  if(['login','verify','password'].includes(mode)){
+    password=field(mode==='verify'?'设置密码':mode==='password'?'新密码':'密码','password');
+    const wrap=node('div',undefined,'lambert-password');password.replaceWith(wrap);wrap.append(password);
+    const toggle=button('显示',()=>{password.type=password.type==='password'?'text':'password';toggle.textContent=password.type==='password'?'显示':'隐藏';});toggle.setAttribute('aria-label','显示或隐藏密码');wrap.append(toggle);
+    password.placeholder=mode==='login'?'输入密码':'至少 8 位密码';
+  }
+  if(mode==='password')email.required=false;
+  const submit=node('button',({login:'登录',register:'发送验证码',verify:'完成注册',reset:'发送重置邮件',password:'保存新密码'})[mode]);submit.type='submit';body.append(submit);
+  const formMode=mode;
+  body.onsubmit=event=>{event.preventDefault();action(async()=>{
+    const secret=password?.value;
+    if(formMode==='login'){try{const data=await account.login(email.value,secret);loginEmail=email.value.trim();user=data.user;if(!enforceWorkspaceUser())return;journal=new WorkspaceJournal(localStorage,user.id);renderBody();schedule();}finally{password.value='';}return;}
+    if(formMode==='register'){await account.sendRegistrationCode(email.value);registrationEmail=email.value.trim();loginEmail=registrationEmail;resendAt=Date.now()+60000;mode='verify';renderBody();return;}
+    if(formMode==='verify'){await account.completeRegistration(registrationEmail,code.value,secret);password.value='';mode='login';renderBody();tell('注册成功，请用邮箱和密码登录。');return;}
+    if(formMode==='reset'){await account.reset(email.value);tell('如果该邮箱已注册，我们会发送重置密码邮件，请检查收件箱。');return;}
+    try{await account.changePassword(secret);recovery=false;mode='login';renderBody();tell('密码已更新。手机端可使用新密码登录。');}finally{password.value='';}
+  });};
+  if(mode==='login')body.append(button('注册账号',()=>{loginEmail=email.value.trim();mode='register';renderBody();}),button('忘记密码',()=>{loginEmail=email.value.trim();mode='reset';renderBody();}));
+  else if(verify){
+    const resend=button('重新发送',()=>{if(Date.now()<resendAt)return;action(async()=>{await account.resend(registrationEmail);resendAt=Date.now()+60000;tell('验证码已重新发送，请检查邮箱。');});});
+    const update=()=>{if(!resend.isConnected)return;const seconds=Math.max(0,Math.ceil((resendAt-Date.now())/1000));resend.disabled=busy||seconds>0;resend.textContent=seconds?'重新发送（'+seconds+'s）':'重新发送';};
+    body.append(resend,button('修改邮箱',()=>{mode='register';renderBody();}),button('返回登录',()=>{mode='login';renderBody();}));update();const timer=setInterval(()=>{if(!resend.isConnected){clearInterval(timer);return;}update();},1000);
+  }else if(mode!=='password')body.append(button('返回登录',()=>{loginEmail=email.value.trim();mode='login';renderBody();}));
 }
 async function prepareWorkspace(importLocal){
   await action(async()=>{
@@ -97,7 +117,7 @@ async function start(){
     try{const response=await fetch(configUrl,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error('config_failed');config=await response.json();localStorage.setItem('lambert_public_config_v1',JSON.stringify(config));}
     catch{config=JSON.parse(localStorage.getItem('lambert_public_config_v1')||'{"configured":false}');}
     if(config.configured){if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.url)||!/^sb_publishable_[A-Za-z0-9_-]+$/.test(config.publishableKey)||!/^https:\/\/[^/?#]+$/.test(config.siteUrl))throw Error('invalid_public_config');
-      account=createAccount(createClient(config.url,config.publishableKey,{auth:{storageKey:SESSION_KEY+':'+new URL(config.url).host,persistSession:true,autoRefreshToken:true,detectSessionInUrl:accountPage,flowType:'implicit'}}),{redirectTo:config.siteUrl+'/account.html'});
+      account=createAccount(createClient(config.url,config.publishableKey,{auth:{storageKey:SESSION_KEY+':'+new URL(config.url).host,persistSession:true,autoRefreshToken:true,detectSessionInUrl:accountPage,flowType:'implicit'}}),{redirectTo:config.siteUrl+'/account.html',registrationClient:createClient(config.url,config.publishableKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'lambert_registration_memory'}})});
       // Subscribe before getSession so PASSWORD_RECOVERY is not missed on the callback page.
       account.subscribe((event,session)=>{setTimeout(()=>{if(leaving)return;const changedUser=(user?.id||null)!==(session?.user?.id||null);user=session?.user||null;if(!enforceWorkspaceUser())return;if(user&&(!journal||changedUser))journal=new WorkspaceJournal(localStorage,user.id);if(event==='PASSWORD_RECOVERY'){recovery=true;open();}if(event==='SIGNED_OUT'){if(window.LambertData?.active){leaveWorkspace();return;}localStorage.removeItem(ACTIVE_KEY);}if(changedUser||event==='PASSWORD_RECOVERY')renderBody();updateEntry();schedule();},0);});
       const session=await account.session();user=session?.user||null;if(!enforceWorkspaceUser())return;if(user)journal=new WorkspaceJournal(localStorage,user.id);
