@@ -26,12 +26,12 @@ export function createReviewHandler(deps={}){
    if(authError||!identity?.user?.id)return send(401,'LOGIN_EXPIRED','登录已过期，请重新登录');
    const user=identity.user;
    if(!user.email_confirmed_at||!allowed.includes(String(user.email||'').toLowerCase()))return send(403,'NOT_OWNER','此邮箱没有归档到该飞书知识库的权限');
-   const {data:record,error}=await client.from('lambert_items').select('*').eq('kind','reviews').eq('item_id',date).is('deleted_at',null).maybeSingle().setHeader('Authorization','Bearer '+token);
+   const {data:record,error}=await client.from('lambert_items').select('*').eq('user_id',user.id).eq('kind','reviews').eq('item_id',date).is('deleted_at',null).maybeSingle().setHeader('Authorization','Bearer '+token);
    if(error)throw Error('cloud_read_failed');
    if(!record||record.user_id!==user.id)return send(404,'REVIEW_NOT_FOUND','云端没有这天的复盘，请先完成同步');
    const ids=[...new Set(Array.isArray(record.payload.taskIds)?record.payload.taskIds:[])];
    if(ids.length>500)return send(413,'TOO_MANY_TASKS','目标任务过多，请拆分后再归档');
-   let tasks=[];if(ids.length){const result=await client.from('lambert_items').select('*').eq('kind','tasks').in('item_id',ids).is('deleted_at',null).setHeader('Authorization','Bearer '+token);if(result.error)throw Error('cloud_read_failed');if(result.data.some(r=>r.user_id!==user.id))throw Error('account_mismatch');tasks=result.data.map(r=>r.payload);}
+   let tasks=[];if(ids.length){const result=await client.from('lambert_items').select('*').eq('user_id',user.id).eq('kind','tasks').in('item_id',ids).is('deleted_at',null).setHeader('Authorization','Bearer '+token);if(result.error)throw Error('cloud_read_failed');if(result.data.some(r=>r.user_id!==user.id))throw Error('account_mismatch');tasks=result.data.map(r=>r.payload);}
    let markdown;try{markdown=reviewMarkdown(date,record.payload,tasks);}catch{return send(400,'EMPTY_REVIEW','这天没有可归档的复盘内容');}
    if(Buffer.byteLength(markdown)>180000)return send(413,'TOO_LARGE','复盘内容过长，请拆分后归档');
    const targets=await getTargets();const destination=targets.locations.find(l=>l.id===targets.defaults.writing);if(!destination)throw Error('destination_missing');
