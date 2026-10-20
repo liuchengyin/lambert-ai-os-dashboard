@@ -29,7 +29,16 @@ async function flush(){
 }
 function schedule(){clearTimeout(flushTimer);flushTimer=setTimeout(flush,400);updateEntry();}
 function field(label,type,value=''){const l=node('label',label);const input=node('input');input.type=type;input.value=value;input.required=true;input.autocomplete=type==='email'?'email':mode==='login'?'current-password':'new-password';if(type==='password'&&mode!=='login')input.minLength=8;l.append(input);body.append(l);return input;}
-async function action(fn,done){if(busy)return;busy=true;for(const e of body.querySelectorAll('button'))e.disabled=true;tell('正在处理…');try{const result=await fn();done?.(result);}catch(e){tell(friendlyAuthError(e));}finally{busy=false;if(body)for(const e of body.querySelectorAll('button'))e.disabled=false;}}
+async function action(fn,done){
+  if(busy)return;
+  busy=true;
+  for(const e of body.querySelectorAll('button'))e.disabled=true;
+  tell('正在处理…');
+  const slowNotice=setTimeout(()=>tell('认证服务响应较慢，仍在连接中…'),4000);
+  try{const result=await fn();done?.(result);}
+  catch(e){tell(friendlyAuthError(e));}
+  finally{clearTimeout(slowNotice);busy=false;if(body)for(const e of body.querySelectorAll('button'))e.disabled=false;}
+}
 function showForm(){
   const email=field('邮箱','email');let password;if(mode!=='reset')password=field(mode==='password'?'新密码':'密码','password');
   if(mode==='password')email.closest('label').remove();
@@ -97,7 +106,28 @@ async function start(){
     try{const response=await fetch(configUrl,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error('config_failed');config=await response.json();localStorage.setItem('lambert_public_config_v1',JSON.stringify(config));}
     catch{config=JSON.parse(localStorage.getItem('lambert_public_config_v1')||'{"configured":false}');}
     if(config.configured){if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.url)||!/^sb_publishable_[A-Za-z0-9_-]+$/.test(config.publishableKey)||!/^https:\/\/[^/?#]+$/.test(config.siteUrl))throw Error('invalid_public_config');
-      account=createAccount(createClient(config.url,config.publishableKey,{auth:{storageKey:SESSION_KEY+':'+new URL(config.url).host,persistSession:true,autoRefreshToken:true,detectSessionInUrl:accountPage,flowType:'implicit'}}),{redirectTo:config.siteUrl+'/account.html'});
+      // Password login uses a bounded request: an unresponsive auth endpoint
+      // should never leave the user locked in a busy form indefinitely.
+      // Other Supabase operations keep their original behavior.
+      const boundedFetch=(input,options={})=>{
+        const requestUrl=typeof input==='string'?input:input?.url;
+        let passwordLogin=false;
+        try {
+          const target=new URL(requestUrl);
+          passwordLogin=target.origin===new URL(config.url).origin&&target.pathname==='/auth/v1/token'&&target.searchParams.get('grant_type')==='password';
+        }catch{/* Keep the default fetch behavior for unknown input types. */}
+        if(!passwordLogin)return fetch(input,options);
+        const abort=new AbortController();
+        const upstream=options?.signal;
+        const cancel=()=>abort.abort();
+        if(upstream){if(upstream.aborted)cancel();else upstream.addEventListener('abort',cancel,{once:true});}
+        const timer=setTimeout(cancel,15000);
+        return fetch(input,{...options,signal:abort.signal}).finally(()=>{
+          clearTimeout(timer);
+          upstream?.removeEventListener('abort',cancel);
+        });
+      };
+      account=createAccount(createClient(config.url,config.publishableKey,{global:{fetch:boundedFetch},auth:{storageKey:SESSION_KEY+':'+new URL(config.url).host,persistSession:true,autoRefreshToken:true,detectSessionInUrl:accountPage,flowType:'implicit'}}),{redirectTo:config.siteUrl+'/account.html'});
       // Subscribe before getSession so PASSWORD_RECOVERY is not missed on the callback page.
       account.subscribe((event,session)=>{setTimeout(()=>{if(leaving)return;const changedUser=(user?.id||null)!==(session?.user?.id||null);user=session?.user||null;if(!enforceWorkspaceUser())return;if(user&&(!journal||changedUser))journal=new WorkspaceJournal(localStorage,user.id);if(event==='PASSWORD_RECOVERY'){recovery=true;open();}if(event==='SIGNED_OUT'){if(window.LambertData?.active){leaveWorkspace();return;}localStorage.removeItem(ACTIVE_KEY);}if(changedUser||event==='PASSWORD_RECOVERY')renderBody();updateEntry();schedule();},0);});
       const session=await account.session();user=session?.user||null;if(!enforceWorkspaceUser())return;if(user)journal=new WorkspaceJournal(localStorage,user.id);
