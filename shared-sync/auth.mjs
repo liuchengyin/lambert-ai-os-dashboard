@@ -16,6 +16,7 @@ export function createAccount(client, {redirectTo,registrationClient}={}) {
       const password='La!9'+Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
       const data=await result(registration.auth.signUp({email:email.trim(),password,options:{emailRedirectTo:redirectTo}}));
       if(data.session){await result(registration.auth.signOut({scope:'local'}));throw {code:'confirmation_required'};}
+      if(data.user?.email_confirmed_at||data.user?.identities?.length===0)throw {code:'user_already_exists'};
       return data;
     },
     completeRegistration:async(email,token,password)=>{
