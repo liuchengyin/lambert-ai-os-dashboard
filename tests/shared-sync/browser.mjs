@@ -32,6 +32,7 @@ try{
  await desktop.evaluate(()=>{state.tasks.find(t=>t.title==='手机同步任务').status='已完成';persistTasks();});await desktop.waitForFunction(()=>window.LambertAccount?.status().includes('已同步'),null,{timeout:15000});assert.equal([...rows.values()].find(r=>r.payload.title==='手机同步任务').payload.status,'已完成');
  await desktop.waitForFunction(()=>document.getElementById('rv6Goal'));await desktop.evaluate(()=>openView('review'));await desktop.locator('#rv6Goal').fill('手机与网页复盘归档');await desktop.getByRole('button',{name:'归档到飞书',exact:true}).click();await desktop.getByText('已归档飞书 · 每日记录',{exact:true}).waitFor();assert.equal(await desktop.locator('#rv6FeishuOpen').getAttribute('href'),'https://my.feishu.cn/wiki/ReviewSnapshot1234');
 
+ await desktop.waitForFunction(()=>window.LambertAccount?.status().startsWith('已同步'));// Archive metadata must finish uploading before the next preview.
  // Import remains available after cloud activation; the original guest bytes stay intact.
  await page.locator('#accountButton').click();await page.getByRole('button',{name:'检查并导入本机数据',exact:true}).click();
  await page.getByText(/将新增 1 条，相同 0 条，冲突 0 条/).waitFor();
