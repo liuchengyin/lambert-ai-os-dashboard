@@ -61,7 +61,7 @@ try{
  await page.waitForFunction(()=>window.LambertAccount?.status().includes('已同步'));
  assert.equal(rows.get('offline-project').payload.name,'离线项目');assert.equal(rows.get('2026-10-21').payload.goal,'离线复盘');
  await desktop.reload();await desktop.getByRole('button',{name:'云端数据已更新，点击刷新',exact:true}).click();
- await desktop.waitForFunction(()=>window.LambertData?.read('projects',[]).some(p=>p.id==='offline-project'));
+ await desktop.waitForFunction(()=>typeof state!=='undefined'&&window.LambertData.read('projects',[]).some(p=>p.id==='offline-project'));
  assert.equal(await desktop.evaluate(()=>window.LambertData.read('daily_reviews_v2',{})['2026-10-21'].goal),'离线复盘');
  await page.reload();await page.getByRole('button',{name:'全部',exact:true}).click();await page.locator('.fold').click();await page.getByRole('button',{name:'重开：手机同步任务',exact:true}).waitFor();
  await page.locator('#accountButton').click();await Promise.all([page.waitForNavigation({waitUntil:'load'}),page.getByRole('button',{name:'退出登录',exact:true}).click()]);await page.reload();await page.getByRole('button',{name:'全部',exact:true}).click();await page.getByRole('button',{name:'编辑：本机原始任务',exact:true}).waitFor();assert.equal(await page.getByText('手机同步任务',{exact:true}).count(),0);
