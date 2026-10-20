@@ -82,7 +82,7 @@
     return {nodes:nodes,edges:edges,notes:notes,projects:projects};
   }
   root.innerHTML = '<div class="brain-page">' +
-    '<header class="brain-head"><div><small>SECOND BRAIN · V1</small><h2>第二大脑</h2><p>把项目、任务、复盘与独立笔记连接起来。现有业务数据只读，不上传 AI。</p></div><div class="brain-head-actions"><button id="brainExport" type="button" title="仅导出第二大脑的独立笔记，不包含原有项目、任务与复盘">导出脑笔记</button><button id="brainNew" type="button">+ 新建笔记</button></div></header>' +
+    '<header class="brain-head"><div><small>SECOND BRAIN · V1</small><h2>第二大脑</h2><p>把项目、任务、复盘与独立笔记连接起来。现有业务数据只读，不上传 AI。</p></div><div class="brain-head-actions"><button id="brainImport" type="button" title="只追加导入第二大脑笔记，不覆盖已有内容">导入脑笔记</button><input id="brainImportFile" type="file" accept=".json,application/json" hidden><button id="brainExport" type="button" title="仅导出第二大脑的独立笔记，不包含原有项目、任务与复盘">导出脑笔记</button><button id="brainNew" type="button">+ 新建笔记</button></div></header>' +
     '<div id="brainStats" class="brain-stats"></div>' +
     '<div class="brain-search"><input id="brainSearch" type="search" placeholder="搜索知识、项目、任务、复盘..." aria-label="搜索第二大脑"><button id="brainRefresh" type="button">刷新索引</button></div>' +
     '<div id="brainFilters" class="brain-filters" aria-label="知识类型筛选"></div>' +
@@ -212,6 +212,52 @@
       setStatus('导出失败：请检查当前浏览器笔记存储后重试。');
     }
   }
+  async function importNotes(file) {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      setStatus('导入失败：文件超过 5 MB，请先拆分笔记备份。');
+      return;
+    }
+    try {
+      var data = JSON.parse(await file.text());
+      if (!data || data.format !== 'lambert-ai-os-second-brain-notes' || data.version !== 1 || !Array.isArray(data.notes) || data.notes.length > 4000) {
+        throw new Error('invalid backup');
+      }
+      // Keep every existing entry intact, even entries created by newer versions.
+      var raw = localStorage.getItem(KEY);
+      var existing = raw === null ? [] : JSON.parse(raw);
+      if (!Array.isArray(existing)) throw new Error('invalid local notes');
+      var ids = new Set(existing.filter(function(n){return n && typeof n.id === 'string';}).map(function(n){return n.id;}));
+      var fresh = [];
+      data.notes.forEach(function(n){
+        if (!n || typeof n !== 'object' || Array.isArray(n) || typeof n.id !== 'string' || !n.id || typeof n.title !== 'string' || (n.body !== undefined && typeof n.body !== 'string')) {
+          throw new Error('invalid note entry');
+        }
+        if (!ids.has(n.id)) {
+          fresh.push(n); ids.add(n.id);
+        }
+      });
+      var skipped = data.notes.length - fresh.length;
+      if (!fresh.length) {
+        setStatus('导入检查完成：没有新笔记，已存在的 '+skipped+' 条记录保持不变。');
+        return;
+      }
+      if (!window.confirm('确认追加 '+fresh.length+' 条笔记？已有 '+skipped+' 条同 ID 笔记会跳过；不会覆盖旧笔记，也不会修改项目、任务或复盘。')) {
+        setStatus('已取消导入，所有数据保持不变。');return;
+      }
+      if (saveNotes(existing.concat(fresh))) {
+        refresh();
+        setStatus('已追加 '+fresh.length+' 条笔记，跳过 '+skipped+' 条已存在记录。仅写入第二大脑独立空间。');
+      }
+    } catch (_) {
+      setStatus('导入失败：备份文件无效或当前存储无法读取，数据未修改。');
+    }
+  }
+  $('brainImport').onclick=function(){$('brainImportFile').click();};
+  $('brainImportFile').addEventListener('change',async function(){
+    var file=this.files && this.files[0];
+    try { await importNotes(file); } finally { this.value=''; }
+  });
   $('brainExport').onclick=exportNotes;
   $('brainNew').onclick=function(){refresh();openEditor(null);};
   $('brainRefresh').onclick=refresh;
