@@ -1,0 +1,30 @@
+/* Web home presentation only; account handlers and stored data stay unchanged. */
+.shell > aside:has(.web-sidebar-account){display:flex;flex-direction:column}
+.shell > aside:has(.web-sidebar-account) nav.s1-nav{flex:1;min-height:0;max-height:none;padding-bottom:16px}
+.web-sidebar-account{flex-shrink:0;margin-top:auto;padding-top:14px;border-top:1px solid #dedee5;display:grid;gap:6px}
+.web-sidebar-account #lambertAccountButton{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:#fff;color:#242428;border:1px solid #dcdce2;font-size:14px}
+.web-sidebar-account #lambertAccountButton::before{content:'';flex:0 0 20px;width:20px;height:20px;background:center/contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23242428' stroke-width='1.6' stroke-linecap='round'%3E%3Ccircle cx='12' cy='8' r='3.5'/%3E%3Cpath d='M4.5 21v-2a7.5 7.5 0 0 1 15 0v2'/%3E%3C/svg%3E")}
+.web-sidebar-account #lambertCloudStatus{margin:0;padding:0 4px;font-size:11px;line-height:1.5;overflow-wrap:anywhere;color:#666671}
+.web-sidebar-account #lambertAccountButton:focus-visible{outline:2px solid #7357d7;outline-offset:3px}
+#home .home-ai-row{display:grid;grid-template-columns:minmax(0,3fr) minmax(0,2fr);gap:16px;margin:0 0 18px;align-items:stretch}
+#home .home-ai-row > :is(.ai-daily-card,.ai-chat-panel){box-sizing:border-box;min-width:0;height:280px;min-height:0;margin:0;padding:16px 18px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+#home .home-ai-row .ai-chat-log{max-height:150px}
+#home .home-ai-row .ai-chat-panel{display:flex;flex-direction:column}
+#home .home-ai-row .ai-chat-panel > *{flex-shrink:0}
+#home .home-ai-row .ai-chat-log:empty,
+#home .home-ai-row .ai-chat-status:empty,
+#home .home-ai-row .ai-chat-draft:empty{display:none}
+#home .home-ai-row .ai-chat-form textarea{min-height:68px;line-height:1.5}
+#home .home-ai-row .ai-chat-examples{gap:5px;margin:6px 0;max-height:62px;overflow:auto}
+#home .home-ai-row .ai-chat-actions{margin-top:6px}
+#home .home-ai-row .ai-chat-status{margin-top:6px}
+@media(min-width:701px){
+  body.s1-sidebar-collapsed .web-sidebar-account #lambertAccountButton{justify-content:center;padding:10px;font-size:0;gap:0}
+  body.s1-sidebar-collapsed .web-sidebar-account #lambertCloudStatus{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%)}
+}
+@media(max-width:700px){
+  #home .home-ai-row{grid-template-columns:minmax(0,1fr);gap:12px}
+  #home .home-ai-row > :is(.ai-daily-card,.ai-chat-panel){height:auto;max-height:420px;padding:16px}
+  .shell > aside .web-sidebar-account{display:none}
+  .shell > aside.s1-mobile-open .web-sidebar-account{display:grid;margin-top:12px}
+}

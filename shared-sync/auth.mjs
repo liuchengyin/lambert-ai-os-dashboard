@@ -41,6 +41,9 @@ export function createAccount(client, {redirectTo,registrationClient}={}) {
 }
 export function friendlyAuthError(error) {
   const code=error?.code;
+  if(code==='workspace_changed')return '数据已变化，请返回并重新检查导入。';
+  if(error?.message==='account_mismatch')return '账号已变化，请刷新后重新登录。';
+  if(error?.name==='QuotaExceededError')return '本机空间不足，操作未完成，原始数据已保留。';
   if(code==='invalid_credentials')return '邮箱或密码不正确，请重试。';
   if(code==='email_not_confirmed')return '邮箱尚未验证，请到注册页面获取验证码。';
   if(code==='confirmation_required')return '邮箱确认未开启，请联系管理员检查配置。';

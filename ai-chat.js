@@ -124,20 +124,21 @@
     const anchor=document.getElementById('aiDailyCard');if(!anchor)return;
     // Dashboard rerenders replace home.innerHTML. Reattach the same node so an open
     // conversation, unsent message or reviewed draft survives task/project changes.
-    if(panel){anchor.insertAdjacentElement('afterend',panel);return}
+    let row=document.getElementById('homeAiRow');
+    if(!row){row=el('div','home-ai-row');row.id='homeAiRow';anchor.before(row);row.append(anchor);}
+    if(panel){row.append(panel);return}
     panel=el('section','ai-chat-panel');panel.id='aiChatPanel';
     const head=el('div','ai-card-heading');head.append(el('strong','','和 DeepSeek 一起推进'));
     const clear=button('新对话',()=>{if(sending)return;if(proposal){feedback('请先确认或取消草稿，再开始新对话。');return}history=[];log.replaceChildren();examples.hidden=false;feedback('已开始新对话，已有任务和项目不受影响。')});head.append(clear);panel.append(head);
-    panel.append(el('p','ai-note','说出要做的事，整理成任务或项目。对话仅保留在本次页面，消息和任务摘要将发送给 DeepSeek。'));
     log=el('div','ai-chat-log');log.setAttribute('role','log');log.setAttribute('aria-label','与 DeepSeek 的对话');panel.append(log);
     examples=el('div','ai-chat-examples');
     ['创建一个任务：明晚练习 SQL，先做 10 分钟','创建英语学习项目，拆成听力和跟读两个任务','分析我现在的任务，建议今天先做哪一件'].forEach(value=>examples.append(button(value,()=>{input.value=value;input.focus()})));panel.append(examples);
-    const form=el('form','ai-chat-form');input=el('textarea');input.id='aiChatInput';input.rows=3;input.maxLength=2000;input.placeholder='例如：建一个求职项目，本周先修改简历、准备履约案例';input.setAttribute('aria-label','发送给 DeepSeek 的消息');form.append(input);
+    const form=el('form','ai-chat-form');input=el('textarea');input.id='aiChatInput';input.rows=2;input.maxLength=2000;input.placeholder='例如：建一个求职项目，本周先修改简历、准备履约案例';input.setAttribute('aria-label','发送给 DeepSeek 的消息');form.append(input);
     const actions=el('div','ai-chat-actions');actions.append(el('small','ai-note','Enter 换行 · Ctrl / ⌘ + Enter 发送'));
     send=button('发送',submit,'ai-primary');actions.append(send);form.append(actions);
     form.onsubmit=e=>{e.preventDefault();submit()};input.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();submit()}});panel.append(form);
     status=el('p','ai-chat-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');panel.append(status);
-    draft=el('div','ai-chat-draft');panel.append(draft);anchor.insertAdjacentElement('afterend',panel);
+    draft=el('div','ai-chat-draft');panel.append(draft);row.append(panel);
   }
   function start(){mount();new MutationObserver(mount).observe(document.getElementById('home'),{childList:true,subtree:true})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
