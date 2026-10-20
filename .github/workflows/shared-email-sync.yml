@@ -30,6 +30,7 @@ jobs:
           ln -s shared-sync/tooling/node_modules node_modules
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/lambert-sync-http.log 2>&1 &
           node tests/shared-sync/browser.mjs
+          if [ -f tests/startup-readiness.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/startup-readiness.mjs; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
