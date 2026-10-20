@@ -17,6 +17,7 @@ export function createAccount(client, {redirectTo}={}) {
 export function friendlyAuthError(error) {
   const code=error?.code;
   if(code==='invalid_credentials')return '邮箱或密码不正确，请重试。';
+  if(['AuthRetryableFetchError','AbortError','TimeoutError'].includes(error?.name))return '认证连接超时或网络中断，请检查网络后重试；本机数据仍然保留。';
   if(code==='email_not_confirmed')return '请先打开邮箱中的验证链接，再登录。';
   if(code==='weak_password')return '密码强度不足，请使用更长的密码。';
   if(code==='over_email_send_rate_limit'||error?.status===429)return '操作过于频繁，请稍后再试。';
