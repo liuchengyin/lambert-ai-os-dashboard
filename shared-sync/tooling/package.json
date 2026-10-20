@@ -8,6 +8,7 @@
   "name": "lambert-shared-sync-tooling",
   "private": true,
   "scripts": {
-    "build:sdk": "esbuild sdk-entry.mjs --bundle --platform=browser --format=esm --minify --legal-comments=eof --outfile=../vendor/supabase-2.118.0.mjs"
+    "build:sdk": "esbuild sdk-entry.mjs --bundle --platform=browser --format=esm --minify --legal-comments=eof --outfile=../vendor/supabase-2.118.0.mjs",
+    "build:server-sdk": "esbuild sdk-entry.mjs --bundle --platform=node --format=cjs --minify --legal-comments=eof --outfile=../../lib/vendor/supabase-2.118.0.cjs"
   }
 }
