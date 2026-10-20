@@ -49,8 +49,10 @@ public final class MainActivity extends Activity {
    @Override public boolean onJsAlert(WebView v,String url,String msg,JsResult result){new AlertDialog.Builder(MainActivity.this).setMessage(msg).setPositiveButton("确定",(d,w)->result.confirm()).setOnCancelListener(d->result.cancel()).show();return true;}
    @Override public void onPermissionRequest(PermissionRequest request){request.deny();}
   });
+  if(android.os.Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,()->handleBack());
   web.loadUrl("https://"+HOST+"/assets/mobile/index.html");
  }
- @Override public void onBackPressed(){if(web.canGoBack())web.goBack();else super.onBackPressed();}
+ private void handleBack(){web.evaluateJavascript("Boolean(window.MobileNavigation&&window.MobileNavigation.back())", handled->{if(!"true".equals(handled)){if(web.canGoBack())web.goBack();else finish();}});}
+ @Override public void onBackPressed(){handleBack();}
  @Override protected void onDestroy(){if(web!=null)web.destroy();super.onDestroy();}
 }
