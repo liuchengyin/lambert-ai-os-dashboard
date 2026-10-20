@@ -1,7 +1,7 @@
 name: Android test APK
 on:
   push:
-    branches: [feat/mobile-v1, feat/mobile-cloud-release]
+    branches: [feat/mobile-v1]
     paths: ['android/**','mobile/**','.github/workflows/android-test-apk.yml']
 permissions:
   contents: read
@@ -34,13 +34,13 @@ jobs:
         working-directory: android
         run: gradle --no-daemon :app:assembleDebug :app:lintDebug
       - name: Enable emulator acceleration
-        if: "!contains(github.event.head_commit.message, '[package-verified]')"
+        if: "!contains(github.event.head_commit.message, '[package-verified]') && !contains(github.event.head_commit.message, '[manual-device-test]')"
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Verify real Android keyboard layout
-        if: "!contains(github.event.head_commit.message, '[package-verified]')"
+        if: "!contains(github.event.head_commit.message, '[package-verified]') && !contains(github.event.head_commit.message, '[manual-device-test]')"
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
