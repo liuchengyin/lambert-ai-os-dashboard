@@ -3,6 +3,7 @@ import {createAccount,friendlyAuthError,SESSION_KEY} from './auth.mjs';
 import {WorkspaceJournal,ACTIVE_KEY,DATA_KEYS,stable} from './journal.mjs';
 import {synchronize,pullWorkspace} from './engine.mjs';
 import {prepareLocalImport,planImport} from './import-plan.mjs';
+import {createWorkspaceBackup,retainWorkspaceBackup} from './backup.mjs';
 const native=location.hostname==='appassets.androidplatform.net';
 const configUrl=native?'https://lambert-ai-os-dashboard.vercel.app/api/account-config':'/api/account-config';
 const entry=document.getElementById('accountButton')||document.getElementById('lambertAccountButton');
@@ -18,7 +19,8 @@ let resolveReady;const ready=new Promise(r=>{resolveReady=r;});
 function tell(text){if(message)message.textContent=text;}
 function enforceWorkspaceUser(){const active=localStorage.getItem(ACTIVE_KEY);if(active&&user&&active!==user.id){leaveWorkspace();return false;}return true;}
 function readGuest(){const snapshot={};for(const key of DATA_KEYS){const raw=localStorage.getItem(key);snapshot[key]=raw===null?(key==='daily_reviews_v2'?{}:[]):JSON.parse(raw);}return snapshot;}
-function backup(){const raw=Object.fromEntries([...DATA_KEYS,'daily_reviews_v1'].map(key=>[key,localStorage.getItem(key)]));const text=JSON.stringify({format:'lambert-local-backup-v1',createdAt:new Date().toISOString(),raw},null,2);const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));const a=node('a');a.href=url;a.download='Lambert-local-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
+function backup(){const text=JSON.stringify(createWorkspaceBackup(localStorage,journal),null,2);const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));const a=node('a');a.href=url;a.download='Lambert-workspace-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
+
 function status(){if(!user)return '未登录 · 本地模式';if(localStorage.getItem(ACTIVE_KEY)!==user.id)return '已登录 · 尚未启用同步';if(syncError)return syncError;const conflicts=journal?.conflicts().length||0;if(conflicts)return '有 '+conflicts+' 条冲突待处理';const pending=journal?.pending().length||0;if(pending)return '本地已保存 · 待上传 '+pending+' 条';return lastSync?'已同步 · '+lastSync:'云端工作台 · 等待同步';}
 function updateEntry(){if(entry){entry.setAttribute('aria-label',user?'我的账户：'+user.email:'邮箱登录');if(entry.id==='lambertAccountButton')entry.textContent=user?'我的账户':'登录';}const s=document.getElementById('lambertCloudStatus');if(s)s.textContent=status();}
 function changed(){let b=document.getElementById('lambertCloudRefresh');if(!b){b=button('云端数据已更新，点击刷新',()=>location.reload());b.id='lambertCloudRefresh';b.className='lambert-cloud-refresh';document.body.append(b);}}
@@ -66,17 +68,21 @@ function showForm(){
 async function prepareWorkspace(importLocal){
   await action(async()=>{
     const verified=await account.verifiedUser();if(verified.id!==user.id)throw Error('account_mismatch');
-    journal=new WorkspaceJournal(localStorage,user.id);const remote=await pullWorkspace(account.client,journal);
-    if(!importLocal){localStorage.setItem(ACTIVE_KEY,user.id);location.reload();return;}
-    const snapshot=readGuest();const records=prepareLocalImport(snapshot);
-    const plan=planImport(records,remote.map(r=>({kind:r.kind,itemId:r.item_id,payload:r.payload,deletedAt:r.deleted_at})));
+    const importJournal=new WorkspaceJournal(localStorage,user.id);await pullWorkspace(account.client,importJournal);
+    if(!importLocal){retainWorkspaceBackup(localStorage,importJournal);localStorage.setItem(ACTIVE_KEY,user.id);location.reload();return;}
+    const snapshot=readGuest();const guestFingerprint=stable(snapshot);const records=prepareLocalImport(snapshot);
+    const plan=planImport(records,[...importJournal.entries().values()].map(r=>({kind:r.kind,itemId:r.item_id,payload:r.payload,deletedAt:r.deleted_at})));
+    const importFingerprint=stable([...importJournal.entries().values()]);
     // Show actual counts before changing the selected account's workspace.
     body.replaceChildren();body.onsubmit=null;body.append(node('p','将新增 '+plan.create.length+' 条，相同 '+plan.unchanged.length+' 条，冲突 '+plan.conflicts.length+' 条。冲突保留云端内容，本地原始数据仍保留。'));
-    const save=button('下载本机原始备份',backup);body.append(save);
-    const label=node('label');const check=node('input');check.type='checkbox';label.append(check,node('span','我已保存备份，确认导入到 '+user.email));body.append(label);
-    body.append(button('确认导入并启用同步',()=>{if(!check.checked){tell('请先保存备份并勾选确认。');return;}action(async()=>{
+    retainWorkspaceBackup(localStorage,importJournal);
+    body.append(node('p','已在本机另存导入前备份；原始数据也会保留。可额外下载备份到电脑。'));
+    const save=button('下载完整备份',backup);body.append(save);
+    const label=node('label');const check=node('input');check.type='checkbox';label.append(check,node('span','确认将上述数据导入到 '+user.email));body.append(label);
+    body.append(button('确认导入并启用同步',()=>{if(!check.checked){tell('请先核对导入数量并勾选确认。');return;}action(async()=>{
       // New server edits after this preflight become version conflicts, never silent overwrites.
-      const values={};for(const key of DATA_KEYS){const kind=key==='daily_reviews_v2'?'reviews':key;const current=journal.read(key,key==='daily_reviews_v2'?{}:[]);const adds=plan.create.filter(r=>r.kind===kind);const merged=kind==='reviews'?{...current,...Object.fromEntries(adds.map(r=>[r.itemId,r.payload]))}:current.concat(adds.map(r=>r.payload));values[key]=merged;}journal.writeMany(values);
+      const currentEntries=[...importJournal.entries().values()];if(stable(currentEntries)!==importFingerprint||stable(readGuest())!==guestFingerprint)throw Error('数据已变化，请返回并重新检查导入');
+      const values={};for(const key of DATA_KEYS){const kind=key==='daily_reviews_v2'?'reviews':key;const current=importJournal.read(key,key==='daily_reviews_v2'?{}:[]);const adds=plan.create.filter(r=>r.kind===kind);const merged=kind==='reviews'?{...current,...Object.fromEntries(adds.map(r=>[r.itemId,r.payload]))}:current.concat(adds.map(r=>r.payload));values[key]=merged;}retainWorkspaceBackup(localStorage,importJournal);importJournal.writeMany(values);
       localStorage.setItem(ACTIVE_KEY,user.id);location.reload();
     });}),button('返回',renderBody));
     message=node('p','', 'lambert-account-message');message.setAttribute('role','status');body.append(message);
@@ -90,7 +96,7 @@ function renderBody(){
     body.append(node('p',user.email,'lambert-account-email'),node('p',status()));
     if(localStorage.getItem(ACTIVE_KEY)!==user.id){body.append(node('p','选择使用云端数据，或将本机任务、项目和复盘导入此账号。登录本身不会自动上传本机内容。'),button('使用云端工作台',()=>prepareWorkspace(false)),button('检查并导入本机数据',()=>prepareWorkspace(true)));}
     else {
-      body.append(button('立即同步',()=>action(async()=>{await flush();tell(status());})),button('下载本机原始备份',backup));
+      body.append(button('检查并导入本机数据',()=>prepareWorkspace(true)),button('立即同步',()=>action(async()=>{await flush();tell(status());})),button('下载完整备份',backup));
       const conflicts=journal.conflicts();for(const op of conflicts){const box=node('section');box.append(node('strong',op.payload.title||op.payload.name||op.itemId),node('p','本地和云端都有修改，请选择保留内容。'));
         for(const [label,choice] of [['保留云端','remote'],['使用本地','local']])box.append(button(label,()=>action(async()=>{journal.resolve(op.kind,op.itemId,choice);renderBody();changed();await flush();})));body.append(box);}
     }
