@@ -3,7 +3,7 @@ var paths={check:'M4 12l6 6L21 5',date:'M5 5h14v16H5zM8 3v4m8-4v4M5 10h14',proje
 function icon(name){var s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.setAttribute('viewBox','0 0 24 24');s.setAttribute('aria-hidden','true');var p=document.createElementNS(s.namespaceURI,'path');p.setAttribute('d',paths[name]||paths.tasks);s.appendChild(p);return s;}
 function node(t,c,x){var n=document.createElement(t);if(c)n.className=c;if(x!=null)n.textContent=x;return n;}
 function button(label,name){var b=node('button','mc-icon');b.type='button';b.setAttribute('aria-label',label);b.title=label;b.appendChild(icon(name));return b;}
-function compare(a,b){function date(t){var v=typeof t.due==='string'?t.due:'';return /^\d{4}-\d{2}-\d{2}/.test(v)?v:'9999-99-99';}return date(a).localeCompare(date(b))||String(a.createdAt||'').localeCompare(String(b.createdAt||''));}
+function compare(a,b){function date(t){var v=typeof t.due==='string'?t.due:'';if(!/^\d{4}-\d{2}-\d{2}/.test(v))return Infinity;var ms=Date.parse(v.length===10?v+'T00:00:00':v);return Number.isFinite(ms)?ms:Infinity;}var ad=date(a),bd=date(b);return ad!==bd?(ad<bd?-1:1):String(a.createdAt||'').localeCompare(String(b.createdAt||''));}
 function dismiss(d){var e=new Event('cancel',{cancelable:true});if(d.dispatchEvent(e)&&d.open)d.close();}
 window.MobileNavigation={back:function(){var dialogs=[].slice.call(document.querySelectorAll('dialog[open]'));if(!dialogs.length)return false;dismiss(dialogs[dialogs.length-1]);return true;}};
 function open(kind,api){
@@ -37,7 +37,7 @@ function open(kind,api){
    var list=api.projects(),current=source&&list.find(function(p){return p.id===source.id;});if(source&&(!current||JSON.stringify(current)!==JSON.stringify(source)))throw Error('项目已变化，请重新打开');
    var p=current?Object.assign({},current):{id:api.newId(),createdAt:new Date().toISOString()};p.name=title.value.trim();p.standard=note.value.trim();p.status=fields.status.value;p.category=labels[0]||'';
    ['start','due'].forEach(function(key){if(!source||(source[key]||'').slice(0,10)!==fields[key].value)p[key]=fields[key].value;});p.updatedAt=new Date().toISOString();if(current)list=list.map(function(x){return x.id===p.id?p:x;});else list.push(p);
-   var eligible=new Set(candidates.map(function(t){return t.id;}));var tasks=api.tasks().map(function(t){if(!eligible.has(t.id))return t;var was=String(api.projectId(t))===String(p.id);if(selected.has(t.id)||was){var out=Object.assign({},t);out.projectId=selected.has(t.id)?p.id:'';out.project=selected.has(t.id)?p.name:'';out.updatedAt=p.updatedAt;return out;}return t;});
+   var eligible=new Set(candidates.map(function(t){return t.id;}));var tasks=api.tasks().map(function(t){if(!eligible.has(t.id))return t;var was=String(api.projectId(t))===String(p.id);if(selected.has(t.id)&&was&&t.project===p.name)return t;if(selected.has(t.id)||was){var out=Object.assign({},t);out.projectId=selected.has(t.id)?p.id:'';out.project=selected.has(t.id)?p.name:'';out.updatedAt=p.updatedAt;return out;}return t;});
    api.writeMany({projects:list,tasks:tasks});
   }else{
    var matrix=fields.matrix.value,p=api.projects().find(function(x){return String(x.id)===fields.projectId.value;});var t={id:api.newId(),title:title.value.trim(),note:note.value.trim(),due:fields.due.value,projectId:p?p.id:'',project:p?p.name:'',labels:labels.slice(),matrix:matrix,priority:{q1:'P0',q2:'P1',q3:'P2',q4:'P3'}[matrix],status:'待开始',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};api.writeTasks(api.tasks().concat(t));
