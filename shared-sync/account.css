@@ -2,3 +2,40 @@
 .lambert-account::backdrop{background:#17102366}.lambert-account-head{display:flex;align-items:center;justify-content:space-between;gap:16px}.lambert-account h2{font-size:20px;margin:0;font-weight:600}.lambert-account form{display:grid;gap:12px;margin-top:16px}.lambert-account p{margin:0;font-size:14px;color:#666071;overflow-wrap:anywhere}.lambert-account label{display:grid;gap:6px;font-size:15px}.lambert-account input{box-sizing:border-box;font:inherit;min-height:44px;width:100%;border:1px solid #d8d0e7;border-radius:10px;background:white;color:#272331;padding:10px 12px}.lambert-account input[type=checkbox]{width:20px;min-height:20px;accent-color:#7357d7}.lambert-account button,#lambertAccountButton{font:inherit;font-size:15px;min-height:44px;padding:9px 14px;border-radius:10px;border:1px solid #ded5f2;background:#f3effc;color:#6246b6;cursor:pointer}.lambert-account button[type=submit]{background:#7357d7;color:white;border-color:#7357d7}.lambert-account button:disabled{opacity:.55;cursor:wait}.lambert-account button:focus-visible,.lambert-account input:focus-visible{outline:2px solid #7357d7;outline-offset:2px}.lambert-account section{display:grid;gap:8px;padding:12px;border:1px solid #efdbb4;border-radius:10px}.lambert-account-message{min-height:22px}.lambert-account-email{font-weight:600;color:#272331!important}#lambertCloudStatus{font-size:12px;color:#877c9c;margin-left:8px}.lambert-cloud-refresh{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:10000;max-width:90%;min-height:44px;padding:10px 16px;border:1px solid #d7caec;border-radius:20px;background:#f4efff;color:#563b9b;font:14px sans-serif;box-shadow:0 4px 20px #37205422}.lambert-account-page{margin:0;background:#f7f5fb;font-family:system-ui,sans-serif}.lambert-account-page main{padding:24px}.lambert-account-page a{color:#6246b6}
 
 .lambert-account h3{font-size:24px;line-height:1.3;margin:8px 0 0;font-weight:600;letter-spacing:-.4px}.lambert-password{position:relative}.lambert-password input{padding-right:70px}.lambert-password button{position:absolute;right:4px;top:2px;min-height:40px;background:transparent;border:0;font-size:13px}.lambert-account label[hidden]{display:none}.lambert-account button[type=submit]{margin-top:8px}.lambert-account input{scroll-margin-block:32px}
+/* Airy account cards with a quiet Lambert mark. */
+.lambert-account{border:0;background:#f6f7fb;border-radius:24px;padding:20px;width:min(440px,calc(100% - 24px));box-shadow:0 16px 64px #20273720;color:#30343d;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',Roboto,sans-serif}
+.lambert-account::backdrop{background:#20263145}
+.lambert-account-head{gap:10px}
+.lambert-account-brand{display:flex;align-items:center;gap:10px}
+.lambert-account h2{font-size:18px;font-weight:500}
+.lambert-account-logo,.lambert-account-mark{display:flex;align-items:center;justify-content:center;border-radius:10px;background:#292c34;color:white;width:28px;height:28px;flex-shrink:0}
+.lambert-account svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.lambert-account-logo svg{width:19px;height:19px;stroke-width:2.3}
+.lambert-account .lambert-account-close{display:grid;place-items:center;background:transparent;border:0;padding:10px;color:#8c94a2;min-width:44px}
+.lambert-account form{gap:2px;margin-top:18px}
+.lambert-account form>p:not(.lambert-account-message){font-size:13px;padding:8px 4px;line-height:1.6;color:#8a91a0}
+.lambert-account .lambert-account-hero{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:17px 14px;background:white;border-radius:17px}
+.lambert-account-mark{width:42px;height:42px;border-radius:14px;background:#edf2ff;color:#4979e8}
+.lambert-account-hero>div{min-width:0}
+.lambert-account-hero .lambert-account-email{font-size:15px;font-weight:500;line-height:1.5;color:#343944!important}
+.lambert-account-hero p:last-child{font-size:12px;color:#9098a7;margin-top:3px}
+.lambert-account .lambert-account-row{display:flex;align-items:center;gap:13px;width:100%;padding:14px 13px;border:0;border-radius:4px;background:white;color:#3b414e;text-align:left;min-height:54px;font-size:15px}
+.lambert-account-row>span{flex:1}
+.lambert-account-row>svg:first-child{color:#5680dc}
+.lambert-account-row>svg:last-child{color:#b9bec8;width:16px;height:16px}
+.lambert-account-row:first-of-type{border-radius:16px 16px 4px 4px}
+.lambert-account-row:last-of-type{border-radius:4px 4px 16px 16px}
+.lambert-account-row[aria-label='退出登录']{margin-top:12px;border-radius:16px;color:#8e94a0}
+.lambert-account-row[aria-label='退出登录']>svg:first-child{color:#9da5b3}
+.lambert-account h3{font-size:22px;font-weight:500;letter-spacing:0;margin:2px 0 4px}
+.lambert-account label{font-size:13px;color:#808897;margin-top:12px;gap:6px}
+.lambert-account input{border:1px solid #eaedf3;border-radius:12px;font-size:15px;padding:12px;background:white;color:#343944}
+.lambert-account input:focus-visible,.lambert-account button:focus-visible{outline-color:#4979e8}
+.lambert-account button{border:0;background:transparent;color:#6887c2;border-radius:12px;font-size:14px}
+.lambert-account button[type=submit]{background:#4979e8;border:0;margin:18px 0 6px;min-height:46px;border-radius:14px;color:white}
+.lambert-account-message{font-size:12px!important;color:#818a9b!important;padding:4px 0 0!important;margin-top:6px!important}
+.lambert-account section{background:#fffaf0;border:0;margin:10px 0;border-radius:14px}
+@media(max-width:480px){.lambert-account{max-height:calc(100dvh - 30px);padding:18px}}
+
+.lambert-account form{padding:0}
+.lambert-account-row[aria-label='下载完整备份']{border-radius:4px 4px 16px 16px}

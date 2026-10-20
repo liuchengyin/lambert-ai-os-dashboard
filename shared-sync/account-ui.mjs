@@ -79,7 +79,7 @@ async function prepareWorkspace(importLocal){
     body.replaceChildren();body.onsubmit=null;body.append(node('p','将新增 '+plan.create.length+' 条，相同 '+plan.unchanged.length+' 条，冲突 '+plan.conflicts.length+' 条。冲突保留云端内容，本地原始数据仍保留。'));
     retainWorkspaceBackup(localStorage,importJournal);
     body.append(node('p','已在本机另存导入前备份；原始数据也会保留。可额外下载备份到电脑。'));
-    const save=button('下载完整备份',backup);body.append(save);
+    const save=accountRow('下载完整备份','backup',backup);body.append(save);
     const label=node('label');const check=node('input');check.type='checkbox';label.append(check,node('span','确认将上述数据导入到 '+user.email));body.append(label);
     body.append(button('确认导入并启用同步',()=>{if(!check.checked){tell('请先核对导入数量并勾选确认。');return;}action(async()=>{
       // Recheck identity and remote state before committing a preview. A concurrent
@@ -93,26 +93,32 @@ async function prepareWorkspace(importLocal){
     message=node('p','', 'lambert-account-message');message.setAttribute('role','status');body.append(message);
   });
 }
+function accountIcon(name){
+ const paths={user:'M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8M4 21v-2a8 8 0 0 1 16 0v2',cloud:'M7 18h11a4 4 0 0 0 0-8h-1a6 6 0 0 0-12-1 4.5 4.5 0 0 0 2 9',import:'M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5',sync:'M4 11a8 8 0 0 1 14-5l2 2M20 3v5h-5M20 13a8 8 0 0 1-14 5l-2-2M4 21v-5h5',backup:'M5 3h14v18H5zM8 3v6h8V3M8 21v-7h8v7',logout:'M10 4H4v16h6M9 12h12m-4-4 4 4-4 4',right:'m9 5 7 7-7 7',close:'M6 6l12 12M18 6 6 18',check:'M4 12l6 6L21 5'};
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');const p=document.createElementNS(svg.namespaceURI,'path');p.setAttribute('d',paths[name]||paths.user);svg.append(p);return svg;
+}
+function accountRow(label,icon,fn){const row=button('',fn);row.className='lambert-account-row';row.setAttribute('aria-label',label);row.append(accountIcon(icon),node('span',label),accountIcon('right'));return row;}
+function accountHero(email,subtitle){const hero=node('div',undefined,'lambert-account-hero'),mark=node('span',undefined,'lambert-account-mark');mark.append(accountIcon('check'));const text=node('div');text.append(node('p',email,'lambert-account-email'),node('p',subtitle));hero.append(mark,text);return hero;}
 function renderBody(){
   if(!body)return;body.replaceChildren();body.onsubmit=null;
   if(!config?.configured){body.append(node('p','邮箱登录正在准备，暂未连接账号服务。现有数据仍保存在本机。'));}
   else if(!user||recovery){if(recovery)mode='password';showForm();}
   else {
-    body.append(node('p',user.email,'lambert-account-email'),node('p',status()));
-    if(localStorage.getItem(ACTIVE_KEY)!==user.id){body.append(node('p','选择使用云端数据，或将本机任务、项目和复盘导入此账号。登录本身不会自动上传本机内容。'),button('使用云端工作台',()=>prepareWorkspace(false)),button('检查并导入本机数据',()=>prepareWorkspace(true)));}
+    body.append(accountHero(user.email,status()));
+    if(localStorage.getItem(ACTIVE_KEY)!==user.id){body.append(node('p','选择使用云端数据，或将本机任务、项目和复盘导入此账号。登录本身不会自动上传本机内容。'),accountRow('使用云端工作台','cloud',()=>prepareWorkspace(false)),accountRow('检查并导入本机数据','import',()=>prepareWorkspace(true)));}
     else {
-      body.append(button('检查并导入本机数据',()=>prepareWorkspace(true)),button('立即同步',()=>action(async()=>{await flush();tell(status());})),button('下载完整备份',backup));
+      body.append(accountRow('检查并导入本机数据','import',()=>prepareWorkspace(true)),accountRow('立即同步','sync',()=>action(async()=>{await flush();tell(status());})),accountRow('下载完整备份','backup',backup));
       const conflicts=journal.conflicts();for(const op of conflicts){const box=node('section');box.append(node('strong',op.payload.title||op.payload.name||op.itemId),node('p','本地和云端都有修改，请选择保留内容。'));
         for(const [label,choice] of [['保留云端','remote'],['使用本地','local']])box.append(button(label,()=>action(async()=>{journal.resolve(op.kind,op.itemId,choice);renderBody();changed();await flush();})));body.append(box);}
     }
-    body.append(button('退出登录',()=>action(async()=>{await account.logout();leaveWorkspace();})));
+    body.append(accountRow('退出登录','logout',()=>action(async()=>{await account.logout();leaveWorkspace();})));
   }
   message=node('p','','lambert-account-message');message.setAttribute('role','status');message.setAttribute('aria-live','polite');body.append(message);updateEntry();
 }
 function open(){
   if(dialog?.open){dialog.focus();return;}
   dialog=node('dialog',undefined,'lambert-account');dialog.setAttribute('aria-label','我的账户');
-  const header=node('div',undefined,'lambert-account-head');header.append(node('h2','我的账户'),button('关闭',()=>dialog.close()));body=node('form');header.lastChild.setAttribute('aria-label','关闭账户');dialog.append(header,body);document.body.append(dialog);dialog.addEventListener('close',()=>{dialog.remove();dialog=null;body=null;message=null;},{once:true});renderBody();dialog.showModal();header.lastChild.focus();
+  const header=node('div',undefined,'lambert-account-head');const brand=node('div',undefined,'lambert-account-brand'),logo=node('span',undefined,'lambert-account-logo');logo.append(accountIcon('check'));brand.append(logo,node('h2','我的账户'));const close=button('',()=>dialog.close());close.append(accountIcon('close'));close.className='lambert-account-close';header.append(brand,close);body=node('form');header.lastChild.setAttribute('aria-label','关闭账户');dialog.append(header,body);document.body.append(dialog);dialog.addEventListener('close',()=>{dialog.remove();dialog=null;body=null;message=null;},{once:true});dialog.addEventListener('click',e=>{if(e.target!==dialog)return;const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();});renderBody();dialog.showModal();header.lastChild.focus();
 }
 async function prepareCloudAction(){
   await ready;if(!account||!user||localStorage.getItem(ACTIVE_KEY)!==user.id)throw Error('请先登录邮箱并启用云端工作台');

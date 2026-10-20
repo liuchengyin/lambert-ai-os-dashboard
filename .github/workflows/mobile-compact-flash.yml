@@ -1,7 +1,7 @@
-name: Mobile compact compose Flash review
+name: Mobile light panels Flash review
 on:
   push:
-    branches: [feat/mobile-compact-composer]
+    branches: [feat/mobile-light-panels]
     paths: ['scripts/mobile-compact-flash.mjs']
 permissions:
   contents: read

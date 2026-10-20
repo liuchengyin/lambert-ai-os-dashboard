@@ -34,7 +34,7 @@ try{
 
  await desktop.waitForFunction(()=>window.LambertAccount?.status().startsWith('已同步'));// Archive metadata must finish uploading before the next preview.
  // Import remains available after cloud activation; the original guest bytes stay intact.
- await page.locator('#accountButton').click();await page.getByRole('button',{name:'检查并导入本机数据',exact:true}).click();
+ await page.locator('#accountButton').click();await mkdir('tests/screenshots',{recursive:true});await page.screenshot({path:'tests/screenshots/light-account-signed.png'});await page.getByRole('button',{name:'检查并导入本机数据',exact:true}).click();
  await page.getByText(/将新增 1 条，相同 0 条，冲突 0 条/).waitFor();
 
  // A remote edit while the preview is open must invalidate the preview.
