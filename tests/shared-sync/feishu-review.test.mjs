@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {createReviewHandler} from '../../api/feishu-review.js';import {reviewMarkdown} from '../../lib/feishu-review.js';
+import {createReviewHandler} from '../../lib/feishu-review-handler.js';import {reviewMarkdown} from '../../lib/feishu-review.js';
 const uid='11111111-1111-4111-8111-111111111111';
 function fixture(){
  const store=new Map(),calls=[];let mode='ok',archiveFailure=false,crashReceipt=false;
