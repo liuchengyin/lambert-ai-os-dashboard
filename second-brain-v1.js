@@ -40,7 +40,7 @@
   function buildModel() {
     var projects = safeRows('projects'), tasks = safeRows('tasks');
     var reviewMap = read('daily_reviews_v2', null);
-    if (!reviewMap || typeof reviewMap !== 'object' || Array.isArray(reviewMap)) reviewMap = read('daily_reviews_v1', {});
+    if (!reviewMap || typeof reviewMap !== 'object' || Array.isArray(reviewMap) || !Object.keys(reviewMap).length) reviewMap = read('daily_reviews_v1', {});
     if (!reviewMap || typeof reviewMap !== 'object' || Array.isArray(reviewMap)) reviewMap = {};
     var notes = safeNotes(), nodes = [], edges = [], pmap = new Map(), tmap = new Map();
     projects.forEach(function (p, index) {
@@ -48,15 +48,18 @@
       var pid = 'project:' + idOf(p.id, index);
       var title = String(p.name || p.title || '未命名项目');
       nodes.push({id:pid,type:'project',title:title,body:String(p.standard || p.extra || ''),subtitle:String(p.status || ''),source:'现有项目（只读）'});
-      pmap.set(String(p.id || ''),pid);
-      pmap.set(title,pid);
+      if (p.id !== undefined && p.id !== null && p.id !== '') pmap.set(String(p.id),pid);
+      // Missing IDs must never turn empty associations into valid edges.
+      if (pmap.has(title)) pmap.set(title,null);
+      else pmap.set(title,pid);
     });
     tasks.forEach(function (t, index) {
       if (!t || typeof t !== 'object') return;
       var tid = 'task:' + idOf(t.id,index);
       nodes.push({id:tid,type:'task',title:String(t.title || t.name || '未命名任务'),body:String(t.note || ''),subtitle:String(t.status || ''),source:'现有任务（只读）'});
       tmap.set(String(t.id || ''),tid);
-      var ref = pmap.get(String(t.projectId || t.project || ''));
+      var projectLink = t.projectId || t.project;
+      var ref = projectLink ? pmap.get(String(projectLink)) : null;
       if (ref) edges.push({from:ref,to:tid});
     });
     Object.keys(reviewMap).sort().reverse().forEach(function (date) {
@@ -73,13 +76,13 @@
     notes.forEach(function (n) {
       var nid = 'note:' + n.id;
       nodes.push({id:nid,type:'note',title:String(n.title || '未命名笔记'),body:String(n.body || ''),subtitle:String(n.category || '收件箱'),source:'第二大脑笔记（可编辑）',note:n});
-      var ref = pmap.get(String(n.projectId || ''));
+      var ref = n.projectId ? pmap.get(String(n.projectId)) : null;
       if (ref) edges.push({from:ref,to:nid});
     });
     return {nodes:nodes,edges:edges,notes:notes,projects:projects};
   }
   root.innerHTML = '<div class="brain-page">' +
-    '<header class="brain-head"><div><small>SECOND BRAIN · V1</small><h2>第二大脑</h2><p>把项目、任务、复盘与独立笔记连接起来。现有业务数据只读，不上传 AI。</p></div><button id="brainNew" type="button">+ 新建笔记</button></header>' +
+    '<header class="brain-head"><div><small>SECOND BRAIN · V1</small><h2>第二大脑</h2><p>把项目、任务、复盘与独立笔记连接起来。现有业务数据只读，不上传 AI。</p></div><div class="brain-head-actions"><button id="brainExport" type="button" title="仅导出第二大脑的独立笔记，不包含原有项目、任务与复盘">导出脑笔记</button><button id="brainNew" type="button">+ 新建笔记</button></div></header>' +
     '<div id="brainStats" class="brain-stats"></div>' +
     '<div class="brain-search"><input id="brainSearch" type="search" placeholder="搜索知识、项目、任务、复盘..." aria-label="搜索第二大脑"><button id="brainRefresh" type="button">刷新索引</button></div>' +
     '<div id="brainFilters" class="brain-filters" aria-label="知识类型筛选"></div>' +
@@ -188,6 +191,28 @@
     select.value=note ? String(note.projectId||'') : '';
     $('brainEditor').showModal();
   }
+  function exportNotes() {
+    try {
+      // Preserve the entire stored array, including future extension fields.
+      var raw = localStorage.getItem(KEY);
+      var notes = raw === null ? [] : JSON.parse(raw);
+      if (!Array.isArray(notes)) throw new Error('存储格式不是笔记数组');
+      var data = {format:'lambert-ai-os-second-brain-notes',version:1,exportedAt:new Date().toISOString(),notes:notes};
+      var blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json;charset=utf-8'});
+      var href = URL.createObjectURL(blob);
+      var link = document.createElement('a');
+      link.href=href;
+      link.download='Lambert-Second-Brain-Notes-'+new Date().toISOString().slice(0,10)+'.json';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(function(){URL.revokeObjectURL(href);},30000);
+      setStatus('已触发笔记备份下载，请检查下载文件。此文件仅包含第二大脑笔记，不含项目、任务或复盘。');
+    } catch (error) {
+      setStatus('导出失败：请检查当前浏览器笔记存储后重试。');
+    }
+  }
+  $('brainExport').onclick=exportNotes;
   $('brainNew').onclick=function(){refresh();openEditor(null);};
   $('brainRefresh').onclick=refresh;
   $('brainSearch').addEventListener('input',render);
