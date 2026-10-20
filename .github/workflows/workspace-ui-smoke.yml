@@ -19,6 +19,8 @@ on:
       - 'tests/archive-targets-ui.mjs'
       - 'tests/feishu-targets.mjs'
       - 'index.html'
+      - 'web-home.css'
+      - 'tests/web-home-layout.mjs'
       - 'app.js'
       - 'deepseek-v1.js'
       - 'project-ai.js'
@@ -90,6 +92,7 @@ jobs:
         run: |
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
+          node tests/web-home-layout.mjs
           node tests/dense-task-card.mjs
           node tests/task-filter-disclosure.mjs
           node tests/ui-batch.mjs
