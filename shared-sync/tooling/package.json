@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "@supabase/supabase-js": "2.118.0",
+    "esbuild": "0.28.2",
+    "playwright": "1.56.0"
+  },
+  "name": "lambert-shared-sync-tooling",
+  "private": true,
+  "scripts": {
+    "build:sdk": "esbuild sdk-entry.mjs --bundle --platform=browser --format=esm --minify --legal-comments=eof --outfile=../vendor/supabase-2.118.0.mjs",
+    "build:server-sdk": "esbuild sdk-entry.mjs --bundle --platform=node --format=cjs --minify --legal-comments=eof --outfile=../../lib/vendor/supabase-2.118.0.cjs"
+  }
+}

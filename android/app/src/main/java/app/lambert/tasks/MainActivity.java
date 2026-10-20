@@ -9,7 +9,13 @@ import java.io.ByteArrayInputStream;
 public final class MainActivity extends Activity {
  private WebView web;
  private static final String HOST="appassets.androidplatform.net";
- private boolean local(android.net.Uri u){return "https".equals(u.getScheme())&&HOST.equals(u.getHost())&&u.getPath()!=null&&u.getPath().startsWith("/assets/mobile/");}
+ private boolean local(android.net.Uri u){return "https".equals(u.getScheme())&&HOST.equals(u.getHost())&&u.getPath()!=null&&(u.getPath().startsWith("/assets/mobile/")||u.getPath().startsWith("/assets/shared-sync/"));}
+ private boolean cloud(android.net.Uri u){
+  if(!"https".equals(u.getScheme())||u.getUserInfo()!=null||(u.getPort()!=-1&&u.getPort()!=443))return false;
+  String host=u.getHost(),path=u.getPath();if(host==null||path==null)return false;
+  if("lambert-ai-os-dashboard.vercel.app".equals(host)&&"/api/account-config".equals(path))return true;
+  return host.matches("[a-z0-9-]+\\.supabase\\.co")&&(path.startsWith("/auth/v1/")||path.startsWith("/rest/v1/"));
+ }
  @Override public void onCreate(Bundle state){
   super.onCreate(state);
   android.widget.FrameLayout root=new android.widget.FrameLayout(this);root.setBackgroundColor(0xff7357d7);
@@ -34,7 +40,8 @@ public final class MainActivity extends Activity {
   web.setWebViewClient(new WebViewClient(){
    @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !local(r.getUrl());}
    @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r){
-    if(local(r.getUrl())){WebResourceResponse a=loader.shouldInterceptRequest(r.getUrl());if(a!=null)return a;}
+    if(local(r.getUrl())){WebResourceResponse a=loader.shouldInterceptRequest(r.getUrl());if(a!=null){if(r.getUrl().getPath().endsWith(".mjs"))a.setMimeType("text/javascript");return a;}}
+    if(cloud(r.getUrl())&&!r.isForMainFrame())return null;
     return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",java.util.Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
    }
   });

@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);
-const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const get=(k,d)=>{try{return (window.LambertData?window.LambertData.read(k,null):JSON.parse(localStorage.getItem(k)))??d}catch{return d}},set=(k,v)=>(window.LambertData?window.LambertData.write(k,v):localStorage.setItem(k,JSON.stringify(v)));
 
 const demoTop3=new Set(["把个人看板上线","补齐项目/任务/复盘框架","把 Notion/飞书链接挂进去"]);
 

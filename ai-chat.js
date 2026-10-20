@@ -49,7 +49,7 @@
     draft.append(actions);
   }
   function loadRows(key){
-    const parsed=JSON.parse(localStorage.getItem(key)||'[]');
+    const parsed=window.LambertData?window.LambertData.read(key,[]):JSON.parse(localStorage.getItem(key)||'[]');
     if(!Array.isArray(parsed))throw Error('invalid_storage');return parsed;
   }
   function commit(){
@@ -76,11 +76,13 @@
         newTasks.push({id:'task_'+crypto.randomUUID(),title,project,status:'待开始',priority:t.priority,matrix:t.matrix||'q2',due:t.due,note:t.note.slice(0,300),createdAt,aiRequestId:requestId});
       }
       const nextProjects=[...newProjects,...projects],nextTasks=[...newTasks,...tasks];
+      if(window.LambertData){window.LambertData.writeMany({projects:nextProjects,tasks:nextTasks});}else{
       // Preserve both exact originals if the second localStorage write fails (e.g. quota).
       const originalProjects=localStorage.getItem('projects');
       if(newProjects.length)localStorage.setItem('projects',JSON.stringify(nextProjects));
       try{if(newTasks.length)localStorage.setItem('tasks',JSON.stringify(nextTasks))}
       catch(error){if(newProjects.length){if(originalProjects===null)localStorage.removeItem('projects');else localStorage.setItem('projects',originalProjects)}throw error}
+      }
       state.projects=nextProjects;state.tasks=nextTasks;
       committed.add(requestId);proposal=null;showDraft();
       // Use current renderers: refreshAll still targets inputs removed by Dashboard V5.

@@ -44,7 +44,7 @@
       const task=state.tasks.find(t=>t.id===id);
       if(!task||task.status===status)return;
       task.status=status;
-      localStorage.setItem('tasks',JSON.stringify(state.tasks));
+      if(window.LambertData)window.LambertData.write('tasks',state.tasks);else localStorage.setItem('tasks',JSON.stringify(state.tasks));
       if(typeof renderHome==='function')renderHome();
       if(typeof renderProjectBoard==='function')renderProjectBoard();
       if(typeof renderProjectDashboard==='function')renderProjectDashboard();

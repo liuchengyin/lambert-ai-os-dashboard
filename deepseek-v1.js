@@ -3,8 +3,8 @@
   'use strict';
   const CACHE='ai_daily_insights_v1',CONSENT='ai_consent_v1',DAY='ai_auto_day_v1';
   const $=id=>document.getElementById(id);
-  const get=(k,fallback)=>{try{return JSON.parse(localStorage.getItem(k))??fallback}catch{return fallback}};
-  const set=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+  const get=(k,fallback)=>{try{return (window.LambertData?window.LambertData.read(k,null):JSON.parse(localStorage.getItem(k)))??fallback}catch{return fallback}};
+  const set=(k,v)=>{try{(window.LambertData?window.LambertData.write(k,v):localStorage.setItem(k,JSON.stringify(v)))}catch{}};
   const date=()=>{const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')};
   let busy=false,booted=false,lastHash='',result=null,generatedAt='',notice='',loginPending=null;
   const node=(tag,cls,text)=>{const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el};

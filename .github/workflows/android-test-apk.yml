@@ -1,7 +1,7 @@
 name: Android test APK
 on:
   push:
-    branches: [feat/mobile-v1]
+    branches: [feat/mobile-v1, feat/mobile-cloud-release]
     paths: ['android/**','mobile/**','.github/workflows/android-test-apk.yml']
 permissions:
   contents: read
@@ -27,22 +27,9 @@ jobs:
       - name: Prepare stable test signing key
         run: |
           mkdir -p "$HOME/.android"
-          if [ ! -f "$HOME/.android/lambert-trial.keystore" ]; then
-            keytool -genkeypair -keystore "$HOME/.android/lambert-trial.keystore" -storepass android -keypass android -alias androiddebugkey -dname "CN=Lambert Trial,O=Lambert,C=CN" -keyalg RSA -keysize 2048 -validity 10000
-          fi
-      - name: Bundle offline web assets
-        run: |
-          mkdir -p android/app/src/main/assets/mobile
-          cp mobile/app.js mobile/store.js mobile/style.css mobile/icon.svg mobile/task-model.js mobile/task-details.js mobile/task-details.css mobile/task-swipe.js mobile/task-swipe.css mobile/project-stats.js mobile/project-board.js mobile/project-board.css mobile/interface-polish.js mobile/interface-polish.css android/app/src/main/assets/mobile/
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('mobile/index.html').read_text()
-          start=p.index("<script>if('serviceWorker'")
-          end=p.index('</script>',start)+len('</script>')
-          p=p[:start]+p[end:]
-          p=p.replace('<link rel="manifest" href="manifest.webmanifest">','')
-          Path('android/app/src/main/assets/mobile/index.html').write_text(p)
-          PY
+          test -f "$HOME/.android/lambert-trial.keystore" || { echo "Original signing key unavailable; refusing to create a replacement key"; exit 1; }
+      - name: Bundle local web and shared account assets
+        run: python3 scripts/bundle-android.py
       - name: Build installable test APK
         working-directory: android
         run: gradle --no-daemon :app:assembleDebug :app:lintDebug
@@ -61,27 +48,30 @@ jobs:
           arch: x86_64
           profile: pixel_2
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -memory 1536 -cores 2
           script: |
             adb shell settings put secure show_ime_with_hard_keyboard 1
-            gradle -p android --no-daemon :app:connectedDebugAndroidTest
+            gradle -p android --no-daemon --max-workers=2 -Dorg.gradle.jvmargs=-Xmx768m :app:connectedDebugAndroidTest
             mkdir -p keyboard-test
             adb pull /sdcard/Android/data/app.lambert.tasks.trial/files/keyboard.png keyboard-test/keyboard.png || echo "Optional screenshot was removed by test cleanup; instrumentation assertions already passed"
       - name: Verify signature and permissions
         run: |
           mkdir -p apk-output
-          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-Tasks-0.1.9-test.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-Tasks-0.2.0-test.apk
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs apk-output/*.apk > apk-output/signature.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions apk-output/*.apk > apk-output/permissions.txt
-          if grep -E "android.permission.(INTERNET|CAMERA|READ_CONTACTS|READ_EXTERNAL_STORAGE|RECORD_AUDIO|ACCESS_FINE_LOCATION)" apk-output/permissions.txt; then exit 1; fi
+          if grep -E "android.permission.(CAMERA|READ_CONTACTS|READ_EXTERNAL_STORAGE|RECORD_AUDIO|ACCESS_FINE_LOCATION)" apk-output/permissions.txt; then exit 1; fi
+          actual_cert=$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs apk-output/*.apk | sed -n 's/Signer #1 certificate SHA-256 digest: //p')
+          test "$actual_cert" = "828cc500f34c957427f42f14209f98d1069042cc0d68d6ee22f5ebdb3ee4653c"
           cd apk-output
-          sha256sum Lambert-Tasks-0.1.9-test.apk > SHA256SUMS.txt
+          sha256sum Lambert-Tasks-0.2.0-test.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Android-keyboard-test-results
           path: |
             android/app/build/reports/androidTests/
+            android/app/build/outputs/androidTest-results/
             keyboard-test/
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
