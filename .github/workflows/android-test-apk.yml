@@ -57,17 +57,17 @@ jobs:
       - name: Verify signature and permissions
         run: |
           mkdir -p apk-output
-          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-0.2.3.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-0.2.4.apk
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs apk-output/*.apk > apk-output/signature.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions apk-output/*.apk > apk-output/permissions.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging apk-output/*.apk > apk-output/application.txt
           grep -q "application-label:'Lambert'" apk-output/application.txt
-          grep -q "versionCode='14' versionName='0.2.3'" apk-output/application.txt
+          grep -q "versionCode='15' versionName='0.2.4'" apk-output/application.txt
           if grep -E "android.permission.(CAMERA|READ_CONTACTS|READ_EXTERNAL_STORAGE|RECORD_AUDIO|ACCESS_FINE_LOCATION)" apk-output/permissions.txt; then exit 1; fi
           actual_cert=$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs apk-output/*.apk | sed -n 's/Signer #1 certificate SHA-256 digest: //p')
           test "$actual_cert" = "828cc500f34c957427f42f14209f98d1069042cc0d68d6ee22f5ebdb3ee4653c"
           cd apk-output
-          sha256sum Lambert-0.2.3.apk > SHA256SUMS.txt
+          sha256sum Lambert-0.2.4.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
