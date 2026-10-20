@@ -28,7 +28,7 @@
 </nav>
 </aside>
 <main>
-<header class="s1-date-header"><div id="today"></div></header>
+<header class="s1-date-header"><div id="today"></div><div><button id="lambertAccountButton" type="button">登录</button><span id="lambertCloudStatus"></span></div></header>
 
 <section id="home" class="view activeView">
 <div class="grid3">
@@ -146,18 +146,18 @@
 
 <dialog id="taskEditDlg"><form method="dialog"><h3>编辑任务</h3><label>任务<input id="taskEditTitle"></label><label>所属项目<select id="taskEditProject"><option value="">无项目</option></select></label><label>优先级<select id="taskEditPriority"><option value="P1">P1 · 重要</option><option value="P2">P2 · 普通</option><option value="P3">P3 · 低</option></select></label><label>截止日期<input id="taskEditDue" type="date"></label><label>备注<input id="taskEditNote"></label><div class="dlgActions"><button value="cancel">取消</button><button id="taskDeleteBtn" type="button">删除</button><button id="taskEditSave" value="default">保存</button></div></form></dialog>
 
-<script src="lib/task-center-model.js"></script>
-<script src="app.js"></script>
-<script src="project-v3.js"></script>
+
+
+
 <link rel="stylesheet" href="archive-targets.css">
-<script src="archive-targets.js"></script>
-<script src="project-v4.js"></script>
-<script src="lib/link-sites.js?v=20261017-2"></script>
-<script src="knowledge-links.js?v=20261019-prod-links2"></script>
-<script src="english-learning.js"></script>
-<script src="sprint1-navigation.js?v=1"></script>
-<script src="deepseek-v1.js?v=2"></script>
-<script src="project-ai.js"></script>
-<script src="ai-chat.js?v=1"></script>
-<script src="project-date-picker.js"></script>
-</body></html>
+
+
+
+
+
+
+
+
+
+
+<script src="shared-sync/storage-bridge.js"></script><script id="lambert-app-scripts" type="application/json">["lib/task-center-model.js", "app.js", "project-v3.js", "archive-targets.js", "project-v4.js", "lib/link-sites.js?v=20261017-2", "knowledge-links.js?v=20261019-prod-links2", "english-learning.js", "sprint1-navigation.js?v=1", "deepseek-v1.js?v=2", "project-ai.js", "ai-chat.js?v=1", "project-date-picker.js"]</script><script type="module" src="shared-sync/bootstrap.mjs"></script></body></html>

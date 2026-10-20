@@ -4,8 +4,8 @@
   if(!section)return;
   const STORE='daily_reviews_v2';
   const LEGACY='daily_reviews_v1';
-  const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
-  const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+  const get=(k,d)=>{try{return (window.LambertData?window.LambertData.read(k,null):JSON.parse(localStorage.getItem(k)))??d}catch{return d}};
+  const set=(k,v)=>(window.LambertData?window.LambertData.write(k,v):localStorage.setItem(k,JSON.stringify(v)));
   const esc=v=>String(v??'').replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
 
   function dateKey(d=new Date()){
@@ -65,7 +65,7 @@
       </div>
 
       <div class="review-v6-actions-panel">
-        <div class="review-v6-actions"><button id="rv6Save" class="task-primary-btn">保存当天</button><button id="rv6Archive">归档当天</button><span id="rv6Status"></span><span class="review-v7-save-hint">填写后自动保存 · 数据保留在当前浏览器</span></div>
+        <div class="review-v6-actions"><button id="rv6Save" class="task-primary-btn">保存当天</button><button id="rv6Archive">归档当天</button><button id="rv6Feishu" type="button">归档到飞书</button><a id="rv6FeishuOpen" target="_blank" rel="noopener" hidden>打开飞书复盘</a><span id="rv6Status"></span><span class="review-v7-save-hint">${window.LambertData?.active?'填写后自动保存 · 联网后同步云端':'填写后自动保存 · 数据保留在当前浏览器'}</span></div>
       </div>
 
       <section class="review-v6-history card"><div class="row"><h3>历史记录</h3><span class="meta">点击日期切换查看</span></div><div id="rv6History"></div></section>
@@ -85,6 +85,7 @@
     selected=key;$('rv6Date').value=key;
     const r=reviews[key]||blank();linked=Array.isArray(r.taskIds)?[...new Set(r.taskIds)]:[];
     $('rv6Goal').value=r.goal||'';$('rv6Standard').value=r.standard||'';$('rv6Deliverable').value=r.deliverable||'';$('rv6Delivery').value=r.delivery||'';$('rv6Gap').value=r.gap||'';$('rv6Reason').value=r.reason||'';$('rv6Restart').value=r.restart||'';
+    $('rv6Feishu').textContent=r.feishuUrl?'保存飞书新快照':'归档到飞书';const feishuLink=$('rv6FeishuOpen');feishuLink.hidden=!r.feishuUrl;if(r.feishuUrl){try{const u=new URL(r.feishuUrl);if(u.protocol==='https:'&&/(^|\.)feishu\.cn$/.test(u.hostname)&&!u.username&&!u.password)feishuLink.href=u.href;else feishuLink.hidden=true;}catch{feishuLink.hidden=true;}}
     $('rv6Archive').textContent=r.archived?'已归档':'归档当天';$('rv6Archive').classList.toggle('is-archived',!!r.archived);$('rv6Status').textContent=prettyDate(key);renderTaskLinks();renderHistory()
   }
   function renderHistory(){
@@ -144,6 +145,22 @@
   $('rvTaskProject').onchange=renderTaskLinks;
   document.addEventListener('tasks-updated',()=>{let changed=false;Object.values(reviews).forEach(r=>{if(Array.isArray(r.taskIds)){const value=String(taskStats(r.taskIds).percent);if(String(r.completion)!==value){r.completion=value;changed=true;}}});if(changed)set(STORE,reviews);renderTaskLinks();renderHistory();});
   $('rv6Save').onclick=()=>save(false);
+  let feishuBusy=false;
+  $('rv6Feishu').onclick=async()=>{
+    if(feishuBusy)return;const date=selected,button=$('rv6Feishu');let archivedUrl='';feishuBusy=true;button.disabled=true;
+    try{
+      save(true);if(!hasContent(reviews[date]))throw Error('请先填写复盘或选择目标任务');
+      if(!window.LambertAccount?.prepareCloudAction)throw Error('账号服务尚未加载，请稍后重试');
+      $('rv6Status').textContent='先同步到云端，再归档飞书…';
+      const {accessToken}=await window.LambertAccount.prepareCloudAction();
+      const response=await fetch('/api/feishu-review',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+accessToken},body:JSON.stringify({date}),signal:AbortSignal.timeout(55000)});
+      const data=await response.json().catch(()=>({}));if(!response.ok||!data.ok)throw Error(data.message||'飞书归档未完成，请检查目录');
+      const url=new URL(data.url);if(url.protocol!=='https:'||!/(^|\.)feishu\.cn$/.test(url.hostname)||url.username||url.password)throw Error('归档链接无效，请检查飞书目录');archivedUrl=url.href;
+      reviews[date]={...reviews[date],feishuUrl:archivedUrl,feishuArchivedAt:data.archivedAt,feishuReviewVersion:data.reviewVersion};set(STORE,reviews);
+      if(selected===date)load(date);$('rv6Status').textContent=data.reused?'这份内容已归档，可打开飞书查看':'已归档飞书'+(data.locationName?' · '+data.locationName:'');
+    }catch(error){$('rv6Status').textContent=archivedUrl?'飞书已归档，但链接未保存：'+archivedUrl:'暂未完成归档：'+error.message;}
+    finally{feishuBusy=false;button.disabled=false;}
+  };
   $('rv6Archive').onclick=()=>{reviews[selected]=read();reviews[selected].archived=!reviews[selected].archived;set(STORE,reviews);load(selected)};
   $('rv6Prev').onclick=()=>{save(true);load(shiftDate(selected,-1))};
   $('rv6Next').onclick=()=>{save(true);load(shiftDate(selected,1))};

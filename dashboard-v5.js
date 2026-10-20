@@ -1,8 +1,8 @@
 // Dashboard V5: overview + Eisenhower tasks + combined filters + minute due time
 (function(){
   const $=id=>document.getElementById(id);
-  const setLS=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
-  const getLS=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
+  const setLS=(k,v)=>(window.LambertData?window.LambertData.write(k,v):localStorage.setItem(k,JSON.stringify(v)));
+  const getLS=(k,d)=>{try{return (window.LambertData?window.LambertData.read(k,null):JSON.parse(localStorage.getItem(k)))??d}catch{return d}};
   const esc=v=>String(v??'').replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
   const QUADS={q1:{name:'重要且紧急',short:'重要·紧急',rank:1},q2:{name:'重要不紧急',short:'重要·不紧急',rank:2},q3:{name:'紧急不重要',short:'紧急·不重要',rank:3},q4:{name:'不重要不紧急',short:'不重要·不紧急',rank:4}};
   const PRIORITY={P1:1,P2:2,P3:3};
