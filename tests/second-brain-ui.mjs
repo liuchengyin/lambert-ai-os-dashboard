@@ -62,6 +62,25 @@ try {
     &&backup.notes.some(n=>n.id==='old-note'&&n.extra==='扩展字段')
     &&backup.format==='lambert-ai-os-second-brain-notes');
 
+  page.on('dialog',dialog=>dialog.accept());
+  const toImport={
+    format:'lambert-ai-os-second-brain-notes',version:1,exportedAt:'2026-10-20T00:00:00Z',
+    notes:[
+      {...backup.notes[0],title:'不能覆盖已有的同 ID 笔记'},
+      {id:'imported-new',title:'导入笔记',body:'只追加',category:'知识',projectId:''}
+    ]
+  };
+  await page.locator('#brainImportFile').setInputFiles({name:'brain-import.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(toImport))});
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('lambert_brain_notes_v1')).length===3);
+  pass('Safe import appends only new IDs',await page.evaluate(()=>{
+    const n=JSON.parse(localStorage.getItem('lambert_brain_notes_v1'));
+    return n.some(x=>x.id==='old-note'&&x.title==='已有笔记')
+      &&n.some(x=>x.id==='imported-new'&&x.title==='导入笔记');
+  }));
+  await page.locator('#brainImportFile').setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{not valid json')});
+  await page.waitForFunction(()=>document.getElementById('brainStatus').textContent.includes('导入失败'));
+  pass('Invalid import does not touch existing notes',await page.evaluate(()=>JSON.parse(localStorage.getItem('lambert_brain_notes_v1')).length===3));
+
   const after=Object.fromEntries(await Promise.all(['projects','tasks','daily_reviews_v2'].map(async k=>[k,await get(k)])));
   pass('Existing project/task/review storage unchanged by brain operations',
     Object.keys(original).every(k=>original[k]===after[k]));
@@ -69,7 +88,7 @@ try {
   pass('Refresh restores Second Brain tab',await page.locator('#brain').isVisible());
   pass('Notes survive refresh',await page.locator('#brainResults').getByText('更新后的节点').count()===1);
   await page.setViewportSize({width:390,height:844});
-  pass('Mobile view exposes Brain controls',await page.locator('#brainNew').count()===1 && await page.locator('#brainExport').count()===1);
+  pass('Mobile view exposes Brain controls',await page.locator('#brainNew').count()===1 && await page.locator('#brainExport').count()===1 && await page.locator('#brainImport').count()===1);
   pass('No page execution errors',errors.length===0);
 } finally {
   await browser.close();
