@@ -67,8 +67,10 @@ function showForm(){
 }
 async function prepareWorkspace(importLocal){
   await action(async()=>{
-    const verified=await account.verifiedUser();if(verified.id!==user.id)throw Error('account_mismatch');
-    const importJournal=new WorkspaceJournal(localStorage,user.id);await pullWorkspace(account.client,importJournal);
+    const selectedUser=user.id,selectedActive=localStorage.getItem(ACTIVE_KEY);
+    const ensureSelection=()=>{if(leaving||user?.id!==selectedUser||localStorage.getItem(ACTIVE_KEY)!==selectedActive)throw Error('account_mismatch');};
+    const verified=await account.verifiedUser();ensureSelection();if(verified.id!==selectedUser)throw Error('account_mismatch');
+    const importJournal=new WorkspaceJournal(localStorage,selectedUser);await pullWorkspace(account.client,importJournal);ensureSelection();
     if(!importLocal){retainWorkspaceBackup(localStorage,importJournal);localStorage.setItem(ACTIVE_KEY,user.id);location.reload();return;}
     const snapshot=readGuest();const guestFingerprint=stable(snapshot);const records=prepareLocalImport(snapshot);
     const plan=planImport(records,[...importJournal.entries().values()].map(r=>({kind:r.kind,itemId:r.item_id,payload:r.payload,deletedAt:r.deleted_at})));
@@ -80,8 +82,11 @@ async function prepareWorkspace(importLocal){
     const save=button('下载完整备份',backup);body.append(save);
     const label=node('label');const check=node('input');check.type='checkbox';label.append(check,node('span','确认将上述数据导入到 '+user.email));body.append(label);
     body.append(button('确认导入并启用同步',()=>{if(!check.checked){tell('请先核对导入数量并勾选确认。');return;}action(async()=>{
-      // New server edits after this preflight become version conflicts, never silent overwrites.
-      const currentEntries=[...importJournal.entries().values()];if(stable(currentEntries)!==importFingerprint||stable(readGuest())!==guestFingerprint)throw Error('数据已变化，请返回并重新检查导入');
+      // Recheck identity and remote state before committing a preview. A concurrent
+      // edit after this check still becomes a version conflict at the server.
+      ensureSelection();const verifiedNow=await account.verifiedUser();ensureSelection();if(verifiedNow.id!==selectedUser)throw Error('account_mismatch');
+      await pullWorkspace(account.client,importJournal);ensureSelection();
+      const currentEntries=[...importJournal.entries().values()];if(stable(currentEntries)!==importFingerprint||stable(readGuest())!==guestFingerprint)throw Object.assign(Error('workspace_changed'),{code:'workspace_changed'});
       const values={};for(const key of DATA_KEYS){const kind=key==='daily_reviews_v2'?'reviews':key;const current=importJournal.read(key,key==='daily_reviews_v2'?{}:[]);const adds=plan.create.filter(r=>r.kind===kind);const merged=kind==='reviews'?{...current,...Object.fromEntries(adds.map(r=>[r.itemId,r.payload]))}:current.concat(adds.map(r=>r.payload));values[key]=merged;}retainWorkspaceBackup(localStorage,importJournal);importJournal.writeMany(values);
       localStorage.setItem(ACTIVE_KEY,user.id);location.reload();
     });}),button('返回',renderBody));

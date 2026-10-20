@@ -15,3 +15,7 @@ test('完整备份包含原始损坏字节、账号云端快照、待上传队�
 test('备份写入空间不足时失败，不改原始数据或清除队列',()=>{
  const s=storage();const j=new WorkspaceJournal(s,uid);j.write('tasks',[{id:'t'}]);s.setItem=()=>{throw Error('quota');};assert.throws(()=>retainWorkspaceBackup(s,j),/quota/);assert.equal(j.pending().length,1);
 });
+test('损坏的账号缓存也能导出原始字节用于恢复',()=>{
+ const s=storage(),j=new WorkspaceJournal(s,uid);s.setItem(j.prefix+'base','{broken account');
+ const backup=createWorkspaceBackup(s,j);assert.ok(backup.account.parseError);assert.equal(backup.account.rawStorage[j.prefix+'base'],'{broken account');
+});

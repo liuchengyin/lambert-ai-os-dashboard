@@ -6,8 +6,13 @@ export function createWorkspaceBackup(storage, journal=null, now=new Date()) {
   let account=null;
   if(journal){
     journal=new WorkspaceJournal(storage,journal.userId);
-    const snapshot=Object.fromEntries(DATA_KEYS.map(key=>[key,journal.read(key,key==='daily_reviews_v2'?{}:[])]));
-    account={userId:journal.userId,snapshot,base:journal.load('base',[]),batches:journal.batches()};
+    const rawStorage={};for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key?.startsWith(journal.prefix))rawStorage[key]=storage.getItem(key);}
+    account={userId:journal.userId,rawStorage};
+    try{
+      account.snapshot=Object.fromEntries(DATA_KEYS.map(key=>[key,journal.read(key,key==='daily_reviews_v2'?{}:[])]));
+      account.base=journal.load('base',[]);account.batches=journal.batches();
+    }catch{account.parseError='账号缓存格式异常；原始字节已保留，请勿清除本机数据。';}
+
   }
   return {format:'lambert-local-backup-v2',createdAt:now.toISOString(),raw,account};
 }
