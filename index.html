@@ -1,8 +1,17 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-lambert-boot="loading">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Lambert AI OS</title>
+<style>
+html[data-lambert-boot] .shell{visibility:hidden}
+#lambertStartup{position:fixed;inset:0;z-index:99999;display:grid;place-content:center;text-align:center;gap:12px;background:#f5f4fa;color:#49415f;font:15px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+#lambertStartup strong{font-size:22px;color:#7047c9}#lambertStartup p{margin:0}#lambertStartup button{justify-self:center;padding:10px 18px;border:0;border-radius:10px;background:#7047c9;color:white;cursor:pointer}
+html:not([data-lambert-boot]) #lambertStartup{display:none}
+</style>
+<script>
+(function(){var timer;function error(){document.documentElement.dataset.lambertBoot='error';var text=document.getElementById('lambertStartupMessage'),button=document.getElementById('lambertStartupRetry');if(text)text.textContent='页面加载未完成，请检查网络后重试。';if(button)button.hidden=false;}window.LambertStartup={ready:function(){clearTimeout(timer);document.documentElement.removeAttribute('data-lambert-boot');},error:error};timer=setTimeout(error,20000);})();
+</script>
 <meta name="theme-color" content="#17212c">
 <link rel="icon" type="image/svg+xml" href="brand/logo-mark.svg?v=purple-white-1">
 <link rel="mask-icon" href="brand/logo-mark-black.svg" color="#090c0f">
@@ -13,6 +22,7 @@
 <link rel="stylesheet" href="web-home.css?v=20261020-home1">
 </head>
 <body>
+<div id="lambertStartup" role="status" aria-live="polite"><strong>Lambert AI OS</strong><p id="lambertStartupMessage">正在打开工作台…</p><button id="lambertStartupRetry" type="button" hidden onclick="location.reload()">重新加载</button></div>
 <div class="shell">
 <aside>
 <div class="lambert-brand">
