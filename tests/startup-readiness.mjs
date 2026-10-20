@@ -14,5 +14,7 @@ try{
  await page.unroute('**/project-v3.js');await page.route('**/project-v3.js',r=>r.abort());
  await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'重新加载',exact:true}).waitFor();
  assert.equal(await page.locator('.shell').isVisible(),false);assert.equal(await page.evaluate(()=>localStorage.getItem('startup_test_sentinel')),'keep');
- console.log(JSON.stringify({ok:true,checks:['legacy-hidden-under-slow-network','nested-assets-ready-before-reveal','preload-preserves-execution-order','failed-load-retry','saved-data-preserved']}));
+ await page.unroute('**/project-v3.js');await page.route('**/sprint1-navigation.js*',r=>r.fulfill({contentType:'text/javascript',body:'throw new Error("test module failure")'}));
+ await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'重新加载',exact:true}).waitFor();assert.equal(await page.locator('.shell').isVisible(),false);
+ console.log(JSON.stringify({ok:true,checks:['legacy-hidden-under-slow-network','nested-assets-ready-before-reveal','preload-preserves-execution-order','failed-load-retry','runtime-module-failure-retry','saved-data-preserved']}));
 }finally{await browser.close();}

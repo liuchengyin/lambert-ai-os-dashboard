@@ -29,7 +29,7 @@ try{
   for(const src of scripts)await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(Error('app_asset_failed'));document.body.appendChild(s);});
   if(startup){
     do{await Promise.all([...pending]);await new Promise(resolve=>setTimeout(resolve,0));}while(pending.size);
-    if(assetFailed)throw Error('app_asset_failed');
+    if(assetFailed||!document.getElementById('s1PrimaryNav')||!window.TaskCenter||!document.querySelector('#home .s1-head'))throw Error('app_asset_failed');
     startup.ready();
   }
 }catch(error){startup?.error();console.warn('工作台加载未完成，现有数据仍保留在本机。');}
