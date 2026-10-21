@@ -54,3 +54,6 @@
 
 /* Keep vertical scrolling and pinch zoom while reserving horizontal gestures for filters. */
 #app{touch-action:pan-y pinch-zoom}
+/* Two inert snapshots move together; live forms and the fixed add button stay intact. */
+.filter-swipe-frame{position:fixed;z-index:18;overflow:hidden;pointer-events:none;background:var(--bg);contain:layout paint}
+#app .filter-swipe-page{position:absolute;left:0;width:100%;max-width:none;min-height:100%;margin:0;background:var(--bg);pointer-events:none;will-change:transform;backface-visibility:hidden;transform:translate3d(0,0,0)}

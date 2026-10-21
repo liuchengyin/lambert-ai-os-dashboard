@@ -71,5 +71,13 @@
     if(!board.children.length)board.appendChild(el('p','empty','暂无'+taskFilter+'任务'));
     sec.appendChild(board);
   }
-  window.MobileProjectBoard={render:render,reset:function(){projectFilter='进行中';taskFilter='进行中';lastSelected=null;}};
+  function preview(api,direction){
+    var old=[projectFilter,taskFilter,lastSelected];
+    var detail=(api.projects||[]).some(function(p){return p.id===api.selectedId&&!p.archived&&!p.deletedAt;});
+    var choices=detail?STATUS:['进行中','待开始','已完成'];
+    var next=choices[choices.indexOf(detail?taskFilter:projectFilter)+direction];if(!next)return null;
+    try{if(detail)taskFilter=next;else projectFilter=next;return render(api);}
+    finally{projectFilter=old[0];taskFilter=old[1];lastSelected=old[2];}
+  }
+  window.MobileProjectBoard={render:render,preview:preview,reset:function(){projectFilter='进行中';taskFilter='进行中';lastSelected=null;}};
 })();
