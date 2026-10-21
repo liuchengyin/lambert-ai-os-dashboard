@@ -113,6 +113,12 @@ function renderBody(){
     }
     body.append(accountRow('退出登录','logout',()=>action(async()=>{await account.logout();leaveWorkspace();})));
   }
+  if(native){
+    const update=accountRow('检查云端更新','sync',()=>action(async()=>{
+      let response=await fetch('/assets/mobile/__updates/check',{cache:'no-store'});if(!response.ok)throw Error('暂时无法检查更新');let state=await response.json();tell(state.message);
+      for(let i=0;i<12&&state.checking;i++){await new Promise(resolve=>setTimeout(resolve,1000));if(!dialog?.open)return;response=await fetch('/assets/mobile/__updates/status',{cache:'no-store'});state=await response.json();tell(state.message);}
+    }));body.append(update);
+  }
   message=node('p','','lambert-account-message');message.setAttribute('role','status');message.setAttribute('aria-live','polite');body.append(message);updateEntry();
 }
 function open(){

@@ -1,7 +1,7 @@
-name: Mobile core space Flash review
+name: Mobile cloud update Flash review
 on:
   push:
-    branches: [feat/mobile-core-space]
+    branches: [feat/mobile-cloud-update]
     paths: ['scripts/mobile-compact-flash.mjs']
 permissions:
   contents: read
