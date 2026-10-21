@@ -14,7 +14,7 @@ public final class MainActivity extends Activity {
  private boolean cloud(android.net.Uri u){
   if(!"https".equals(u.getScheme())||u.getUserInfo()!=null||(u.getPort()!=-1&&u.getPort()!=443))return false;
   String host=u.getHost(),path=u.getPath();if(host==null||path==null)return false;
-  if("lambert-ai-os-dashboard.vercel.app".equals(host)&&"/api/account-config".equals(path))return true;
+  if("lambert-ai-os-dashboard.vercel.app".equals(host)&&("/api/account-config".equals(path)||"/api/feishu-review".equals(path)))return true;
   return host.matches("[a-z0-9-]+\\.supabase\\.co")&&(path.startsWith("/auth/v1/")||path.startsWith("/rest/v1/"));
  }
  @Override public void onCreate(Bundle state){
@@ -39,7 +39,11 @@ public final class MainActivity extends Activity {
   s.setJavaScriptCanOpenWindowsAutomatically(false);s.setSupportMultipleWindows(false);s.setGeolocationEnabled(false);
   final WebViewAssetLoader loader=new WebViewAssetLoader.Builder().addPathHandler("/assets/",new WebViewAssetLoader.AssetsPathHandler(this)).build();
   web.setWebViewClient(new WebViewClient(){
-   @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){return !local(r.getUrl());}
+   @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){
+    android.net.Uri u=r.getUrl();
+    if(r.hasGesture()&&r.isForMainFrame()&&"https".equals(u.getScheme())&&u.getUserInfo()==null&&(u.getPort()==-1||u.getPort()==443)&&u.getHost()!=null&&(u.getHost().equals("feishu.cn")||u.getHost().endsWith(".feishu.cn"))){try{startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,u));}catch(android.content.ActivityNotFoundException ignored){}return true;}
+    return !local(u);
+   }
    @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r){
     if(local(r.getUrl())){WebResourceResponse a=loader.shouldInterceptRequest(r.getUrl());if(a!=null){if(r.getUrl().getPath().endsWith(".mjs"))a.setMimeType("text/javascript");return a;}}
     if(cloud(r.getUrl())&&!r.isForMainFrame())return null;

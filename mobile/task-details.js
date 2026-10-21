@@ -55,13 +55,12 @@ function open(taskId,api){
   renderSteps();
   var addRow=el('div','mtd-add');
   var newStep=el('input','mtd-newstep');newStep.type='text';newStep.placeholder='新步骤';newStep.setAttribute('aria-label','新步骤');
-  var addBtn=el('button','mtd-addbtn','添加');addBtn.type='button';
-  addBtn.addEventListener('click',function(){
-    var v=newStep.value.trim();if(!v)return;
-    draft.steps.push({id:api.newId(),title:v,done:false});
-    newStep.value='';dirty=true;renderSteps();
-  });
-  addRow.appendChild(newStep);addRow.appendChild(addBtn);stepsCard.appendChild(addRow);
+  newStep.placeholder='添加步骤';newStep.enterKeyHint='done';newStep.maxLength=300;
+  var stepPlus=el('span','mtd-step-plus','＋');stepPlus.setAttribute('aria-hidden','true');
+  function commitStep(){var v=newStep.value.trim();if(!v)return;draft.steps.push({id:api.newId(),title:v,done:false});newStep.value='';dirty=true;renderSteps();}
+  newStep.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing){e.preventDefault();commitStep();newStep.focus();}});
+  newStep.addEventListener('input',function(){dirty=true;});newStep.addEventListener('blur',commitStep);
+  addRow.append(stepPlus,newStep);stepsCard.appendChild(addRow);
   var metaCard=el('div','mtd-card');body.appendChild(metaCard);
   function field(label,node){
     var w=el('div','mtd-field');var l=el('label','mtd-label',label);w.appendChild(l);w.appendChild(node);return w;
@@ -104,6 +103,7 @@ function open(taskId,api){
   back.addEventListener('click',tryClose);
   dlg.addEventListener('cancel',function(e){e.preventDefault();tryClose();});
   function readFields(){
+    commitStep();
     if(!titleIn.value.trim())throw new Error('请输入任务标题');draft.title=titleIn.value.trim();
     if(dateIn.value!==(draft.due||'').slice(0,10)){draft.due=dateIn.value||'';delete draft.repeatAnchor;}
     if(projSel.value!==(api.projectId(draft)||'')){draft.projectId=projSel.value||'';var p=projects.find(function(p){return p.id===projSel.value;});draft.project=p?p.name:'';}
