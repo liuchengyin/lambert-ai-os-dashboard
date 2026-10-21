@@ -1,0 +1,79 @@
+{
+  "timezone": "Asia/Shanghai",
+  "scope": "lambert-ai-os-dashboard GitHub Actions provider usage logs only; excludes mock calls, unlogged/local calls and other conversations",
+  "records": [
+    {
+      "date": "2026-10-21",
+      "runId": 39523796685,
+      "jobId": 118973630610,
+      "model": "deepseek-flash",
+      "input": 10369,
+      "output": 921,
+      "total": 11290
+    },
+    {
+      "date": "2026-10-20",
+      "runId": 39442520197,
+      "jobId": 118695800021,
+      "model": "deepseek-flash",
+      "input": 11839,
+      "output": 585,
+      "total": 12424
+    },
+    {
+      "date": "2026-10-20",
+      "runId": 39436685543,
+      "jobId": 118675424240,
+      "model": "deepseek-flash",
+      "input": 10466,
+      "output": 466,
+      "total": 10932
+    },
+    {
+      "date": "2026-10-20",
+      "runId": 39420807257,
+      "jobId": 118620982076,
+      "model": "deepseek-flash",
+      "input": 6308,
+      "output": 1174,
+      "total": 7482
+    },
+    {
+      "date": "2026-10-20",
+      "runId": 39413118663,
+      "jobId": 118595515891,
+      "model": "deepseek-flash",
+      "input": 7914,
+      "output": 907,
+      "total": 8821
+    },
+    {
+      "date": "2026-10-20",
+      "runId": 39385382815,
+      "jobId": 118503851402,
+      "model": "deepseek-flash",
+      "input": 9099,
+      "output": 663,
+      "total": 9762
+    },
+    {
+      "date": "2026-10-20",
+      "runId": 39363887021,
+      "jobId": 118436118480,
+      "model": "deepseek-flash",
+      "input": 6298,
+      "output": 834,
+      "total": 7132
+    },
+    {
+      "date": "2026-10-20",
+      "runId": 39346374605,
+      "jobId": 118379850083,
+      "model": "deepseek-flash",
+      "input": 12586,
+      "output": 1027,
+      "total": 13613
+    }
+  ],
+  "glmCallsFound": 0
+}

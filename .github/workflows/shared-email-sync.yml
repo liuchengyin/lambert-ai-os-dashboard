@@ -4,7 +4,7 @@ on:
     branches: [feat/shared-email-sync]
     paths: ['shared-sync/**','supabase/**','api/account-config.js','api/feishu-review.js','lib/feishu-review.js','tests/shared-sync/**','mobile/**','android/**','index.html','app.js','review-v6.js','.github/workflows/shared-email-sync.yml']
   pull_request:
-    paths: ['shared-sync/**','supabase/**','api/account-config.js','api/feishu-review.js','lib/feishu-review.js','tests/shared-sync/**','android/**','mobile/**','index.html','tests/startup-speed.mjs']
+    paths: ['shared-sync/**','supabase/**','api/account-config.js','api/feishu-review.js','lib/feishu-review.js','tests/shared-sync/**','android/**','mobile/**','index.html','tests/startup-speed.mjs','scripts/build-web-update.py','tests/android/**','tests/mobile-cloud-update.mjs','vercel.json']
 permissions:
   contents: read
 concurrency:
@@ -35,6 +35,7 @@ jobs:
           if [ -f tests/mobile-compact-compose.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-compact-compose.mjs; fi
           if [ -f tests/mobile-light-panels.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-light-panels.mjs; fi
           if [ -f tests/mobile-core-space.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-core-space.mjs; fi
+          if [ -f tests/mobile-cloud-update.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-cloud-update.mjs; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -55,6 +56,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
+      - name: Verify atomic page update storage and rollback
+        run: |
+          mkdir -p /tmp/lambert-update-test
+          javac -d /tmp/lambert-update-test android/app/src/main/java/app/lambert/tasks/BundleStore.java tests/android/BundleStoreTest.java
+          java -cp /tmp/lambert-update-test app.lambert.tasks.BundleStoreTest
       - name: Bundle local assets with common account modules
         run: python3 scripts/bundle-android.py
       - name: Compile and lint without distributing an unconfigured APK
