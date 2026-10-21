@@ -1,7 +1,7 @@
-name: Mobile light panels Flash review
+name: Mobile core space Flash review
 on:
   push:
-    branches: [feat/mobile-light-panels]
+    branches: [feat/mobile-core-space]
     paths: ['scripts/mobile-compact-flash.mjs']
 permissions:
   contents: read
