@@ -57,9 +57,12 @@ function open(taskId,api){
   var newStep=el('input','mtd-newstep');newStep.type='text';newStep.placeholder='新步骤';newStep.setAttribute('aria-label','新步骤');
   newStep.placeholder='添加步骤';newStep.enterKeyHint='done';newStep.maxLength=300;
   var stepPlus=el('span','mtd-step-plus','＋');stepPlus.setAttribute('aria-hidden','true');
-  function commitStep(){var v=newStep.value.trim();if(!v)return;draft.steps.push({id:api.newId(),title:v,done:false});newStep.value='';dirty=true;renderSteps();}
-  newStep.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing){e.preventDefault();commitStep();newStep.focus();}});
-  newStep.addEventListener('input',function(){dirty=true;});newStep.addEventListener('blur',commitStep);
+  var stepComposing=false,commitAfterComposition=false;
+  newStep.addEventListener('compositionstart',function(){stepComposing=true;});
+  newStep.addEventListener('compositionend',function(){stepComposing=false;if(commitAfterComposition){commitAfterComposition=false;commitStep();}});
+  function commitStep(){if(stepComposing)return false;var v=newStep.value.trim();if(!v)return;draft.steps.push({id:api.newId(),title:v,done:false});newStep.value='';dirty=true;renderSteps();}
+  newStep.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.isComposing&&!stepComposing&&e.keyCode!==229){e.preventDefault();commitStep();newStep.focus();}});
+  newStep.addEventListener('input',function(){dirty=true;});newStep.addEventListener('blur',function(){if(stepComposing)commitAfterComposition=true;else commitStep();});
   addRow.append(stepPlus,newStep);stepsCard.appendChild(addRow);
   var metaCard=el('div','mtd-card');body.appendChild(metaCard);
   function field(label,node){
@@ -103,6 +106,7 @@ function open(taskId,api){
   back.addEventListener('click',tryClose);
   dlg.addEventListener('cancel',function(e){e.preventDefault();tryClose();});
   function readFields(){
+    if(stepComposing)throw Error('请先完成步骤输入，再保存');
     commitStep();
     if(!titleIn.value.trim())throw new Error('请输入任务标题');draft.title=titleIn.value.trim();
     if(dateIn.value!==(draft.due||'').slice(0,10)){draft.due=dateIn.value||'';delete draft.repeatAnchor;}
