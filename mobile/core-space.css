@@ -51,3 +51,6 @@
 .mtd-steptext{border-radius:0}
 .mtd-step+.mtd-step{border-top:1px solid #f3f4f7}
 @media(max-width:340px){.review-actions{gap:5px}.review-actions button{padding:0 9px}.project-page .project-stat{gap:4px;padding:6px 7px}}
+
+/* Keep vertical scrolling and pinch zoom while reserving horizontal gestures for filters. */
+#app{touch-action:pan-y pinch-zoom}
