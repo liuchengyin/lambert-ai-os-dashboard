@@ -73,6 +73,15 @@
       "input": 12586,
       "output": 1027,
       "total": 13613
+    },
+    {
+      "date": "2026-10-21",
+      "runId": 39526542611,
+      "jobId": 118982416377,
+      "model": "deepseek-flash",
+      "input": 5790,
+      "output": 949,
+      "total": 6739
     }
   ],
   "glmCallsFound": 0

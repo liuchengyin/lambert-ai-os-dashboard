@@ -18,7 +18,7 @@ public final class BundleStore {
  public synchronized void shell(int version) throws IOException {if(!get("shell").equals(String.valueOf(version))){state.clear();state.setProperty("shell",String.valueOf(version));save();clean();}}
  public synchronized long highestRelease(){return Math.max(number("release"),number("readyRelease"));}
  private long number(String key){try{return Long.parseLong(get(key));}catch(NumberFormatException e){return 0;}}
- public synchronized boolean wants(String sha,long release){return sha.matches("[a-f0-9]{64}")&&release>highestRelease()&&!sha.equals(get("rejected"));}
+ public synchronized boolean wants(String sha,long release){return sha.matches("[a-f0-9]{64}")&&release>highestRelease()&&!sha.equals(get("rejected"))&&!sha.equals(get("active"))&&!sha.equals(get("ready"))&&!sha.equals(get("previous"));}
  public synchronized boolean pending(){return !get("ready").isEmpty();}
  public synchronized String active(){return get("active");}
  public synchronized boolean probation(){return get("booting").equals("true");}
@@ -47,7 +47,7 @@ public final class BundleStore {
      File dest=new File(stage,name);if(!dest.getCanonicalPath().startsWith(stage.getCanonicalPath()+File.separator))throw new IOException("invalid_path");Files.createDirectories(dest.getParentFile().toPath());
      try(OutputStream out=new FileOutputStream(dest)){int n;while((n=in.read(buf))!=-1){total+=n;if(total>MAX_CONTENT)throw new IOException("bundle_too_large");out.write(buf,0,n);}}in.closeEntry();}}
    for(String required:new String[]{"mobile/index.html","mobile/app.js","mobile/store.js","shared-sync/bootstrap.mjs","shared-sync/storage-bridge.js","shared-sync/account-ui.mjs"})if(!names.contains(required))throw new IOException("incomplete_bundle");
-   File destination=new File(root,sha);if(!destination.exists())move(stage,destination);
+   File destination=new File(root,sha);if(destination.exists())remove(destination);move(stage,destination);
    state.setProperty("ready",sha);state.setProperty("readyRelease",String.valueOf(release));save();clean();return true;
   }finally{remove(stage);}
  }

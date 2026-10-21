@@ -14,6 +14,8 @@ public final class BundleStoreTest {
   store.install(c,sc,3);store.begin();store=new BundleStore(root);store.begin();ok(store.active().equals(sa),"process death before boot ack rolls back");
   for(String entry:new String[]{"../account-data","mobile/../../account-data","mobile/tool.exe","shared-sync/tooling/evil.js","mobile/updates/evil.js","mobile//evil.js"}){byte[] bad=bundle("bad:"+entry);reject(store,bad,BundleStore.digest(bad),5);}
   byte[] incomplete;ByteArrayOutputStream out=new ByteArrayOutputStream();try(ZipOutputStream z=new ZipOutputStream(out)){z.putNextEntry(new ZipEntry("mobile/index.html"));z.write("partial".getBytes());z.closeEntry();}incomplete=out.toByteArray();reject(store,incomplete,BundleStore.digest(incomplete),5);
+  byte[] replacement=bundle("orphan-recovery");String sr=BundleStore.digest(replacement);File orphan=new File(root,sr+"/mobile");Files.createDirectories(orphan.toPath());Files.write(new File(orphan,"index.html").toPath(),"corrupt orphan".getBytes());
+  store.install(replacement,sr,6);store.begin();ok(Files.readString(store.file("mobile/index.html").toPath()).equals("mobile/index.htmlorphan-recovery"),"orphan directory replaced by verified stage");store.healthy();ok(!store.wants(sr,7),"never replace a running bundle directory");
   ok(Files.readString(sentinel.toPath()).equals("do not touch"),"storage outside updates unchanged");store.shell(18);ok(store.active().isEmpty(),"new shell starts from bundled pages");ok(Files.readString(sentinel.toPath()).equals("do not touch"),"shell upgrade preserves account data");
   System.out.println("BundleStore: hash, staged activation, failed boot, interrupted boot, downgrade, unsafe ZIP paths, incomplete bundles and data preservation passed");
  }
