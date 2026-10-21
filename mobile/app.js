@@ -178,4 +178,5 @@ window.addEventListener('storage',function(e){if(['tasks','projects','daily_revi
 window.addEventListener('online',refreshStatus);
 window.addEventListener('offline',refreshStatus);
 render();
+window.MobileBootReady=true;
 })();

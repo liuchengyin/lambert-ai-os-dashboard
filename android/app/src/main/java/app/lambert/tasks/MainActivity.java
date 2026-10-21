@@ -9,6 +9,9 @@ import java.io.ByteArrayInputStream;
 public final class MainActivity extends Activity {
  private WebView web;
  private boolean backPending;
+ private CloudUpdater updater;
+ private int bootChecks;
+ private final android.os.Handler bootHandler=new android.os.Handler(android.os.Looper.getMainLooper());
  private static final String HOST="appassets.androidplatform.net";
  private boolean local(android.net.Uri u){return "https".equals(u.getScheme())&&HOST.equals(u.getHost())&&u.getPath()!=null&&(u.getPath().startsWith("/assets/mobile/")||u.getPath().startsWith("/assets/shared-sync/"));}
  private boolean cloud(android.net.Uri u){
@@ -20,6 +23,7 @@ public final class MainActivity extends Activity {
  @Override public void onCreate(Bundle state){
   super.onCreate(state);
   android.widget.FrameLayout root=new android.widget.FrameLayout(this);root.setBackgroundColor(0xff7357d7);
+  try{updater=CloudUpdater.get(this);updater.start();}catch(Exception ignored){updater=null;}
   web=new WebView(this);root.addView(web,new android.widget.FrameLayout.LayoutParams(-1,-1));setContentView(root);
   if(android.os.Build.VERSION.SDK_INT>=30){
    getWindow().setDecorFitsSystemWindows(false);
@@ -35,17 +39,18 @@ public final class MainActivity extends Activity {
   getWindow().setStatusBarColor(0xff7357d7);getWindow().setNavigationBarColor(0xfff5f3ff);
   WebView.setWebContentsDebuggingEnabled(false);
   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);
-  s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+  s.setCacheMode(WebSettings.LOAD_NO_CACHE);s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
   s.setJavaScriptCanOpenWindowsAutomatically(false);s.setSupportMultipleWindows(false);s.setGeolocationEnabled(false);
   final WebViewAssetLoader loader=new WebViewAssetLoader.Builder().addPathHandler("/assets/",new WebViewAssetLoader.AssetsPathHandler(this)).build();
   web.setWebViewClient(new WebViewClient(){
+   @Override public void onPageFinished(WebView v,String url){if(updater!=null&&updater.probation()){bootChecks=0;checkBoot();}}
    @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){
     android.net.Uri u=r.getUrl();
     if(r.hasGesture()&&r.isForMainFrame()&&"https".equals(u.getScheme())&&u.getUserInfo()==null&&(u.getPort()==-1||u.getPort()==443)&&u.getHost()!=null&&(u.getHost().equals("feishu.cn")||u.getHost().endsWith(".feishu.cn"))){try{startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,u));}catch(android.content.ActivityNotFoundException ignored){}return true;}
     return !local(u);
    }
    @Override public WebResourceResponse shouldInterceptRequest(WebView v,WebResourceRequest r){
-    if(local(r.getUrl())){WebResourceResponse a=loader.shouldInterceptRequest(r.getUrl());if(a!=null){if(r.getUrl().getPath().endsWith(".mjs"))a.setMimeType("text/javascript");return a;}}
+    if(local(r.getUrl())){if(updater!=null){String path=r.getUrl().getPath().substring("/assets/".length());WebResourceResponse response=updater.control(path);if(response==null)response=updater.asset(path);if(response!=null)return response;}WebResourceResponse a=loader.shouldInterceptRequest(r.getUrl());if(a!=null){if(r.getUrl().getPath().endsWith(".mjs"))a.setMimeType("text/javascript");return a;}}
     if(cloud(r.getUrl())&&!r.isForMainFrame())return null;
     return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",java.util.Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
    }
@@ -56,8 +61,11 @@ public final class MainActivity extends Activity {
   });
   if(android.os.Build.VERSION.SDK_INT>=33)getOnBackInvokedDispatcher().registerOnBackInvokedCallback(android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,()->handleBack());
   web.loadUrl("https://"+HOST+"/assets/mobile/index.html");
+  if(updater!=null){updater.check();if(updater.probation())bootHandler.postDelayed(()->failBoot(),20000);}
  }
+ private void failBoot(){if(web==null||updater==null||!updater.probation())return;bootHandler.removeCallbacksAndMessages(null);updater.rollback();web.stopLoading();web.loadUrl("https://"+HOST+"/assets/mobile/index.html");}
+ private void checkBoot(){if(web==null||updater==null||!updater.probation())return;web.evaluateJavascript("Boolean(window.MobileBootReady&&window.LambertData&&document.querySelectorAll('#tabs button').length>=3)",ready->{if(isDestroyed()||isFinishing()||web==null)return;if("true".equals(ready)){updater.healthy();bootHandler.removeCallbacksAndMessages(null);}else if(++bootChecks>=30){failBoot();}else bootHandler.postDelayed(()->checkBoot(),500);});}
  private void handleBack(){if(backPending)return;backPending=true;web.evaluateJavascript("Boolean(window.MobileNavigation&&window.MobileNavigation.back())", handled->{backPending=false;if(!"true".equals(handled)){if(web.canGoBack())web.goBack();else finish();}});}
  @Override public void onBackPressed(){handleBack();}
- @Override protected void onDestroy(){if(web!=null)web.destroy();super.onDestroy();}
+ @Override protected void onDestroy(){bootHandler.removeCallbacksAndMessages(null);if(web!=null){web.destroy();web=null;}super.onDestroy();}
 }
