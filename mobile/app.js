@@ -134,7 +134,7 @@ function renderReview(){renderReviewFor(reviewDate||today());}
 function renderReviewFor(date){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
  reviewDate=date;var rv=Object.assign({},reviews()[date]||{},reviewDrafts[date]||{});app.textContent='';
- var nav=el('div','review-datebar'),group=el('div','task-scopes review-day-scopes');group.setAttribute('role','group');group.setAttribute('aria-label','复盘日期切换');
+ var nav=el('div','review-datebar'),group=el('div','task-scopes review-day-scopes');group.setAttribute('role','group');group.setAttribute('aria-label','复盘日期切换');group.addEventListener('filter-swipe',function(e){e.preventDefault();changeDate(offsetDate(date,e.detail.direction));});
  function changeDate(value){try{captureReviewDraft();if(reviews()[date]||Object.values(reviewDrafts[date]||{}).some(function(v){return String(v).trim();}))saveReview(date);renderReviewFor(value);}catch(e){alert('保存失败：'+e.message);}}
  [[-1,'昨天'],[0,'今天'],[1,'明天']].forEach(function(pair){var value=offsetDate(today(),pair[0]),b=el('button',date===value?'on':'',pair[1]);b.type='button';b.setAttribute('aria-pressed',String(date===value));b.onclick=function(){changeDate(value);};group.appendChild(b);});nav.appendChild(group);
  var calendar=el('button','review-calendar');calendar.type='button';calendar.setAttribute('aria-label','选择复盘日期');calendar.appendChild(window.MobilePickers.icon('date'));calendar.onclick=function(){window.MobilePickers.date({label:'复盘日期',value:date,dateOnly:true,onSelect:function(value){if(value)changeDate(value.slice(0,10));}});};nav.appendChild(calendar);app.appendChild(nav);
