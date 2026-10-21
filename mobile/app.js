@@ -104,8 +104,9 @@ function renderTasks(){
   app.appendChild(c);
 }
 
+function projectAPI(){return {projects:projects(),tasks:tasks(),projectId:pid,selectedId:filterProject,today:today(),onSelect:function(id){filterProject=id;render();},onEdit:openProjectDialog,onAddProject:function(){openProjectDialog(null);},onAddTask:function(id){filterProject=id;openTaskDialog(null);},taskRow:taskRow,compareTasks:window.MobileCompose.compareTasks};}
 function renderProjects(){
- var board=window.MobileProjectBoard.render({projects:projects(),tasks:tasks(),projectId:pid,selectedId:filterProject,today:today(),onSelect:function(id){filterProject=id;render();},onEdit:openProjectDialog,onAddProject:function(){openProjectDialog(null);},onAddTask:function(id){filterProject=id;openTaskDialog(null);},taskRow:taskRow,compareTasks:window.MobileCompose.compareTasks});app.appendChild(board);var add=board.querySelector('.project-fab');if(add)app.appendChild(add);
+ var board=window.MobileProjectBoard.render(projectAPI());app.appendChild(board);var add=board.querySelector('.project-fab');if(add)app.appendChild(add);
 }
 
 function goalCard(date){
@@ -171,6 +172,21 @@ function openTaskDialog(t){
 function openProjectDialog(p){
  window.MobileCompose.project({item:p,projects:projects,tasks:function(){return S.read('tasks',[]);},projectId:pid,newId:function(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);},writeMany:function(values){window.LambertData.writeMany(values);window.dispatchEvent(new CustomEvent('mobile-change'));},render:render});
 }
+
+// Build a read-only neighbor without changing the visible page or saving data.
+window.MobileFilterPages={preview:function(direction){
+ var live=app,scope=filterScope,date=reviewDate,preview=document.createElement('main');preview.className=live.className;
+ try{
+  app=preview;
+  if(tab==='tasks'){
+   var next=['today','all'][['today','all'].indexOf(scope)+direction];if(!next)return null;
+   filterScope=next;renderTasks();
+  }else if(tab==='projects'){
+   var board=window.MobileProjectBoard.preview(projectAPI(),direction);if(!board)return null;preview.appendChild(board);
+  }else renderReviewFor(offsetDate(date||today(),direction));
+  return preview;
+ }finally{app=live;filterScope=scope;reviewDate=date;}
+}};
 
 document.getElementById('accountButton').onclick=function(){if(window.LambertAccount){window.LambertAccount.open();return;}window.MobilePolish.openAccount({pendingCount:(S.pending()||[]).length,counts:{tasks:tasks().length,projects:projects().filter(function(p){return !p.archived&&!p.deletedAt;}).length,reviews:Object.keys(reviews()).length}});};
 window.addEventListener('mobile-change',function(){refreshStatus();});
