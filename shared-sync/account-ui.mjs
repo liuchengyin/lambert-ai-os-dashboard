@@ -3,6 +3,7 @@ import {createAccount,friendlyAuthError,SESSION_KEY} from './auth.mjs';
 import {WorkspaceJournal,ACTIVE_KEY,DATA_KEYS,stable} from './journal.mjs';
 import {synchronize,pullWorkspace} from './engine.mjs';
 import {prepareLocalImport,planImport} from './import-plan.mjs';
+import {conflictCard} from './conflict-card.mjs';
 import {createWorkspaceBackup,retainWorkspaceBackup} from './backup.mjs';
 const native=location.hostname==='appassets.androidplatform.net';
 const configUrl=native?'https://lambert-ai-os-dashboard.vercel.app/api/account-config':'/api/account-config';
@@ -108,8 +109,10 @@ function renderBody(){
     if(localStorage.getItem(ACTIVE_KEY)!==user.id){body.append(node('p','选择使用云端数据，或将本机任务、项目和复盘导入此账号。登录本身不会自动上传本机内容。'),accountRow('使用云端工作台','cloud',()=>prepareWorkspace(false)),accountRow('检查并导入本机数据','import',()=>prepareWorkspace(true)));}
     else {
       body.append(accountRow('检查并导入本机数据','import',()=>prepareWorkspace(true)),accountRow('立即同步','sync',()=>action(async()=>{await flush();tell(status());})),accountRow('下载完整备份','backup',backup));
-      const conflicts=journal.conflicts();for(const op of conflicts){const box=node('section');box.append(node('strong',op.payload.title||op.payload.name||op.itemId),node('p','本地和云端都有修改，请选择保留内容。'));
-        for(const [label,choice] of [['保留云端','remote'],['使用本地','local']])box.append(button(label,()=>action(async()=>{journal.resolve(op.kind,op.itemId,choice);renderBody();changed();await flush();})));body.append(box);}
+      const conflicts=journal.conflicts();for(const op of conflicts){
+        const latest=journal.batches().flatMap(b=>b.ops).filter(p=>p.kind===op.kind&&p.itemId===op.itemId).at(-1)||op;
+        body.append(conflictCard(op,latest,choice=>action(async()=>{journal.resolve(op.kind,op.itemId,choice);renderBody();changed();await flush();})));
+      }
     }
     body.append(accountRow('退出登录','logout',()=>action(async()=>{await account.logout();leaveWorkspace();})));
   }

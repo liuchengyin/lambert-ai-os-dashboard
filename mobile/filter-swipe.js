@@ -17,7 +17,7 @@ function neighbor(direction){
  var m=motion;if(m.direction===direction)return;
  if(m.next)m.next.remove();m.direction=direction;m.next=null;
  var preview=window.MobileFilterPages&&window.MobileFilterPages.preview(direction);
- if(preview){m.next=page(preview,m.top,m.padding);m.frame.appendChild(m.next);}
+ if(preview){m.next=page(preview,m.top,m.padding);m.frame.appendChild(m.next);m.next.querySelectorAll('.review-fields textarea').forEach(function(ta){ta.style.height='0px';ta.style.height=Math.max(64,ta.scrollHeight+2)+'px';});}
 }
 function start(g,direction){
  var rect=app.getBoundingClientRect(),nav=document.getElementById('tabs').getBoundingClientRect();
