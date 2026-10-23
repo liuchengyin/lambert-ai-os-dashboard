@@ -35,6 +35,7 @@ jobs:
           if [ -f tests/mobile-compact-compose.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-compact-compose.mjs; fi
           if [ -f tests/mobile-light-panels.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-light-panels.mjs; fi
           if [ -f tests/mobile-filter-swipe.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-filter-swipe.mjs; fi
+          if [ -f tests/mobile-ui-coherence.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-ui-coherence.mjs; fi
           if [ -f tests/mobile-core-space.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-core-space.mjs; fi
           if [ -f tests/mobile-cloud-update.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-cloud-update.mjs; fi
       - uses: actions/upload-artifact@v4

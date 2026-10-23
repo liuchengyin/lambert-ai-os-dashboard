@@ -10,7 +10,7 @@ var reviewDate=null;
 var reviewDrafts={},goalProjectFilters={},goalPickerOpen={},archiveBusy=false;
 var filterProject=null;
 var foldDone=true;
-var TABS=[['tasks','任务','✓'],['projects','项目','▦'],['review','复盘','✎']];
+var TABS=[['tasks','任务','check'],['projects','项目','board'],['review','复盘','review']];
 
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
 function today(){return S.date();}
@@ -31,7 +31,7 @@ function renderTabs(){
   var accountButton=document.getElementById('accountButton');tabsEl.textContent='';
   TABS.forEach(function(t){
     var b=el('button',tab===t[0]?'on':'');b.setAttribute('aria-label',t[1]);
-    var ic=el('span','ic');ic.setAttribute('aria-hidden','true');if(t[0]==='tasks')ic.appendChild(window.MobileCompose.icon('check'));else ic.textContent=t[2];b.appendChild(ic);
+    var ic=el('span','ic');ic.setAttribute('aria-hidden','true');ic.appendChild(window.MobileCompose.icon(t[2]));b.appendChild(ic);
     b.appendChild(el('span',null,t[1]));
     b.onclick=function(){captureReviewDraft();tab=t[0];filterProject=null;if(tab==='projects')window.MobileProjectBoard.reset();render();};
     tabsEl.appendChild(b);
@@ -61,12 +61,12 @@ function taskRow(t,opts){
   var body=el('button','body task-edit');body.type='button';body.setAttribute('aria-label','编辑：'+t.title);body.onclick=function(){openTaskDialog(t);};
   body.appendChild(el('div','tt',t.title));
   var meta=el('div','meta');
-  if(pid(t))meta.appendChild(el('span','tag',projName(pid(t))));
-  if(t.due){var over=t.due<today()&&t.status!=='已完成';meta.appendChild(el('span','tag'+(over?' over':''),t.due.slice(5,10).replace('-','/')));}
+  if(pid(t))meta.appendChild(el('span','tag meta-project',projName(pid(t))));
+  var dateMeta=null;if(t.due){var over=t.due<today()&&t.status!=='已完成';dateMeta=el('span','tag meta-date'+(over?' over':''),t.due.slice(5,10).replace('-','/'));dateMeta.setAttribute('aria-label',(over?'已逾期，截止日期：':'截止日期：')+t.due.slice(0,10));}
   if(t.matrix&&t.matrix!=='q2')meta.appendChild(el('span','tag',({q1:'P0',q3:'P2',q4:'P3'}[t.matrix]||t.priority||'')));
   (t.labels||[]).slice(0,2).forEach(function(label){meta.appendChild(el('span','tag',label));});
   if(t.steps&&t.steps.length)meta.appendChild(el('span','task-step-count',t.steps.filter(function(s){return s.done;}).length+'/'+t.steps.length+' 步骤'));
-  if(meta.childNodes.length)body.appendChild(meta);
+  if(dateMeta)meta.appendChild(dateMeta);if(meta.childNodes.length)body.appendChild(meta);
   d.appendChild(body);
   if(tab==='tasks'&&window.MobileTaskSwipe)return window.MobileTaskSwipe.wrap(d,t.title,function(){softDeleteTask(t.id);},t.status==='已完成'?null:function(){var rows=S.read('tasks',[]),current=rows.find(function(x){return x.id===t.id;});if(!current||current.deletedAt||current.archived)throw Error('任务不存在');if(current.status==='已完成')return;S.write('tasks',window.MobileTaskModel.toggle(rows,t.id,today()));setTimeout(render,200);});
   return d;
@@ -131,6 +131,7 @@ function offsetDate(date,amount){var d=new Date(date+'T12:00:00');d.setDate(d.ge
 function saveReview(date){
  if(date===reviewDate)captureReviewDraft();var r=reviews(),cur=Object.assign({},r[date]||{taskIds:[]},reviewDrafts[date]||{});cur.updatedAt=new Date().toISOString();r[date]=cur;saveReviews(r);delete reviewDrafts[date];return cur;
 }
+function resizeReviewFields(root){root.querySelectorAll('textarea').forEach(function(ta){ta.style.height='0px';ta.style.height=Math.max(64,ta.scrollHeight+2)+'px';});}
 function renderReview(){renderReviewFor(reviewDate||today());}
 function renderReviewFor(date){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
@@ -141,7 +142,7 @@ function renderReviewFor(date){
  var calendar=el('button','review-calendar');calendar.type='button';calendar.setAttribute('aria-label','选择复盘日期');calendar.appendChild(window.MobilePickers.icon('date'));calendar.onclick=function(){window.MobilePickers.date({label:'复盘日期',value:date,dateOnly:true,onSelect:function(value){if(value)changeDate(value.slice(0,10));}});};nav.appendChild(calendar);app.appendChild(nav);
  if(![-1,0,1].some(function(n){return offsetDate(today(),n)===date;}))app.appendChild(el('p','review-selected-date',date.replaceAll('-','/')));
  app.appendChild(goalCard(date));var fc=el('section','card review-fields');
- [['goal','目标'],['gap','差距'],['reason','原因'],['restart','重启计划']].forEach(function(f){var label=el('label',null,f[1]),ta=el('textarea');ta.value=rv[f[0]]||'';ta.dataset.k=f[0];ta.setAttribute('aria-label','复盘'+f[1]);ta.oninput=function(){captureReviewDraft();};label.appendChild(ta);fc.appendChild(label);});
+ [['goal','目标'],['gap','差距'],['reason','原因'],['restart','重启计划']].forEach(function(f){var label=el('label',null,f[1]),ta=el('textarea');ta.rows=2;ta.value=rv[f[0]]||'';ta.dataset.k=f[0];ta.setAttribute('aria-label','复盘'+f[1]);ta.oninput=function(){resizeReviewFields(fc);captureReviewDraft();};label.appendChild(ta);fc.appendChild(label);});
  var message=el('p','review-message');message.setAttribute('role','status');message.setAttribute('aria-live','polite');
  var actions=el('div','review-actions'),sv=el('button','btn pri','保存复盘');sv.type='button';sv.onclick=function(){try{saveReview(date);renderReviewFor(date);app.querySelector('.review-message').textContent='已保存';refreshStatus();}catch(e){message.textContent='保存失败：'+e.message;}};actions.appendChild(sv);
  var archive=el('button','btn review-archive','归档到飞书');archive.type='button';archive.hidden=!reviews()[date]?.updatedAt;archive.disabled=archiveBusy;archive.onclick=async function(){
@@ -162,7 +163,7 @@ function renderReviewFor(date){
  };
  actions.appendChild(archive);fc.append(actions,message);
  if(rv.feishuUrl){try{var u=new URL(rv.feishuUrl);if(u.protocol==='https:'&&/(^|\.)feishu\.cn$/.test(u.hostname)&&!u.username&&!u.password){var link=el('a','review-feishu-link','已归档 · 打开飞书复盘');link.href=u.href;link.rel='noopener';if(location.hostname!=='appassets.androidplatform.net')link.target='_blank';fc.appendChild(link);}}catch(e){}}
- app.appendChild(fc);refreshStatus();
+ app.appendChild(fc);if(fc.isConnected)resizeReviewFields(fc);refreshStatus();
 }
 
 function openTaskDialog(t){
@@ -191,6 +192,7 @@ window.MobileFilterPages={preview:function(direction){
 document.getElementById('accountButton').onclick=function(){if(window.LambertAccount){window.LambertAccount.open();return;}window.MobilePolish.openAccount({pendingCount:(S.pending()||[]).length,counts:{tasks:tasks().length,projects:projects().filter(function(p){return !p.archived&&!p.deletedAt;}).length,reviews:Object.keys(reviews()).length}});};
 window.addEventListener('mobile-change',function(){refreshStatus();});
 window.addEventListener('storage',function(e){if(['tasks','projects','daily_reviews_v2'].includes(e.key))render();});
+window.addEventListener('resize',function(){if(tab==='review')resizeReviewFields(app);});
 window.addEventListener('online',refreshStatus);
 window.addEventListener('offline',refreshStatus);
 render();
