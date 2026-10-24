@@ -99,6 +99,8 @@
 
   reading.classList.add('reading-stable-ready');
 
+  let standaloneEditor=null,standaloneEditorReady=false,thoughtEditor=null,excerptEditor=null;
+  let thoughtReady=false,excerptReady=false;
   let currentId=state.currentId||'';
   let localPdfUrl='';
 
