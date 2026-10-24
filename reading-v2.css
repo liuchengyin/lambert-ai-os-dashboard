@@ -34,3 +34,22 @@
 #reading .reading-standalone-editor footer{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #eeeaf5;padding-top:12px}
 #reading #rv2StandaloneStatus{font-size:12px;color:#827b93}
 @media(max-width:760px){#reading .reading-standalone{padding:12px}#reading .reading-standalone-grid{grid-template-columns:1fr}#reading .reading-standalone-list{max-height:160px;overflow-y:auto}#reading .reading-standalone-editor{min-height:55vh;padding:14px}#reading .reading-standalone-editor textarea{min-height:260px}#reading .reading-view-tabs button{flex:1;padding:11px 8px}}
+
+
+/* Compact tabs at upper right, no redundant titles or descriptive copy. */
+#reading .reading-visually-hidden{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+#reading .reading-stable-head{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap}
+#reading .reading-stable-head .reading-view-tabs{margin:0;order:2}
+#reading .reading-stable-head .reading-progress-field{order:1;margin-right:auto}
+#reading .reading-standalone-header{justify-content:flex-end;min-height:48px}
+#reading .reading-standalone-header #rv2StandaloneArchiveTools{margin-right:auto}
+#reading .reading-standalone-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#reading .reading-standalone-actions a{color:#7155ca;font-size:12px}
+#reading .reading-rich-slot{min-width:0;margin-top:8px;max-width:100%}
+#reading .reading-rich-slot .vditor{max-width:100%;border:1px solid #e6e1ee}
+#reading .reading-rich-slot .vditor-toolbar{background:#f7f5fb}
+#reading .reading-rich-slot .vditor-ir{min-height:200px}
+#reading .reading-standalone-editor .reading-rich-slot{flex:1}
+#reading .reading-standalone-editor .reading-rich-slot .vditor{min-height:480px}
+#reading .reading-standalone-editor textarea[hidden],#reading .reading-stable-note textarea[hidden]{display:none!important}
+@media(max-width:760px){#reading .reading-stable-head{align-items:stretch}#reading .reading-stable-head .reading-view-tabs{order:0;width:100%}#reading .reading-stable-head .reading-progress-field{order:1}#reading .reading-standalone-header{flex-wrap:wrap}#reading .reading-standalone-header #rv2StandaloneArchiveTools{width:100%}}
