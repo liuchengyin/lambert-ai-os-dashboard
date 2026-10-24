@@ -48,8 +48,8 @@ try{
  await page.mouse.move(250,rb.y+20);await page.mouse.down();await page.mouse.move(130,rb.y+20,{steps:10});await page.waitForTimeout(40);
  assert.equal(await page.locator('.filter-swipe-frame [data-k]').count(),0);assert.equal(await page.evaluate(()=>localStorage.daily_reviews_v2),reviewBefore);
  await page.mouse.up();await page.waitForTimeout(380);await pressed('明天');await swipe('.review-day-scopes',130);await pressed('今天');assert.equal(await page.getByLabel('复盘目标',{exact:true}).inputValue(),'切换日期不能丢');
- await swipe('.review-day-scopes',130);await pressed('昨天');await swipe('.review-day-scopes',130);assert.equal(await page.locator('.review-selected-date').textContent(),'2026/10/19');
- await swipe('.review-day-scopes');await pressed('昨天');
+ await swipe('.review-day-scopes',130);await pressed('昨天');await swipe('.review-day-scopes',130);await pressed('昨天');assert.equal(await page.locator('.review-selected-date').count(),0);
+ await swipe('.review-day-scopes');await pressed('今天');
  await page.getByRole('button',{name:'今天',exact:true}).click();await swipe('textarea');await pressed('今天');assert.equal(await page.getByLabel('复盘目标',{exact:true}).inputValue(),'切换日期不能丢');
  await page.reload();await page.getByRole('button',{name:'复盘',exact:true}).click();assert.equal(await page.getByLabel('复盘目标',{exact:true}).inputValue(),'切换日期不能丢');
  await page.getByRole('button',{name:'任务',exact:true}).click();await page.emulateMedia({reducedMotion:'reduce'});await swipe('.task-scopes');await pressed('全部');assert.equal(await page.locator('.filter-swipe-frame').count(),0);

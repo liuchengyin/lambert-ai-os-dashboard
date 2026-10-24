@@ -42,7 +42,8 @@ function wrap(row,title,onDelete,onComplete,onArchive){
   close();
  });
  row.addEventListener('pointercancel',function(e){if(e.pointerId!==id)return;id=null;drag=false;if(opened)open(opened);else close();});
- row.addEventListener('lostpointercapture',function(e){if(e.pointerId===id){id=null;drag=false;close();}});
+ // A child's implicit touch capture is released when the row takes ownership; that is not cancellation.
+ row.addEventListener('lostpointercapture',function(e){if(e.target===row&&e.pointerId===id){id=null;drag=false;close();}});
  row.addEventListener('click',function(e){if(suppress||busy){suppress=false;e.preventDefault();e.stopPropagation();return;}if(opened){e.preventDefault();e.stopPropagation();close();}},true);
  remove.addEventListener('click',function(e){e.stopPropagation();if(opened!==-1)return;try{onDelete();close();}catch(err){alert('删除失败：'+(err.message||err));}});
  complete.addEventListener('click',function(e){e.stopPropagation();if(opened===1&&onComplete)finish(onComplete,'完成');});

@@ -1,4 +1,5 @@
-.task-swipe{position:relative;overflow:hidden;border-radius:8px}
+/* Clip transformed cards without creating a horizontal scroll container for button focus. */
+.task-swipe{position:relative;overflow:hidden;overflow:clip;border-radius:8px}
 .task-swipe .task-swipe-front{position:relative;z-index:1;background:#fff;touch-action:pan-y pinch-zoom}
 #app .task-swipe .task-swipe-delete,#app .task-swipe .task-swipe-complete{position:absolute;top:0;bottom:0;min-width:0;min-height:44px;display:flex;gap:4px;align-items:center;justify-content:center;padding:0 4px;border:0;border-radius:0;color:white;font:inherit;font-size:15px;cursor:pointer;touch-action:manipulation}
 #app .task-swipe .task-swipe-delete{width:50%;right:0;background:linear-gradient(90deg,#fca5a5,#dc2626)}
