@@ -53,3 +53,8 @@
 #reading .reading-standalone-editor .reading-rich-slot .vditor{min-height:480px}
 #reading .reading-standalone-editor textarea[hidden],#reading .reading-stable-note textarea[hidden]{display:none!important}
 @media(max-width:760px){#reading .reading-stable-head{align-items:stretch}#reading .reading-stable-head .reading-view-tabs{order:0;width:100%}#reading .reading-stable-head .reading-progress-field{order:1}#reading .reading-standalone-header{flex-wrap:wrap}#reading .reading-standalone-header #rv2StandaloneArchiveTools{width:100%}}
+
+
+#reading .reading-standalone-type-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+#reading .reading-standalone-type-row label{font-size:12px;font-weight:700;color:#777080}
+#reading .reading-standalone-type-row select{width:150px;max-width:60%;height:36px;border:1px solid #ded8ed;border-radius:8px;padding:0 9px;background:#fff;color:#4d4267}
