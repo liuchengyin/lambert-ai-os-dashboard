@@ -1,0 +1,59 @@
+name: Reading Dual Tab V1 checks and Flash review
+on:
+  push:
+    branches: [feat/reading-dual-tab-20261024]
+    paths:
+      - 'reading-v2.js'
+      - 'reading-v2.css'
+      - 'project-v4.js'
+      - 'tests/reading-dual-tab.mjs'
+      - 'scripts/reading-dual-flash-review.mjs'
+      - '.github/workflows/reading-dual-tab.yml'
+  pull_request:
+    paths:
+      - 'reading-v2.js'
+      - 'reading-v2.css'
+      - 'project-v4.js'
+      - 'tests/reading-dual-tab.mjs'
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Syntax and dual-tab regression
+        run: |
+          node --check reading-v2.js
+          node --check project-v4.js
+          python3 -m http.server 8000 --bind 127.0.0.1 &
+          sleep 2
+          node tests/reading-dual-tab.mjs
+  flash-review:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [deepseek, glm]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Independent Flash review
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+        run: node scripts/reading-dual-flash-review.mjs ${{ matrix.provider }}
