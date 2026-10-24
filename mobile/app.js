@@ -4,6 +4,7 @@ var S=window.MobileStore;
 var app=document.getElementById('app');
 var tabsEl=document.getElementById('tabs');
 var syncEl=document.getElementById('syncStatus');
+var accountButton=document.getElementById('accountButton');
 var tab='tasks';
 var filterScope='today';
 var reviewDate=null;
@@ -28,7 +29,7 @@ function statusText(){var p=S.pending();var base='本地已保存 · 云同步�
 function refreshStatus(){syncEl.textContent=statusText();}
 
 function renderTabs(){
-  var accountButton=document.getElementById('accountButton');tabsEl.textContent='';
+  tabsEl.textContent='';
   TABS.forEach(function(t){
     var b=el('button',tab===t[0]?'on':'');b.setAttribute('aria-label',t[1]);
     var ic=el('span','ic');ic.setAttribute('aria-hidden','true');ic.appendChild(window.MobileCompose.icon(t[2]));b.appendChild(ic);
@@ -36,7 +37,7 @@ function renderTabs(){
     b.onclick=function(){captureReviewDraft();tab=t[0];filterProject=null;if(tab==='projects')window.MobileProjectBoard.reset();render();};
     tabsEl.appendChild(b);
   });
-  if(accountButton)tabsEl.appendChild(accountButton);
+  if(accountButton){accountButton.hidden=true;document.body.appendChild(accountButton);}
 }
 
 function captureReviewDraft(){if(tab!=='review'||!reviewDate)return;var fields=app.querySelectorAll('[data-k]');if(!fields.length)return;var value={};fields.forEach(function(n){value[n.dataset.k]=n.value;});reviewDrafts[reviewDate]=value;}
@@ -62,13 +63,13 @@ function taskRow(t,opts){
   body.appendChild(el('div','tt',t.title));
   var meta=el('div','meta');
   if(pid(t))meta.appendChild(el('span','tag meta-project',projName(pid(t))));
-  var dateMeta=null;if(t.due){var over=t.due<today()&&t.status!=='已完成';dateMeta=el('span','tag meta-date'+(over?' over':''),t.due.slice(5,10).replace('-','/'));dateMeta.setAttribute('aria-label',(over?'已逾期，截止日期：':'截止日期：')+t.due.slice(0,10));}
+  var shownDate=t.status==='已完成'?t.completedAt:t.due;var dateMeta=null;if(shownDate){var day=t.status==='已完成'?S.date(new Date(shownDate)):shownDate.slice(0,10);var over=day<today()&&t.status!=='已完成';dateMeta=el('span','tag meta-date'+(over?' over':''),day.slice(5,10).replace('-','/'));dateMeta.setAttribute('aria-label',(t.status==='已完成'?'实际完成日期：':over?'已逾期，截止日期：':'截止日期：')+day);}
   if(t.matrix&&t.matrix!=='q2')meta.appendChild(el('span','tag',({q1:'P0',q3:'P2',q4:'P3'}[t.matrix]||t.priority||'')));
   (t.labels||[]).slice(0,2).forEach(function(label){meta.appendChild(el('span','tag',label));});
   if(t.steps&&t.steps.length)meta.appendChild(el('span','task-step-count',t.steps.filter(function(s){return s.done;}).length+'/'+t.steps.length+' 步骤'));
   if(dateMeta)meta.appendChild(dateMeta);if(meta.childNodes.length)body.appendChild(meta);
   d.appendChild(body);
-  if(tab==='tasks'&&window.MobileTaskSwipe)return window.MobileTaskSwipe.wrap(d,t.title,function(){softDeleteTask(t.id);},t.status==='已完成'?null:function(){var rows=S.read('tasks',[]),current=rows.find(function(x){return x.id===t.id;});if(!current||current.deletedAt||current.archived)throw Error('任务不存在');if(current.status==='已完成')return;S.write('tasks',window.MobileTaskModel.toggle(rows,t.id,today()));setTimeout(render,200);});
+  if((tab==='tasks'||tab==='projects')&&window.MobileTaskSwipe)return window.MobileTaskSwipe.wrap(d,t.title,function(){softDeleteTask(t.id);},t.status==='已完成'?null:function(){var rows=S.read('tasks',[]),current=rows.find(function(x){return x.id===t.id;});if(!current||current.deletedAt||current.archived)throw Error('任务不存在');if(current.status==='已完成')return;S.write('tasks',window.MobileTaskModel.toggle(rows,t.id,today()));setTimeout(render,200);},t.status==='已完成'?function(){var rows=S.read('tasks',[]),current=rows.find(function(x){return x.id===t.id;});if(!current||current.deletedAt||current.archived||current.status!=='已完成')throw Error('任务状态已变化');current.archived=true;current.archivedAt=new Date().toISOString();current.updatedAt=current.archivedAt;S.write('tasks',rows);setTimeout(render,200);}:null);
   return d;
 }
 
@@ -87,20 +88,21 @@ function renderTasks(){
   var all=tasks().filter(function(t){return (!filterProject||pid(t)===filterProject)&&(filterScope!=='today'||(t.due||'').slice(0,10)===today()||targetIds.includes(t.id));}).sort(window.MobileCompose.compareTasks);
   var c=el('div','task-list');
   var scopes=el('div','task-scopes');scopes.setAttribute('role','group');scopes.setAttribute('aria-label','任务日期筛选');[['today','今日'],['all','全部']].forEach(function(item){var btn=el('button',filterScope===item[0]?'on':'',item[1]);btn.type='button';btn.setAttribute('aria-pressed',String(filterScope===item[0]));btn.onclick=function(){filterScope=item[0];render();};scopes.appendChild(btn);});c.appendChild(scopes);
-  var picker=el('button','task-project-picker',filterProject?projName(filterProject):'全部项目');picker.type='button';picker.setAttribute('aria-label','任务项目筛选');picker.setAttribute('aria-haspopup','dialog');picker.appendChild(el('span',null,'⌄'));picker.onclick=function(){window.MobilePolish.openProjectPicker({projects:projects(),currentId:filterProject||'',onSelect:function(id){filterProject=id;render();}});};c.appendChild(picker);
+  var panel=el('div','filter-panel');c.appendChild(panel);
+  var picker=el('button','task-project-picker',filterProject?projName(filterProject):'全部项目');picker.type='button';picker.setAttribute('aria-label','任务项目筛选');picker.setAttribute('aria-haspopup','dialog');picker.appendChild(el('span',null,'⌄'));picker.onclick=function(){window.MobilePolish.openProjectPicker({projects:projects(),currentId:filterProject||'',onSelect:function(id){filterProject=id;render();}});};panel.appendChild(picker);
   var add=el('button','task-fab','＋');add.type='button';add.setAttribute('aria-label','新增任务');
   add.onclick=function(){openTaskDialog(null);};
   app.appendChild(add);
   var open=all.filter(function(t){return t.status!=='已完成';});
-  var done=all.filter(function(t){return t.status==='已完成';});
-  if(!open.length)c.appendChild(el('div','empty','无未完成任务'));
-  open.forEach(function(t){c.appendChild(taskRow(t));});
+  var done=all.filter(function(t){return t.status==='已完成';}).sort(window.MobileTaskModel.compareCompleted);
+  if(!open.length)panel.appendChild(el('div','empty','无未完成任务'));
+  open.forEach(function(t){panel.appendChild(taskRow(t));});
   var f=el('button','fold');f.type='button';f.setAttribute('aria-expanded',String(!foldDone));
   f.appendChild(el('span',null,'已完成 '+done.length));
   f.appendChild(el('span',null,foldDone?'展开 ▾':'收起 ▸'));
   f.onclick=function(){foldDone=!foldDone;render();};
-  c.appendChild(f);
-  if(!foldDone)done.forEach(function(t){c.appendChild(taskRow(t));});
+  panel.appendChild(f);
+  if(!foldDone)done.forEach(function(t){panel.appendChild(taskRow(t));});
   app.appendChild(c);
 }
 
@@ -139,9 +141,10 @@ function renderReviewFor(date){
  var nav=el('div','review-datebar'),group=el('div','task-scopes review-day-scopes');group.setAttribute('role','group');group.setAttribute('aria-label','复盘日期切换');group.addEventListener('filter-swipe',function(e){e.preventDefault();changeDate(offsetDate(date,e.detail.direction));});
  function changeDate(value){try{captureReviewDraft();if(reviews()[date]||Object.values(reviewDrafts[date]||{}).some(function(v){return String(v).trim();}))saveReview(date);renderReviewFor(value);}catch(e){alert('保存失败：'+e.message);}}
  [[-1,'昨天'],[0,'今天'],[1,'明天']].forEach(function(pair){var value=offsetDate(today(),pair[0]),b=el('button',date===value?'on':'',pair[1]);b.type='button';b.setAttribute('aria-pressed',String(date===value));b.onclick=function(){changeDate(value);};group.appendChild(b);});nav.appendChild(group);
- var calendar=el('button','review-calendar');calendar.type='button';calendar.setAttribute('aria-label','选择复盘日期');calendar.appendChild(window.MobilePickers.icon('date'));calendar.onclick=function(){window.MobilePickers.date({label:'复盘日期',value:date,dateOnly:true,onSelect:function(value){if(value)changeDate(value.slice(0,10));}});};nav.appendChild(calendar);app.appendChild(nav);
+ var calendar=el('button','review-calendar');calendar.type='button';calendar.setAttribute('aria-label','选择复盘日期');calendar.appendChild(window.MobilePickers.icon('date'));calendar.onclick=function(){window.MobilePickers.date({label:'复盘日期',value:date,dateOnly:true,onSelect:function(value){if(value)changeDate(value.slice(0,10));}});};nav.appendChild(calendar);if(accountButton){var account=app===document.getElementById('app')?accountButton:accountButton.cloneNode(true);if(account!==accountButton)account.removeAttribute('id');account.hidden=false;nav.appendChild(account);}app.appendChild(nav);
+ var panel=el('div','filter-panel');app.appendChild(panel);
  if(![-1,0,1].some(function(n){return offsetDate(today(),n)===date;}))app.appendChild(el('p','review-selected-date',date.replaceAll('-','/')));
- app.appendChild(goalCard(date));var fc=el('section','card review-fields');
+ panel.appendChild(goalCard(date));var fc=el('section','card review-fields');
  [['goal','目标'],['gap','差距'],['reason','原因'],['restart','重启计划']].forEach(function(f){var label=el('label',null,f[1]),ta=el('textarea');ta.rows=2;ta.value=rv[f[0]]||'';ta.dataset.k=f[0];ta.setAttribute('aria-label','复盘'+f[1]);ta.oninput=function(){resizeReviewFields(fc);captureReviewDraft();};label.appendChild(ta);fc.appendChild(label);});
  var message=el('p','review-message');message.setAttribute('role','status');message.setAttribute('aria-live','polite');
  var actions=el('div','review-actions'),sv=el('button','btn pri','保存复盘');sv.type='button';sv.onclick=function(){try{saveReview(date);renderReviewFor(date);app.querySelector('.review-message').textContent='已保存';refreshStatus();}catch(e){message.textContent='保存失败：'+e.message;}};actions.appendChild(sv);
@@ -163,7 +166,7 @@ function renderReviewFor(date){
  };
  actions.appendChild(archive);fc.append(actions,message);
  if(rv.feishuUrl){try{var u=new URL(rv.feishuUrl);if(u.protocol==='https:'&&/(^|\.)feishu\.cn$/.test(u.hostname)&&!u.username&&!u.password){var link=el('a','review-feishu-link','已归档 · 打开飞书复盘');link.href=u.href;link.rel='noopener';if(location.hostname!=='appassets.androidplatform.net')link.target='_blank';fc.appendChild(link);}}catch(e){}}
- app.appendChild(fc);if(fc.isConnected)resizeReviewFields(fc);refreshStatus();
+ panel.appendChild(fc);if(fc.isConnected)resizeReviewFields(fc);refreshStatus();
 }
 
 function openTaskDialog(t){

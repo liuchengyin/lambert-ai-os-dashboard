@@ -81,3 +81,32 @@
 .review-actions{margin-top:4px}
 .project-page .project-status-filter button{font-size:15px;min-height:42px}
 .review-page .review-actions button{font-size:14px}
+/* The selected tab is a raised part of its content sheet. */
+.task-scopes{gap:0;padding:4px 8px 0;margin:0;border-radius:12px 12px 0 0;overflow:visible}
+.task-scopes button,.project-page .project-status-filter button{position:relative;isolation:isolate;border-radius:10px 10px 0 0;box-shadow:none;transition:color 160ms,background-color 160ms;overflow:visible}
+.task-scopes button.on{background:#fff;box-shadow:none;color:var(--p)}
+.task-scopes button.on::before,.task-scopes button.on::after{content:'';position:absolute;bottom:0;width:10px;height:10px;pointer-events:none}
+.task-scopes button.on::before{left:-10px;background:radial-gradient(circle at 0 0,transparent 10px,#fff 10.5px)}
+.task-scopes button.on::after{right:-10px;background:radial-gradient(circle at 100% 0,transparent 10px,#fff 10.5px)}
+.filter-panel{position:relative;background:#fff;border-radius:0 0 12px 12px;padding:10px 8px;min-height:80px}
+.task-list>.filter-panel>.task-swipe{margin:6px 0;border-radius:8px}
+.task-list>.filter-panel>.task-swipe>.task{padding:2px 8px 2px 4px;gap:4px;border:1px solid var(--bd);border-radius:8px;min-height:50px;align-items:center}
+.review-datebar{align-items:stretch;margin-bottom:0;gap:0;background:#ede8fa;border-radius:12px 12px 0 0;padding:0 4px 0 0}
+.review-day-scopes{min-width:0;flex:1}
+.review-day-scopes button{min-width:0;padding:0 2px}
+.review-calendar{align-self:center;flex:0 0 40px;width:40px;min-height:44px;background:transparent;border:0;padding:8px}
+#accountButton{flex:0 0 40px;min-width:40px;min-height:44px;align-self:center;display:flex;align-items:center;justify-content:center;padding:8px;background:transparent;border:0;color:#81869a}
+#accountButton>span:not(.ic){display:none}
+#accountButton .ic{display:grid;place-items:center;width:24px;height:24px}
+.review-page>.filter-panel>.card{padding:10px 4px;border:0;border-radius:0;box-shadow:none}
+.review-page>.filter-panel>.goal-card h2{font-size:17px;font-weight:400}
+.review-selected-date{background:#fff;margin:0;padding:8px 12px 0}
+.project-status-filter{margin-bottom:0}
+@media(prefers-reduced-motion:reduce){.task-scopes button{transition:none}}
+
+#accountButton[hidden]{display:none}
+
+.review-datebar .review-account{flex:0 0 40px;min-width:40px;min-height:44px;align-self:center;display:flex;align-items:center;justify-content:center;padding:8px;background:transparent;border:0;color:#81869a}
+.review-account>span:not(.ic){display:none}
+.review-account .ic{display:grid;place-items:center;width:24px;height:24px}
+.review-account .ic svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}

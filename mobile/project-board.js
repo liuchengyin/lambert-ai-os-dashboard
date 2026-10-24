@@ -47,7 +47,7 @@
       board.appendChild(card);
     });
     if(!board.children.length)board.appendChild(el('p','empty','暂无'+projectFilter+'项目'));
-    sec.appendChild(board);
+    var panel=el('div','filter-panel');panel.appendChild(board);sec.appendChild(panel);
   }
   function detail(sec,api,p,tasks){
     sec.classList.add('project-detail');
@@ -67,9 +67,9 @@
     sec.appendChild(progress(p.name,st));
     sec.appendChild(filters('项目任务状态筛选',taskFilter,rows,tstat,function(status){taskFilter=status;api.onSelect(p.id);}));
     var board=el('div','project-task-items');board.setAttribute('role','region');board.setAttribute('aria-label','项目任务列表');board.setAttribute('data-task-status',taskFilter);
-    rows.filter(function(t){return tstat(t.status)===taskFilter;}).sort(api.compareTasks).forEach(function(t){board.appendChild(api.taskRow(t));});
+    rows.filter(function(t){return tstat(t.status)===taskFilter;}).sort(taskFilter==='已完成'?window.MobileTaskModel.compareCompleted:api.compareTasks).forEach(function(t){board.appendChild(api.taskRow(t));});
     if(!board.children.length)board.appendChild(el('p','empty','暂无'+taskFilter+'任务'));
-    sec.appendChild(board);
+    var panel=el('div','filter-panel');panel.appendChild(board);sec.appendChild(panel);
   }
   function preview(api,direction){
     var old=[projectFilter,taskFilter,lastSelected];
