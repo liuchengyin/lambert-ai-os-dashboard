@@ -26,6 +26,7 @@ jobs:
           TEST_ORIGIN: http://127.0.0.1:8765
         run: |
           python3 -m http.server 8765 >/tmp/lambert-http.log 2>&1 &
+          node tests/mobile-touch-stability.mjs
           node tests/mobile-task-interactions.mjs
           node tests/mobile-filter-swipe.mjs
           node tests/mobile-core-space.mjs

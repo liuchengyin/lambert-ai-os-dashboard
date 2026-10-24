@@ -130,6 +130,7 @@ function goalCard(date){
  choices();c.appendChild(d);return c;
 }
 function offsetDate(date,amount){var d=new Date(date+'T12:00:00');d.setDate(d.getDate()+amount);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');}
+function nextReviewDate(date,direction){var dates=[-1,0,1].map(function(n){return offsetDate(today(),n);});var index=dates.indexOf(date);return index<0?null:dates[index+direction]||null;}
 function saveReview(date){
  if(date===reviewDate)captureReviewDraft();var r=reviews(),cur=Object.assign({},r[date]||{taskIds:[]},reviewDrafts[date]||{});cur.updatedAt=new Date().toISOString();r[date]=cur;saveReviews(r);delete reviewDrafts[date];return cur;
 }
@@ -138,7 +139,7 @@ function renderReview(){renderReviewFor(reviewDate||today());}
 function renderReviewFor(date){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return;
  reviewDate=date;var rv=Object.assign({},reviews()[date]||{},reviewDrafts[date]||{});app.textContent='';
- var nav=el('div','review-datebar'),group=el('div','task-scopes review-day-scopes');group.setAttribute('role','group');group.setAttribute('aria-label','复盘日期切换');group.addEventListener('filter-swipe',function(e){e.preventDefault();changeDate(offsetDate(date,e.detail.direction));});
+ var nav=el('div','review-datebar'),group=el('div','task-scopes review-day-scopes');group.setAttribute('role','group');group.setAttribute('aria-label','复盘日期切换');group.addEventListener('filter-swipe',function(e){e.preventDefault();var next=nextReviewDate(date,e.detail.direction);if(next)changeDate(next);});
  function changeDate(value){try{captureReviewDraft();if(reviews()[date]||Object.values(reviewDrafts[date]||{}).some(function(v){return String(v).trim();}))saveReview(date);renderReviewFor(value);}catch(e){alert('保存失败：'+e.message);}}
  [[-1,'昨天'],[0,'今天'],[1,'明天']].forEach(function(pair){var value=offsetDate(today(),pair[0]),b=el('button',date===value?'on':'',pair[1]);b.type='button';b.setAttribute('aria-pressed',String(date===value));b.onclick=function(){changeDate(value);};group.appendChild(b);});nav.appendChild(group);
  var calendar=el('button','review-calendar');calendar.type='button';calendar.setAttribute('aria-label','选择复盘日期');calendar.appendChild(window.MobilePickers.icon('date'));calendar.onclick=function(){window.MobilePickers.date({label:'复盘日期',value:date,dateOnly:true,onSelect:function(value){if(value)changeDate(value.slice(0,10));}});};nav.appendChild(calendar);if(accountButton){var account=app===document.getElementById('app')?accountButton:accountButton.cloneNode(true);if(account!==accountButton)account.removeAttribute('id');account.hidden=false;nav.appendChild(account);}app.appendChild(nav);
@@ -187,7 +188,7 @@ window.MobileFilterPages={preview:function(direction){
    filterScope=next;renderTasks();
   }else if(tab==='projects'){
    var board=window.MobileProjectBoard.preview(projectAPI(),direction);if(!board)return null;preview.appendChild(board);
-  }else renderReviewFor(offsetDate(date||today(),direction));
+  }else{var next=nextReviewDate(date||today(),direction);if(!next)return null;renderReviewFor(next);}
   return preview;
  }finally{app=live;filterScope=scope;reviewDate=date;}
 }};
