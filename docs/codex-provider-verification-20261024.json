@@ -1,0 +1,15 @@
+{
+  "verifiedAt": "2026-10-24T14:59:33Z",
+  "environment": "GitHub Actions",
+  "scope": "Two fixed OK smoke requests through scripts/codex/model-assist.mjs; no repository source or user data sent",
+  "workflowRun": 40104921714,
+  "workflowUrl": "https://github.com/liuchengyin/lambert-ai-os-dashboard/actions/runs/40104921714",
+  "records": [
+    {"provider":"deepseek","requestedModel":"deepseek-flash","reportedModel":"deepseek-flash","prompt_tokens":9,"completion_tokens":1,"total_tokens":10,"providerCalls":1,"retries":0,"elapsedMs":839,"jobId":120904528374,"status":"success"},
+    {"provider":"glm","requestedModel":"glm-5.3-flash","reportedModel":"glm-5.3-flash","prompt_tokens":17,"completion_tokens":24,"total_tokens":41,"providerCalls":1,"retries":0,"elapsedMs":2698,"jobId":120904528219,"status":"success"}
+  ],
+  "totalTokens": 51,
+  "costCny": null,
+  "costNote": "No currency charge inferred from tokens; provider billing not queried",
+  "notVerified": ["user Mac local credentials", "user Codex Cloud environment credentials", "full source-review quality"]
+}

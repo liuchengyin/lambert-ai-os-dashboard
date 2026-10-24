@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.*
+!.env.example
+.codex-local/
+.vercel/
+android/.gradle/
+android/**/build/
+android/app/src/main/assets/
+tests/screenshots/
+review-output/
+.DS_Store
