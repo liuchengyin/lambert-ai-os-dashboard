@@ -10,7 +10,7 @@ export function publicPath(url){
  if(pathname.includes('\\')||pathname.includes('\0'))return null;
  const parts=pathname.split('/').filter(Boolean);
  if(parts.some(p=>p.startsWith('.')||BLOCKED.has(p)))return null;
- return parts.join('/')+(pathname.endsWith('/')?'index.html':'');
+ return parts.join('/')+(pathname.endsWith('/')?(parts.length?'/index.html':'index.html'):'');
 }
 export function createDevServer({root=ROOT}={}){
  return http.createServer(async(req,res)=>{
