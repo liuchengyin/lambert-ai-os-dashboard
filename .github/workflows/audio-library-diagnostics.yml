@@ -1,0 +1,27 @@
+name: Audio library existing run diagnostics
+on:
+  push:
+    branches: [feat/english-audio-library-v1]
+    paths: ['.github/workflows/audio-library-diagnostics.yml']
+permissions:
+  actions: read
+  contents: read
+jobs:
+  read:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Read failed native build only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: liuchengyin/lambert-ai-os-dashboard
+        run: |
+          gh run view 40097976095 --log-failed > /tmp/audio-native-failed.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          lines=Path('/tmp/audio-native-failed.txt').read_text().splitlines()
+          selected=[s for s in lines if re.search(r'What went wrong|Could not|requires|error|Exception|[Ff]ailed|Unstable|was resolved|not found|Execution|Caused by|Issue|Error',s)]
+          text='\n'.join(selected[-45:])[-8500:]
+          print('::notice title=Native failure details::'+text.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
+          PY
