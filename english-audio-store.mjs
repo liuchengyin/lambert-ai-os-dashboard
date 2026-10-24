@@ -3,21 +3,26 @@ export const DB_NAME='lambert_english_audio_v2';
 export const DB_VERSION=1;
 export function openAudioDatabase(){
   return new Promise((resolve,reject)=>{
-    const request=indexedDB.open(DB_NAME,DB_VERSION);
+    const request=indexedDB.open(DB_NAME,DB_VERSION);let abandoned=false;
     request.onupgradeneeded=()=>{
       const db=request.result;
-      const tracks=db.createObjectStore('tracks',{keyPath:'id'});
-      tracks.createIndex('updatedAt','updatedAt');
-      db.createObjectStore('blobs',{keyPath:'trackId'});
-      db.createObjectStore('settings',{keyPath:'id'});
+      const tracks=db.objectStoreNames.contains('tracks')?request.transaction.objectStore('tracks'):db.createObjectStore('tracks',{keyPath:'id'});
+      if(!tracks.indexNames.contains('updatedAt'))tracks.createIndex('updatedAt','updatedAt');
+      for(const [name,keyPath] of [['blobs','trackId'],['settings','id'],['transcripts','trackId']]){
+        if(!db.objectStoreNames.contains(name))db.createObjectStore(name,{keyPath});
+      }
       // Reserved contracts, no AI requests or note migration in V2.1.
-      db.createObjectStore('transcripts',{keyPath:'trackId'});
-      const notes=db.createObjectStore('notes',{keyPath:'id'});
-      notes.createIndex('trackId','trackId');
+      const notes=db.objectStoreNames.contains('notes')?request.transaction.objectStore('notes'):db.createObjectStore('notes',{keyPath:'id'});
+      if(!notes.indexNames.contains('trackId'))notes.createIndex('trackId','trackId');
     };
     request.onerror=()=>reject(request.error);
-    request.onblocked=()=>reject(Error('database_blocked'));
-    request.onsuccess=()=>{const db=request.result;db.onversionchange=()=>db.close();resolve(db);};
+    request.onblocked=()=>{abandoned=true;reject(Error('database_blocked'));};
+    request.onsuccess=()=>{
+      const db=request.result;
+      if(abandoned){db.close();return;}
+      if(!['tracks','blobs','settings','transcripts','notes'].every(name=>db.objectStoreNames.contains(name))){db.close();reject(Error('incomplete_schema'));return;}
+      db.onversionchange=()=>db.close();resolve(db);
+    };
   });
 }
 function transaction(db,stores,mode,run){

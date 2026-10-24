@@ -27,7 +27,7 @@ try{
     await page.locator('#eaPlay').click();await page.waitForFunction(()=>document.getElementById('eaAudio').currentTime>.1&&!document.getElementById('eaAudio').paused);
     assert.equal(await page.locator('#eaRecord').evaluate(e=>getComputedStyle(e).animationPlayState),'running');
     await page.locator('#eaPlay').click();assert.ok(await page.locator('#eaAudio').evaluate(e=>e.paused));
-    assert.equal(await page.locator('#eaRecord').evaluate(e=>getComputedStyle(e).animationPlayState),'paused');
+    await page.waitForFunction(()=>getComputedStyle(document.getElementById('eaRecord')).animationPlayState==='paused');
   }
   await page.locator('#eaRate').selectOption('1.5');
   assert.equal(await page.locator('#eaAudio').evaluate(e=>e.playbackRate),1.5);
@@ -42,6 +42,12 @@ try{
   assert.ok(Math.abs(await page.locator('#eaAudio').evaluate(e=>e.currentTime)-12)<.2);assert.equal(await page.locator('#eaRate').inputValue(),'1.5');
   assert.ok(await page.locator('#eaAudio').evaluate(e=>e.paused),'restore does not autoplay');
   assert.equal(await state(),legacy);
+  await page.evaluate(()=>{window.previousAudio=document.getElementById('eaAudio');});
+  await page.locator('#eaLibrary').selectOption(saved.tracks.find(t=>t.id!==saved.activeTrackId).id);await ready();
+  const selectedTitle=await page.locator('#eaTitle').textContent();
+  await page.evaluate(()=>{for(const event of ['error','loadedmetadata','pause','ended','waiting','timeupdate'])window.previousAudio.dispatchEvent(new Event(event));});
+  assert.equal(await page.locator('#eaTitle').textContent(),selectedTitle);assert.ok(await page.locator('#eaPlay').isEnabled());assert.ok(!(await page.locator('#eaStatus').textContent()).includes('无法播放'));
+  await page.locator('#eaLibrary').selectOption(saved.activeTrackId);await ready();
   await page.locator('#eaPlay').click();await page.waitForFunction(()=>!document.getElementById('eaAudio').paused);
   await page.locator('#eaVideoTab').click();assert.ok(await page.locator('#eaAudio').evaluate(e=>e.paused));assert.ok(await page.locator('#englishVideoV1').isVisible());
   assert.ok((await page.locator('#englishRecent').innerText()).includes('历史学习'));
@@ -68,5 +74,12 @@ try{
   const unavailable=await context.newPage();await unavailable.addInitScript(()=>{indexedDB.open=()=>{throw Error('storage_unavailable');};});
   await unavailable.goto(base);await unavailable.locator('nav button[data-v=english]').click();await unavailable.getByText('本机音频库不可用。请允许此站点使用浏览器存储；原视频和历史数据仍可使用。',{exact:true}).waitFor();
   assert.ok(await unavailable.locator('#eaFile').isDisabled());await unavailable.locator('#eaVideoTab').click();assert.ok(await unavailable.locator('#englishVideoV1').isVisible());await unavailable.close();
+  const partialContext=await browser.newContext(),partial=await partialContext.newPage();
+  await partialContext.route('**/api/account-config',r=>r.fulfill({json:{configured:false}}));
+  await partial.goto(new URL('english-app.html',base).href);
+  await partial.evaluate(()=>new Promise((resolve,reject)=>{const r=indexedDB.open('lambert_english_audio_v2',1);r.onupgradeneeded=()=>r.result.createObjectStore('tracks',{keyPath:'id'}).put({id:'existing',marker:'preserve'});r.onsuccess=()=>{r.result.close();resolve();};r.onerror=()=>reject(r.error);}));
+  await partial.goto(base);await partial.locator('nav button[data-v=english]').click();await partial.getByText('本机音频库不可用。请允许此站点使用浏览器存储；原视频和历史数据仍可使用。',{exact:true}).waitFor();
+  assert.equal(await partial.evaluate(()=>new Promise(resolve=>{const r=indexedDB.open('lambert_english_audio_v2',1);r.onsuccess=()=>{const db=r.result;db.transaction('tracks').objectStore('tracks').get('existing').onsuccess=e=>{resolve(e.target.result.marker);db.close();};};})), 'preserve');
+  await partialContext.close();
   console.log('PASS audio V2.1: real WAV/MP3/M4A and URL playback, pause/rotate/seek/skip/rate, IndexedDB reload and rollback, preserved legacy history, remote failure recovery, 320–1440 responsive, keyboard tabs, reduced motion, no AI calls');
 }finally{await context.close();await browser.close();}

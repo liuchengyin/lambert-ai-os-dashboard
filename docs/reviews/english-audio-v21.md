@@ -46,4 +46,19 @@
 
 本地 GitHub REST/GraphQL 被代理拒绝，因此本机不能直接创建 PR 或查询 Vercel。工作流仅尝试创建本分支到 main 的草稿 PR，不执行合并或部署命令。Preview 依赖既有 Vercel GitHub 集成，必须取得实际链接后核对，不能猜测链接或使用生产站点代替。
 
+### 实际审查结果与后续验证
+
+审查提交 `5b36f5d912f4e469ec4defa0c3a231a3b3ee9b9b`；[原运行](https://github.com/liuchengyin/lambert-ai-os-dashboard/actions/runs/40066279516)，[仅读取已有报告和日志的运行](https://github.com/liuchengyin/lambert-ai-os-dashboard/actions/runs/40066459752)。请求与实际返回模型均为 **deepseek-flash**，输入 **9,012**、输出 **731**、总计 **9,743 Token**。没有第二次模型调用，没有 Pro 请求。报告已生成；原工作流整体失败发生在随后创建 PR 步骤，不代表模型调用失败。
+
+两条 medium 意见已处理：
+
+1. IndexedDB 升级防护：版本1的初始创建本身是原子事务，正常情况下不会产生半套对象库；当前同版本 open 也不会再次触发升级。为后续升级补上仓库/索引存在性检查、拒绝不完整 schema，并在被阻塞请求最终成功时关闭遗留连接。回归模拟同版本残缺库，确认拒绝使用且原有记录不被重建或清空。
+2. 媒体旧事件竞态：每次选择音源创建独立 audio 元素，事件同时校验操作 token、元素身份和 trackId；退出旧音源后移除源并释放资源。回归在切换后重放旧元素的 metadata/error/pause/ended/timeupdate 事件，确认不影响新音频状态和恢复进度。
+
+首次云端英语测试在“暂停后动画停止”断言失败：媒体 paused 属性同步变化，pause 事件异步执行。测试现等待真实动画暂停状态，保留原断言，并继续验证真实播放及所有格式。没有禁用断言或跳过格式测试。
+
+GitHub 已确认首次 Preview 部署成功：[初始验收地址](https://lambert-ai-os-dashboard-i4qi9uado-liuchengyin8030-8582.vercel.app/?view=english)，对应初始审查提交，后续修正应以最新 Preview 为准。当前机器访问该域名被代理拒绝，未声称已在 Preview 上执行浏览器验证。
+
+首次 PR 创建被仓库策略明确拒绝：`GitHub Actions is not permitted to create or approve pull requests`。需要仓库启用 Actions 创建 PR，或恢复本机 GitHub API 访问。只重试交付步骤，不重跑付费审查。
+
 验收后再另行授权 V2.2。当前笔记编辑、AI 转写、云端音频同步均未实现。

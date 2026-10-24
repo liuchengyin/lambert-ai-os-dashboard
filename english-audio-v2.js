@@ -24,7 +24,8 @@
     </div>`;
   legacy.id='englishVideoV1';legacy.setAttribute('role','tabpanel');legacy.setAttribute('aria-labelledby','eaVideoTab');
   section.prepend(shell);shell.append(legacy);
-  const $=id=>document.getElementById(id),audio=$('eaAudio');
+  const $=id=>document.getElementById(id);
+  let audio=$('eaAudio');
   let mode='audio',db,store,tracks=[],current=null,objectUrl='',operation=0,busy=false,lastSaved=0,restoring=false;
   const tell=text=>{$('eaStatus').textContent=text;};
   const format=value=>{const n=Math.max(0,Math.floor(Number(value)||0));return `${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;};
@@ -57,25 +58,33 @@
       const blob=track.source==='file'?await store.readBlob(db,track.id):null;
       if(token!==operation)return;
       if(track.source==='file'&&!blob)throw Error('missing_blob');
+      // Each source owns its media element and token. Detached-source events cannot
+      // restore position, stop rotation or checkpoint the next selected track.
+      const previous=audio,player=document.createElement('audio');player.id='eaAudio';player.preload='metadata';
+      previous.replaceWith(player);previous.pause();previous.removeAttribute('src');previous.load();audio=player;
       if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl='';}
       current=track;objectUrl=blob?URL.createObjectURL(blob):'';
+      bindMedia(player,token,track.id);
       $('eaTitle').textContent=track.title;$('eaSource').textContent=track.source==='file'?'本地音频 · 已保存在本机':'网络音频 · 不缓存远程文件';
       audio.src=objectUrl||track.url;audio.playbackRate=track.rate||1;$('eaRate').value=String(audio.playbackRate);audio.load();updateTime();
       await store.selectTrack(db,track.id);if(token!==operation)return;
       library();tell('音频已载入，点击播放。');
     }catch{if(token===operation){restoring=false;controls(false);tell('无法载入该音频，原文件和旧学习数据未改动。请重新选择。');}}
   }
-  audio.onloadedmetadata=()=>{
-    if(!current)return;
+  function bindMedia(player,token,trackId){
+    const valid=()=>token===operation&&audio===player&&current?.id===trackId;
+    player.onloadedmetadata=()=>{
+    if(!valid())return;
     if(Number.isFinite(audio.duration)&&audio.duration>0){audio.currentTime=Math.min(current.position||0,Math.max(0,audio.duration-.1));controls(true);}else{controls(false);tell('该链接没有可用的音频时长，请使用支持拖动的音频直链。');}
     restoring=false;updateTime();
   };
-  audio.onplaying=()=>{playing(true);tell('正在播放 · 进度自动保存在本机');};
-  audio.onwaiting=()=>playing(false);
-  audio.onpause=()=>{playing(false);saveProgress();};
-  audio.onended=()=>{playing(false);saveProgress();};
-  audio.onerror=()=>{restoring=false;controls(false);playing(false);tell('音频无法播放：请检查格式、链接有效性及网络。未删除本机音频。');};
-  audio.ontimeupdate=()=>{updateTime();if(Date.now()-lastSaved>5000){lastSaved=Date.now();saveProgress();}};
+    player.onplaying=()=>{if(!valid())return;if(mode!=='audio'||!section.classList.contains('activeView')){player.pause();return;}playing(true);tell('正在播放 · 进度自动保存在本机');};
+    player.onwaiting=()=>{if(valid())playing(false);};
+    player.onpause=()=>{if(!valid())return;playing(false);saveProgress();if(!player.error&&!restoring)tell('已暂停 · 播放进度自动保存在本机');};
+    player.onended=()=>{if(!valid())return;playing(false);saveProgress();tell('本段播放完毕，可拖动进度再次练习。');};
+    player.onerror=()=>{if(!valid())return;restoring=false;controls(false);playing(false);tell('音频无法播放：请检查格式、链接有效性及网络。未删除本机音频。');};
+    player.ontimeupdate=()=>{if(!valid())return;updateTime();if(Date.now()-lastSaved>5000){lastSaved=Date.now();saveProgress();}};
+  }
   $('eaPlay').onclick=async()=>{if(!audio.paused){audio.pause();return;}try{await audio.play();}catch{playing(false);tell('播放未开始，请检查音频格式或再次点击播放。');}};
   function seek(time){if(!Number.isFinite(audio.duration))return;audio.currentTime=Math.max(0,Math.min(audio.duration,time));updateTime();saveProgress();}
   $('eaProgress').oninput=e=>seek(Number(e.target.value));$('eaBack').onclick=()=>seek(audio.currentTime-15);$('eaForward').onclick=()=>seek(audio.currentTime+15);

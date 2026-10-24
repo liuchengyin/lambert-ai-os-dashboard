@@ -1,0 +1,54 @@
+name: English V2.1 draft PR and Preview metadata
+on:
+  push:
+    branches: [feat/web-english-audio-v2]
+    paths: ['.github/workflows/english-v21-pr.yml']
+permissions:
+  contents: read
+  pull-requests: write
+  deployments: read
+jobs:
+  deliver:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Create draft PR only, never merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh pr view feat/web-english-audio-v2 --json url --jq .url > /tmp/english-pr-url; then
+            cat /tmp/english-pr-url
+          else
+            if ! gh pr create --draft --base main --head feat/web-english-audio-v2 --title "feat(web): 英语音频学习 V2.1" --body-file docs/reviews/english-audio-v21.md > /tmp/english-pr-url 2>/tmp/english-pr-error; then
+              python3 - <<'PY'
+              from pathlib import Path
+              text=Path('/tmp/english-pr-error').read_text().replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+              print('::error title=Draft PR creation blocked::'+text)
+              PY
+              exit 1
+            fi
+          fi
+          echo "::notice title=V2.1 draft PR::$(cat /tmp/english-pr-url)"
+      - name: Read current Preview deployment (no deploy commands)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: liuchengyin/lambert-ai-os-dashboard
+        run: |
+          python3 - <<'PY'
+          import json,os,subprocess,time
+          repo=os.environ['GH_REPO'];sha=os.environ['GITHUB_SHA']
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+repo+'/'+path],text=True))
+          for attempt in range(6):
+              found=False
+              for d in api('deployments?sha='+sha):
+                  if d.get('production_environment'):continue
+                  for s in api('deployments/'+str(d['id'])+'/statuses')[:1]:
+                      if s['state']=='success' and s.get('environment_url'):
+                          print('::notice title=V2.1 current Preview::'+s['environment_url']);found=True
+              if found:break
+              if attempt<5:time.sleep(10)
+          PY
