@@ -5,6 +5,9 @@ on:
     paths: ['android/**','mobile/**','shared-audio/**','scripts/bundle-android.py','scripts/audio-video-assets.py','.github/workflows/audio-library-android.yml']
 permissions:
   contents: read
+concurrency:
+  group: audio-native-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   apk:
     runs-on: ubuntu-24.04
@@ -47,7 +50,6 @@ jobs:
         if: "!contains(github.event.head_commit.message, '[package-verified]')"
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          script-shell: bash
           api-level: 35
           target: google_apis
           arch: x86_64
@@ -56,8 +58,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           script: |
             adb shell settings put secure show_ime_with_hard_keyboard 1
-            set -o pipefail
-            gradle -p android --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=app.lambert.tasks.AudioPlaybackTest 2>&1 | tee /tmp/audio-device.log
+            bash -o pipefail -c 'gradle -p android --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=app.lambert.tasks.AudioPlaybackTest 2>&1 | tee /tmp/audio-device.log'
             mkdir -p keyboard-test
             adb pull /sdcard/Android/data/app.lambert.tasks.trial/files/keyboard.png keyboard-test/keyboard.png || echo "Optional screenshot was removed by test cleanup; instrumentation assertions already passed"
       - name: Verify signature and permissions
