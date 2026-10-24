@@ -89,7 +89,7 @@
       </div>
       <section id="rv2StandaloneView" class="reading-standalone" role="tabpanel" aria-labelledby="rv2NotesTab" hidden>
         <header class="reading-standalone-header"><div id="rv2StandaloneArchiveTools"></div><button id="rv2StandaloneNew" type="button" class="reading-secondary">＋ 新建笔记</button></header>
-        <div class="reading-standalone-grid"><aside class="reading-standalone-list" aria-label="我的独立笔记"><div id="rv2StandaloneList"></div></aside><div class="reading-standalone-editor"><input id="rv2StandaloneTitle" type="text" maxlength="160" aria-label="笔记标题" placeholder="无标题笔记"><textarea id="rv2StandaloneBody" aria-label="笔记正文" placeholder="## 解读 → 分割线 → 原文"></textarea><div id="rv2StandaloneRich" class="reading-rich-slot" hidden></div><footer><span id="rv2StandaloneStatus" role="status" aria-live="polite">本地保存</span><div class="reading-standalone-actions"><button type="button" id="rv2StandaloneArchive" class="reading-secondary">归档飞书</button><a id="rv2StandaloneFeishuLink" target="_blank" rel="noopener" hidden>查看飞书</a></div><button type="button" id="rv2StandaloneDelete" class="reading-secondary">删除当前笔记</button></footer></div></div>
+        <div class="reading-standalone-grid"><aside class="reading-standalone-list" aria-label="我的独立笔记"><div id="rv2StandaloneList"></div></aside><div class="reading-standalone-editor"><div class="reading-standalone-type-row"><label for="rv2StandaloneType">笔记模板</label><select id="rv2StandaloneType" aria-label="独立笔记卡片类型"><option>观念卡</option><option>案例卡</option><option>方法卡</option></select></div><input id="rv2StandaloneTitle" type="text" maxlength="160" aria-label="笔记标题" placeholder="无标题笔记"><textarea id="rv2StandaloneBody" aria-label="笔记正文" placeholder="## 解读 → 分割线 → 原文"></textarea><div id="rv2StandaloneRich" class="reading-rich-slot" hidden></div><footer><span id="rv2StandaloneStatus" role="status" aria-live="polite">本地保存</span><div class="reading-standalone-actions"><button type="button" id="rv2StandaloneArchive" class="reading-secondary">归档飞书</button><a id="rv2StandaloneFeishuLink" target="_blank" rel="noopener" hidden>查看飞书</a></div><button type="button" id="rv2StandaloneDelete" class="reading-secondary">删除当前笔记</button></footer></div></div>
       </section>
       <div id="rv2SplitHistory"> <section class="reading-records">
         <div class="reading-records-head"><div><h3>阅读记录</h3><span>已保存的卡片与历史阅读记录</span></div></div>
@@ -216,7 +216,7 @@
   try {
     const stored=JSON.parse(localStorage.getItem(STANDALONE)||'[]');
     if(Array.isArray(stored))standaloneNotes=stored.filter(n=>n&&typeof n.id==='string').map(n=>({
-      ...n,id:n.id,title:String(n.title||''),body:String(n.body||''),updatedAt:String(n.updatedAt||'')
+      ...n,id:n.id,title:String(n.title||''),body:String(n.body||''),type:['观念卡','案例卡','方法卡'].includes(n.type)?n.type:'观念卡',updatedAt:String(n.updatedAt||'')
     }));
   } catch {
     standaloneStatus.textContent='无法读取旧笔记；为避免覆盖，已暂停保存';
@@ -232,7 +232,7 @@
     for(const note of [...standaloneNotes].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))){
       const button=document.createElement('button');button.type='button';button.className='reading-standalone-item';
       button.classList.toggle('active',note.id===standaloneId);
-      const name=document.createElement('strong');name.textContent=note.title||'无标题笔记';
+      const name=document.createElement('strong');name.textContent=(note.type||'观念卡')+'：'+(note.title||'无标题笔记');
       const stamp=document.createElement('span');stamp.textContent=note.updatedAt?note.updatedAt.slice(0,16).replace('T',' '):'新建';
       button.append(name,stamp);button.onclick=()=>selectStandalone(note.id);list.append(button);
     }
@@ -241,22 +241,22 @@
     clearTimeout(standaloneSaveTimer);
     if(!standaloneId)return true;
     const note=standaloneNotes.find(n=>n.id===standaloneId);if(!note)return true;
-    const title=$('rv2StandaloneTitle').value,body=standaloneEditorReady&&standaloneEditor?standaloneEditor.getValue():$('rv2StandaloneBody').value;
-    if(note.title===title&&note.body===body)return true;
-    note.title=title;note.body=body;note.updatedAt=new Date().toISOString();
+    const title=$('rv2StandaloneTitle').value,type=$('rv2StandaloneType').value,body=standaloneEditorReady&&standaloneEditor?standaloneEditor.getValue():$('rv2StandaloneBody').value;
+    if(note.title===title&&note.body===body&&note.type===type)return true;
+    note.title=title;note.body=body;note.type=type;note.updatedAt=new Date().toISOString();
     const ok=persistStandalone();renderStandaloneList();return ok;
   }
   function selectStandalone(id){
     if(!flushStandalone())return;
     const note=standaloneNotes.find(n=>n.id===id);if(!note)return;
-    standaloneId=id;$('rv2StandaloneTitle').value=note.title;$('rv2StandaloneBody').value=note.body;
+    standaloneId=id;$('rv2StandaloneTitle').value=note.title;$('rv2StandaloneType').value=note.type||'观念卡';$('rv2StandaloneBody').value=note.body;
     renderStandaloneList();standaloneStatus.textContent='本地保存';
     if(standaloneEditorReady&&standaloneEditor)standaloneEditor.setValue(note.body||'');
     updateStandaloneArchiveLink(note);
   }
   function newStandalone(){
     if(!flushStandalone()||!standaloneReadSafe)return;
-    const note={id:uid(),title:'',body:'## 解读\n\n\n---\n\n## 原文\n\n',updatedAt:new Date().toISOString()};
+    const note={id:uid(),type:$('rv2StandaloneType').value||'观念卡',title:'',body:'## 解读\n\n\n---\n\n## 原文\n\n',updatedAt:new Date().toISOString()};
     standaloneNotes.unshift(note);
     if(!persistStandalone())return;
     selectStandalone(note.id);$('rv2StandaloneTitle').focus();
@@ -276,6 +276,7 @@
   $('rv2SplitTab').onclick=()=>switchReadingTab('split');
   $('rv2NotesTab').onclick=()=>switchReadingTab('standalone');
   $('rv2StandaloneNew').onclick=newStandalone;
+  $('rv2StandaloneType').addEventListener('change',()=>{standaloneStatus.textContent='待保存…';flushStandalone()});
   $('rv2StandaloneDelete').onclick=()=>{
     if(!standaloneReadSafe||!standaloneId)return;
     if(!window.confirm('确定删除这条独立笔记？此操作不能撤销。'))return;
@@ -340,7 +341,7 @@
       if(!window.ArchiveTargets)throw Error('请先配置飞书归档位置');
       const dest=await window.ArchiveTargets.getDestination('reading');
       const response=await fetch('/api/feishu-daily',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        date:dateKey(),title:note.title||'独立笔记',markdown:note.body,source:'reading',
+        date:dateKey(),title:(note.type||'观念卡')+'：'+(note.title||'独立笔记'),markdown:note.body,source:'reading',
         locationId:dest.id,previousTargetToken:note.archiveTargetToken||'',
         documentToken:note.feishuDocumentToken||'',wikiToken:note.feishuWikiToken||''
       })});
