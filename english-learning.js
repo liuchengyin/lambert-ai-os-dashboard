@@ -213,8 +213,14 @@
   let phoneticAudio=null,phoneticRepeatLeft=0;
   const studyElapsed={video:0,phonetic:0};
   let activeSince=null;
+  let legacyVisible=true;
+  section.addEventListener('lambert:english-mode',event=>{
+    legacyVisible=!event.detail.audio;
+    if(!legacyVisible){pauseStudy();stopRecording();section.querySelectorAll('#englishVideoV1 audio, #englishVideoV1 video').forEach(media=>media.pause());}
+    else if(section.classList.contains('activeView'))resumeStudy();
+  });
   function pauseStudy(){if(activeSince!==null){studyElapsed[state.activeTab]+=Date.now()-activeSince;activeSince=null}}
-  function resumeStudy(){if(activeSince===null&&!document.hidden)activeSince=Date.now()}
+  function resumeStudy(){if(legacyVisible&&activeSince===null&&!document.hidden)activeSince=Date.now()}
   function studyMinutes(tab){return Math.max(1,Math.ceil((studyElapsed[tab]+(state.activeTab===tab&&activeSince!==null?Date.now()-activeSince:0))/60000))}
   document.addEventListener('click',e=>{const b=e.target.closest?.('nav button[data-v]');if(b&&b.dataset.v!=='english')pauseStudy()});
   document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseStudy();else if(section.classList.contains('activeView'))resumeStudy()});

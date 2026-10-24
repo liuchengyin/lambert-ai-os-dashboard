@@ -1,0 +1,56 @@
+name: English V2.1 existing report and delivery diagnostics
+on:
+  push:
+    branches: [feat/web-english-audio-v2]
+    paths: ['.github/workflows/english-v21-delivery.yml']
+permissions:
+  contents: read
+  actions: read
+  checks: read
+  deployments: read
+  statuses: read
+jobs:
+  report:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Read existing reports only (no AI invocation)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: liuchengyin/lambert-ai-os-dashboard
+        run: |
+          gh run download 40066279516 --name deepseek-flash-independent-review --dir /tmp/english-flash
+          gh run view 40066279516 --log-failed > /tmp/english-delivery-error.log
+          gh run view 40066741021 --log-failed > /tmp/english-browser-error.log
+          python3 - <<'PY'
+          import json,re,subprocess
+          from pathlib import Path
+          def notice(title,text):
+              safe=str(text).replace('%','%25').replace('\r','%0D').replace('\n','%0A')
+              print('::notice title='+title+'::'+safe)
+          report=json.loads(Path('/tmp/english-flash/deepseek-flash-review.json').read_text())
+          notice('Actual Flash usage',json.dumps({k:report.get(k) for k in ['commit','requestedModel','reportedModel','usage','summary']},ensure_ascii=False))
+          for f in report.get('findings',[]):notice('Existing Flash finding',json.dumps(f,ensure_ascii=False))
+          for file in ['english-delivery-error.log','english-browser-error.log']:
+              text=Path('/tmp/'+file).read_text()
+              lines=[line for line in text.splitlines() if re.search(r'not permitted|GraphQL:|TimeoutError|AssertionError|ERR_ASSERTION|Error:|waiting for|at file:|at /home/runner|locator\.',line)]
+              notice(file,'\n'.join(lines[-18:])[-6000:])
+          repo='liuchengyin/lambert-ai-os-dashboard'
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+repo+'/'+path],text=True))
+          try:
+              sha=api('git/ref/heads/feat/web-english-audio-v2')['object']['sha']
+              status=api('commits/'+sha+'/status')
+              for s in status.get('statuses',[]):
+                  if 'vercel' in s.get('context','').lower():notice('Vercel commit status',json.dumps({k:s.get(k) for k in ['context','state','target_url','description']}))
+              import time
+              for attempt in range(10):
+                  found=False
+                  for d in api('deployments?sha='+sha):
+                      if d.get('production_environment'):continue
+                      for s in api('deployments/'+str(d['id'])+'/statuses')[:1]:
+                          if s['state']=='success':
+                              notice('Preview deployment',json.dumps({k:s.get(k) for k in ['state','environment_url','log_url']}));found=True
+                  if found:break
+                  if attempt<9:time.sleep(5)
+          except subprocess.CalledProcessError:notice('Preview lookup','GitHub deployment metadata unavailable')
+          PY

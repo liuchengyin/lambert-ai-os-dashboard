@@ -1,9 +1,14 @@
-name: English Learning V1 Smoke Test
+name: English Learning V2.1 and Legacy Smoke Test
 on:
+  push:
+    branches: [feat/web-english-audio-v2]
+    paths: ['english-*', 'tests/english-*', '.github/workflows/english-learning-smoke.yml']
   pull_request:
     paths:
       - 'index.html'
       - 'english-learning.js'
+      - 'english-audio-*'
+      - 'tests/english-audio-v2.mjs'
       - 'english-learning-*.css'
       - 'english-app.html'
       - 'english-app-lite.css'
@@ -32,8 +37,28 @@ jobs:
           mkdir -p tests/fixtures
           if ! command -v ffmpeg >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y ffmpeg; fi
           ffmpeg -hide_banner -loglevel error -f lavfi -i color=c=blue:s=320x180:r=15 -f lavfi -i sine=frequency=440:sample_rate=44100 -t 6 -c:v libvpx -b:v 250k -c:a libvorbis -y tests/fixtures/english-smoke.webm
-      - name: Run local dashboard and Chromium smoke test
+      - name: Generate audio fixtures
         run: |
+          mkdir -p /tmp/lambert-audio-fixtures
+          ffmpeg -hide_banner -loglevel error -f lavfi -i sine=frequency=440:sample_rate=16000 -t 45 -c:a pcm_s16le -y /tmp/lambert-audio-fixtures/lesson.wav
+          ffmpeg -hide_banner -loglevel error -i /tmp/lambert-audio-fixtures/lesson.wav -c:a libmp3lame -y /tmp/lambert-audio-fixtures/lesson.mp3
+          ffmpeg -hide_banner -loglevel error -i /tmp/lambert-audio-fixtures/lesson.wav -c:a aac -y /tmp/lambert-audio-fixtures/lesson.m4a
+      - name: Run local dashboard and Chromium smoke test
+        env:
+          TEST_BROWSER_CHANNEL: chrome
+        run: |
+          google-chrome --version
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
-          node tests/english-learning-smoke.mjs
+          run_english_test() {
+            if node "$1" > /tmp/english-browser-test.log 2>&1; then
+              cat /tmp/english-browser-test.log
+            else
+              english_test_exit=$?
+              cat /tmp/english-browser-test.log
+              python3 -c 'from pathlib import Path; text=Path("/tmp/english-browser-test.log").read_text()[-6000:].replace("%","%25").replace("\r","%0D").replace("\n","%0A"); print("::error title=English browser failure::"+text)'
+              return "$english_test_exit"
+            fi
+          }
+          run_english_test tests/english-audio-v2.mjs
+          run_english_test tests/english-learning-smoke.mjs

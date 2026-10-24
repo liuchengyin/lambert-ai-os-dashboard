@@ -1,11 +1,12 @@
 name: DeepSeek Flash Independent Review
 on:
   push:
-    branches: [feat/web-home-ai-layout]
+    branches: [feat/web-home-ai-layout, feat/web-english-audio-v2]
     paths: ['.github/workflows/deepseek-flash-review.yml']
   workflow_dispatch:
 permissions:
   contents: read
+  pull-requests: write
 concurrency:
   group: deepseek-flash-independent-review
   cancel-in-progress: false
@@ -20,6 +21,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Fetch integration base (read only)
+        run: git fetch origin main
       - name: Check review harness without paid calls
         run: node tests/deepseek-flash-review.mjs
       - name: Review selected scope (one Flash request)
@@ -28,6 +31,8 @@ jobs:
         run: |
           if [ "$GITHUB_REF_NAME" = feat/web-home-ai-layout ]; then
             node scripts/deepseek-flash-review.mjs --run --home-ui
+          elif [ "$GITHUB_REF_NAME" = feat/web-english-audio-v2 ]; then
+            node scripts/deepseek-flash-review.mjs --run --english-audio
           else
             node scripts/deepseek-flash-review.mjs --run
           fi
@@ -38,3 +43,17 @@ jobs:
           path: review-output/
           if-no-files-found: error
           retention-days: 14
+      - name: Create V2.1 draft PR with actual review report
+        if: github.ref_name == 'feat/web-english-audio-v2'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module - <<'JS'
+          import {readFileSync,writeFileSync} from 'node:fs';
+          writeFileSync('/tmp/english-v21-pr.md',readFileSync('docs/reviews/english-audio-v21.md','utf8')+'\n\n'+readFileSync('review-output/deepseek-flash-review.md','utf8'));
+          JS
+          if gh pr view feat/web-english-audio-v2 --json url --jq .url > /tmp/english-v21-pr-url; then
+            cat /tmp/english-v21-pr-url
+          else
+            gh pr create --draft --base main --head feat/web-english-audio-v2 --title "feat(web): 英语音频学习 V2.1" --body-file /tmp/english-v21-pr.md
+          fi
