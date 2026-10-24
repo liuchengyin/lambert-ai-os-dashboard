@@ -14,7 +14,7 @@ function open(taskId,api){
   if(!draft.repeat)draft.repeat='none';
   var pendingTasks=[];
   var dirty=false;
-  var saved=false,closing=false,saveTimer=null,fieldComposing=false;
+  var closing=false,saveTimer=null,fieldComposing=false;
   var owner=window.LambertData&&window.LambertData.active;
   var dlg=document.createElement('dialog');dlg.setAttribute('aria-label','编辑任务');
   dlg.className='mtd-dialog';
@@ -95,7 +95,7 @@ function open(taskId,api){
   var delBtn=el('button','mtd-del');delBtn.appendChild(window.MobileCompose.icon('trash'));delBtn.type='button';delBtn.setAttribute('aria-label','删除任务');
   delBtn.addEventListener('click',function(){
     if(!confirm('确定删除任务？'))return;
-    try{var all=clone(api.readTasks());var t=findTask(all,taskId);if(isDead(t))throw new Error('任务不存在或已归档/删除');t.deletedAt=new Date().toISOString();t.updatedAt=t.deletedAt;api.writeTasks(all);saved=true;close();}catch(e){showError(e);}
+    try{var all=clone(api.readTasks());var t=findTask(all,taskId);if(isDead(t))throw new Error('任务不存在或已归档/删除');t.deletedAt=new Date().toISOString();t.updatedAt=t.deletedAt;api.writeTasks(all);close();}catch(e){showError(e);}
   });
   foot.appendChild(created);foot.appendChild(delBtn);
   metaCard.appendChild(foot);
@@ -140,12 +140,12 @@ function open(taskId,api){
     var merged=Object.assign({},cur,draft,{updatedAt:new Date().toISOString()});
     var out=all.map(function(t){return t.id===taskId?merged:t;}).concat(pendingTasks);
     if(toggle)out=M.toggle(out,taskId,api.today());
-    api.writeTasks(out);orig=clone(findTask(out,taskId));draft.updatedAt=orig.updatedAt;pendingTasks=[];saved=true;dirty=false;clearTimeout(saveTimer);error.textContent='';saveStatus.textContent='已保存';
+    api.writeTasks(out);orig=clone(findTask(out,taskId));draft.updatedAt=orig.updatedAt;pendingTasks=[];dirty=false;clearTimeout(saveTimer);error.textContent='';saveStatus.textContent='已保存';
   }
   doneBtn.addEventListener('click',function(){
     try{
       doSave(true);
-      saved=true;close();
+      close();
     }catch(err){showError(err);}
   });
   document.body.appendChild(dlg);

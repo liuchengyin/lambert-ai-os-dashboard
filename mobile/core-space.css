@@ -105,3 +105,8 @@
 @media(prefers-reduced-motion:reduce){.task-scopes button{transition:none}}
 
 #accountButton[hidden]{display:none}
+
+.review-datebar .review-account{flex:0 0 40px;min-width:40px;min-height:44px;align-self:center;display:flex;align-items:center;justify-content:center;padding:8px;background:transparent;border:0;color:#81869a}
+.review-account>span:not(.ic){display:none}
+.review-account .ic{display:grid;place-items:center;width:24px;height:24px}
+.review-account .ic svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
