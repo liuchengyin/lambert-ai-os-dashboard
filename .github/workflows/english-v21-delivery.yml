@@ -21,7 +21,7 @@ jobs:
         run: |
           gh run download 40066279516 --name deepseek-flash-independent-review --dir /tmp/english-flash
           gh run view 40066279516 --log-failed > /tmp/english-delivery-error.log
-          gh run view 40066279473 --log-failed > /tmp/english-browser-error.log
+          gh run view 40066741021 --log-failed > /tmp/english-browser-error.log
           python3 - <<'PY'
           import json,re,subprocess
           from pathlib import Path

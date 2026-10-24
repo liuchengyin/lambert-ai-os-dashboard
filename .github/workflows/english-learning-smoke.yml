@@ -47,5 +47,15 @@ jobs:
         run: |
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
-          node tests/english-audio-v2.mjs
-          node tests/english-learning-smoke.mjs
+          run_english_test() {
+            if node "$1" > /tmp/english-browser-test.log 2>&1; then
+              cat /tmp/english-browser-test.log
+            else
+              english_test_exit=$?
+              cat /tmp/english-browser-test.log
+              python3 -c 'from pathlib import Path; text=Path("/tmp/english-browser-test.log").read_text()[-6000:].replace("%","%25").replace("\r","%0D").replace("\n","%0A"); print("::error title=English browser failure::"+text)'
+              return "$english_test_exit"
+            fi
+          }
+          run_english_test tests/english-audio-v2.mjs
+          run_english_test tests/english-learning-smoke.mjs
