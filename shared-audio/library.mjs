@@ -12,11 +12,11 @@ export async function mountAudioLibrary(root,{access=()=>window.LambertAccount.a
  const render=()=>view.render(s),track=id=>s.tracks.find(t=>t.id===id),collection=()=>s.collections.find(c=>c.id===s.collectionId);
  const player=createPlayer(view.playerHost,{checkpoint:saveProgress,onNext:auto=>step(1,!!auto),onPrevious:()=>step(-1,false),onError:view.message,onNativeTrack:id=>{const t=track(id);if(t){if(s.trackId)void flushNote(s.trackId);s.trackId=id;s.collectionId=t.collection_id;editorVersions.set(id,t.note_version);render();}}});
  const current=(user,token)=>s.userId===user&&epoch===token;
- async function refresh(){const user=s.userId,token=epoch;if(!user)return;const value=await cloud.read(user);if(!current(user,token))return;Object.assign(s,value);await store.saveSnapshot(user,value);render();}
+ async function refresh(){const user=s.userId,token=epoch;if(!user)return;const value=await cloud.read(user);if(!current(user,token))return;Object.assign(s,value);await store.saveSnapshot(user,value);player.attach(s.tracks,user);render();}
  async function connect(){
-  const token=++epoch;queue?.pause();player.stop();s.userId=null;s.collectionId=null;s.trackId=null;s.collections=[];s.tracks=[];s.jobs=[];s.drafts=new Map();render();
+  const previousUser=s.userId,token=++epoch;queue?.pause();if(previousUser)player.stop();s.userId=null;s.collectionId=null;s.trackId=null;s.collections=[];s.tracks=[];s.jobs=[];s.drafts=new Map();render();
   const ctx=await access();if(token!==epoch)return;s.userId=ctx.userId;
-  const cached=await store.snapshot(ctx.userId);if(token!==epoch)return;if(cached)Object.assign(s,cached);
+  const cached=await store.snapshot(ctx.userId);if(token!==epoch)return;if(cached){Object.assign(s,cached);player.attach(s.tracks,ctx.userId);}
   s.drafts=new Map((await store.drafts(ctx.userId)).map(d=>[d.trackId,d]));
   const activeUser=ctx.userId;queue=new ImportQueue({store,upload:(j,f,p)=>cloud.upload(j,f,p),onChange:jobs=>{if(current(activeUser,token)){s.jobs=jobs;render();}}});cloud.onReserved=j=>store.save(j);
   await queue.restore(activeUser);if(!current(activeUser,token))return;render();

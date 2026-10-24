@@ -13,6 +13,7 @@ import androidx.media3.session.MediaSession;
 import androidx.media3.session.MediaSessionService;
 
 /** Native owner of audio: survives Activity/WebView backgrounding and supplies lock-screen controls. */
+@androidx.annotation.OptIn(markerClass=androidx.media3.common.util.UnstableApi.class)
 public final class AudioPlaybackService extends MediaSessionService {
  private ExoPlayer player;
  private MediaSession session;

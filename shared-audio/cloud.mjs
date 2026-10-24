@@ -1,6 +1,6 @@
 export const BUCKET='lambert-audio-private',MAX_BYTES=25*1024*1024;
 const safeCodes=new Set(['collection_full','audio_quota_exceeded','invalid_audio','track_not_found','collection_not_found','object_not_confirmed','invalid_note','invalid_progress','invalid_track_order','mutation_id_reused']);
-export function audioError(error){const code=error?.message||'';return ({audio_login_required:'请先登录账户',account_mismatch:'账号已变化，请重新打开音频',audio_cloud_not_configured:'音频云库尚未配置，请先应用音频迁移',collection_full:'音频集已满（最多200条）',audio_quota_exceeded:'已达到本账户音频容量限制',file_too_large:'音频超过25 MiB限制',unsupported_audio:'文件无法播放，请检查格式',network_link_not_transferable:'链接无法转存，请检查跨域授权或下载文件后导入',object_not_confirmed:'云端文件尚未确认，请重试',note_conflict:'备注存在冲突，两个版本均已保留'})[code]||'操作未完成，原文件和本地草稿已保留，请重试';}
+export function audioError(error){const code=error?.message||'';return ({invalid_type:'仅支持 MP3、M4A、WAV 音频',empty_file:'不能导入空文件',too_large:'音频超过25 MiB限制',storage_blocked:'本机存储被其他页面占用，请关闭后重试',invalid_file:'无法读取文件，请重新选择',audio_login_required:'请先登录账户',account_mismatch:'账号已变化，请重新打开音频',audio_cloud_not_configured:'音频云库尚未配置，请先应用音频迁移',collection_full:'音频集已满（最多200条）',audio_quota_exceeded:'已达到本账户音频容量限制',file_too_large:'音频超过25 MiB限制',unsupported_audio:'文件无法播放，请检查格式',network_link_not_transferable:'链接无法转存，请检查跨域授权或下载文件后导入',object_not_confirmed:'云端文件尚未确认，请重试',note_conflict:'备注存在冲突，两个版本均已保留'})[code]||'操作未完成，原文件和本地草稿已保留，请重试';}
 export class AudioCloud {
  constructor(access){this.access=access;}
  async context(userId){const ctx=await this.access();if(ctx.userId!==userId)throw Error('account_mismatch');return ctx;}

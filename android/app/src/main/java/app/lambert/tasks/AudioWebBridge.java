@@ -21,11 +21,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 /** Main-frame, exact-origin bridge. Signed URLs stay in memory and are never logged. */
+@androidx.annotation.OptIn(markerClass=androidx.media3.common.util.UnstableApi.class)
 final class AudioWebBridge {
  private final MainActivity activity;
  private MediaController controller;
  private ListenableFuture<MediaController> pending;
  private JavaScriptReplyProxy reply;
+ private final java.util.ArrayDeque<JSONObject> commands=new java.util.ArrayDeque<>();
  private final Handler handler=new Handler(Looper.getMainLooper());
  private final Runnable tick=new Runnable(){public void run(){emit();handler.postDelayed(this,1000);}};
  AudioWebBridge(MainActivity owner,WebView web){
@@ -39,9 +41,9 @@ final class AudioWebBridge {
   handler.post(tick);
  }
  private void connect(JSONObject command){
-  if(pending!=null){error();return;}
+  if(commands.size()>=32){error();return;}commands.add(command);if(pending!=null)return;
   pending=new MediaController.Builder(activity,new SessionToken(activity,new ComponentName(activity,AudioPlaybackService.class))).buildAsync();
-  pending.addListener(()->{try{controller=pending.get();controller.addListener(new Player.Listener(){@Override public void onPlayerError(androidx.media3.common.PlaybackException failure){error();}@Override public void onEvents(Player p,Player.Events events){emit();}});execute(command);}catch(Exception ignored){error();}finally{pending=null;}},commandTask->handler.post(commandTask));
+  pending.addListener(()->{try{controller=pending.get();controller.addListener(new Player.Listener(){@Override public void onPlayerError(androidx.media3.common.PlaybackException failure){error();}@Override public void onEvents(Player p,Player.Events events){emit();}});while(!commands.isEmpty())execute(commands.remove());}catch(Exception ignored){commands.clear();error();}finally{pending=null;}},commandTask->handler.post(commandTask));
  }
  private boolean signed(Uri u){return "https".equals(u.getScheme())&&u.getUserInfo()==null&&(u.getPort()==-1||u.getPort()==443)&&u.getHost()!=null&&u.getHost().matches("[a-z0-9-]+\\.supabase\\.co")&&u.getPath()!=null&&u.getPath().startsWith("/storage/v1/object/sign/lambert-audio-private/");}
  private void execute(JSONObject c){try{
@@ -71,7 +73,7 @@ final class AudioWebBridge {
  }catch(Exception ignored){error();}}
  private void error(){if(reply!=null)try{reply.postMessage("{\"error\":\"native_audio_failed\"}");}catch(Exception ignored){}}
  private void emit(){if(reply==null||controller==null)return;try{
-  JSONObject data=new JSONObject();MediaItem item=controller.getCurrentMediaItem();data.put("mediaId",item==null?"":item.mediaId);data.put("position",controller.getCurrentPosition());data.put("duration",Math.max(0,controller.getDuration()));data.put("playing",controller.getPlayWhenReady()&&controller.getPlaybackState()!=Player.STATE_ENDED);data.put("rate",controller.getPlaybackParameters().speed);data.put("ended",controller.getPlaybackState()==Player.STATE_ENDED);reply.postMessage(data.toString());
+  JSONObject data=new JSONObject();MediaItem item=controller.getCurrentMediaItem();data.put("mediaId",item==null?"":item.mediaId);data.put("position",controller.getCurrentPosition());data.put("duration",Math.max(0,controller.getDuration()));data.put("playing",controller.getPlayWhenReady()&&controller.getPlaybackState()!=Player.STATE_ENDED);data.put("rate",controller.getPlaybackParameters().speed);data.put("ended",controller.getPlaybackState()==Player.STATE_ENDED);data.put("repeatOne",controller.getRepeatMode()==Player.REPEAT_MODE_ONE);reply.postMessage(data.toString());
  }catch(Exception ignored){}}
  void close(){handler.removeCallbacksAndMessages(null);reply=null;if(pending!=null)MediaController.releaseFuture(pending);if(controller!=null)controller.release();}
 }
