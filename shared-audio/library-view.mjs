@@ -18,7 +18,7 @@ export function createLibraryView(root,dispatch){
   message:text=>{notice.textContent=text;},
   render(s){
    toolbar.replaceChildren(button('音频集','home'),button('刷新','refresh'));
-   body.replaceChildren();study.hidden=!s.trackId;
+   body.replaceChildren();study.hidden=!s.trackId;if(!s.trackId)activeId=null;
    if(!s.userId){body.append(button('登录账户','login'));study.hidden=true;return;}
    const collection=s.collections.find(c=>c.id===s.collectionId),track=s.tracks.find(t=>t.id===s.trackId);
    if(!collection){

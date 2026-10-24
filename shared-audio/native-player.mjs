@@ -9,7 +9,7 @@ export function nativeAudio(){
  };
  Object.defineProperties(target,{currentTime:{get:()=>position,set:value=>{position=Math.max(0,value);send('seek',{position:Math.round(position*1000)});fire('timeupdate');}},duration:{get:()=>duration},playbackRate:{get:()=>rate,set:value=>{rate=value;send('rate',{rate});}},paused:{get:()=>paused},ended:{get:()=>ended},loop:{set:value=>send('repeat',{one:!!value})}});
  target.play=async()=>{send('play');};target.pause=()=>{if(!paused){paused=true;send('pause');fire('pause');}};
- target.loadNative=(next,playlist,options)=>{items=playlist.map(t=>({...t,userId:next.user_id}));track=next;target.currentTrack=next;position=options.position||0;duration=next.duration||0;paused=true;rate=options.rate||1;send('load',{userId:next.user_id,items:items.map(t=>({id:t.id,title:t.title,url:t.url,position:Math.round((t.position||0)*1000)})),index:items.findIndex(t=>t.id===next.id),position:Math.round(position*1000),rate,autoplay:!!options.autoplay});fire('timeupdate');};
+ target.loadNative=(next,playlist,options)=>{items=playlist.map(t=>({...t,userId:next.user_id}));track=next;target.currentTrack=next;position=options.position||0;duration=next.duration||0;paused=true;rate=options.rate||1;send('load',{userId:next.user_id,items:items.map(t=>({id:t.id,title:t.title,url:t.url,position:Math.round((t.position||0)*1000),updatedAt:Date.parse(t.last_played_at)||0})),index:items.findIndex(t=>t.id===next.id),position:Math.round(position*1000),rate,autoplay:!!options.autoplay});fire('timeupdate');};
  target.stopNative=()=>{paused=true;track=null;items=[];position=0;duration=0;send('stop');fire('pause');};
  target.native=true;return target;
 }

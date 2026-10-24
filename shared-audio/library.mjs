@@ -7,9 +7,10 @@ import {createPlayer} from './player.mjs';
 export async function mountAudioLibrary(root,{access=()=>window.LambertAccount.audioAccess()}={}){
  const s={userId:null,collections:[],tracks:[],jobs:[],drafts:new Map(),collectionId:null,trackId:null};
  let store,queue,epoch=0,noteTimer,saveChain=Promise.resolve(),progressChain=Promise.resolve(),selection=0;
+ const editorVersions=new Map();
  const cloud=new AudioCloud(access),view=createLibraryView(root,(action,data)=>{void dispatch(action,data).catch(error=>view.message(audioError(error)));});
  const render=()=>view.render(s),track=id=>s.tracks.find(t=>t.id===id),collection=()=>s.collections.find(c=>c.id===s.collectionId);
- const player=createPlayer(view.playerHost,{checkpoint:saveProgress,onNext:auto=>step(1,!!auto),onPrevious:()=>step(-1,false),onError:view.message,onNativeTrack:id=>{const t=track(id);if(t){if(s.trackId)void flushNote(s.trackId);s.trackId=id;s.collectionId=t.collection_id;render();}}});
+ const player=createPlayer(view.playerHost,{checkpoint:saveProgress,onNext:auto=>step(1,!!auto),onPrevious:()=>step(-1,false),onError:view.message,onNativeTrack:id=>{const t=track(id);if(t){if(s.trackId)void flushNote(s.trackId);s.trackId=id;s.collectionId=t.collection_id;editorVersions.set(id,t.note_version);render();}}});
  const current=(user,token)=>s.userId===user&&epoch===token;
  async function refresh(){const user=s.userId,token=epoch;if(!user)return;const value=await cloud.read(user);if(!current(user,token))return;Object.assign(s,value);await store.saveSnapshot(user,value);render();}
  async function connect(){
@@ -19,9 +20,9 @@ export async function mountAudioLibrary(root,{access=()=>window.LambertAccount.a
   s.drafts=new Map((await store.drafts(ctx.userId)).map(d=>[d.trackId,d]));
   const activeUser=ctx.userId;queue=new ImportQueue({store,upload:(j,f,p)=>cloud.upload(j,f,p),onChange:jobs=>{if(current(activeUser,token)){s.jobs=jobs;render();}}});cloud.onReserved=j=>store.save(j);
   await queue.restore(activeUser);if(!current(activeUser,token))return;render();
-  try{await refresh();view.message('');}catch(e){view.message(audioError(e));}
+  try{await refresh();view.message('');if(queue.jobs.some(j=>j.status==='queued'))void runQueue().catch(e=>view.message(audioError(e)));}catch(e){view.message(audioError(e));}
  }
- function editNote(text){const t=track(s.trackId);if(!t||!s.userId)return;const before=s.drafts.get(t.id),draft={userId:s.userId,trackId:t.id,text,baseVersion:before?.baseVersion??t.note_version,mutationId:crypto.randomUUID(),changedAt:Date.now(),...(before?.conflict?{conflict:true,remoteText:before.remoteText}: {})};s.drafts.set(t.id,draft);view.status('保存中');clearTimeout(noteTimer);
+ function editNote(text){const t=track(s.trackId);if(!t||!s.userId)return;const before=s.drafts.get(t.id),draft={userId:s.userId,trackId:t.id,text,baseVersion:before?.baseVersion??editorVersions.get(t.id)??t.note_version,mutationId:crypto.randomUUID(),changedAt:Date.now(),...(before?.conflict?{conflict:true,remoteText:before.remoteText}: {})};s.drafts.set(t.id,draft);view.status('保存中');clearTimeout(noteTimer);
   // Write-through draft before any network request; never clear a newer mutation.
   saveChain=saveChain.catch(()=>{}).then(async()=>{const saved=await store.saveDraft(draft);if(!saved.durable)view.status('保存失败：本机空间不足，请复制备注');});
   noteTimer=setTimeout(()=>{void flushNote(t.id);},650);
@@ -33,7 +34,7 @@ export async function mountAudioLibrary(root,{access=()=>window.LambertAccount.a
    const live=s.drafts.get(id),t=track(id);if(answer.status==='conflict'){
     if(live){live.conflict=true;live.remoteText=answer.record.note;live.remoteVersion=answer.record.note_version;await store.saveDraft(live);}view.status('保存失败：备注冲突，草稿已保留');render();return;
    }
-   if(answer.status!=='applied')throw Error('note_save_failed');if(t){t.note=answer.record.note;t.note_version=answer.record.note_version;}
+   if(answer.status!=='applied')throw Error('note_save_failed');if(t){t.note=answer.record.note;t.note_version=answer.record.note_version;}editorVersions.set(id,answer.record.note_version);
    if(live?.mutationId===draft.mutationId){await store.clearDraft(user,id,draft.mutationId);s.drafts.delete(id);if(s.trackId===id)view.status('已保存');}
    else if(live){live.baseVersion=answer.record.note_version;await store.saveDraft(live);}
   }catch{if(current(user,token)&&s.trackId===id)view.status('保存失败 · 本地草稿已保留');}};
@@ -44,7 +45,7 @@ export async function mountAudioLibrary(root,{access=()=>window.LambertAccount.a
   progressChain=progressChain.catch(()=>{}).then(async()=>{await store.saveProgress(user,id,row);if(!remote||!current(user,token))return;const live=track(id);const result=await cloud.progress(user,live,{...row,baseVersion:live.progress_version});if(!current(user,token))return;if(result.status==='applied'){live.position=result.record.position;live.rate=result.record.rate;live.progress_version=result.record.progress_version;}else{view.message('播放记录在其他设备更新；本机进度已保留，重新进入时可选择');}}).catch(()=>{if(current(user,token))view.message('播放位置已保存在本机，云同步待重试');});
  }
  async function openTrack(id,autoplay=false){const t=track(id);if(!t||t.status!=='ready')return;const token=++selection,user=s.userId,authEpoch=epoch;const old=s.trackId;if(old)void flushNote(old);player.pause();
-  const [links,local]=await Promise.all([cloud.signed(user,window.LambertNativeAudio?s.tracks.filter(x=>x.collection_id===t.collection_id&&x.status==='ready').sort((a,b)=>a.sort_order-b.sort_order):[t]),store.progress(user,id)]);if(token!==selection||!current(user,authEpoch))return;const link=links.find(x=>x.id===id);if(!link?.url)throw Error('audio_unavailable');s.trackId=id;s.collectionId=t.collection_id;render();view.status(s.drafts.has(id)?'本地草稿待同步':'已保存');
+  const [links,local]=await Promise.all([cloud.signed(user,window.LambertNativeAudio?s.tracks.filter(x=>x.collection_id===t.collection_id&&x.status==='ready').sort((a,b)=>a.sort_order-b.sort_order):[t]),store.progress(user,id)]);if(token!==selection||!current(user,authEpoch))return;const link=links.find(x=>x.id===id);if(!link?.url)throw Error('audio_unavailable');s.trackId=id;s.collectionId=t.collection_id;editorVersions.set(id,t.note_version);render();view.status(s.drafts.has(id)?'本地草稿待同步':'已保存');
   // A local checkpoint based on the same cloud version is safe to resume automatically.
   const resume=local&&local.baseVersion===t.progress_version?local:{position:t.position,rate:t.rate};
   await player.load(t,link.url,{...resume,autoplay,playlist:links.map(l=>({...track(l.id),...l}))});

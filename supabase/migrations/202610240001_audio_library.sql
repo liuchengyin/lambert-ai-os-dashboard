@@ -162,6 +162,6 @@ grant execute on function public.lambert_audio_collection(uuid,text,bigint),publ
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
  values('lambert-audio-private','lambert-audio-private',false,26214400,array['audio/mpeg','audio/mp4','audio/wav','audio/x-wav']);
 create policy audio_private_read on storage.objects for select to authenticated using(bucket_id='lambert-audio-private' and exists(select 1 from public.lambert_audio_tracks t where t.user_id=(select auth.uid()) and t.storage_path=name));
-create policy audio_private_upload on storage.objects for insert to authenticated with check(bucket_id='lambert-audio-private' and exists(select 1 from public.lambert_audio_tracks t where t.user_id=(select auth.uid()) and t.storage_path=name and t.status='reserved' and t.bytes=(metadata->>'size')::bigint));
+create policy audio_private_upload on storage.objects for insert to authenticated with check(bucket_id='lambert-audio-private' and exists(select 1 from public.lambert_audio_tracks t where t.user_id=(select auth.uid()) and t.storage_path=name and t.status='reserved' and t.bytes=coalesce(metadata->>'size',metadata->>'contentLength')::bigint));
 -- No public bucket, upsert/update/delete policy, or modifications to task/review tables.
 commit;

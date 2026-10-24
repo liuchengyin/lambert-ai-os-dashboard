@@ -41,7 +41,7 @@ final class AudioWebBridge {
  private void connect(JSONObject command){
   if(pending!=null){error();return;}
   pending=new MediaController.Builder(activity,new SessionToken(activity,new ComponentName(activity,AudioPlaybackService.class))).buildAsync();
-  pending.addListener(()->{try{controller=pending.get();controller.addListener(new Player.Listener(){@Override public void onEvents(Player p,Player.Events events){emit();}});execute(command);}catch(Exception ignored){error();}finally{pending=null;}},activity.getMainExecutor());
+  pending.addListener(()->{try{controller=pending.get();controller.addListener(new Player.Listener(){@Override public void onPlayerError(androidx.media3.common.PlaybackException failure){error();}@Override public void onEvents(Player p,Player.Events events){emit();}});execute(command);}catch(Exception ignored){error();}finally{pending=null;}},commandTask->handler.post(commandTask));
  }
  private boolean signed(Uri u){return "https".equals(u.getScheme())&&u.getUserInfo()==null&&(u.getPort()==-1||u.getPort()==443)&&u.getHost()!=null&&u.getHost().matches("[a-z0-9-]+\\.supabase\\.co")&&u.getPath()!=null&&u.getPath().startsWith("/storage/v1/object/sign/lambert-audio-private/");}
  private void execute(JSONObject c){try{
@@ -51,7 +51,7 @@ final class AudioWebBridge {
     JSONArray list=c.getJSONArray("items");if(list.length()<1||list.length()>200)throw new Exception();ArrayList<MediaItem> items=new ArrayList<>();String user=c.getString("userId");if(!user.matches("[a-f0-9-]{36}"))throw new Exception();
     for(int i=0;i<list.length();i++){
      JSONObject t=list.getJSONObject(i);String id=t.getString("id");if(!id.matches("[a-f0-9-]{36}"))throw new Exception();Uri uri=Uri.parse(t.getString("url"));if(!signed(uri))throw new Exception();
-     if(!uri.getPath().startsWith("/storage/v1/object/sign/lambert-audio-private/"+user+"/"))throw new Exception();Bundle extras=new Bundle();extras.putLong("position",Math.max(0,t.optLong("position",0)));
+     if(!uri.getPath().startsWith("/storage/v1/object/sign/lambert-audio-private/"+user+"/"))throw new Exception();Bundle extras=new Bundle();extras.putLong("position",Math.max(0,t.optLong("position",0)));extras.putLong("updatedAt",t.optLong("updatedAt",0));
      items.add(new MediaItem.Builder().setMediaId(user+":"+id).setUri(uri).setMediaMetadata(new MediaMetadata.Builder().setTitle(t.getString("title")).setArtist("Lambert · 英语学习").setExtras(extras).build()).build());
     }
     controller.pause();controller.setMediaItems(items,c.optInt("index",0),Math.max(0,c.optLong("position",0)));controller.setPlaybackSpeed((float)c.optDouble("rate",1));controller.prepare();if(c.optBoolean("autoplay"))controller.play();break;

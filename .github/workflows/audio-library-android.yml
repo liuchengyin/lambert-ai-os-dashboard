@@ -93,6 +93,9 @@ jobs:
           if log.exists():
               lines=[x for x in log.read_text().splitlines() if re.search(r'error:|cannot find symbol|incompatible types|BUILD (SUCCESSFUL|FAILED)|lint found',x)]
               notice('Native build', '\n'.join(lines[-16:]))
+          for file in Path('android/app/build/reports').glob('lint-results-*.xml'):
+              for issue in ET.parse(file).getroot().findall('issue'):
+                  if issue.get('severity')=='Error':notice('Native lint',issue.get('id','')+': '+issue.get('message','')[:2000])
           for file in Path('android/app/build/outputs/androidTest-results').rglob('*.xml'):
               try:
                   root=ET.parse(file).getroot()

@@ -39,6 +39,9 @@ try{
  failNotes=true;await page.getByLabel('当前音频备注').fill('断网草稿');await page.getByText('保存失败 · 本地草稿已保留',{exact:true}).waitFor();assert.equal(tracks[1].note,'备注10');
  const drafts=await page.evaluate(async()=>{const {openLibraryStore}=await import('/shared-audio/local-store.mjs');const store=await openLibraryStore();const result=await store.drafts('11111111-1111-4111-8111-111111111111');store.close();return result;});assert.equal(drafts[0].text,'断网草稿');
  failNotes=false;await page.getByRole('button',{name:'刷新',exact:true}).click();await page.getByText('已保存',{exact:true}).waitFor();assert.equal(tracks[1].note,'断网草稿');
+ // A background refresh must not give stale editor text a newer CAS version.
+ tracks[1].note='其他设备修改';tracks[1].note_version++;await page.getByRole('button',{name:'刷新',exact:true}).click();await page.waitForTimeout(100);
+ await page.getByLabel('当前音频备注').fill('本机并发修改');await page.getByRole('button',{name:'保留本地版本',exact:true}).waitFor();assert.equal(tracks[1].note,'其他设备修改');await page.getByRole('button',{name:'保留本地版本',exact:true}).click();await page.getByText('已保存',{exact:true}).waitFor();assert.equal(tracks[1].note,'本机并发修改');
  for(const width of [320,390,768]){await page.setViewportSize({width,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`overflow ${width}`);}
  await page.evaluate(()=>window.dispatchEvent(new Event('lambert:audio-stop')));await page.getByRole('button',{name:'登录账户',exact:true}).waitFor();assert.equal(await audio.evaluate(a=>a.paused),true);assert.equal(await page.getByLabel('当前音频备注').inputValue(),'');
  assert.deepEqual(errors,[]);assert.ok(notes>=3);console.log('PASS mobile/shared library: native-independent playback, 3/7s, notes, failed draft recovery, responsive, logout isolation');

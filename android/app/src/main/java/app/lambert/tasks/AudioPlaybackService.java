@@ -29,7 +29,7 @@ public final class AudioPlaybackService extends MediaSessionService {
    @Override public void onMediaItemTransition(MediaItem item,int reason){
     activeKey=item==null?null:item.mediaId;
     if(item!=null&&reason!=Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT){
-     long resume=progress.getLong(activeKey,item.mediaMetadata.extras==null?0:item.mediaMetadata.extras.getLong("position",0));
+     long cloudPosition=item.mediaMetadata.extras==null?0:item.mediaMetadata.extras.getLong("position",0);long cloudAt=item.mediaMetadata.extras==null?0:item.mediaMetadata.extras.getLong("updatedAt",0);long resume=progress.getLong(activeKey+":at",0)>cloudAt?progress.getLong(activeKey,cloudPosition):cloudPosition;
      if(resume>0)player.seekTo(resume);
     }
    }
@@ -40,7 +40,7 @@ public final class AudioPlaybackService extends MediaSessionService {
   });
   session=new MediaSession.Builder(this,player).build();handler.post(tick);
  }
- private void checkpoint(){if(player!=null&&activeKey!=null&&player.getPlaybackState()!=Player.STATE_IDLE)progress.edit().putLong(activeKey,Math.max(0,player.getCurrentPosition())).putFloat(activeKey+":rate",player.getPlaybackParameters().speed).apply();}
+ private void checkpoint(){if(player!=null&&activeKey!=null&&player.getPlaybackState()!=Player.STATE_IDLE)progress.edit().putLong(activeKey,Math.max(0,player.getCurrentPosition())).putLong(activeKey+":at",System.currentTimeMillis()).putFloat(activeKey+":rate",player.getPlaybackParameters().speed).apply();}
  @Override public MediaSession onGetSession(MediaSession.ControllerInfo controller){
   // Own Activity and trusted system media controllers only; no arbitrary app can inject URLs.
   return controller.getPackageName().equals(getPackageName())||controller.isTrusted()?session:null;

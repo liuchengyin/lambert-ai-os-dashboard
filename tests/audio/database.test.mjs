@@ -17,7 +17,10 @@ test('audio RLS, 200 limit, quota, confirmed objects, stable notes and conflict 
  const first=await reserve(2);assert.equal(first.status,'reserved');
  await assert.rejects(rpc('lambert_audio_confirm',[id(2),45]),/object_not_confirmed/);
  await assert.rejects(db.query('insert into storage.objects values($1,$2,$3)',['lambert-audio-private',first.storage_path,JSON.stringify({size:2})]),/row-level security/);
- await db.query('insert into storage.objects values($1,$2,$3)',['lambert-audio-private',first.storage_path,JSON.stringify({size:1})]);
+ await assert.rejects(db.query('insert into storage.objects values($1,$2,$3)',['lambert-audio-private',first.storage_path,JSON.stringify({contentLength:2})]),/row-level security/);
+ await db.query('insert into storage.objects values($1,$2,$3)',['lambert-audio-private',first.storage_path,JSON.stringify({contentLength:1})]);
+ await assert.rejects(rpc('lambert_audio_confirm',[id(2),45]),/object_not_confirmed/);
+ await db.exec('reset role');await db.query('update storage.objects set metadata=$1 where name=$2',[JSON.stringify({size:1}),first.storage_path]);await as(A);
  assert.equal((await rpc('lambert_audio_confirm',[id(2),45])).status,'ready');
  const note=await rpc('lambert_audio_note',[id(900),id(2),'原备注',0]);assert.equal(note.record.note_version,1);
  assert.deepEqual(await rpc('lambert_audio_note',[id(900),id(2),'原备注',0]),note);
