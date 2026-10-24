@@ -29,6 +29,7 @@ try{
   const standalone=await page.evaluate(()=>JSON.parse(localStorage.getItem('reading_standalone_notes_v1')));
   assert.equal(standalone[0].title,'新想法');
   assert.equal(standalone[0].type,'案例卡');
+  assert.equal(await page.locator('.reading-standalone-item.active strong').textContent(),'案例卡：新想法');
   assert.equal(await page.locator('#rv2StandaloneArchive').count(),1);
   assert.equal(standalone[0].body,'我的第一条独立笔记');
   assert.equal(await page.evaluate(()=>localStorage.getItem('reading_workspace_v2')),before);
