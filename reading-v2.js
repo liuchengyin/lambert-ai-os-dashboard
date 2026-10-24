@@ -227,12 +227,19 @@
     try{localStorage.setItem(STANDALONE,JSON.stringify(standaloneNotes));standaloneStatus.textContent='已保存到本地';return true}
     catch{standaloneStatus.textContent='保存失败，请复制正文备份';return false}
   }
+  // Type is metadata, not a second title. Keep stored legacy text unchanged until user edits.
+  function displayCardTitle(note){
+    const type=note.type||'观念卡';
+    const original=String(note.title||'').trim();
+    const clean=original.replace(new RegExp('^'+type+'[：:]\\s*'),'').trim();
+    return clean||'无标题笔记';
+  }
   function renderStandaloneList(){
     const list=$('rv2StandaloneList');list.replaceChildren();
     for(const note of [...standaloneNotes].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))){
       const button=document.createElement('button');button.type='button';button.className='reading-standalone-item';
       button.classList.toggle('active',note.id===standaloneId);
-      const name=document.createElement('strong');name.textContent=(note.type||'观念卡')+'：'+(note.title||'无标题笔记');
+      const name=document.createElement('strong');name.textContent=(note.type||'观念卡')+'：'+displayCardTitle(note);
       const stamp=document.createElement('span');stamp.textContent=note.updatedAt?note.updatedAt.slice(0,16).replace('T',' '):'新建';
       button.append(name,stamp);button.onclick=()=>selectStandalone(note.id);list.append(button);
     }
@@ -249,7 +256,7 @@
   function selectStandalone(id){
     if(!flushStandalone())return;
     const note=standaloneNotes.find(n=>n.id===id);if(!note)return;
-    standaloneId=id;$('rv2StandaloneTitle').value=note.title;$('rv2StandaloneType').value=note.type||'观念卡';$('rv2StandaloneBody').value=note.body;
+    standaloneId=id;$('rv2StandaloneTitle').value=String(note.title||'').replace(new RegExp('^'+(note.type||'观念卡')+'[：:]\\s*'),'');$('rv2StandaloneType').value=note.type||'观念卡';$('rv2StandaloneBody').value=note.body;
     renderStandaloneList();standaloneStatus.textContent='本地保存';
     if(standaloneEditorReady&&standaloneEditor)standaloneEditor.setValue(note.body||'');
     updateStandaloneArchiveLink(note);
@@ -341,7 +348,7 @@
       if(!window.ArchiveTargets)throw Error('请先配置飞书归档位置');
       const dest=await window.ArchiveTargets.getDestination('reading');
       const response=await fetch('/api/feishu-daily',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        date:dateKey(),title:(note.type||'观念卡')+'：'+(note.title||'独立笔记'),markdown:note.body,source:'reading',
+        date:dateKey(),title:(note.type||'观念卡')+'：'+(displayCardTitle(note)==='无标题笔记'?'独立笔记':displayCardTitle(note)),markdown:note.body,source:'reading',
         locationId:dest.id,previousTargetToken:note.archiveTargetToken||'',
         documentToken:note.feishuDocumentToken||'',wikiToken:note.feishuWikiToken||''
       })});
