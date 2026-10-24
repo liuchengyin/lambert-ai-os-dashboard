@@ -4,13 +4,13 @@ if (!key) throw Error('missing_ZHIPU_API_KEY');
 const model = 'glm-5.3-flash'; // Flash only; never upgrade automatically.
 const promptPath = process.argv[2];
 const reviewSource = await readFile('lib/task-center-model.js', 'utf8');
-const reviewPrompt = '请独立审查以下任务数据模型模块，不修改代码。重点检查日期有效性、时区、甘特边界、失效项目ID、旧数据迁移及归档兼容。只报告有代码依据的问题，区分确认缺陷和待验证假设，引用函数名并提供最小复现输入、预期与实际结果，给出至少8项可执行测试案例。若未发现缺陷如实说明。输出中文完整审查报告。源码如下：\n' + reviewSource;
+const reviewPrompt = '请独立审查以下任务数据模型模块，不修改代码。仅检查day、dayNumber、range三个日期函数。最多报告一个确认缺陷；无缺陷就说明。给出3个具体输入和预期输出测试案例。不要扩展讨论其他函数。请快速完成思考，最终中文报告不超过400字。源码如下：\n' + reviewSource;
 const prompt = promptPath ? await readFile(promptPath, 'utf8') : reviewPrompt;
 if (prompt.length > 24000) throw Error('prompt_too_large');
 const response = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
   method: 'POST',
   headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
-  body: JSON.stringify({ model, thinking: { type: 'enabled' }, temperature: 1, max_tokens: 8192,
+  body: JSON.stringify({ model, thinking: { type: 'enabled' }, reasoning_effort: 'low', temperature: 1, max_tokens: 4096,
     messages: [{ role: 'user', content: prompt }] }),
   signal: AbortSignal.timeout(150000)
 });
