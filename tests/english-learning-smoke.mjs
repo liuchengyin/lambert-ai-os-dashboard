@@ -22,6 +22,7 @@ try {
   check('English navigation installed',navs.includes('english'));
   await page.locator('nav button[data-v="english"]').click();
   check('English view activated',await page.locator('#english').evaluate(e=>e.classList.contains('activeView')));
+  await page.locator('#eaVideoTab').click();
   check('Lightweight video/audio app link is available',await page.locator('#english .english-lite-link').getAttribute('href')==='english-app.html');
   check('Both stylesheets loaded',await page.evaluate(()=>['english-learning-v1.css','english-learning-media-v1.css'].every(name=>[...document.styleSheets].some(s=>s.href?.includes(name)))));
   await page.locator('#enImportSrt').setInputFiles({name:'test.srt',mimeType:'text/plain',buffer:Buffer.from(srt)});
@@ -92,6 +93,7 @@ try {
   check('Study duration is positive',(await getState()).records[0].duration>=1);
   await page.reload();
   await page.locator('nav button[data-v="english"]').click();
+  await page.locator('#eaVideoTab').click();
   check('Progress persists after refresh',(await getState()).courses.find(x=>x.type==='video').completedSteps.length===6);
   await page.locator('.english-tab[data-tab="phonetic"]').click();
   await page.locator('#enPhoneticSymbol').fill('/ɪ/');
