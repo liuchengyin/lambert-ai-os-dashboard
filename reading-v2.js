@@ -28,14 +28,14 @@
   reading.innerHTML=`
     <div class="reading-stable-page">
       <div class="reading-stable-head">
-        <div><h2>每日阅读</h2></div>
-        <label class="reading-progress-field"><span>阅读进度</span><input id="rv2Progress" placeholder="例如：42% / 第 3 章 / P120"></label>
-      </div>
-
+        <h2 class="reading-visually-hidden">每日阅读</h2>
       <div class="reading-view-tabs" role="tablist" aria-label="每日阅读工作模式">
         <button type="button" id="rv2SplitTab" role="tab" aria-selected="true" aria-controls="rv2SplitView">读书 + 笔记</button>
         <button type="button" id="rv2NotesTab" role="tab" aria-selected="false" aria-controls="rv2StandaloneView">独立笔记</button>
       </div>
+        <label class="reading-progress-field"><span>阅读进度</span><input id="rv2Progress" placeholder="例如：42% / 第 3 章 / P120"></label>
+      </div>
+
       <div id="rv2SplitView" role="tabpanel" aria-labelledby="rv2SplitTab"><div class="reading-stable-workspace">
         <section class="reading-stable-reader">
           <div class="reading-reader-toolbar">
@@ -69,11 +69,11 @@
 
           <div class="reading-card-title"><strong id="rv2CardPrefix">观念卡：</strong><input id="rv2CardTitle" placeholder="给这张卡一个标题"></div>
 
-          <label class="reading-editor-field"><span>我的思考</span><textarea id="rv2Thought" placeholder="写下你的理解、判断和迁移……"></textarea></label>
+          <label class="reading-editor-field"><span>解读</span><textarea id="rv2Thought" placeholder="写下你的解读……"></textarea></label><div id="rv2ThoughtRich" class="reading-rich-slot" hidden></div>
 
           <div class="reading-divider"><span>原文</span></div>
           <div class="reading-clip-row"><span>从阅读内容中摘录原文</span><button id="rv2Clipboard" class="reading-secondary">从剪贴板导入</button></div>
-          <label class="reading-editor-field reading-source-field"><textarea id="rv2Excerpt" placeholder="原文 / 摘录"></textarea></label>
+          <label class="reading-editor-field reading-source-field"><textarea id="rv2Excerpt" placeholder="原文 / 摘录"></textarea></label><div id="rv2ExcerptRich" class="reading-rich-slot" hidden></div>
 
           <div class="reading-template-hint"><strong>模板提示</strong><div id="rv2Prompts"></div></div>
 
@@ -88,8 +88,8 @@
 
       </div>
       <section id="rv2StandaloneView" class="reading-standalone" role="tabpanel" aria-labelledby="rv2NotesTab" hidden>
-        <header class="reading-standalone-header"><div><h3>独立笔记</h3><p>自由记录，与阅读卡片分开保存</p></div><button id="rv2StandaloneNew" type="button" class="reading-secondary">＋ 新建笔记</button></header>
-        <div class="reading-standalone-grid"><aside class="reading-standalone-list" aria-label="我的独立笔记"><div id="rv2StandaloneList"></div></aside><div class="reading-standalone-editor"><input id="rv2StandaloneTitle" type="text" maxlength="160" aria-label="笔记标题" placeholder="无标题笔记"><textarea id="rv2StandaloneBody" aria-label="笔记正文" placeholder="在这里自由记录你的想法……"></textarea><footer><span id="rv2StandaloneStatus" role="status" aria-live="polite">本地保存</span><button type="button" id="rv2StandaloneDelete" class="reading-secondary">删除当前笔记</button></footer></div></div>
+        <header class="reading-standalone-header"><div id="rv2StandaloneArchiveTools"></div><button id="rv2StandaloneNew" type="button" class="reading-secondary">＋ 新建笔记</button></header>
+        <div class="reading-standalone-grid"><aside class="reading-standalone-list" aria-label="我的独立笔记"><div id="rv2StandaloneList"></div></aside><div class="reading-standalone-editor"><input id="rv2StandaloneTitle" type="text" maxlength="160" aria-label="笔记标题" placeholder="无标题笔记"><textarea id="rv2StandaloneBody" aria-label="笔记正文" placeholder="## 解读 → 分割线 → 原文"></textarea><div id="rv2StandaloneRich" class="reading-rich-slot" hidden></div><footer><span id="rv2StandaloneStatus" role="status" aria-live="polite">本地保存</span><div class="reading-standalone-actions"><button type="button" id="rv2StandaloneArchive" class="reading-secondary">归档飞书</button><a id="rv2StandaloneFeishuLink" target="_blank" rel="noopener" hidden>查看飞书</a></div><button type="button" id="rv2StandaloneDelete" class="reading-secondary">删除当前笔记</button></footer></div></div>
       </section>
       <div id="rv2SplitHistory"> <section class="reading-records">
         <div class="reading-records-head"><div><h3>阅读记录</h3><span>已保存的卡片与历史阅读记录</span></div></div>
@@ -173,7 +173,7 @@
     const btn=$('rv2Archive');btn.disabled=true;btn.textContent=n.feishuDocumentToken?'正在更新…':'正在归档…';$('rv2Status').textContent='正在同步飞书…';
     const title=`${n.type}：${n.title||n.sourceTitle||'阅读笔记'}`;
     const meta=[n.sourceTitle?`**阅读对象：** ${n.sourceTitle}`:'',n.progress?`**阅读进度：** ${n.progress}`:'',`**记录日期：** ${n.date||dateKey()}`].filter(Boolean).join('\n\n');
-    const markdown=`${meta}\n\n## 我的思考\n\n${n.thought||''}\n\n---\n\n## 原文\n\n${n.excerpt||''}`;
+    const markdown=`${meta}\n\n## 解读\n\n${n.thought||''}\n\n---\n\n## 原文\n\n${n.excerpt||''}`;
     try{
       if(!window.ArchiveTargets)throw Error('归档位置设置尚未加载，请刷新后重试');
       const destination=await ArchiveTargets.getDestination('reading');
@@ -212,7 +212,7 @@
   try {
     const stored=JSON.parse(localStorage.getItem(STANDALONE)||'[]');
     if(Array.isArray(stored))standaloneNotes=stored.filter(n=>n&&typeof n.id==='string').map(n=>({
-      id:n.id,title:String(n.title||''),body:String(n.body||''),updatedAt:String(n.updatedAt||'')
+      ...n,id:n.id,title:String(n.title||''),body:String(n.body||''),updatedAt:String(n.updatedAt||'')
     }));
   } catch {
     standaloneStatus.textContent='无法读取旧笔记；为避免覆盖，已暂停保存';
@@ -250,7 +250,7 @@
   }
   function newStandalone(){
     if(!flushStandalone()||!standaloneReadSafe)return;
-    const note={id:uid(),title:'',body:'',updatedAt:new Date().toISOString()};
+    const note={id:uid(),title:'',body:'## 解读\n\n\n---\n\n## 原文\n\n',updatedAt:new Date().toISOString()};
     standaloneNotes.unshift(note);
     if(!persistStandalone())return;
     selectStandalone(note.id);$('rv2StandaloneTitle').focus();
