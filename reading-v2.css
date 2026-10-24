@@ -58,3 +58,17 @@
 #reading .reading-standalone-type-row{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 #reading .reading-standalone-type-row label{font-size:12px;font-weight:700;color:#777080}
 #reading .reading-standalone-type-row select{width:150px;max-width:60%;height:36px;border:1px solid #ded8ed;border-radius:8px;padding:0 9px;background:#fff;color:#4d4267}
+
+
+/* Explicit visible rule separating interpretation and source text in Markdown editor. */
+#reading .reading-rich-slot .vditor-ir hr,
+#reading .reading-rich-slot .vditor-wysiwyg hr,
+#reading .reading-rich-slot .vditor-preview hr{
+  display:block!important;
+  border:0!important;
+  border-top:2px solid #cbc7d8!important;
+  width:100%!important;
+  height:0!important;
+  margin:22px 0!important;
+  opacity:1!important;
+}
