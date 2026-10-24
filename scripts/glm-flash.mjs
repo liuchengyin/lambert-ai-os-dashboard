@@ -3,7 +3,9 @@ const key = process.env.ZHIPU_API_KEY;
 if (!key) throw Error('missing_ZHIPU_API_KEY');
 const model = 'glm-4.7-flash'; // Flash only; never upgrade automatically.
 const promptPath = process.argv[2];
-const prompt = promptPath ? await readFile(promptPath, 'utf8') : '请为纯函数completionPercent(done,total)写JavaScript实现和5个边界测试案例。规则：total<=0返回0，done限制在0到total，百分比四舍五入。只输出JSON对象，字段code（函数源码字符串）、cases（参数和预期结果数组）。不要Markdown。';
+const reviewSource = await readFile('lib/task-center-model.js', 'utf8');
+const reviewPrompt = '请独立审查以下任务数据模型模块，不修改代码。重点检查日期有效性、时区、甘特边界、失效项目ID、旧数据迁移及归档兼容。只报告有代码依据的问题，区分确认缺陷和待验证假设，引用函数名并提供最小复现输入、预期与实际结果，给出至少8项可执行测试案例。若未发现缺陷如实说明。输出中文完整审查报告。源码如下：\n' + reviewSource;
+const prompt = promptPath ? await readFile(promptPath, 'utf8') : reviewPrompt;
 if (prompt.length > 24000) throw Error('prompt_too_large');
 const response = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completions', {
   method: 'POST',
@@ -24,4 +26,5 @@ await writeFile('review-output/glm-flash.json', JSON.stringify({
   model: data.model, usage: data.usage, finish_reason: choice.finish_reason, content: choice.message.content
 }, null, 2));
 console.log(JSON.stringify({ model: data.model, usage: data.usage, finish_reason: choice.finish_reason }));
+console.log(choice.message.content);
 console.log('GLM draft saved; review before adoption. Generated code is never automatically executed.');
