@@ -8,17 +8,19 @@ import java.io.ByteArrayInputStream;
 
 public final class MainActivity extends Activity {
  private WebView web;
+ private AudioWebBridge audioBridge;
+ private ValueCallback<android.net.Uri[]> fileCallback;
  private boolean backPending;
  private CloudUpdater updater;
  private int bootChecks;
  private final android.os.Handler bootHandler=new android.os.Handler(android.os.Looper.getMainLooper());
  private static final String HOST="appassets.androidplatform.net";
- private boolean local(android.net.Uri u){return "https".equals(u.getScheme())&&HOST.equals(u.getHost())&&u.getPath()!=null&&(u.getPath().startsWith("/assets/mobile/")||u.getPath().startsWith("/assets/shared-sync/"));}
+ private boolean local(android.net.Uri u){return "https".equals(u.getScheme())&&HOST.equals(u.getHost())&&u.getPath()!=null&&(u.getPath().startsWith("/assets/mobile/")||u.getPath().startsWith("/assets/shared-sync/")||u.getPath().startsWith("/assets/shared-audio/"));}
  private boolean cloud(android.net.Uri u){
   if(!"https".equals(u.getScheme())||u.getUserInfo()!=null||(u.getPort()!=-1&&u.getPort()!=443))return false;
   String host=u.getHost(),path=u.getPath();if(host==null||path==null)return false;
   if("lambert-ai-os-dashboard.vercel.app".equals(host)&&("/api/account-config".equals(path)||"/api/feishu-review".equals(path)))return true;
-  return host.matches("[a-z0-9-]+\\.supabase\\.co")&&(path.startsWith("/auth/v1/")||path.startsWith("/rest/v1/"));
+  return host.matches("[a-z0-9-]+\\.supabase\\.co")&&(path.startsWith("/auth/v1/")||path.startsWith("/rest/v1/")||path.startsWith("/storage/v1/"));
  }
  @Override public void onCreate(Bundle state){
   super.onCreate(state);
@@ -55,7 +57,13 @@ public final class MainActivity extends Activity {
     return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",java.util.Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
    }
   });
+  audioBridge=new AudioWebBridge(this,web);
   web.setWebChromeClient(new WebChromeClient(){
+   @Override public boolean onShowFileChooser(WebView v,ValueCallback<android.net.Uri[]> callback,FileChooserParams params){
+    if(fileCallback!=null)fileCallback.onReceiveValue(null);fileCallback=callback;
+    android.content.Intent pick=new android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT);pick.addCategory(android.content.Intent.CATEGORY_OPENABLE);pick.setType("*/*");pick.putExtra(android.content.Intent.EXTRA_ALLOW_MULTIPLE,params.getMode()==FileChooserParams.MODE_OPEN_MULTIPLE);pick.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION|android.content.Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+    try{startActivityForResult(pick,42);}catch(android.content.ActivityNotFoundException e){fileCallback=null;callback.onReceiveValue(null);}return true;
+   }
    @Override public boolean onJsAlert(WebView v,String url,String msg,JsResult result){new AlertDialog.Builder(MainActivity.this).setMessage(msg).setPositiveButton("确定",(d,w)->result.confirm()).setOnCancelListener(d->result.cancel()).show();return true;}
    @Override public void onPermissionRequest(PermissionRequest request){request.deny();}
   });
@@ -67,5 +75,6 @@ public final class MainActivity extends Activity {
  private void checkBoot(){if(web==null||updater==null||!updater.probation())return;web.evaluateJavascript("Boolean(window.MobileBootReady&&window.LambertData&&document.querySelectorAll('#tabs button').length>=3)",ready->{if(isDestroyed()||isFinishing()||web==null)return;if("true".equals(ready)){updater.healthy();bootHandler.removeCallbacksAndMessages(null);}else if(++bootChecks>=30){failBoot();}else bootHandler.postDelayed(()->checkBoot(),500);});}
  private void handleBack(){if(backPending)return;backPending=true;web.evaluateJavascript("Boolean(window.MobileNavigation&&window.MobileNavigation.back())", handled->{backPending=false;if(!"true".equals(handled)){if(web.canGoBack())web.goBack();else finish();}});}
  @Override public void onBackPressed(){handleBack();}
- @Override protected void onDestroy(){bootHandler.removeCallbacksAndMessages(null);if(web!=null){web.destroy();web=null;}super.onDestroy();}
+ @Override protected void onActivityResult(int request,int result,android.content.Intent data){super.onActivityResult(request,result,data);if(request!=42||fileCallback==null)return;ValueCallback<android.net.Uri[]> callback=fileCallback;fileCallback=null;java.util.ArrayList<android.net.Uri> uris=new java.util.ArrayList<>();if(result==RESULT_OK&&data!=null){if(data.getClipData()!=null){for(int i=0;i<data.getClipData().getItemCount();i++)uris.add(data.getClipData().getItemAt(i).getUri());}else if(data.getData()!=null)uris.add(data.getData());for(android.net.Uri uri:uris)try{getContentResolver().takePersistableUriPermission(uri,android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);}catch(SecurityException ignored){}}callback.onReceiveValue(uris.isEmpty()?null:uris.toArray(new android.net.Uri[0]));}
+ @Override protected void onDestroy(){if(fileCallback!=null){fileCallback.onReceiveValue(null);fileCallback=null;}if(audioBridge!=null)audioBridge.close();bootHandler.removeCallbacksAndMessages(null);if(web!=null){web.destroy();web=null;}super.onDestroy();}
 }

@@ -11,7 +11,7 @@ var reviewDate=null;
 var reviewDrafts={},goalProjectFilters={},goalPickerOpen={},archiveBusy=false;
 var filterProject=null;
 var foldDone=true;
-var TABS=[['tasks','任务','check'],['projects','项目','board'],['review','复盘','review']];
+var TABS=[['tasks','任务','check'],['projects','项目','board'],['review','复盘','review'],['audio','英语','review']];
 
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
 function today(){return S.date();}
@@ -47,6 +47,7 @@ function render(){
   app.textContent='';app.className=tab==='review'?'review-page':'';
   if(tab==='tasks')renderTasks();
   else if(tab==='projects')renderProjects();
+  else if(tab==='audio')window.MobileAudio.mount(app);
   else renderReview();
   refreshStatus();
 }
@@ -180,6 +181,7 @@ function openProjectDialog(p){
 
 // Build a read-only neighbor without changing the visible page or saving data.
 window.MobileFilterPages={preview:function(direction){
+ if(tab==='audio')return null;
  var live=app,scope=filterScope,date=reviewDate,preview=document.createElement('main');preview.className=live.className;
  try{
   app=preview;

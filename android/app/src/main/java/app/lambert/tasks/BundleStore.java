@@ -36,7 +36,7 @@ public final class BundleStore {
   if(active().isEmpty())return null;if(!allowed(path))throw new IOException("invalid_asset");File folder=new File(root,active()),f=new File(folder,path);
   if(!f.getCanonicalPath().startsWith(folder.getCanonicalPath()+File.separator)||!f.isFile())throw new IOException("missing_asset");return f;
  }
- private static boolean allowed(String path){return path.matches("(?:mobile|shared-sync)/[A-Za-z0-9_./-]+\\.(?:html|js|mjs|css|json|svg|png|webp|jpg|jpeg|ico|woff2?)")&&!path.contains("..")&&!path.contains("//")&&!path.startsWith("mobile/updates/")&&!path.startsWith("shared-sync/tooling/");}
+ private static boolean allowed(String path){return path.matches("(?:mobile|shared-sync|shared-audio)/[A-Za-z0-9_./-]+\\.(?:html|js|mjs|css|json|svg|png|webp|jpg|jpeg|ico|woff2?)")&&!path.contains("..")&&!path.contains("//")&&!path.startsWith("mobile/updates/")&&!path.startsWith("shared-sync/tooling/");}
  public static String digest(byte[] bytes) throws IOException {try{byte[] hash=MessageDigest.getInstance("SHA-256").digest(bytes);StringBuilder s=new StringBuilder();for(byte b:hash)s.append(String.format(Locale.ROOT,"%02x",b&255));return s.toString();}catch(NoSuchAlgorithmException e){throw new IOException(e);}}
  public synchronized boolean install(byte[] zip,String sha,long release) throws IOException {
   if(!wants(sha,release))return false;if(zip.length>MAX_ZIP||!digest(zip).equals(sha))throw new IOException("invalid_digest");

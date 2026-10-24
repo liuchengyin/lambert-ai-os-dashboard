@@ -41,6 +41,8 @@
     $(id).onclick=()=>setMode(next);
     $(id).onkeydown=e=>{if(['ArrowLeft','ArrowRight','Home','End'].includes(e.key)){e.preventDefault();const target=e.key==='Home'?'audio':e.key==='End'?'video':mode==='audio'?'video':'audio';setMode(target);$(target==='audio'?'eaAudioTab':'eaVideoTab').focus();}};
   }
+  window.addEventListener('lambert:audio-owner',e=>{if(e.detail!=='legacy')audio.pause();});
+  window.addEventListener('lambert:audio-stop',()=>audio.pause());
   setMode('audio');
   function controls(ready){for(const id of ['eaPlay','eaBack','eaForward','eaProgress'])$(id).disabled=!ready;}
   function playing(on){$('eaRecord').classList.toggle('is-playing',on);$('eaPlay').textContent=audio.paused?'▶':'Ⅱ';$('eaPlay').setAttribute('aria-label',audio.paused?'播放音频':'暂停音频');}
@@ -79,7 +81,7 @@
     if(Number.isFinite(audio.duration)&&audio.duration>0){audio.currentTime=Math.min(current.position||0,Math.max(0,audio.duration-.1));controls(true);}else{controls(false);tell('该链接没有可用的音频时长，请使用支持拖动的音频直链。');}
     restoring=false;updateTime();
   };
-    player.onplaying=()=>{if(!valid())return;if(mode!=='audio'||!section.classList.contains('activeView')){player.pause();return;}playing(true);tell('正在播放 · 进度自动保存在本机');};
+    player.onplaying=()=>{if(!valid())return;window.dispatchEvent(new CustomEvent('lambert:audio-owner',{detail:'legacy'}));if(mode!=='audio'||!section.classList.contains('activeView')){player.pause();return;}playing(true);tell('正在播放 · 进度自动保存在本机');};
     player.onwaiting=()=>{if(valid())playing(false);};
     player.onpause=()=>{if(!valid())return;playing(false);saveProgress();if(!player.error&&!restoring)tell('已暂停 · 播放进度自动保存在本机');};
     player.onended=()=>{if(!valid())return;playing(false);saveProgress();tell('本段播放完毕，可拖动进度再次练习。');};

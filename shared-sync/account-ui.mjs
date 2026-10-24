@@ -114,7 +114,7 @@ function renderBody(){
         body.append(conflictCard(op,latest,choice=>action(async()=>{journal.resolve(op.kind,op.itemId,choice);renderBody();changed();await flush();})));
       }
     }
-    body.append(accountRow('退出登录','logout',()=>action(async()=>{await account.logout();leaveWorkspace();})));
+    body.append(accountRow('退出登录','logout',()=>action(async()=>{window.dispatchEvent(new Event('lambert:audio-stop'));await account.logout();leaveWorkspace();})));
   }
   if(native){
     const update=accountRow('检查云端更新','sync',()=>action(async()=>{
@@ -137,7 +137,13 @@ async function prepareCloudAction(){
   const session=await account.session();if(session?.user?.id!==current.userId||!session.access_token)throw Error('账号已变化，请重新打开复盘');
   return {accessToken:session.access_token};
 }
-window.LambertAccount={open,ready,status,prepareCloudAction};if(entry)entry.onclick=open;
+async function audioAccess(){
+  await ready;if(!account||!user)throw Error('audio_login_required');
+  const session=await account.session();
+  if(!session?.access_token||session.user?.id!==user.id)throw Error('account_mismatch');
+  return {userId:user.id,accessToken:session.access_token,url:config.url,publishableKey:config.publishableKey};
+}
+window.LambertAccount={open,ready,status,prepareCloudAction,audioAccess};if(entry)entry.onclick=open;
 async function start(){
   try{
     try{const response=await fetch(configUrl,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error('config_failed');config=await response.json();localStorage.setItem('lambert_public_config_v1',JSON.stringify(config));}
@@ -145,7 +151,7 @@ async function start(){
     if(config.configured){if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.url)||!/^sb_publishable_[A-Za-z0-9_-]+$/.test(config.publishableKey)||!/^https:\/\/[^/?#]+$/.test(config.siteUrl))throw Error('invalid_public_config');
       account=createAccount(createClient(config.url,config.publishableKey,{auth:{storageKey:SESSION_KEY+':'+new URL(config.url).host,persistSession:true,autoRefreshToken:true,detectSessionInUrl:accountPage,flowType:'implicit'}}),{redirectTo:config.siteUrl+'/account.html',registrationClient:createClient(config.url,config.publishableKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'lambert_registration_memory'}})});
       // Subscribe before getSession so PASSWORD_RECOVERY is not missed on the callback page.
-      account.subscribe((event,session)=>{setTimeout(()=>{if(leaving)return;const changedUser=(user?.id||null)!==(session?.user?.id||null);user=session?.user||null;if(!enforceWorkspaceUser())return;if(user&&(!journal||changedUser))journal=new WorkspaceJournal(localStorage,user.id);if(event==='PASSWORD_RECOVERY'){recovery=true;open();}if(event==='SIGNED_OUT'){if(window.LambertData?.active){leaveWorkspace();return;}localStorage.removeItem(ACTIVE_KEY);}if(changedUser||event==='PASSWORD_RECOVERY')renderBody();updateEntry();schedule();},0);});
+      account.subscribe((event,session)=>{setTimeout(()=>{if(leaving)return;const changedUser=(user?.id||null)!==(session?.user?.id||null);user=session?.user||null;if(!enforceWorkspaceUser())return;if(user&&(!journal||changedUser))journal=new WorkspaceJournal(localStorage,user.id);if(event==='PASSWORD_RECOVERY'){recovery=true;open();}if(event==='SIGNED_OUT'){if(window.LambertData?.active){leaveWorkspace();return;}localStorage.removeItem(ACTIVE_KEY);}if(changedUser){window.dispatchEvent(new Event('lambert:audio-stop'));window.dispatchEvent(new Event('lambert:audio-account'));}if(changedUser||event==='PASSWORD_RECOVERY')renderBody();updateEntry();schedule();},0);});
       const session=await account.session();user=session?.user||null;if(!enforceWorkspaceUser())return;if(user)journal=new WorkspaceJournal(localStorage,user.id);
     }
   }catch{config={configured:false};}
