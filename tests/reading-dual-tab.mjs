@@ -20,6 +20,16 @@ try{
   const before=await page.evaluate(()=>localStorage.getItem('reading_workspace_v2'));
   await page.locator('#rv2NotesTab').click();
   assert.equal(await page.locator('#rv2StandaloneView').isVisible(),true);
+  const layout=await page.evaluate(()=>{
+    const editor=document.querySelector('.reading-standalone-editor').getBoundingClientRect();
+    const index=document.querySelector('.reading-standalone-list').getBoundingClientRect();
+    const archive=document.querySelector('#rv2StandaloneArchiveTools').getBoundingClientRect();
+    return {editorRight:editor.right,indexLeft:index.left,indexWidth:index.width,editorBottom:editor.bottom,archiveTop:archive.top};
+  });
+  assert.ok(layout.indexLeft>=layout.editorRight-2,'Note list is to the right of editor');
+  assert.ok(layout.indexWidth<=220,'Note list stays compact');
+  assert.ok(layout.archiveTop>=layout.editorBottom-2,'Feishu settings are below editor');
+
   assert.equal(await page.locator('#rv2SplitView').isVisible(),false);
   await page.locator('#rv2StandaloneType').selectOption('案例卡');
   await page.locator('#rv2StandaloneTitle').fill('新想法');
