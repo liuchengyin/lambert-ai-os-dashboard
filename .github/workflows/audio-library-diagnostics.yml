@@ -16,7 +16,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: liuchengyin/lambert-ai-os-dashboard
         run: |
-          gh run view 40097976095 --log-failed > /tmp/audio-native-failed.txt
+          gh run view 40098488640 --log-failed > /tmp/audio-native-failed.txt
           python3 - <<'PY'
           from pathlib import Path
           import re
