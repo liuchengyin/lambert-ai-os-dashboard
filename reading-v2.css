@@ -72,3 +72,20 @@
   margin:22px 0!important;
   opacity:1!important;
 }
+
+
+/* Independent notes: editing canvas left, slim note index right; archive settings beneath. */
+#reading .reading-standalone-grid{grid-template-columns:minmax(0,1fr) 184px;gap:14px;align-items:stretch}
+#reading .reading-standalone-list{min-width:0;padding:6px;overflow:auto}
+#reading .reading-standalone-item{padding:9px 8px}
+#reading .reading-standalone-item strong{font-size:12px}
+#reading .reading-standalone-item span{font-size:10px}
+#reading .reading-standalone-header{justify-content:flex-end;margin-bottom:10px;min-height:40px}
+#reading .reading-standalone-archive-bottom{margin-top:14px;padding:12px 0 0;border-top:1px solid #e9e5ef;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+#reading .reading-standalone-archive-bottom .archive-target-control{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+#reading .reading-standalone-archive-bottom .archive-target-link{overflow-wrap:anywhere;min-width:0;max-width:100%;font-size:11px}
+@media(max-width:760px){
+ #reading .reading-standalone-grid{grid-template-columns:1fr}
+ #reading .reading-standalone-list{max-height:170px}
+ #reading .reading-standalone-archive-bottom{align-items:flex-start}
+}
