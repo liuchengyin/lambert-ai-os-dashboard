@@ -23,11 +23,7 @@ jobs:
             cat /tmp/english-pr-url
           else
             if ! gh pr create --draft --base main --head feat/web-english-audio-v2 --title "feat(web): 英语音频学习 V2.1" --body-file docs/reviews/english-audio-v21.md > /tmp/english-pr-url 2>/tmp/english-pr-error; then
-              python3 - <<'PY'
-              from pathlib import Path
-              text=Path('/tmp/english-pr-error').read_text().replace('%','%25').replace('\r','%0D').replace('\n','%0A')
-              print('::error title=Draft PR creation blocked::'+text)
-              PY
+              python3 -c 'from pathlib import Path; text=Path("/tmp/english-pr-error").read_text().replace("%","%25").replace("\r","%0D").replace("\n","%0A"); print("::error title=Draft PR creation blocked::"+text)'
               exit 1
             fi
           fi
