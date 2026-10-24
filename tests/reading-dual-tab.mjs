@@ -27,7 +27,7 @@ try{
   await page.locator('#rv2StandaloneBody').blur();
   assert.equal(await page.locator('#rv2StandaloneStatus').textContent(),'已保存到本地');
   const standalone=await page.evaluate(()=>JSON.parse(localStorage.getItem('reading_standalone_notes_v1')));
-  assert.equal(standalone[0].title,'新想法');
+  assert.equal(standalone[0].title,'案例卡：新想法');
   assert.equal(standalone[0].type,'案例卡');
   assert.equal(await page.locator('.reading-standalone-item.active strong').textContent(),'案例卡：新想法');
   assert.equal(await page.locator('#rv2StandaloneArchive').count(),1);
@@ -39,9 +39,13 @@ try{
   assert.equal(await page.locator('#rv2StandaloneBody').inputValue(),'我的第一条独立笔记');
   await page.reload();await page.locator('#rv2NotesTab').waitFor();
   assert.equal(await page.locator('#rv2StandaloneView').isVisible(),true);
-  assert.equal(await page.locator('#rv2StandaloneTitle').inputValue(),'新想法');
+  assert.equal(await page.locator('#rv2StandaloneTitle').inputValue(),'案例卡：新想法');
   assert.equal(await page.locator('#rv2StandaloneType').inputValue(),'案例卡');
+  await page.locator('#rv2StandaloneType').selectOption('方法卡');
+  assert.equal(await page.locator('#rv2StandaloneTitle').inputValue(),'方法卡：新想法');
+  assert.equal(await page.locator('.reading-standalone-item.active strong').textContent(),'方法卡：新想法');
   await page.locator('#rv2StandaloneNew').click();
+  assert.equal(await page.locator('#rv2StandaloneTitle').inputValue(),'方法卡：');
   assert.ok((await page.locator('#rv2StandaloneBody').inputValue()).includes('## 解读'));
   assert.ok((await page.locator('#rv2StandaloneBody').inputValue()).includes('## 原文'));
   assert.ok((await page.locator('#rv2StandaloneBody').inputValue()).includes('---'));
