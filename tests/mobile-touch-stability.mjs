@@ -9,7 +9,7 @@ try{
  await page.addInitScript(()=>{localStorage.tasks=JSON.stringify([{id:'t',title:'触屏滑动任务',due:'2026-10-24',status:'进行中',projectId:'p'}]);localStorage.projects=JSON.stringify([{id:'p',name:'触屏项目',status:'进行中'}]);});
  await page.goto((process.env.TEST_ORIGIN||'http://127.0.0.1:8765')+'/mobile/');await page.locator('[data-task-id=t]').waitFor();
  const cdp=await page.context().newCDPSession(page);
- await page.evaluate(()=>{window.touchTrace=[];for(const kind of ['gotpointercapture','lostpointercapture','pointercancel'])document.addEventListener(kind,e=>window.touchTrace.push({kind,target:e.target.className,fromTaskButton:!!e.target.closest('.task-edit,.chk'),pointer:e.pointerId}),true);});
+ await page.evaluate(()=>{window.touchTrace=[];for(const kind of ['pointerdown','gotpointercapture','lostpointercapture','pointercancel','pointerup'])document.addEventListener(kind,e=>window.touchTrace.push({kind,target:e.target.className,fromTaskButton:!!e.target.closest('.task-edit,.chk'),pointer:e.pointerId}),true);});
  const transform=()=>page.locator('[data-task-id=t]').evaluate(n=>new DOMMatrix(getComputedStyle(n).transform).m41);
  async function touch(selector,dx,dy=0,held){const b=await page.locator(selector).first().boundingBox();const x=b.x+b.width/2,y=b.y+b.height/2;await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});for(let i=1;i<=12;i++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx*i/12,y:y+dy*i/12}]});await page.waitForTimeout(12);}if(held)await held();await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(380);}
  async function checkRows(){
@@ -25,7 +25,7 @@ try{
   assert.ok(Math.abs(await transform()-width/4)<1);assert.equal(await page.locator('.task-swipe-complete').isVisible(),true);
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.tasks)[0].status),'进行中');
   await page.locator('[data-task-id=t] .task-edit').tap();await page.waitForTimeout(240);
-  await touch('[data-task-id=t] .chk',width*.32);assert.ok(Math.abs(await transform()-width/4)<1);
+  assert.equal(await transform(),0);await touch('[data-task-id=t] .chk',width*.32);assert.ok(Math.abs(await transform()-width/4)<1,JSON.stringify({offset:await transform(),width,trace:await page.evaluate(()=>touchTrace),task:await page.evaluate(()=>JSON.parse(localStorage.tasks)[0])}));
   await page.locator('[data-task-id=t] .task-edit').tap();await page.waitForTimeout(240);
  }
  await checkRows();await page.getByRole('button',{name:'项目',exact:true}).click();await page.getByRole('button',{name:'查看项目：触屏项目',exact:true}).click();await checkRows();
