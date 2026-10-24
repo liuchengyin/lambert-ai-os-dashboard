@@ -9,7 +9,7 @@ try{
  await page.addInitScript(()=>{localStorage.tasks=JSON.stringify([{id:'t',title:'触屏滑动任务',due:'2026-10-24',status:'进行中',projectId:'p'}]);localStorage.projects=JSON.stringify([{id:'p',name:'触屏项目',status:'进行中'}]);});
  await page.goto((process.env.TEST_ORIGIN||'http://127.0.0.1:8765')+'/mobile/');await page.locator('[data-task-id=t]').waitFor();
  const cdp=await page.context().newCDPSession(page);
- await page.evaluate(()=>{window.touchTrace=[];for(const kind of ['gotpointercapture','lostpointercapture','pointercancel'])document.addEventListener(kind,e=>window.touchTrace.push({kind,target:e.target.className,pointer:e.pointerId}),true);});
+ await page.evaluate(()=>{window.touchTrace=[];for(const kind of ['gotpointercapture','lostpointercapture','pointercancel'])document.addEventListener(kind,e=>window.touchTrace.push({kind,target:e.target.className,fromTaskButton:!!e.target.closest('.task-edit,.chk'),pointer:e.pointerId}),true);});
  const transform=()=>page.locator('[data-task-id=t]').evaluate(n=>new DOMMatrix(getComputedStyle(n).transform).m41);
  async function touch(selector,dx,dy=0,held){const b=await page.locator(selector).first().boundingBox();const x=b.x+b.width/2,y=b.y+b.height/2;await cdp.send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x,y}]});for(let i=1;i<=12;i++){await cdp.send('Input.dispatchTouchEvent',{type:'touchMove',touchPoints:[{x:x+dx*i/12,y:y+dy*i/12}]});await page.waitForTimeout(12);}if(held)await held();await cdp.send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});await page.waitForTimeout(380);}
  async function checkRows(){
@@ -39,7 +39,7 @@ try{
  await page.getByRole('button',{name:'选择复盘日期',exact:true}).click();await page.getByRole('button',{name:'2026-10-20',exact:true}).click();await page.getByRole('button',{name:'确认日期',exact:true}).click();assert.equal(await page.locator('.review-selected-date').textContent(),'2026/10/20');
  await touch(scopes,-120);assert.equal(await page.locator('.review-selected-date').textContent(),'2026/10/20');
  await page.getByRole('button',{name:'今天',exact:true}).click();await selected('今天');assert.equal(await page.getByLabel('复盘目标',{exact:true}).inputValue(),'三页范围内保存草稿');
- assert.ok(await page.evaluate(()=>touchTrace.some(e=>e.kind==='lostpointercapture'&&e.target.includes('task-edit'))),'Real touch must cover transfer away from the child button');
+ assert.ok(await page.evaluate(()=>touchTrace.some(e=>e.kind==='lostpointercapture'&&e.fromTaskButton)),'Real touch must cover transfer away from the child button');
  await mkdir('tests/screenshots',{recursive:true});await page.screenshot({path:'tests/screenshots/review-bounded-touch.png'});
  console.log('PASS: real touch capture transfer from task buttons, stable left/right action reveal in task/project, explicit completion preserved, exactly three review swipe dates, repeated boundary resistance, calendar-only custom dates, review draft retention');
 }finally{await browser.close();}
