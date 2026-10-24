@@ -32,7 +32,11 @@
         <label class="reading-progress-field"><span>阅读进度</span><input id="rv2Progress" placeholder="例如：42% / 第 3 章 / P120"></label>
       </div>
 
-      <div class="reading-stable-workspace">
+      <div class="reading-view-tabs" role="tablist" aria-label="每日阅读工作模式">
+        <button type="button" id="rv2SplitTab" role="tab" aria-selected="true" aria-controls="rv2SplitView">读书 + 笔记</button>
+        <button type="button" id="rv2NotesTab" role="tab" aria-selected="false" aria-controls="rv2StandaloneView">独立笔记</button>
+      </div>
+      <div id="rv2SplitView" role="tabpanel" aria-labelledby="rv2SplitTab"><div class="reading-stable-workspace">
         <section class="reading-stable-reader">
           <div class="reading-reader-toolbar">
             <input id="rv2BookTitle" class="reading-book-input" placeholder="当前书籍 / 阅读对象">
@@ -82,10 +86,15 @@
         </section>
       </div>
 
-      <section class="reading-records">
+      </div>
+      <section id="rv2StandaloneView" class="reading-standalone" role="tabpanel" aria-labelledby="rv2NotesTab" hidden>
+        <header class="reading-standalone-header"><div><h3>独立笔记</h3><p>自由记录，与阅读卡片分开保存</p></div><button id="rv2StandaloneNew" type="button" class="reading-secondary">＋ 新建笔记</button></header>
+        <div class="reading-standalone-grid"><aside class="reading-standalone-list" aria-label="我的独立笔记"><div id="rv2StandaloneList"></div></aside><div class="reading-standalone-editor"><input id="rv2StandaloneTitle" type="text" maxlength="160" aria-label="笔记标题" placeholder="无标题笔记"><textarea id="rv2StandaloneBody" aria-label="笔记正文" placeholder="在这里自由记录你的想法……"></textarea><footer><span id="rv2StandaloneStatus" role="status" aria-live="polite">本地保存</span><button type="button" id="rv2StandaloneDelete" class="reading-secondary">删除当前笔记</button></footer></div></div>
+      </section>
+      <div id="rv2SplitHistory"> <section class="reading-records">
         <div class="reading-records-head"><div><h3>阅读记录</h3><span>已保存的卡片与历史阅读记录</span></div></div>
         <div id="rv2Records" class="reading-records-grid"></div>
-      </section>
+      </section></div>
     </div>`;
 
   reading.classList.add('reading-stable-ready');
@@ -191,4 +200,94 @@
   $('rv2BookTitle').value=state.reader.title||'';$('rv2Progress').value=state.reader.progress||'';$('rv2Url').value=state.reader.url||'';setMode(state.reader.mode||'pdf');
   if(currentId&&state.notes.some(n=>n.id===currentId))loadNote(currentId);else if(state.notes.length)loadNote(state.notes[0].id);else{const n=blankNote();state.notes.unshift(n);currentId=n.id;persist();loadNote(n.id)}
   renderRecords();
+
+  // Standalone writing is isolated from reading_workspace_v2 and legacy notes.
+  // No automatic migration or mutation of existing reading cards.
+  const STANDALONE='reading_standalone_notes_v1';
+  const TAB_PREF='reading_active_tab_v1';
+  let standaloneNotes=[];
+  let standaloneId='';
+  let standaloneSaveTimer=0;
+  const standaloneStatus=$('rv2StandaloneStatus');
+  try {
+    const stored=JSON.parse(localStorage.getItem(STANDALONE)||'[]');
+    if(Array.isArray(stored))standaloneNotes=stored.filter(n=>n&&typeof n.id==='string').map(n=>({
+      id:n.id,title:String(n.title||''),body:String(n.body||''),updatedAt:String(n.updatedAt||'')
+    }));
+  } catch {
+    standaloneStatus.textContent='无法读取旧笔记；为避免覆盖，已暂停保存';
+  }
+  const standaloneReadSafe=standaloneStatus.textContent!=='无法读取旧笔记；为避免覆盖，已暂停保存';
+  function persistStandalone(){
+    if(!standaloneReadSafe){standaloneStatus.textContent='原数据读取失败，禁止覆盖';return false}
+    try{localStorage.setItem(STANDALONE,JSON.stringify(standaloneNotes));standaloneStatus.textContent='已保存到本地';return true}
+    catch{standaloneStatus.textContent='保存失败，请复制正文备份';return false}
+  }
+  function renderStandaloneList(){
+    const list=$('rv2StandaloneList');list.replaceChildren();
+    for(const note of [...standaloneNotes].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))){
+      const button=document.createElement('button');button.type='button';button.className='reading-standalone-item';
+      button.classList.toggle('active',note.id===standaloneId);
+      const name=document.createElement('strong');name.textContent=note.title||'无标题笔记';
+      const stamp=document.createElement('span');stamp.textContent=note.updatedAt?note.updatedAt.slice(0,16).replace('T',' '):'新建';
+      button.append(name,stamp);button.onclick=()=>selectStandalone(note.id);list.append(button);
+    }
+  }
+  function flushStandalone(){
+    clearTimeout(standaloneSaveTimer);
+    if(!standaloneId)return true;
+    const note=standaloneNotes.find(n=>n.id===standaloneId);if(!note)return true;
+    const title=$('rv2StandaloneTitle').value,body=$('rv2StandaloneBody').value;
+    if(note.title===title&&note.body===body)return true;
+    note.title=title;note.body=body;note.updatedAt=new Date().toISOString();
+    const ok=persistStandalone();renderStandaloneList();return ok;
+  }
+  function selectStandalone(id){
+    if(!flushStandalone())return;
+    const note=standaloneNotes.find(n=>n.id===id);if(!note)return;
+    standaloneId=id;$('rv2StandaloneTitle').value=note.title;$('rv2StandaloneBody').value=note.body;
+    renderStandaloneList();standaloneStatus.textContent='本地保存';
+  }
+  function newStandalone(){
+    if(!flushStandalone()||!standaloneReadSafe)return;
+    const note={id:uid(),title:'',body:'',updatedAt:new Date().toISOString()};
+    standaloneNotes.unshift(note);
+    if(!persistStandalone())return;
+    selectStandalone(note.id);$('rv2StandaloneTitle').focus();
+  }
+  function switchReadingTab(mode){
+    if(mode==='standalone'&&!standaloneReadSafe){standaloneStatus.textContent='原数据读取失败，请先备份；禁止覆盖'}
+    if(mode!=='standalone'&&!flushStandalone())return;
+    const solo=mode==='standalone';
+    $('rv2SplitView').hidden=solo;$('rv2SplitHistory').hidden=solo;$('rv2StandaloneView').hidden=!solo;
+    $('rv2NotesTab').setAttribute('aria-selected',String(solo));
+    $('rv2SplitTab').setAttribute('aria-selected',String(!solo));
+    $('rv2Progress').closest('.reading-progress-field').hidden=solo;
+    try{localStorage.setItem(TAB_PREF,solo?'standalone':'split')}catch{}
+  }
+  $('rv2SplitTab').onclick=()=>switchReadingTab('split');
+  $('rv2NotesTab').onclick=()=>switchReadingTab('standalone');
+  $('rv2StandaloneNew').onclick=newStandalone;
+  $('rv2StandaloneDelete').onclick=()=>{
+    if(!standaloneReadSafe||!standaloneId)return;
+    if(!window.confirm('确定删除这条独立笔记？此操作不能撤销。'))return;
+    const snapshot=standaloneNotes.slice(),target=standaloneId;
+    standaloneNotes=standaloneNotes.filter(n=>n.id!==target);
+    if(!persistStandalone()){standaloneNotes=snapshot;return}
+    standaloneId='';$('rv2StandaloneTitle').value='';$('rv2StandaloneBody').value='';
+    renderStandaloneList();if(standaloneNotes.length)selectStandalone(standaloneNotes[0].id);
+  };
+  for(const id of ['rv2StandaloneTitle','rv2StandaloneBody']){
+    $(id).addEventListener('input',()=>{
+      standaloneStatus.textContent='待保存…';
+      clearTimeout(standaloneSaveTimer);standaloneSaveTimer=setTimeout(flushStandalone,450);
+    });
+    $(id).addEventListener('blur',flushStandalone);
+  }
+  window.addEventListener('pagehide',flushStandalone);
+  if(standaloneNotes.length)selectStandalone(standaloneNotes[0].id);
+  else if(standaloneReadSafe)newStandalone();
+  let preferred='split';
+  try{preferred=localStorage.getItem(TAB_PREF)==='standalone'?'standalone':'split'}catch{}
+  switchReadingTab(preferred);
 })();
