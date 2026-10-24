@@ -22,6 +22,11 @@ try{
   assert.equal(await page.locator('#eaAudioTab').getAttribute('aria-selected'),'true');
   assert.equal(await page.locator('#englishVideoV1').isVisible(),false);
   assert.ok(await page.locator('.ea-transcript button').isDisabled());
+  assert.equal(await page.locator('#eaSubtitleText').isVisible(),false);
+  await page.locator('#eaSubtitles summary').click();assert.ok(await page.locator('#eaSubtitleText').isVisible());
+  await page.locator('#eaSubtitles summary').press('Enter');assert.equal(await page.locator('#eaSubtitleText').isVisible(),false);
+  assert.equal(await page.locator('#eaBack').getAttribute('aria-label'),'后退3秒');
+  assert.equal(await page.locator('#eaForward').getAttribute('aria-label'),'前进3秒');
   assert.ok(await page.getByLabel('学习笔记（后续版本开放）').isDisabled());
   for(const [name,mime] of [['lesson.wav','audio/wav'],['lesson.mp3','audio/mpeg'],['lesson.m4a','audio/mp4']]){
     await page.locator('#eaFile').setInputFiles({name,mimeType:mime,buffer:await readFile(fixture+'/'+name)});await ready();
@@ -32,8 +37,9 @@ try{
   }
   await page.locator('#eaRate').selectOption('1.5');
   assert.equal(await page.locator('#eaAudio').evaluate(e=>e.playbackRate),1.5);
-  await page.locator('#eaProgress').fill('20');await page.locator('#eaBack').click();assert.ok(Math.abs(await page.locator('#eaAudio').evaluate(e=>e.currentTime)-5)<.2);
+  await page.locator('#eaProgress').fill('20');await page.locator('#eaBack').click();assert.ok(Math.abs(await page.locator('#eaAudio').evaluate(e=>e.currentTime)-17)<.2);
   await page.locator('#eaForward').click();assert.ok(Math.abs(await page.locator('#eaAudio').evaluate(e=>e.currentTime)-20)<.2);
+  await page.locator('#eaProgress').fill('1');await page.locator('#eaBack').click();assert.equal(await page.locator('#eaAudio').evaluate(e=>e.currentTime),0);
   await page.locator('#eaProgress').fill('44');await page.locator('#eaForward').click();assert.ok(await page.locator('#eaAudio').evaluate(e=>e.currentTime<=e.duration));
   await page.locator('#eaProgress').fill('12');
   await page.waitForFunction(async()=>{const s=await import('/english-audio-store.mjs');const db=await s.openAudioDatabase();const x=await s.listTracks(db);db.close();return x.tracks.find(t=>t.id===x.activeTrackId)?.position===12;});
@@ -82,7 +88,7 @@ try{
   await partial.goto(base);await partial.locator('nav button[data-v=english]').click();await partial.getByText('本机音频库不可用。请允许此站点使用浏览器存储；原视频和历史数据仍可使用。',{exact:true}).waitFor();
   assert.equal(await partial.evaluate(()=>new Promise(resolve=>{const r=indexedDB.open('lambert_english_audio_v2',1);r.onsuccess=()=>{const db=r.result;db.transaction('tracks').objectStore('tracks').get('existing').onsuccess=e=>{resolve(e.target.result.marker);db.close();};};})), 'preserve');
   await partialContext.close();
-  console.log('PASS audio V2.1: real WAV/MP3/M4A and URL playback, pause/rotate/seek/skip/rate, IndexedDB reload and rollback, preserved legacy history, remote failure recovery, 320–1440 responsive, keyboard tabs, reduced motion, no AI calls');
+  console.log('PASS audio V2.1: real WAV/MP3/M4A and URL playback, pause/rotate/seek/skip/rate, IndexedDB reload and rollback, preserved legacy history, remote failure recovery, 320–1440 responsive, keyboard tabs, reduced motion, no AI calls, 3-second skip and collapsible standalone subtitles');
 }catch(error){
   console.error('Audio failure diagnostic',JSON.stringify(await page.evaluate(()=>{const a=document.getElementById('eaAudio');return {title:document.getElementById('eaTitle')?.textContent,readyState:a?.readyState,error:a?.error?{code:a.error.code,message:a.error.message}:null,status:document.getElementById('eaStatus')?.textContent};}).catch(()=>({pageUnavailable:true}))));
   throw error;

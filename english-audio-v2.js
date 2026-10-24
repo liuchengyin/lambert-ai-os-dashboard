@@ -12,14 +12,15 @@
         <div class="ea-player-details"><span class="ea-eyebrow">NOW LISTENING</span><h3 id="eaTitle">把喜欢的声音放进来</h3><p id="eaSource">导入本地音频，或粘贴可直接播放的网络链接。</p>
           <audio id="eaAudio" preload="metadata"></audio>
           <label class="ea-progress-label" for="eaProgress">播放进度</label><input id="eaProgress" type="range" min="0" max="0" step="0.1" value="0" disabled aria-label="音频播放进度"><div class="ea-time"><span id="eaCurrent">00:00</span><span id="eaDuration">00:00</span></div>
-          <div class="ea-controls"><button id="eaBack" type="button" disabled aria-label="后退15秒">↶ <small>15s</small></button><button id="eaPlay" type="button" disabled aria-label="播放音频">▶</button><button id="eaForward" type="button" disabled aria-label="前进15秒"><small>15s</small> ↷</button><label class="ea-rate">倍速<select id="eaRate" aria-label="音频播放倍速"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label></div>
+          <div class="ea-controls"><button id="eaBack" type="button" disabled aria-label="后退3秒">↶ <small>3s</small></button><button id="eaPlay" type="button" disabled aria-label="播放音频">▶</button><button id="eaForward" type="button" disabled aria-label="前进3秒"><small>3s</small> ↷</button><label class="ea-rate">倍速<select id="eaRate" aria-label="音频播放倍速"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label></div>
           <div class="ea-imports"><label class="ea-file-button">＋ 导入本地音频<input id="eaFile" type="file" accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav,audio/x-wav"></label><small>MP3 / M4A / WAV · 单个文件最多 200 MB</small></div>
           <form id="eaUrlForm" class="ea-url-form"><label for="eaUrl">网络音频直链</label><div><input id="eaUrl" type="url" placeholder="https://…/audio.mp3" aria-label="网络音频直链" required><button type="submit">载入</button></div></form>
           <label class="ea-library-label" for="eaLibrary">本机音频库<select id="eaLibrary" disabled><option value="">尚未导入音频</option></select></label>
           <p id="eaStatus" class="ea-status" role="status" aria-live="polite">正在准备本机音频库…</p>
         </div>
       </section>
-      <section class="ea-notes" aria-labelledby="eaNotesHeading"><div class="ea-section-heading"><div><span class="ea-eyebrow">LEARNING NOTES</span><h3 id="eaNotesHeading">给听到的内容，留一点空间。</h3></div><span class="ea-badge">V2.1 结构预览</span></div><div class="ea-notes-grid"><div><h4>学习笔记</h4><p>后续可记录原句、理解与表达。本阶段暂不编辑或保存。</p><textarea aria-label="学习笔记（后续版本开放）" placeholder="在这里沉淀你的学习笔记…" disabled></textarea></div><div class="ea-transcript"><span aria-hidden="true">≋</span><h4>AI 转写 · 待开放</h4><p>V2.1 不上传音频，也不调用收费语音识别服务。</p><button type="button" disabled>后续版本开放</button></div></div></section>
+      <details class="ea-subtitles" id="eaSubtitles"><summary aria-controls="eaSubtitleText"><span class="ea-subtitle-heading">音频字幕 <small>AI 识别文字</small></span><span class="ea-subtitle-action"><span class="ea-subtitle-expand">展开字幕 ＋</span><span class="ea-subtitle-collapse">收起字幕 −</span></span></summary><div class="ea-transcript" id="eaSubtitleText"><h4>AI 转写 · 待开放</h4><p>后续识别文字将在这里按字幕形式展示，可随时折叠，先听音频再对照。本阶段尚未接入识别，不上传音频，也不调用收费语音服务。</p><button type="button" disabled>后续版本开放</button></div></details>
+      <section class="ea-notes" aria-labelledby="eaNotesHeading"><div class="ea-section-heading"><div><span class="ea-eyebrow">LEARNING NOTES</span><h3 id="eaNotesHeading">给听到的内容，留一点空间。</h3></div><span class="ea-badge">V2.1 结构预览</span></div><div class="ea-notes-grid"><div><h4>学习笔记</h4><p>后续可记录原句、理解与表达。本阶段暂不编辑或保存。</p><textarea aria-label="学习笔记（后续版本开放）" placeholder="在这里沉淀你的学习笔记…" disabled></textarea></div></div></section>
       <p class="ea-storage-note">本地文件与进度存于此浏览器的 IndexedDB，不参与云同步。清理站点数据会移除本机音频，请保留原文件。网络音频依赖链接有效性、服务器拖动支持及浏览器格式兼容性。</p>
     </div>`;
   legacy.id='englishVideoV1';legacy.setAttribute('role','tabpanel');legacy.setAttribute('aria-labelledby','eaVideoTab');
@@ -87,7 +88,7 @@
   }
   $('eaPlay').onclick=async()=>{if(!audio.paused){audio.pause();return;}try{await audio.play();}catch{playing(false);tell('播放未开始，请检查音频格式或再次点击播放。');}};
   function seek(time){if(!Number.isFinite(audio.duration))return;audio.currentTime=Math.max(0,Math.min(audio.duration,time));updateTime();saveProgress();}
-  $('eaProgress').oninput=e=>seek(Number(e.target.value));$('eaBack').onclick=()=>seek(audio.currentTime-15);$('eaForward').onclick=()=>seek(audio.currentTime+15);
+  $('eaProgress').oninput=e=>seek(Number(e.target.value));$('eaBack').onclick=()=>seek(audio.currentTime-3);$('eaForward').onclick=()=>seek(audio.currentTime+3);
   $('eaRate').onchange=e=>{audio.playbackRate=Number(e.target.value);saveProgress();};
   async function add(source,blob,url,title){
     if(busy||!db)return;lock(true);tell('正在保存到本机音频库…');

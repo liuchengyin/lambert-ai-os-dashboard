@@ -36,13 +36,21 @@ jobs:
               lines=[line for line in text.splitlines() if re.search(r'not permitted|GraphQL:|TimeoutError|AssertionError|ERR_ASSERTION|Error:|waiting for|at file:|at /home/runner|locator\.',line)]
               notice(file,'\n'.join(lines[-18:])[-6000:])
           repo='liuchengyin/lambert-ai-os-dashboard'
-          sha='5b36f5d912f4e469ec4defa0c3a231a3b3ee9b9b'
           def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+repo+'/'+path],text=True))
           try:
+              sha=api('git/ref/heads/feat/web-english-audio-v2')['object']['sha']
               status=api('commits/'+sha+'/status')
               for s in status.get('statuses',[]):
                   if 'vercel' in s.get('context','').lower():notice('Vercel commit status',json.dumps({k:s.get(k) for k in ['context','state','target_url','description']}))
-              for d in api('deployments?sha='+sha):
-                  for s in api('deployments/'+str(d['id'])+'/statuses')[:1]:notice('Preview deployment',json.dumps({k:s.get(k) for k in ['state','environment_url','log_url']}))
+              import time
+              for attempt in range(10):
+                  found=False
+                  for d in api('deployments?sha='+sha):
+                      if d.get('production_environment'):continue
+                      for s in api('deployments/'+str(d['id'])+'/statuses')[:1]:
+                          if s['state']=='success':
+                              notice('Preview deployment',json.dumps({k:s.get(k) for k in ['state','environment_url','log_url']}));found=True
+                  if found:break
+                  if attempt<9:time.sleep(5)
           except subprocess.CalledProcessError:notice('Preview lookup','GitHub deployment metadata unavailable')
           PY
