@@ -16,7 +16,9 @@ const response = await fetch('https://open.bigmodel.cn/api/paas/v4/chat/completi
 });
 if (!response.ok) {
   // Do not log response bodies or credentials.
-  throw Error('glm_http_' + response.status);
+  const failure = await response.json().catch(() => ({}));
+  const code = String(failure.error?.code || 'unknown').replace(/[^a-zA-Z0-9_-]/g, '').slice(0,40);
+  throw Error('glm_http_' + response.status + '_code_' + code);
 }
 const data = await response.json();
 const choice = data.choices?.[0];
