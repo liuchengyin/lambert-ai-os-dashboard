@@ -32,7 +32,7 @@ public class AudioPlaybackTest {
   Context context=InstrumentationRegistry.getInstrumentation().getTargetContext();File wav=fixture(context);
   try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
    AtomicReference<com.google.common.util.concurrent.ListenableFuture<MediaController>> future=new AtomicReference<>();main(()->future.set(new MediaController.Builder(context,new SessionToken(context,new ComponentName(context,AudioPlaybackService.class))).buildAsync()));player=future.get().get(15,TimeUnit.SECONDS);
-   main(()->{player.setMediaItem(new MediaItem.Builder().setMediaId("instrumentation:lesson").setUri(Uri.fromFile(wav)).setMediaMetadata(new MediaMetadata.Builder().setTitle("Audio test lesson").build()).build());player.prepare();player.play();});
+   main(()->{player.setMediaItem(new MediaItem.Builder().setMediaId("instrumentation:lesson").setUri(Uri.fromFile(wav)).setMediaMetadata(new androidx.media3.common.MediaMetadata.Builder().setTitle("Audio test lesson").build()).build());player.prepare();player.play();});
    await("Native file must actually play",()->player.isPlaying()&&player.getCurrentPosition()>300);
    main(()->{player.pause();player.seekTo(20000);player.seekTo(Math.max(0,player.getCurrentPosition()-3000));player.seekTo(Math.max(0,player.getCurrentPosition()-7000));});
    assertTrue("3s + 7s cumulative seek while paused",value(()->Math.abs(player.getCurrentPosition()-10000)<250&&!player.getPlayWhenReady()));

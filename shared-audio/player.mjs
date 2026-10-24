@@ -10,7 +10,7 @@ export function createPlayer(host,{checkpoint,onNext,onPrevious,onError,onNative
  let track=null,generation=0,lastLocal=0,lastRemote=0,seeking=false,mode='sequence';
  const button=(label,fn)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=fn;controls.append(b);return b;};
  const persist=(force=false)=>{if(track)checkpoint(track.id,{position:audio.currentTime||0,rate:audio.playbackRate},force);};
- button('上一条',()=>onPrevious());button('回退3秒',()=>{audio.currentTime=Math.max(0,(audio.currentTime||0)-3);persist(true);});button('回退7秒',()=>{audio.currentTime=Math.max(0,(audio.currentTime||0)-7);persist(true);});
+ button('上一条',()=>onPrevious());button('回退3秒',()=>{if(audio.back)audio.back(3);else audio.currentTime=Math.max(0,(audio.currentTime||0)-3);persist(true);});button('回退7秒',()=>{if(audio.back)audio.back(7);else audio.currentTime=Math.max(0,(audio.currentTime||0)-7);persist(true);});
  const play=button('播放',()=>{if(audio.paused){audio.play().catch(()=>onError('无法播放，请刷新链接或重试'));}else audio.pause();});button('下一条',()=>onNext());
  const rate=document.createElement('select');rate.setAttribute('aria-label','播放倍速');for(const value of [.75,1,1.25,1.5,2])rate.add(new Option(value+'×',value));rate.value='1';rate.onchange=()=>{audio.playbackRate=Number(rate.value);persist(true);};controls.append(rate);
  const repeat=document.createElement('select');repeat.setAttribute('aria-label','播放模式');repeat.add(new Option('顺序播放','sequence'));repeat.add(new Option('单曲循环','one'));repeat.onchange=()=>{mode=repeat.value;audio.loop=mode==='one';};controls.append(repeat);

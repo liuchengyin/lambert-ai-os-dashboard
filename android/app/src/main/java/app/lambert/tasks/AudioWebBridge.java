@@ -60,6 +60,7 @@ final class AudioWebBridge {
    }
    case "play":controller.play();break;
    case "pause":controller.pause();break;
+   case "back":{int seconds=c.getInt("seconds");if(seconds!=3&&seconds!=7)throw new Exception();controller.seekTo(Math.max(0,controller.getCurrentPosition()-seconds*1000L));break;}
    case "seek":controller.seekTo(Math.max(0,c.getLong("position")));break;
    case "rate":{double r=c.getDouble("rate");if(r!=.75&&r!=1&&r!=1.25&&r!=1.5&&r!=2)throw new Exception();controller.setPlaybackSpeed((float)r);break;}
    case "repeat":controller.setRepeatMode(c.optBoolean("one")?Player.REPEAT_MODE_ONE:Player.REPEAT_MODE_OFF);break;

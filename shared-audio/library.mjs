@@ -67,8 +67,11 @@ export async function mountAudioLibrary(root,{access=()=>window.LambertAccount.a
   if(action==='renameTrack'){const result=await cloud.rename(s.userId,track(data.id),data.title);if(result.status==='conflict')view.message('标题已在其他设备修改，请刷新后重试');await refresh();return;}
   if(action==='move'){const ids=s.tracks.filter(t=>t.collection_id===s.collectionId).sort((a,b)=>a.sort_order-b.sort_order).map(t=>t.id),i=ids.indexOf(data.id),j=i+data.delta;if(j<0||j>=ids.length)return;[ids[i],ids[j]]=[ids[j],ids[i]];const result=await cloud.reorder(s.userId,collection(),ids);if(result.status==='conflict')view.message('排序已变化，请刷新后重试');await refresh();return;}
   if(action==='import'||action==='link'){
-   if(!s.userId||!s.collectionId)throw Error('audio_login_required');const files=action==='link'?[await downloadAudioLink(data)]:data;
-   const result=await queue.add(files,{userId:s.userId,collectionId:s.collectionId,remaining:200-new Set([...s.tracks.filter(t=>t.collection_id===s.collectionId).map(t=>t.id),...s.jobs.filter(j=>j.collectionId===s.collectionId&&j.reserved).map(j=>j.trackId)]).size});
+   if(!s.userId||!s.collectionId)throw Error('audio_login_required');const user=s.userId,setId=s.collectionId,token=epoch,activeQueue=queue;
+   view.message(action==='link'?'正在校验并转存链接…':'正在校验文件并保存导入队列…');const files=action==='link'?[await downloadAudioLink(data)]:data;
+   if(!current(user,token))throw Error('account_mismatch');
+   const result=await activeQueue.add(files,{userId:user,collectionId:setId,remaining:200-new Set([...s.tracks.filter(t=>t.collection_id===setId).map(t=>t.id),...s.jobs.filter(j=>j.collectionId===setId&&j.reserved).map(j=>j.trackId)]).size});
+   if(!current(user,token)){activeQueue.pause();return;}
    view.message(result.rejected?'超过剩余容量：每个音频集最多200条':`已加入 ${result.added} 条${result.duplicates?`，跳过重复 ${result.duplicates} 条`:''}`);if(!result.rejected)await runQueue();return;
   }
   if(action==='retry'||action==='reselect'){const result=await queue.retry(action==='retry'?data:data.id,data.file);if(!result.ok){view.message(result.error==='digest_mismatch'?'文件不匹配，请重新选择原文件':'请重新选择原文件');return;}await runQueue();return;}

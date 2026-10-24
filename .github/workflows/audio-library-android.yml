@@ -47,6 +47,7 @@ jobs:
         if: "!contains(github.event.head_commit.message, '[package-verified]')"
         uses: reactivecircus/android-emulator-runner@v2
         with:
+          script-shell: bash
           api-level: 35
           target: google_apis
           arch: x86_64
@@ -55,7 +56,8 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           script: |
             adb shell settings put secure show_ime_with_hard_keyboard 1
-            gradle -p android --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=app.lambert.tasks.AudioPlaybackTest
+            set -o pipefail
+            gradle -p android --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=app.lambert.tasks.AudioPlaybackTest 2>&1 | tee /tmp/audio-device.log
             mkdir -p keyboard-test
             adb pull /sdcard/Android/data/app.lambert.tasks.trial/files/keyboard.png keyboard-test/keyboard.png || echo "Optional screenshot was removed by test cleanup; instrumentation assertions already passed"
       - name: Verify signature and permissions
@@ -93,6 +95,10 @@ jobs:
           if log.exists():
               lines=[x for x in log.read_text().splitlines() if re.search(r'error:|cannot find symbol|incompatible types|BUILD (SUCCESSFUL|FAILED)|lint found',x)]
               notice('Native build', '\n'.join(lines[-16:]))
+          device=Path('/tmp/audio-device.log')
+          if device.exists():
+              lines=[x for x in device.read_text().splitlines() if re.search(r'error:|Exception|failed|FAILURE|FAILED|AssertionError|Tests run',x)]
+              notice('Native instrumentation', '\n'.join(lines[-18:])[-5000:])
           for file in Path('android/app/build/reports').glob('lint-results-*.xml'):
               for issue in ET.parse(file).getroot().findall('issue'):
                   if issue.get('severity')=='Error':notice('Native lint',issue.get('id','')+': '+issue.get('message','')[:2000])
