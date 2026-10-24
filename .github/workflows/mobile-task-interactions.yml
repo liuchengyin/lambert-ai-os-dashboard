@@ -1,0 +1,37 @@
+name: Mobile task interaction checks
+on:
+  push:
+    branches: [feat/android-task-interactions-20261024]
+  pull_request:
+    paths: ['mobile/**', 'tests/mobile-*.mjs', '.github/workflows/mobile-task-interactions.yml']
+permissions:
+  contents: read
+jobs:
+  mobile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install test browser
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Verify mobile interactions and shared data flows
+        run: |
+          python3 -m http.server 8765 >/tmp/lambert-http.log 2>&1 &
+          node tests/mobile-task-interactions.mjs
+          node tests/mobile-filter-swipe.mjs
+          node tests/mobile-core-space.mjs
+          node tests/mobile-ui-coherence.mjs
+          node tests/mobile-compact-compose.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-interaction-screenshots
+          path: tests/screenshots/
+          retention-days: 14

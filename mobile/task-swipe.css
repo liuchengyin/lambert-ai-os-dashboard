@@ -1,11 +1,10 @@
 .task-swipe{position:relative;overflow:hidden;border-radius:8px}
-.task-swipe .task-swipe-front{position:relative;z-index:1;background:#fff;touch-action:pan-y}
-.task-swipe .task-swipe-delete,.task-swipe .task-swipe-complete{position:absolute;top:0;bottom:0;width:50%;min-height:44px;display:flex;align-items:center;justify-content:center;border:0;color:white;font:inherit;font-size:17px}
-.task-swipe .task-swipe-delete{right:0;background:linear-gradient(90deg,#ff6262,#e53935 55%,#b71c1c);cursor:pointer}
-.task-swipe .task-swipe-complete{left:0;background:linear-gradient(90deg,#16a34a,#4ade80);pointer-events:none}
-.task-swipe .task-swipe-delete[hidden]{display:none}
+.task-swipe .task-swipe-front{position:relative;z-index:1;background:#fff;touch-action:pan-y pinch-zoom}
+#app .task-swipe .task-swipe-delete,#app .task-swipe .task-swipe-complete{position:absolute;top:0;bottom:0;min-width:0;min-height:44px;display:flex;gap:4px;align-items:center;justify-content:center;padding:0 4px;border:0;border-radius:0;color:white;font:inherit;font-size:15px;cursor:pointer;touch-action:manipulation}
+#app .task-swipe .task-swipe-delete{width:50%;right:0;background:linear-gradient(90deg,#fca5a5,#dc2626)}
+#app .task-swipe .task-swipe-complete{width:25%;left:0;background:linear-gradient(90deg,#15803d,#86dca6)}
+.task-swipe-complete svg{width:24px;height:24px;flex:0 0 24px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#app .task-swipe button[hidden]{display:none}
 .task-swipe.swipe-dragging .task-swipe-front{will-change:transform}
-.task-swipe.swipe-ready .task-swipe-complete{background:linear-gradient(90deg,#15803d,#22c55e)}
+.project-task-items>.task-swipe{width:100%}
 @media(prefers-reduced-motion:reduce){.task-swipe .task-swipe-front{transition:none!important}}
-
-.task-swipe .task-swipe-complete{visibility:hidden}.task-swipe.swipe-right .task-swipe-complete{visibility:visible}

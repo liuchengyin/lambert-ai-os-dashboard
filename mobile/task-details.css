@@ -37,3 +37,11 @@
 .mtd-done{width:44px;height:44px;padding:0;background:transparent;color:#8a8886;border:0;font-size:26px}.mtd-done.on{color:#16a34a}.mtd-check.on::before{background:#16a34a;border-color:#16a34a}.mtd-error{color:#b91c1c;margin:0;font-size:14px}.mtd-head{flex-wrap:wrap}.mtd-title{width:0;min-width:80px}.mtd-body{overflow:visible}.mtd-dialog{height:100dvh;max-height:100%;overflow-y:auto}.mtd-steptext{font-size:18px}.mtd-created{font-size:13px}.mtd-steptext:focus-visible,.mtd-title:focus-visible{outline:2px solid #7357d7;outline-offset:-2px}
 
 .mtd-root{font-family:inherit}.mtd-title{font-size:21px}.mtd-steptext{font-size:17px}
+.mtd-step-plus{border:0;background:transparent;min-width:44px;min-height:44px;cursor:pointer}
+.mtd-add.editing .mtd-step-plus::before{content:'';width:22px;height:22px;box-sizing:border-box;border:2px solid #9b90b8;border-radius:50%}
+.mtd-del svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.mtd-save-status{font-size:12px;color:#8a8886;text-align:right;min-height:18px}
+.mtd-dialog.mtd-closing{pointer-events:none;animation:mtd-fade-out 160ms ease-out forwards}
+.mtd-dialog.mtd-closing::backdrop{animation:mtd-fade-out 160ms ease-out forwards}
+@keyframes mtd-fade-out{to{opacity:0;transform:translateY(6px)}}
+@media(prefers-reduced-motion:reduce){.mtd-dialog.mtd-closing,.mtd-dialog.mtd-closing::backdrop{animation:none}}
