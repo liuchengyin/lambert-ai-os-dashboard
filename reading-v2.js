@@ -143,9 +143,11 @@
     const n=state.notes.find(x=>x.id===id);if(!n)return;
     currentId=n.id;persist();$('rv2Type').value=n.type||'观念卡';$('rv2CardTitle').value=n.title||'';$('rv2Thought').value=n.thought||'';$('rv2Excerpt').value=n.excerpt||'';
     if(n.sourceTitle)$('rv2BookTitle').value=n.sourceTitle;if(n.progress)$('rv2Progress').value=n.progress;
+    if(thoughtReady&&thoughtEditor)thoughtEditor.setValue($('rv2Thought').value);
+    if(excerptReady&&excerptEditor)excerptEditor.setValue($('rv2Excerpt').value);
     renderPrompts(n.type||'观念卡');$('rv2Status').textContent=n.savedAt?'已保存':'未保存';$('rv2Archive').textContent=n.feishuDocumentToken?'更新飞书':'归档飞书';$('rv2Archive').classList.toggle('is-archived',!!n.feishuDocumentToken);$('rv2FeishuLink').href=n.feishuUrl||FEISHU_DAILY;$('rv2FeishuLink').textContent=n.feishuUrl?'打开这张卡的飞书文档':'打开飞书归档位置';renderRecords();if(window.ArchiveTargets)refreshArchiveLink();
   }
-  function readNote(){const old=currentNote()||blankNote($('rv2Type').value);return {...old,id:old.id,date:old.date||dateKey(),type:$('rv2Type').value,title:$('rv2CardTitle').value.trim(),thought:$('rv2Thought').value.trim(),excerpt:$('rv2Excerpt').value.trim(),sourceTitle:$('rv2BookTitle').value.trim(),progress:$('rv2Progress').value.trim(),savedAt:new Date().toISOString()}}
+  function readNote(){const old=currentNote()||blankNote($('rv2Type').value);return {...old,id:old.id,date:old.date||dateKey(),type:$('rv2Type').value,title:$('rv2CardTitle').value.trim(),thought:(thoughtReady&&thoughtEditor?thoughtEditor.getValue():$('rv2Thought').value).trim(),excerpt:(excerptReady&&excerptEditor?excerptEditor.getValue():$('rv2Excerpt').value).trim(),sourceTitle:$('rv2BookTitle').value.trim(),progress:$('rv2Progress').value.trim(),savedAt:new Date().toISOString()}}
   function saveNote(show=true){
     saveReader();const n=readNote();const idx=state.notes.findIndex(x=>x.id===n.id);if(idx>=0)state.notes[idx]=n;else state.notes.unshift(n);currentId=n.id;persist();renderRecords();
     if(show){$('rv2Status').textContent='已保存';setTimeout(()=>{if($('rv2Status'))$('rv2Status').textContent=''},1400)}return n;
@@ -164,7 +166,7 @@
     try{
       if(!navigator.clipboard?.readText)throw new Error('当前浏览器不支持直接读取剪贴板');
       const text=(await navigator.clipboard.readText()).trim();if(!text)throw new Error('剪贴板里没有文字');
-      const box=$('rv2Excerpt');box.value=box.value.trim()?`${box.value.trim()}\n\n${text}`:text;$('rv2Status').textContent='已导入原文';box.focus();
+      const box=$('rv2Excerpt');box.value=box.value.trim()?`${box.value.trim()}\n\n${text}`:text;$('rv2Status').textContent='已导入原文';if(excerptReady&&excerptEditor)excerptEditor.setValue(box.value);box.focus();
     }catch(e){$('rv2Status').textContent=`请手动粘贴：${e.message}`;$('rv2Excerpt').focus()}
   }
 
@@ -237,7 +239,7 @@
     clearTimeout(standaloneSaveTimer);
     if(!standaloneId)return true;
     const note=standaloneNotes.find(n=>n.id===standaloneId);if(!note)return true;
-    const title=$('rv2StandaloneTitle').value,body=$('rv2StandaloneBody').value;
+    const title=$('rv2StandaloneTitle').value,body=standaloneEditorReady&&standaloneEditor?standaloneEditor.getValue():$('rv2StandaloneBody').value;
     if(note.title===title&&note.body===body)return true;
     note.title=title;note.body=body;note.updatedAt=new Date().toISOString();
     const ok=persistStandalone();renderStandaloneList();return ok;
@@ -247,6 +249,8 @@
     const note=standaloneNotes.find(n=>n.id===id);if(!note)return;
     standaloneId=id;$('rv2StandaloneTitle').value=note.title;$('rv2StandaloneBody').value=note.body;
     renderStandaloneList();standaloneStatus.textContent='本地保存';
+    if(standaloneEditorReady&&standaloneEditor)standaloneEditor.setValue(note.body||'');
+    updateStandaloneArchiveLink(note);
   }
   function newStandalone(){
     if(!flushStandalone()||!standaloneReadSafe)return;
@@ -263,6 +267,8 @@
     $('rv2NotesTab').setAttribute('aria-selected',String(solo));
     $('rv2SplitTab').setAttribute('aria-selected',String(!solo));
     $('rv2Progress').closest('.reading-progress-field').hidden=solo;
+    const destinationUI=document.querySelector('.archive-target-control');
+    if(destinationUI){const target=solo?$('rv2StandaloneArchiveTools'):$('rv2Archive').parentElement;if(destinationUI.parentNode!==target)target.appendChild(destinationUI)}
     try{localStorage.setItem(TAB_PREF,solo?'standalone':'split')}catch{}
   }
   $('rv2SplitTab').onclick=()=>switchReadingTab('split');
