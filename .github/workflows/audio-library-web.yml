@@ -1,0 +1,100 @@
+name: Audio library web regression and draft PR
+on:
+  push:
+    branches: [feat/english-audio-library-v1]
+    paths: ['shared-audio/**','shared-sync/account-ui.mjs','english-audio-library.js','english-audio-v2.js','index.html','mobile/**','tests/audio/**','tests/english-audio-v2.mjs','.github/workflows/audio-library-web.yml','docs/reviews/audio-library-v1.md']
+permissions:
+  contents: read
+  pull-requests: write
+  deployments: read
+concurrency:
+  group: audio-library-web-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix shared-sync/tooling --no-audit --no-fund
+      - name: Fixtures and browser
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+          mkdir -p /tmp/lambert-audio-fixtures tests/screenshots
+          ffmpeg -y -f lavfi -i 'sine=frequency=220:duration=45' /tmp/lambert-audio-fixtures/lesson.wav
+          ffmpeg -y -i /tmp/lambert-audio-fixtures/lesson.wav /tmp/lambert-audio-fixtures/lesson.mp3
+          ffmpeg -y -i /tmp/lambert-audio-fixtures/lesson.wav -c:a aac /tmp/lambert-audio-fixtures/lesson.m4a
+          ln -s shared-sync/tooling/node_modules node_modules
+      - name: Audio and account regressions with mock hosted services
+        env:
+          TEST_BASE_URL: http://127.0.0.1:8780/
+          TEST_ORIGIN: http://127.0.0.1:8780
+          TEST_BROWSER_CHANNEL: chrome
+        run: |
+          set -o pipefail
+          python3 -m http.server 8780 --bind 127.0.0.1 >/tmp/audio-http.log 2>&1 &
+          {
+          node --test tests/audio/*.test.mjs tests/shared-sync/auth.test.mjs tests/shared-sync/registration.test.mjs tests/shared-sync/feishu-review.test.mjs tests/shared-sync/mobile-archive-cors.test.mjs
+          node tests/audio/library-browser.mjs
+          node tests/audio/store-browser.mjs
+          node tests/shared-sync/browser.mjs
+          node tests/english-audio-v2.mjs
+          } 2>&1 | tee /tmp/audio-web.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audio-library-web-evidence
+          path: |
+            tests/screenshots/audio-library-*.png
+            /tmp/audio-web.log
+      - name: Safe verification result
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path=Path('/tmp/audio-web.log')
+          if path.exists():
+              lines=[x for x in path.read_text().splitlines() if re.search(r'PASS|passed|Error|Assertion|Timeout|at file:|waiting for|locator\.',x)]
+              text='\n'.join(lines[-22:])[-7000:]
+              print('::notice title=Web regression::'+text.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
+          PY
+  draft:
+    needs: browser
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Draft PR only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh pr view feat/english-audio-library-v1 --json url --jq .url > /tmp/audio-pr; then
+            if ! gh pr create --draft --base main --head feat/english-audio-library-v1 --title 'feat: 英语音频集与原生后台播放（第一阶段）' --body-file docs/reviews/audio-library-v1.md > /tmp/audio-pr 2>/tmp/audio-pr-error; then
+              python3 -c 'from pathlib import Path; print("::warning title=Draft PR blocked::"+Path("/tmp/audio-pr-error").read_text().replace("%","%25").replace("\n","%0A"))'
+            fi
+          fi
+          if [ -s /tmp/audio-pr ]; then echo "::notice title=Draft PR::$(cat /tmp/audio-pr)"; fi
+      - name: Read current non-production Preview only
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: liuchengyin/lambert-ai-os-dashboard
+        run: |
+          python3 - <<'PY'
+          import json,os,subprocess
+          repo=os.environ['GH_REPO'];sha=os.environ['GITHUB_SHA']
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+repo+'/'+path],text=True))
+          for d in api('deployments?sha='+sha):
+              if d.get('production_environment'):continue
+              for s in api('deployments/'+str(d['id'])+'/statuses')[:1]:
+                  if s['state']=='success' and s.get('environment_url'):print('::notice title=Audio Preview::'+s['environment_url'])
+          PY

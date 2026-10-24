@@ -1,7 +1,7 @@
 import {openLibraryStore} from './local-store.mjs';
 import {AudioCloud,audioError,downloadAudioLink} from './cloud.mjs';
 import {ImportQueue} from './import-queue.mjs';
-import {createLibraryView} from './library-view.mjs';
+import {createLibraryView,clock} from './library-view.mjs';
 import {createPlayer} from './player.mjs';
 
 export async function mountAudioLibrary(root,{access=()=>window.LambertAccount.audioAccess()}={}){
@@ -46,8 +46,12 @@ export async function mountAudioLibrary(root,{access=()=>window.LambertAccount.a
  }
  async function openTrack(id,autoplay=false){const t=track(id);if(!t||t.status!=='ready')return;const token=++selection,user=s.userId,authEpoch=epoch;const old=s.trackId;if(old)void flushNote(old);player.pause();
   const [links,local]=await Promise.all([cloud.signed(user,window.LambertNativeAudio?s.tracks.filter(x=>x.collection_id===t.collection_id&&x.status==='ready').sort((a,b)=>a.sort_order-b.sort_order):[t]),store.progress(user,id)]);if(token!==selection||!current(user,authEpoch))return;const link=links.find(x=>x.id===id);if(!link?.url)throw Error('audio_unavailable');s.trackId=id;s.collectionId=t.collection_id;editorVersions.set(id,t.note_version);render();view.status(s.drafts.has(id)?'本地草稿待同步':'已保存');
-  // A local checkpoint based on the same cloud version is safe to resume automatically.
-  const resume=local&&local.baseVersion===t.progress_version?local:{position:t.position,rate:t.rate};
+  // Divergent device checkpoints require an explicit choice; both remain recoverable.
+  let resume=local&&local.baseVersion===t.progress_version?local:{position:t.position,rate:t.rate};
+  if(local&&local.baseVersion!==t.progress_version&&Math.abs(local.position-t.position)>2){
+   resume=await new Promise(resolve=>{const dialog=document.createElement('dialog'),title=document.createElement('h3');title.textContent='选择续听位置';dialog.append(title);let selected=false;for(const [label,value] of [[`本机 ${clock(local.position)}`,local],[`云端 ${clock(t.position)}`,{position:t.position,rate:t.rate}]]){const b=document.createElement('button');b.type='button';b.textContent=label;b.onclick=()=>{selected=true;resolve(value);dialog.close();};dialog.append(b);}dialog.onclose=()=>{dialog.remove();if(!selected)resolve(null);};root.append(dialog);dialog.showModal();});
+   if(!resume||token!==selection||!current(user,authEpoch))return;
+  }
   await player.load(t,link.url,{...resume,autoplay,playlist:links.map(l=>({...track(l.id),...l}))});
  }
  async function step(delta,autoplay){const list=s.tracks.filter(t=>t.collection_id===s.collectionId&&t.status==='ready').sort((a,b)=>a.sort_order-b.sort_order),index=list.findIndex(t=>t.id===s.trackId),next=list[index+delta];if(next)try{await openTrack(next.id,autoplay||!player.audio.paused);}catch(e){view.message(audioError(e));}}
@@ -64,7 +68,7 @@ export async function mountAudioLibrary(root,{access=()=>window.LambertAccount.a
   if(action==='move'){const ids=s.tracks.filter(t=>t.collection_id===s.collectionId).sort((a,b)=>a.sort_order-b.sort_order).map(t=>t.id),i=ids.indexOf(data.id),j=i+data.delta;if(j<0||j>=ids.length)return;[ids[i],ids[j]]=[ids[j],ids[i]];const result=await cloud.reorder(s.userId,collection(),ids);if(result.status==='conflict')view.message('排序已变化，请刷新后重试');await refresh();return;}
   if(action==='import'||action==='link'){
    if(!s.userId||!s.collectionId)throw Error('audio_login_required');const files=action==='link'?[await downloadAudioLink(data)]:data;
-   const result=await queue.add(files,{userId:s.userId,collectionId:s.collectionId,remaining:200-s.tracks.filter(t=>t.collection_id===s.collectionId).length});
+   const result=await queue.add(files,{userId:s.userId,collectionId:s.collectionId,remaining:200-new Set([...s.tracks.filter(t=>t.collection_id===s.collectionId).map(t=>t.id),...s.jobs.filter(j=>j.collectionId===s.collectionId&&j.reserved).map(j=>j.trackId)]).size});
    view.message(result.rejected?'超过剩余容量：每个音频集最多200条':`已加入 ${result.added} 条${result.duplicates?`，跳过重复 ${result.duplicates} 条`:''}`);if(!result.rejected)await runQueue();return;
   }
   if(action==='retry'||action==='reselect'){const result=await queue.retry(action==='retry'?data:data.id,data.file);if(!result.ok){view.message(result.error==='digest_mismatch'?'文件不匹配，请重新选择原文件':'请重新选择原文件');return;}await runQueue();return;}

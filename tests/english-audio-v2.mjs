@@ -16,7 +16,7 @@ const ready=()=>page.waitForFunction(()=>document.getElementById('eaAudio')?.rea
 const snapshot=()=>page.evaluate(async()=>{const s=await import('/english-audio-store.mjs');const db=await s.openAudioDatabase();const saved=await s.listTracks(db);db.close();return saved;});
 try{
   await page.addInitScript(()=>{if(!localStorage.getItem('english_learning_v1'))localStorage.setItem('english_learning_v1',JSON.stringify({version:1,activeTab:'phonetic',courses:[{id:'v',type:'video',name:'历史视频',title:'保留字幕',subtitles:[{start:1,end:2,text:'history'}],currentStep:3,completedSteps:[1,2],unknown:'retained'},{id:'p',type:'phonetic',name:'历史音标',lessonIndex:2,totalLessons:48}],records:[{title:'历史学习',type:'video',date:'2026-10-01',duration:8}]}));});
-  await page.goto(base);await page.locator('nav button[data-v=english]').click();
+  await page.goto(base);await page.locator('nav button[data-v=english]').click();await page.getByRole('button',{name:'本机旧音频',exact:true}).click();
   await page.locator('#eaFile:not([disabled])').waitFor();const legacy=await state();
   console.log('Audio browser capabilities',JSON.stringify(await page.evaluate(()=>({userAgent:navigator.userAgent,wav:document.getElementById('eaAudio').canPlayType('audio/wav'),mp3:document.getElementById('eaAudio').canPlayType('audio/mpeg'),m4a:document.getElementById('eaAudio').canPlayType('audio/mp4; codecs="mp4a.40.2"')}))));
   assert.equal(await page.locator('#eaAudioTab').getAttribute('aria-selected'),'true');
@@ -45,7 +45,7 @@ try{
   await page.waitForFunction(async()=>{const s=await import('/english-audio-store.mjs');const db=await s.openAudioDatabase();const x=await s.listTracks(db);db.close();return x.tracks.find(t=>t.id===x.activeTrackId)?.position===12;});
   const saved=await snapshot();assert.equal(saved.tracks.length,3);assert.ok(saved.tracks.every(t=>!('blob' in t)&&!('data' in t)));
   assert.equal(await page.evaluate(async()=>{const s=await import('/english-audio-store.mjs');const db=await s.openAudioDatabase();const result=await s.readBlob(db,(await s.listTracks(db)).activeTrackId);db.close();return result instanceof Blob;}),true);
-  await page.reload();await page.locator('nav button[data-v=english]').click();await ready();
+  await page.reload();await page.locator('nav button[data-v=english]').click();await page.getByRole('button',{name:'本机旧音频',exact:true}).click();await ready();
   assert.ok(Math.abs(await page.locator('#eaAudio').evaluate(e=>e.currentTime)-12)<.2);assert.equal(await page.locator('#eaRate').inputValue(),'1.5');
   assert.ok(await page.locator('#eaAudio').evaluate(e=>e.paused),'restore does not autoplay');
   assert.equal(await state(),legacy);
@@ -79,13 +79,13 @@ try{
   assert.equal(requests.some(url=>/\/api\/(ai|transcri|speech)/.test(url)),false);assert.deepEqual(errors,[]);
   await page.screenshot({path:'/tmp/english-audio-mobile.png',fullPage:true});
   const unavailable=await context.newPage();await unavailable.addInitScript(()=>{indexedDB.open=()=>{throw Error('storage_unavailable');};});
-  await unavailable.goto(base);await unavailable.locator('nav button[data-v=english]').click();await unavailable.getByText('本机音频库不可用。请允许此站点使用浏览器存储；原视频和历史数据仍可使用。',{exact:true}).waitFor();
+  await unavailable.goto(base);await unavailable.locator('nav button[data-v=english]').click();await unavailable.getByRole('button',{name:'本机旧音频',exact:true}).click();await unavailable.getByText('本机音频库不可用。请允许此站点使用浏览器存储；原视频和历史数据仍可使用。',{exact:true}).waitFor();
   assert.ok(await unavailable.locator('#eaFile').isDisabled());await unavailable.locator('#eaVideoTab').click();assert.ok(await unavailable.locator('#englishVideoV1').isVisible());await unavailable.close();
   const partialContext=await browser.newContext(),partial=await partialContext.newPage();
   await partialContext.route('**/api/account-config',r=>r.fulfill({json:{configured:false}}));
   await partial.goto(new URL('english-app.html',base).href);
   await partial.evaluate(()=>new Promise((resolve,reject)=>{const r=indexedDB.open('lambert_english_audio_v2',1);r.onupgradeneeded=()=>r.result.createObjectStore('tracks',{keyPath:'id'}).put({id:'existing',marker:'preserve'});r.onsuccess=()=>{r.result.close();resolve();};r.onerror=()=>reject(r.error);}));
-  await partial.goto(base);await partial.locator('nav button[data-v=english]').click();await partial.getByText('本机音频库不可用。请允许此站点使用浏览器存储；原视频和历史数据仍可使用。',{exact:true}).waitFor();
+  await partial.goto(base);await partial.locator('nav button[data-v=english]').click();await partial.getByRole('button',{name:'本机旧音频',exact:true}).click();await partial.getByText('本机音频库不可用。请允许此站点使用浏览器存储；原视频和历史数据仍可使用。',{exact:true}).waitFor();
   assert.equal(await partial.evaluate(()=>new Promise(resolve=>{const r=indexedDB.open('lambert_english_audio_v2',1);r.onsuccess=()=>{const db=r.result;db.transaction('tracks').objectStore('tracks').get('existing').onsuccess=e=>{resolve(e.target.result.marker);db.close();};};})), 'preserve');
   await partialContext.close();
   console.log('PASS audio V2.1: real WAV/MP3/M4A and URL playback, pause/rotate/seek/skip/rate, IndexedDB reload and rollback, preserved legacy history, remote failure recovery, 320–1440 responsive, keyboard tabs, reduced motion, no AI calls, 3-second skip and collapsible standalone subtitles');
