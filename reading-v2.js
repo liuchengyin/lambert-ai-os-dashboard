@@ -227,19 +227,32 @@
     try{localStorage.setItem(STANDALONE,JSON.stringify(standaloneNotes));standaloneStatus.textContent='已保存到本地';return true}
     catch{standaloneStatus.textContent='保存失败，请复制正文备份';return false}
   }
-  // Type is metadata, not a second title. Keep stored legacy text unchanged until user edits.
-  function displayCardTitle(note){
-    const type=note.type||'观念卡';
-    const original=String(note.title||'').trim();
-    const clean=original.replace(new RegExp('^'+type+'[：:]\\s*'),'').trim();
-    return clean||'无标题笔记';
+  // Card template is the visible title preset; existing user content is never removed.
+  const CARD_TYPES=['观念卡','案例卡','方法卡'];
+  const CARD_TEMPLATE_BODY='## 解读\n\n\n---\n\n## 原文\n\n';
+  function cardTitle(type,detail=''){
+    const suffix=String(detail||'').replace(/^(观念卡|案例卡|方法卡)[：:]\s*/,'').trim();
+    return type+'：'+suffix;
+  }
+  function normalizeCardTitle(title,type){
+    const raw=String(title||'').trim();
+    if(!raw)return cardTitle(type);
+    if(/^(观念卡|案例卡|方法卡)[：:]/.test(raw))return cardTitle(type,raw);
+    return cardTitle(type,raw);
+  }
+  function displayCardTitle(note){return normalizeCardTitle(note.title,note.type||'观念卡')}
+  function ensureTemplateDivider(body){
+    const text=String(body||'');
+    // Only repair an untouched template, never rewrite substantive user content.
+    if(text.trim()==='## 解读\n\n## 原文'||text.trim()==='## 解读\n\n\n## 原文')return CARD_TEMPLATE_BODY;
+    return text;
   }
   function renderStandaloneList(){
     const list=$('rv2StandaloneList');list.replaceChildren();
     for(const note of [...standaloneNotes].sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt))){
       const button=document.createElement('button');button.type='button';button.className='reading-standalone-item';
       button.classList.toggle('active',note.id===standaloneId);
-      const name=document.createElement('strong');name.textContent=(note.type||'观念卡')+'：'+displayCardTitle(note);
+      const name=document.createElement('strong');name.textContent=displayCardTitle(note);
       const stamp=document.createElement('span');stamp.textContent=note.updatedAt?note.updatedAt.slice(0,16).replace('T',' '):'新建';
       button.append(name,stamp);button.onclick=()=>selectStandalone(note.id);list.append(button);
     }
@@ -248,7 +261,7 @@
     clearTimeout(standaloneSaveTimer);
     if(!standaloneId)return true;
     const note=standaloneNotes.find(n=>n.id===standaloneId);if(!note)return true;
-    const title=$('rv2StandaloneTitle').value,type=$('rv2StandaloneType').value,body=standaloneEditorReady&&standaloneEditor?standaloneEditor.getValue():$('rv2StandaloneBody').value;
+    const type=$('rv2StandaloneType').value,title=normalizeCardTitle($('rv2StandaloneTitle').value,type),body=standaloneEditorReady&&standaloneEditor?standaloneEditor.getValue():$('rv2StandaloneBody').value;
     if(note.title===title&&note.body===body&&note.type===type)return true;
     note.title=title;note.body=body;note.type=type;note.updatedAt=new Date().toISOString();
     const ok=persistStandalone();renderStandaloneList();return ok;
@@ -256,14 +269,15 @@
   function selectStandalone(id){
     if(!flushStandalone())return;
     const note=standaloneNotes.find(n=>n.id===id);if(!note)return;
-    standaloneId=id;$('rv2StandaloneTitle').value=String(note.title||'').replace(new RegExp('^'+(note.type||'观念卡')+'[：:]\\s*'),'');$('rv2StandaloneType').value=note.type||'观念卡';$('rv2StandaloneBody').value=note.body;
+    standaloneId=id;$('rv2StandaloneTitle').value=normalizeCardTitle(note.title,note.type||'观念卡');$('rv2StandaloneType').value=note.type||'观念卡';$('rv2StandaloneBody').value=ensureTemplateDivider(note.body);
     renderStandaloneList();standaloneStatus.textContent='本地保存';
     if(standaloneEditorReady&&standaloneEditor)standaloneEditor.setValue(note.body||'');
     updateStandaloneArchiveLink(note);
   }
   function newStandalone(){
     if(!flushStandalone()||!standaloneReadSafe)return;
-    const note={id:uid(),type:$('rv2StandaloneType').value||'观念卡',title:'',body:'## 解读\n\n\n---\n\n## 原文\n\n',updatedAt:new Date().toISOString()};
+    const type=$('rv2StandaloneType').value||'观念卡';
+    const note={id:uid(),type,title:cardTitle(type),body:CARD_TEMPLATE_BODY,updatedAt:new Date().toISOString()};
     standaloneNotes.unshift(note);
     if(!persistStandalone())return;
     selectStandalone(note.id);$('rv2StandaloneTitle').focus();
@@ -283,7 +297,17 @@
   $('rv2SplitTab').onclick=()=>switchReadingTab('split');
   $('rv2NotesTab').onclick=()=>switchReadingTab('standalone');
   $('rv2StandaloneNew').onclick=newStandalone;
-  $('rv2StandaloneType').addEventListener('change',()=>{standaloneStatus.textContent='待保存…';flushStandalone()});
+  $('rv2StandaloneType').addEventListener('change',()=>{
+    const type=$('rv2StandaloneType').value;
+    // Selecting a card applies its title template, preserving any user-written title detail.
+    $('rv2StandaloneTitle').value=normalizeCardTitle($('rv2StandaloneTitle').value,type);
+    const body=standaloneEditorReady&&standaloneEditor?standaloneEditor.getValue():$('rv2StandaloneBody').value;
+    if(!body.trim()||body.trim()==='## 解读\n\n## 原文'){
+      $('rv2StandaloneBody').value=CARD_TEMPLATE_BODY;
+      if(standaloneEditorReady&&standaloneEditor)standaloneEditor.setValue(CARD_TEMPLATE_BODY);
+    }
+    standaloneStatus.textContent='待保存…';flushStandalone();
+  });
   $('rv2StandaloneDelete').onclick=()=>{
     if(!standaloneReadSafe||!standaloneId)return;
     if(!window.confirm('确定删除这条独立笔记？此操作不能撤销。'))return;
@@ -348,7 +372,7 @@
       if(!window.ArchiveTargets)throw Error('请先配置飞书归档位置');
       const dest=await window.ArchiveTargets.getDestination('reading');
       const response=await fetch('/api/feishu-daily',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        date:dateKey(),title:(note.type||'观念卡')+'：'+(displayCardTitle(note)==='无标题笔记'?'独立笔记':displayCardTitle(note)),markdown:note.body,source:'reading',
+        date:dateKey(),title:displayCardTitle(note),markdown:note.body,source:'reading',
         locationId:dest.id,previousTargetToken:note.archiveTargetToken||'',
         documentToken:note.feishuDocumentToken||'',wikiToken:note.feishuWikiToken||''
       })});
