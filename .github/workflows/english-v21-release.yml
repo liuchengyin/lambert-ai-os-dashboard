@@ -1,0 +1,44 @@
+name: English V2.1 production verification
+on:
+  push:
+    branches: [main]
+    paths: ['english-audio-*', 'english-learning.js', 'index.html', 'scripts/check-english-v21-production.mjs', '.github/workflows/english-v21-release.yml']
+permissions:
+  contents: read
+  deployments: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Wait for the existing Vercel Production integration
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: liuchengyin/lambert-ai-os-dashboard
+        run: |
+          python3 - <<'PY'
+          import json,os,subprocess,time
+          sha=os.environ['GITHUB_SHA'];repo=os.environ['GH_REPO']
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+repo+'/'+path],text=True))
+          for attempt in range(24):
+              complete=False
+              for deployment in api('deployments?sha='+sha):
+                  if not deployment.get('production_environment') and deployment.get('environment','').lower()!='production':continue
+                  for status in api('deployments/'+str(deployment['id'])+'/statuses')[:1]:
+                      if status['state']=='success':
+                          print('::notice title=Vercel Production deployed::'+json.dumps({'commit':sha,'url':status.get('environment_url')},ensure_ascii=False));complete=True
+                      elif status['state'] in ['failure','error']:raise SystemExit('Vercel Production deployment failed')
+              if complete:break
+              if attempt==23:raise SystemExit('Vercel Production deployment not confirmed')
+              time.sleep(10)
+          PY
+      - name: Install pinned smoke harness
+        run: npm install --no-save --no-package-lock playwright@1.56.0
+      - name: Verify live production assets and UI without cloud writes
+        run: node scripts/check-english-v21-production.mjs
