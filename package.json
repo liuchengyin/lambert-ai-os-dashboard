@@ -1,0 +1,16 @@
+{
+  "name": "lambert-ai-os-dashboard",
+  "private": true,
+  "description": "Lambert AI OS web and Android development entry points",
+  "engines": {"node": ">=22"},
+  "scripts": {
+    "dev": "node scripts/codex/dev-server.mjs",
+    "setup": "node scripts/codex/setup.mjs",
+    "check": "node --test tests/codex-tools.test.mjs",
+    "test:data": "node scripts/codex/check.mjs data",
+    "test:mobile": "node scripts/codex/check.mjs mobile",
+    "ai:assist": "node --env-file-if-exists=.env.development.local scripts/codex/model-assist.mjs",
+    "ai:usage": "node scripts/codex/model-assist.mjs --usage",
+    "android:bundle": "python3 scripts/bundle-android.py"
+  }
+}

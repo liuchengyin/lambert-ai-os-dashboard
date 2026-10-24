@@ -1,0 +1,36 @@
+name: Codex provider connectivity
+on:
+  push:
+    branches: [chore/codex-development-setup-20261024]
+    paths: ['scripts/codex/model-assist.mjs', '.github/workflows/codex-provider-smoke.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    strategy:
+      fail-fast: false
+      matrix:
+        provider: [deepseek, glm]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: One fixed smoke request, no source files or fallback
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ matrix.provider == 'deepseek' && secrets.DEEPSEEK_REVIEW_API_KEY || '' }}
+          ZHIPU_API_KEY: ${{ matrix.provider == 'glm' && secrets.ZHIPU_API_KEY || '' }}
+          ASSIST_PROVIDER: ${{ matrix.provider }}
+        run: node scripts/codex/model-assist.mjs --provider "$ASSIST_PROVIDER" --run
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: codex-provider-${{ matrix.provider }}-usage
+          path: .codex-local/assist/smoke-${{ matrix.provider }}.json
+          include-hidden-files: true
+          retention-days: 14

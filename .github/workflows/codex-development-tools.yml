@@ -1,0 +1,21 @@
+name: Codex development tools
+on:
+  pull_request:
+    paths: ['AGENTS.md', 'package.json', '.gitignore', '.env.example', 'scripts/codex/**', 'tests/codex-tools.test.mjs', '.github/workflows/codex-development-tools.yml']
+permissions:
+  contents: read
+jobs:
+  tools:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run check
+      - run: npm run setup
+      - name: Existing account and API checks with the root package configuration
+        run: npm run test:data
