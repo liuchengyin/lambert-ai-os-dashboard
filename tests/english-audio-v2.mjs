@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 const base=process.env.TEST_BASE_URL||'http://127.0.0.1:8000/';
 const fixture=process.env.AUDIO_FIXTURES||'/tmp/lambert-audio-fixtures';
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,channel:process.env.TEST_BROWSER_CHANNEL||undefined});
 const context=await browser.newContext({viewport:{width:1440,height:1000}});
 const errors=[],requests=[];let failRemote=false;
 const wav=await readFile(fixture+'/lesson.wav');
@@ -18,6 +18,7 @@ try{
   await page.addInitScript(()=>{if(!localStorage.getItem('english_learning_v1'))localStorage.setItem('english_learning_v1',JSON.stringify({version:1,activeTab:'phonetic',courses:[{id:'v',type:'video',name:'历史视频',title:'保留字幕',subtitles:[{start:1,end:2,text:'history'}],currentStep:3,completedSteps:[1,2],unknown:'retained'},{id:'p',type:'phonetic',name:'历史音标',lessonIndex:2,totalLessons:48}],records:[{title:'历史学习',type:'video',date:'2026-10-01',duration:8}]}));});
   await page.goto(base);await page.locator('nav button[data-v=english]').click();
   await page.locator('#eaFile:not([disabled])').waitFor();const legacy=await state();
+  console.log('Audio browser capabilities',JSON.stringify(await page.evaluate(()=>({userAgent:navigator.userAgent,wav:document.getElementById('eaAudio').canPlayType('audio/wav'),mp3:document.getElementById('eaAudio').canPlayType('audio/mpeg'),m4a:document.getElementById('eaAudio').canPlayType('audio/mp4; codecs="mp4a.40.2"')}))));
   assert.equal(await page.locator('#eaAudioTab').getAttribute('aria-selected'),'true');
   assert.equal(await page.locator('#englishVideoV1').isVisible(),false);
   assert.ok(await page.locator('.ea-transcript button').isDisabled());
@@ -82,4 +83,7 @@ try{
   assert.equal(await partial.evaluate(()=>new Promise(resolve=>{const r=indexedDB.open('lambert_english_audio_v2',1);r.onsuccess=()=>{const db=r.result;db.transaction('tracks').objectStore('tracks').get('existing').onsuccess=e=>{resolve(e.target.result.marker);db.close();};};})), 'preserve');
   await partialContext.close();
   console.log('PASS audio V2.1: real WAV/MP3/M4A and URL playback, pause/rotate/seek/skip/rate, IndexedDB reload and rollback, preserved legacy history, remote failure recovery, 320–1440 responsive, keyboard tabs, reduced motion, no AI calls');
+}catch(error){
+  console.error('Audio failure diagnostic',JSON.stringify(await page.evaluate(()=>{const a=document.getElementById('eaAudio');return {title:document.getElementById('eaTitle')?.textContent,readyState:a?.readyState,error:a?.error?{code:a.error.code,message:a.error.message}:null,status:document.getElementById('eaStatus')?.textContent};}).catch(()=>({pageUnavailable:true}))));
+  throw error;
 }finally{await context.close();await browser.close();}

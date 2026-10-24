@@ -44,7 +44,10 @@ jobs:
           ffmpeg -hide_banner -loglevel error -i /tmp/lambert-audio-fixtures/lesson.wav -c:a libmp3lame -y /tmp/lambert-audio-fixtures/lesson.mp3
           ffmpeg -hide_banner -loglevel error -i /tmp/lambert-audio-fixtures/lesson.wav -c:a aac -y /tmp/lambert-audio-fixtures/lesson.m4a
       - name: Run local dashboard and Chromium smoke test
+        env:
+          TEST_BROWSER_CHANNEL: chrome
         run: |
+          google-chrome --version
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
           run_english_test() {
