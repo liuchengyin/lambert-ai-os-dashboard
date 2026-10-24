@@ -80,11 +80,11 @@
   if(!document.querySelector('script[src="daily-modules.js"]')){
     const s=document.createElement('script');s.async=false;s.src='daily-modules.js';document.body.appendChild(s)
   }
-  if(!document.querySelector('link[href="reading-v2.css"]')){
-    const r=document.createElement('link');r.rel='stylesheet';r.href='reading-v2.css';document.head.appendChild(r)
+  if(!document.querySelector('link[data-reading-v2]')){
+    const r=document.createElement('link');r.rel='stylesheet';r.href='reading-v2.css?v=20261024-tabs1';r.dataset.readingV2='';document.head.appendChild(r)
   }
-  if(!document.querySelector('script[src="reading-v2.js"]')){
-    const s=document.createElement('script');s.async=false;s.src='reading-v2.js';document.body.appendChild(s)
+  if(!document.querySelector('script[data-reading-v2]')){
+    const s=document.createElement('script');s.async=false;s.src='reading-v2.js?v=20261024-tabs1';s.dataset.readingV2='';document.body.appendChild(s)
   }
   if(!document.querySelector('script[src="reading-extension-import.js"]')){
     const s=document.createElement('script');s.async=false;s.src='reading-extension-import.js';document.body.appendChild(s)

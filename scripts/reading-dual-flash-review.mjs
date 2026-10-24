@@ -1,0 +1,18 @@
+import {readFile} from 'node:fs/promises';
+const provider=process.argv[2];
+if(!['deepseek','glm'].includes(provider))throw Error('unknown_provider');
+const flash=provider==='deepseek';
+const model=flash?'deepseek-flash':'glm-4.7-flash';
+const key=process.env[flash?'DEEPSEEK_REVIEW_API_KEY':'ZHIPU_API_KEY'];
+if(!key)throw Error('missing_provider_secret');
+const files=['reading-v2.js','reading-v2.css','project-v4.js','tests/reading-dual-tab.mjs'];
+const sources=await Promise.all(files.map(async path=>({path,content:(await readFile(path,'utf8')).slice(0,19000)})));
+const prompt='你是独立代码审查员。仅评审双Tab阅读+独立笔记功能，不执行代码。重点检查现有阅读卡片数据是否被覆盖，独立笔记输入切换刷新是否丢失，HTML语法、移动端交互，旧PDF/飞书功能的回归。返回简短中文JSON：{risks:[{severity,issue,fix}],verdict:"pass|needs_fix"}。不要返回任何个人内容或机密。代码：'+JSON.stringify(sources);
+const endpoint=flash?'https://api.deepseek.com/chat/completions':'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+key},body:JSON.stringify({model,temperature:0,max_tokens:1400,messages:[{role:'user',content:prompt}]}),signal:AbortSignal.timeout(110000)});
+if(!response.ok)throw Error('provider_http_'+response.status);
+const d=await response.json();const reported=d.model||'';
+if(reported!==model)throw Error('model_mismatch:'+reported);
+const raw=d.choices?.[0]?.message?.content||'';
+if(!raw)throw Error('empty_review');
+console.log(JSON.stringify({provider,requestedModel:model,reportedModel:reported,usage:d.usage,review:raw.slice(0,6500)}));
