@@ -61,4 +61,13 @@ GitHub 已确认首次 Preview 部署成功：[初始验收地址](https://lambe
 
 首次 PR 创建被仓库策略明确拒绝：`GitHub Actions is not permitted to create or approve pull requests`。需要仓库启用 Actions 创建 PR，或恢复本机 GitHub API 访问。只重试交付步骤，不重跑付费审查。
 
+### 最终 V2.1 结果
+
+- 实现与审查修正：`6407b6d`；最终浏览器测试配置：`370038e`。后续仅报告/工作流提交不改变已验收的播放器实现。
+- [最终云端英语回归 40067085466](https://github.com/liuchengyin/lambert-ai-os-dashboard/actions/runs/40067085466) **Success**。新音频测试使用 runner 的 Google Chrome；旧视频/音标回归仍使用原 Chromium。三种格式、真实播放、刷新恢复及移动端断言全部执行，没有跳过 M4A。此前 bundled Chromium 的媒体加载超时已保留为运行记录，浏览器和音频编码兼容性仍遵循上文边界。
+- [修正版验收 Preview](https://lambert-ai-os-dashboard-cajd54xi2-liuchengyin8030-8582.vercel.app/?view=english)：Vercel/GitHub 部署状态 Success，包含 `6407b6d` 的播放器修正（后续提交只改测试/交付）。当前机器的网络代理拒绝该站点，Preview 页面未在本机进行实际浏览器验证；本地与 GitHub runner 的浏览器验证已通过。
+- Preview 是独立站点 origin，其 IndexedDB/localStorage 不会自动出现正式站点的历史。验收请导入测试音频；正式站点旧视频历史未迁移、未清空。
+- [PR 交付重试 40066833533](https://github.com/liuchengyin/lambert-ai-os-dashboard/actions/runs/40066833533) 仍被仓库明确拒绝创建 PR。用户已授权，但 GitHub 设置尚未生效。需在 Settings → Actions → General → Workflow permissions 勾选并保存 “Allow GitHub Actions to create and approve pull requests”，或手动通过[已准备好的分支比较页](https://github.com/liuchengyin/lambert-ai-os-dashboard/compare/main...feat/web-english-audio-v2?expand=1)创建 PR。没有 PR 编号，不把比较页当作已创建的 PR。
+- 一次 Flash 实际总用量仍为 **9,743 Token**，没有重跑。未调用语音识别，未修改生产数据，未合并 main，未部署生产。
+
 验收后再另行授权 V2.2。当前笔记编辑、AI 转写、云端音频同步均未实现。
