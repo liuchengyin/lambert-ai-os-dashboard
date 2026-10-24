@@ -2,7 +2,7 @@ name: Audio library web regression and draft PR
 on:
   push:
     branches: [feat/english-audio-library-v1]
-    paths: ['shared-audio/**','shared-sync/account-ui.mjs','english-audio-library.js','english-audio-v2.js','index.html','mobile/**','tests/audio/**','tests/english-audio-v2.mjs','.github/workflows/audio-library-web.yml','docs/reviews/audio-library-v1.md']
+    paths: ['shared-audio/**','shared-sync/account-ui.mjs','english-audio-library.js','english-audio-v2.js','index.html','mobile/**','tests/audio/**','tests/english-audio-v2.mjs','.github/workflows/audio-library-web.yml','tests/shared-sync/browser.mjs']
 permissions:
   contents: read
   pull-requests: write
@@ -31,6 +31,7 @@ jobs:
           ffmpeg -y -i /tmp/lambert-audio-fixtures/lesson.wav /tmp/lambert-audio-fixtures/lesson.mp3
           ffmpeg -y -i /tmp/lambert-audio-fixtures/lesson.wav -c:a aac /tmp/lambert-audio-fixtures/lesson.m4a
           ln -s shared-sync/tooling/node_modules node_modules
+          shared-sync/tooling/node_modules/.bin/playwright install --with-deps chromium
       - name: Audio and account regressions with mock hosted services
         env:
           TEST_BASE_URL: http://127.0.0.1:8780/
@@ -61,7 +62,7 @@ jobs:
           import re
           path=Path('/tmp/audio-web.log')
           if path.exists():
-              lines=[x for x in path.read_text().splitlines() if re.search(r'PASS|passed|Error|Assertion|Timeout|at file:|waiting for|locator\.',x)]
+              lines=[x for x in path.read_text().splitlines() if re.search(r'PASS|passed|Error|Assertion|Timeout|browserType|Executable|Playwright|at file:|waiting for|locator\.',x)]
               text='\n'.join(lines[-22:])[-7000:]
               print('::notice title=Web regression::'+text.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
           PY

@@ -5,6 +5,7 @@ import {createLibraryView,clock} from './library-view.mjs';
 import {createPlayer} from './player.mjs';
 
 export async function mountAudioLibrary(root,{access=()=>window.LambertAccount.audioAccess()}={}){
+ if(location.hostname==='appassets.androidplatform.net'&&!window.LambertNativeAudio){root.textContent='当前 WebView 不支持原生后台播放，请升级 Android System WebView 后重试';return {pause(){},refresh(){}};}
  const s={userId:null,collections:[],tracks:[],jobs:[],drafts:new Map(),collectionId:null,trackId:null};
  let store,queue,epoch=0,noteTimer,saveChain=Promise.resolve(),progressChain=Promise.resolve(),selection=0;
  const editorVersions=new Map();
