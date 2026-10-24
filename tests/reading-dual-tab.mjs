@@ -1,0 +1,44 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+const browser=await chromium.launch();
+const page=await browser.newPage({viewport:{width:1400,height:900}});
+const errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.route('**/api/account-config',route=>route.fulfill({json:{configured:false}}));
+try{
+  await page.addInitScript(()=>{
+    localStorage.setItem('reading_workspace_v2',JSON.stringify({reader:{title:'Existing Book',progress:'P12',mode:'pdf',url:''},notes:[{id:'old-card',date:'2026-10-20',type:'案例卡',title:'旧卡片',thought:'已有内容',excerpt:''}],currentId:'old-card'}));
+  });
+  await page.goto(process.env.TEST_BASE_URL||'http://127.0.0.1:8000/');
+  await page.locator('nav button[data-v=reading]').click();
+  await page.locator('#rv2SplitTab').waitFor();
+  assert.equal(await page.locator('#rv2SplitView').isVisible(),true);
+  assert.equal(await page.locator('#rv2CardTitle').inputValue(),'旧卡片');
+  const before=await page.evaluate(()=>localStorage.getItem('reading_workspace_v2'));
+  await page.locator('#rv2NotesTab').click();
+  assert.equal(await page.locator('#rv2StandaloneView').isVisible(),true);
+  assert.equal(await page.locator('#rv2SplitView').isVisible(),false);
+  await page.locator('#rv2StandaloneTitle').fill('新想法');
+  await page.locator('#rv2StandaloneBody').fill('我的第一条独立笔记');
+  await page.locator('#rv2StandaloneBody').blur();
+  assert.equal(await page.locator('#rv2StandaloneStatus').textContent(),'已保存到本地');
+  const standalone=await page.evaluate(()=>JSON.parse(localStorage.getItem('reading_standalone_notes_v1')));
+  assert.equal(standalone[0].title,'新想法');
+  assert.equal(standalone[0].body,'我的第一条独立笔记');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('reading_workspace_v2')),before);
+  await page.locator('#rv2SplitTab').click();
+  assert.equal(await page.locator('#rv2CardTitle').inputValue(),'旧卡片');
+  await page.locator('#rv2NotesTab').click();
+  assert.equal(await page.locator('#rv2StandaloneBody').inputValue(),'我的第一条独立笔记');
+  await page.reload();await page.locator('#rv2NotesTab').waitFor();
+  assert.equal(await page.locator('#rv2StandaloneView').isVisible(),true);
+  assert.equal(await page.locator('#rv2StandaloneTitle').inputValue(),'新想法');
+  await page.locator('#rv2StandaloneNew').click();
+  await page.locator('#rv2StandaloneTitle').fill('第二条');
+  await page.locator('#rv2StandaloneBody').fill('独立草稿');
+  await page.locator('#rv2StandaloneBody').blur();
+  assert.equal(await page.locator('.reading-standalone-item').count(),2);
+  await page.setViewportSize({width:390,height:844});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
+  assert.deepEqual(errors,[]);
+  console.log('PASS reading split and independent notes, isolated storage, autosave, reload and mobile');
+}finally{await browser.close()}
