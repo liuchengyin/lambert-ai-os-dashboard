@@ -19,3 +19,7 @@ jobs:
       - run: npm run setup
       - name: Existing account and API checks with the root package configuration
         run: npm run test:data
+      - name: Install browser and verify the isolated mobile test runner
+        run: |
+          node shared-sync/tooling/node_modules/playwright/cli.js install --with-deps chromium
+          npm run test:mobile
