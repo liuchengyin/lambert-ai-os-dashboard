@@ -4,6 +4,8 @@ const browser=await chromium.launch();
 const page=await browser.newPage({viewport:{width:1400,height:900}});
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.route('**/api/account-config',route=>route.fulfill({json:{configured:false}}));
+// Verify safe textarea fallback when external Markdown editor CDN is unavailable.
+await page.route('https://cdn.jsdelivr.net/npm/vditor@3.10.4/**',route=>route.abort());
 try{
   await page.addInitScript(()=>{
     localStorage.setItem('reading_workspace_v2',JSON.stringify({reader:{title:'Existing Book',progress:'P12',mode:'pdf',url:''},notes:[{id:'old-card',date:'2026-10-20',type:'案例卡',title:'旧卡片',thought:'已有内容',excerpt:''}],currentId:'old-card'}));
@@ -12,6 +14,8 @@ try{
   await page.locator('nav button[data-v=reading]').click();
   await page.locator('#rv2SplitTab').waitFor();
   assert.equal(await page.locator('#rv2SplitView').isVisible(),true);
+  assert.equal(await page.locator('#rv2NotesTab').count(),1);
+  assert.equal(await page.locator('.reading-visually-hidden').count(),1);
   assert.equal(await page.locator('#rv2CardTitle').inputValue(),'旧卡片');
   const before=await page.evaluate(()=>localStorage.getItem('reading_workspace_v2'));
   await page.locator('#rv2NotesTab').click();
@@ -23,6 +27,7 @@ try{
   assert.equal(await page.locator('#rv2StandaloneStatus').textContent(),'已保存到本地');
   const standalone=await page.evaluate(()=>JSON.parse(localStorage.getItem('reading_standalone_notes_v1')));
   assert.equal(standalone[0].title,'新想法');
+  assert.equal(await page.locator('#rv2StandaloneArchive').count(),1);
   assert.equal(standalone[0].body,'我的第一条独立笔记');
   assert.equal(await page.evaluate(()=>localStorage.getItem('reading_workspace_v2')),before);
   await page.locator('#rv2SplitTab').click();
@@ -33,6 +38,9 @@ try{
   assert.equal(await page.locator('#rv2StandaloneView').isVisible(),true);
   assert.equal(await page.locator('#rv2StandaloneTitle').inputValue(),'新想法');
   await page.locator('#rv2StandaloneNew').click();
+  assert.ok((await page.locator('#rv2StandaloneBody').inputValue()).includes('## 解读'));
+  assert.ok((await page.locator('#rv2StandaloneBody').inputValue()).includes('## 原文'));
+  assert.ok((await page.locator('#rv2StandaloneBody').inputValue()).includes('---'));
   await page.locator('#rv2StandaloneTitle').fill('第二条');
   await page.locator('#rv2StandaloneBody').fill('独立草稿');
   await page.locator('#rv2StandaloneBody').blur();
