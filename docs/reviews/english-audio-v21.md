@@ -76,3 +76,5 @@ GitHub 已确认首次 Preview 部署成功：[初始验收地址](https://lambe
 ### 验收反馈调整
 
 前进/后退步长、按钮文案与无障碍名称统一改为3秒，支持在起点/终点安全截断。播放器下方新增独立「音频字幕」卡片，默认折叠，可鼠标或键盘展开/收起；学习笔记单列放在字幕卡片下方。转写仍是明确标注的占位，不展示虚构字幕、不上传音频、不调用收费识别，也未扩展V2.2。新增折叠与3秒边界回归；本机与历史存储逻辑未改动。
+
+验收反馈提交 `4a01c23` 的 [Chrome 云端全回归 40071553195](https://github.com/liuchengyin/lambert-ai-os-dashboard/actions/runs/40071553195) 已 Success；[本轮新 Preview](https://lambert-ai-os-dashboard-k293vp6xl-liuchengyin8030-8582.vercel.app/?view=english) 已部署成功。本地系统 Chromium154 在快速连续 M4A 跳转压力测试中出现解复用读取错误，同一文件逐次等待 seek 完成时正常；Chrome 云端的完整格式/跳转测试通过。保留浏览器编码兼容性边界，未跳过 M4A 或改动旧历史数据。
