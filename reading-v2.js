@@ -298,4 +298,79 @@
   let preferred='split';
   try{preferred=localStorage.getItem(TAB_PREF)==='standalone'?'standalone':'split'}catch{}
   switchReadingTab(preferred);
+
+  // Reuse the Markdown editor already used by Daily Writing. No cache or hidden autosave.
+  const VDITOR_CDN='https://cdn.jsdelivr.net/npm/vditor@3.10.4/dist';
+  function loadReadingVditor(){
+    if(window.Vditor)return Promise.resolve();
+    if(window.__lambertReadingVditor)return window.__lambertReadingVditor;
+    window.__lambertReadingVditor=new Promise((resolve,reject)=>{
+      if(!document.querySelector('link[data-reading-vditor]')){
+        const css=document.createElement('link');css.rel='stylesheet';css.href=VDITOR_CDN+'/index.css';
+        css.dataset.readingVditor='';document.head.append(css);
+      }
+      const js=document.createElement('script');js.src=VDITOR_CDN+'/index.min.js';
+      js.onload=()=>window.Vditor?resolve():reject(Error('editor_unavailable'));
+      js.onerror=()=>reject(Error('editor_unavailable'));document.head.append(js);
+    });return window.__lambertReadingVditor;
+  }
+  const markdownToolbar=['undo','redo','|','headings','bold','italic','strike','|','link','quote','|','list','ordered-list','check','|','outdent','indent','|','table','code','inline-code','|','fullscreen'];
+  function makeReadingEditor(id,sourceId,onReady,onChange,height){
+    return new Vditor(id,{height,mode:'ir',cache:{enable:false},toolbar:markdownToolbar,
+      toolbarConfig:{pin:true},preview:{delay:120,actions:[]},counter:{enable:false},
+      placeholder:$(sourceId).placeholder,
+      input:()=>onChange(),
+      after:()=>{onReady()}
+    });
+  }
+  function updateStandaloneArchiveLink(note){
+    const link=$('rv2StandaloneFeishuLink');
+    if(!link)return;
+    link.hidden=!note?.feishuUrl;
+    if(note?.feishuUrl)link.href=note.feishuUrl;else link.removeAttribute('href');
+    $('rv2StandaloneArchive').textContent=note?.feishuDocumentToken?'更新飞书':'归档飞书';
+  }
+  $('rv2StandaloneArchive').onclick=async()=>{
+    if(!flushStandalone())return;
+    const note=standaloneNotes.find(n=>n.id===standaloneId);
+    if(!note||(!note.title.trim()&&!note.body.trim())){standaloneStatus.textContent='请先写笔记';return}
+    const button=$('rv2StandaloneArchive');
+    button.disabled=true;standaloneStatus.textContent='正在归档飞书…';
+    try{
+      if(!window.ArchiveTargets)throw Error('请先配置飞书归档位置');
+      const dest=await window.ArchiveTargets.getDestination('reading');
+      const response=await fetch('/api/feishu-daily',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        date:dateKey(),title:note.title||'独立笔记',markdown:note.body,source:'reading',
+        locationId:dest.id,previousTargetToken:note.archiveTargetToken||'',
+        documentToken:note.feishuDocumentToken||'',wikiToken:note.feishuWikiToken||''
+      })});
+      const data=await response.json().catch(()=>({}));
+      if(!response.ok||!data.ok)throw Error(data.message||'归档失败');
+      Object.assign(note,{archiveTargetToken:data.targetToken||dest.token,
+        feishuUrl:data.url||dest.url,feishuDocumentToken:data.documentToken||note.feishuDocumentToken||'',
+        feishuWikiToken:data.wikiToken||note.feishuWikiToken||'',syncedAt:new Date().toISOString()});
+      if(!persistStandalone())throw Error('飞书已写入但本地记录失败，请勿重复归档');
+      standaloneStatus.textContent='已归档飞书';updateStandaloneArchiveLink(note);
+    }catch(e){standaloneStatus.textContent='归档失败：'+e.message}
+    finally{button.disabled=false}
+  };
+  loadReadingVditor().then(()=>{
+    standaloneEditor=makeReadingEditor('rv2StandaloneRich','rv2StandaloneBody',()=>{
+      standaloneEditorReady=true;standaloneEditor.setValue($('rv2StandaloneBody').value);
+      $('rv2StandaloneRich').hidden=false;$('rv2StandaloneBody').hidden=true;
+    },()=>{
+      if(!standaloneEditorReady)return;
+      $('rv2StandaloneBody').value=standaloneEditor.getValue();
+      standaloneStatus.textContent='待保存…';clearTimeout(standaloneSaveTimer);
+      standaloneSaveTimer=setTimeout(flushStandalone,450);
+    },560);
+    thoughtEditor=makeReadingEditor('rv2ThoughtRich','rv2Thought',()=>{
+      thoughtReady=true;thoughtEditor.setValue($('rv2Thought').value);
+      $('rv2ThoughtRich').hidden=false;$('rv2Thought').hidden=true;
+    },()=>{if(thoughtReady)$('rv2Thought').value=thoughtEditor.getValue()},330);
+    excerptEditor=makeReadingEditor('rv2ExcerptRich','rv2Excerpt',()=>{
+      excerptReady=true;excerptEditor.setValue($('rv2Excerpt').value);
+      $('rv2ExcerptRich').hidden=false;$('rv2Excerpt').hidden=true;
+    },()=>{if(excerptReady)$('rv2Excerpt').value=excerptEditor.getValue()},260);
+  }).catch(()=>{standaloneStatus.textContent='高级编辑器未加载，可继续使用普通文本框'});
 })();
