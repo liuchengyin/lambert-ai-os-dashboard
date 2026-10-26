@@ -8,6 +8,7 @@
     "setup": "node scripts/codex/setup.mjs",
     "check": "node --test tests/codex-tools.test.mjs",
     "test:data": "node scripts/codex/check.mjs data",
+    "test:web-tasks": "node tests/web-task-transitions.mjs",
     "test:mobile": "node scripts/codex/check.mjs mobile",
     "ai:assist": "node --env-file-if-exists=.env.development.local scripts/codex/model-assist.mjs",
     "ai:usage": "node scripts/codex/model-assist.mjs --usage",

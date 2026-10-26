@@ -1,0 +1,40 @@
+name: Web task transition recovery
+on:
+  pull_request:
+    paths: ['task-center*', 'dashboard-v5.js', 'index.html', 'lib/task-center-model.js', 'shared-sync/**', 'scripts/codex/dev-server.mjs', 'tests/web-task-transitions.mjs', 'tests/task-center-ui.mjs', 'tests/codex-tools.test.mjs', 'package.json', '.github/workflows/web-task-transitions.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  task-flow:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Install pinned browser tooling
+        run: |
+          npm run setup
+          node node_modules/playwright/cli.js install --with-deps chromium
+      - name: Check local server, task model and data preservation
+        run: |
+          npm run check
+          node tests/task-center-model.mjs
+          npm run test:data
+      - name: Verify real preview server and conflict recovery
+        run: npm run test:web-tasks
+      - name: Verify existing task, project and review interactions
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 &
+          node tests/task-center-ui.mjs
+          node tests/completed-collapse.mjs
+          node tests/dense-task-card.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-task-transition-screens
+          path: test-artifacts/task-center/

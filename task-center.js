@@ -40,7 +40,23 @@
     if(selected!=='inbox'&&!currentProject()){selected='inbox';anchor='';remember();}
   }
   function notice(text) {const el=$('tcNotice');if(el)el.textContent=text;}
-  function save() {persistTasks();notice('已保存');}
+  function save() {
+    try {persistTasks();notice('已保存');return true;}
+    catch (error) {
+      // A rejected journal write must not leave unsaved mutations in state:
+      // later saves submit the whole array, so one failed task can block others.
+      state.tasks=read('tasks',state.tasks);
+      render();
+      const message=String(error?.message||'');
+      const text=message.includes('冲突')?'这条任务有同步冲突，未流转。请打开「我的账户」对照并处理冲突后重试。':
+        message.includes('账户')?'账户状态已变化，未保存。请刷新页面后重试。':
+        error?.name==='QuotaExceededError'?'本机存储空间不足，未保存。请先导出备份并释放空间后重试。':
+        '任务未保存，请稍后重试；原任务已保留。';
+      notice(text);
+      if($('tcEditor')?.open)$('tcEditorError').textContent=text;
+      return false;
+    }
+  }
   function options(items, value, first='') {return (first?`<option value="">${esc(first)}</option>`:'')+items.map(x=>`<option value="${esc(x.value??x)}" ${String(x.value??x)===String(value)?'selected':''}>${esc(x.label??x)}</option>`).join('');}
   function projectOptions(value) {return options([{value:'inbox',label:'收件箱'},...state.projects.map(p=>({value:p.id,label:p.name}))],value);}
   function labelsHtml(labels) {return (Array.isArray(labels)?labels:[]).map(x=>`<span class="tc-tag tc-tag-${Math.max(0,presets.indexOf(x))}">${esc(x)}</span>`).join('');}
@@ -188,6 +204,7 @@ function board(rows){
       draggedId=null;
       if(task.status!==status){expandedMap.set(task.id,status!=='已完成');}
       task.status=status;
+      if(!save())return;
       const ids=state.tasks.map(t=>t.id),stored=read('task_drag_order_v1',ids),order=[...new Set([...stored,...ids])].filter(id=>id!==task.id);
       const index=target?order.indexOf(target):-1;
       order.splice(index<0?order.length:index,0,task.id);
@@ -195,7 +212,7 @@ function board(rows){
       filters.sort='manual';
       const sortEl=document.getElementById('tcFilterSort');
       if(sortEl)sortEl.value='manual';
-      save();
+      render();
     };
     board.append(col);
   });
@@ -310,7 +327,7 @@ function board(rows){
     const task={...old,id:old?.id||`task_${crypto.randomUUID()}`,title,status:$('tcStatus').value,priority:old?.priority||'P2',matrix:$('tcMatrix').value,start,due,note:$('tcNote').value.trim(),labels,createdAt:old?.createdAt||new Date().toISOString()};
     assign(task,$('tcTaskProject').value);
     if(old)state.tasks[state.tasks.indexOf(old)]=task;else state.tasks.unshift(task);
-    $('tcEditor').close();save();
+    if(save())$('tcEditor').close();
   }
   root.innerHTML=`<div class="tc-page-head"><div><p class="tc-eyebrow">PROJECT WORKSPACE</p><h2>任务中心</h2><h3 id="tcProjectTitle" class="tc-current-project-title"></h3></div><button id="tcBackProjects" type="button">← 项目看板</button></div>
     <div class="tc-overview-row"><section class="tc-project-focus"><div class="tc-focus-top"><label>当前项目<span class="tc-project-select-wrap"><select id="tcProjectSelect" aria-label="当前项目"></select></span></label><span id="tcProjectCategory" class="tc-category"></span></div><p id="tcProjectStandard"></p><div id="tcProjectDates" class="tc-meta"></div><div class="tc-progress-row"><progress id="tcProgress" max="1" value="0"></progress><span id="tcProgressLabel"></span></div></section><aside class="project-ai-panel" aria-label="AI 项目分析"></aside></div>
@@ -320,7 +337,7 @@ function board(rows){
   const dialog=document.createElement('dialog');dialog.id='tcEditor';dialog.className='tc-editor';
   dialog.innerHTML=`<form id="tcEditorForm"><div class="tc-dialog-head"><h3 id="tcEditorTitle"></h3><button id="tcCancel" type="button" aria-label="关闭任务编辑">×</button></div><label>任务名称<input id="tcTitle" autocomplete="off" required></label><div class="tc-editor-grid"><label>所属项目<select id="tcTaskProject"></select></label><label>状态<select id="tcStatus">${options(statuses,'待开始')}</select></label><label>开始时间<input id="tcStart" type="datetime-local"></label><label>截止时间<input id="tcDue" type="datetime-local"></label><label hidden>优先级<select id="tcPriority">${options(['P1','P2','P3'],'P2')}</select></label><label>重要／紧急<select id="tcMatrix">${options([{value:'q1',label:'重要且紧急（P0）'},{value:'q2',label:'重要不紧急（P1）'},{value:'q3',label:'紧急不重要（P2）'},{value:'q4',label:'不重要不紧急（P3）'}],'q2')}</select></label></div><fieldset><legend>标签（可多选）</legend><div id="tcLabels" class="tc-label-checks"></div></fieldset><label>完成标准／备注<textarea id="tcNote" rows="3"></textarea></label><p id="tcEditorError" role="alert"></p><div class="tc-editor-actions"><button id="tcDeleteTask" type="button">删除任务</button><button id="tcCancelBottom" type="button">取消</button><button type="submit" class="tc-primary">保存任务</button></div></form>`;
   document.body.append(dialog);
-  $('tcDeleteTask').onclick=()=>{const task=state.tasks.find(t=>t.id===editId);if(task&&confirm('确认删除任务“'+task.title+'”吗？')){state.tasks.splice(state.tasks.indexOf(task),1);dialog.close();save();}};
+  $('tcDeleteTask').onclick=()=>{const task=state.tasks.find(t=>t.id===editId);if(task&&confirm('确认删除任务“'+task.title+'”吗？')){state.tasks.splice(state.tasks.indexOf(task),1);if(save())dialog.close();}};
   $('tcEditorForm').onsubmit=saveEditor;$('tcCancel').onclick=$('tcCancelBottom').onclick=()=>dialog.close();
   $('tcBackProjects').onclick=()=>openView('projects');$('tcNewTask').onclick=()=>newTask();
   $('tcProjectSelect').onchange=e=>{selected=e.target.value;anchor='';render();};

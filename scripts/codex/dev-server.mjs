@@ -4,12 +4,16 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 export const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.woff':'font/woff','.woff2':'font/woff2','.mp3':'audio/mpeg','.m4a':'audio/mp4','.mp4':'video/mp4','.wav':'audio/wav','.webmanifest':'application/manifest+json'};
+// Only these two lib files are browser assets; the rest are server implementation.
+const PUBLIC_LIB=new Set(['lib/task-center-model.js','lib/link-sites.js']);
+const allowed=parts=>!parts.some(p=>p.startsWith('.')||BLOCKED.has(p))||
+ (PUBLIC_LIB.has(parts.join('/'))&&!parts.some(p=>p.startsWith('.')));
 const BLOCKED=new Set(['node_modules','android','scripts','tests','docs','review-output','supabase','lib']);
 export function publicPath(url){
  let pathname;try{pathname=decodeURIComponent(new URL(url,'http://localhost').pathname);}catch{return null;}
  if(pathname.includes('\\')||pathname.includes('\0'))return null;
  const parts=pathname.split('/').filter(Boolean);
- if(parts.some(p=>p.startsWith('.')||BLOCKED.has(p)))return null;
+ if(!allowed(parts))return null;
  return parts.join('/')+(pathname.endsWith('/')?(parts.length?'/index.html':'index.html'):'');
 }
 export function createDevServer({root=ROOT}={}){
@@ -22,7 +26,7 @@ export function createDevServer({root=ROOT}={}){
   const name=publicPath(req.url);if(!name)return send(404,'{}');
   try{
    const file=await realpath(path.join(root,name)),base=await realpath(root);
-   if(!file.startsWith(base+path.sep)||path.relative(base,file).split(path.sep).some(p=>p.startsWith('.')||BLOCKED.has(p)))return send(404,'{}');
+   if(!file.startsWith(base+path.sep)||!allowed(path.relative(base,file).split(path.sep)))return send(404,'{}');
    const info=await stat(file);if(!info.isFile())return send(404,'{}');
    const type=TYPES[path.extname(file).toLowerCase()];if(!type)return send(404,'{}');
    // Range responses allow audio seek without loading the entire file in the browser.
