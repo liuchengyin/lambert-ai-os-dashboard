@@ -2,7 +2,40 @@
   "buildCommand": "python3 scripts/build-web-update.py",
   "outputDirectory": ".",
   "headers": [
-    {"source": "/mobile/updates/latest.json", "headers": [{"key": "Cache-Control", "value": "no-store"}]},
-    {"source": "/mobile/updates/(.*).zip", "headers": [{"key": "Cache-Control", "value": "public, max-age=31536000, immutable"}]}
+    {
+      "source": "/mobile/updates/latest.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    },
+    {
+      "source": "/mobile/updates/(.*).zip",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/downloads/(.*).apk",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/vnd.android.package-archive"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    }
   ]
 }
