@@ -1,0 +1,31 @@
+name: Family accounts DeepSeek review
+on:
+  push:
+    branches: [feat/web-family-accounts]
+    paths: ['lib/account-relay.cjs', '.github/workflows/family-account-review.yml', 'docs/family-accounts/review-request.md']
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: DeepSeek bounded test draft and security review
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: |
+          node scripts/codex/model-assist.mjs --provider deepseek --task draft --prompt-file docs/family-accounts/review-request.md --file lib/account-relay.cjs --file shared-sync/transport.mjs --run
+          node -e "const fs=require('fs');for(const p of fs.readdirSync('.codex-local/assist'))if(p.endsWith('.json')&&p!=='ledger.json')console.log(fs.readFileSync('.codex-local/assist/'+p,'utf8'));"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: family-account-deepseek
+          path: .codex-local/assist/*.json
+          include-hidden-files: true
+          retention-days: 14

@@ -1,4 +1,5 @@
 import {createClient} from './vendor/supabase-2.118.0.mjs';
+import {createCloudFetch} from './transport.mjs';
 import {createAccount,friendlyAuthError,SESSION_KEY} from './auth.mjs';
 import {WorkspaceJournal,ACTIVE_KEY,DATA_KEYS,stable} from './journal.mjs';
 import {synchronize,pullWorkspace} from './engine.mjs';
@@ -143,7 +144,8 @@ async function start(){
     try{const response=await fetch(configUrl,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error('config_failed');config=await response.json();localStorage.setItem('lambert_public_config_v1',JSON.stringify(config));}
     catch{config=JSON.parse(localStorage.getItem('lambert_public_config_v1')||'{"configured":false}');}
     if(config.configured){if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(config.url)||!/^sb_publishable_[A-Za-z0-9_-]+$/.test(config.publishableKey)||!/^https:\/\/[^/?#]+$/.test(config.siteUrl))throw Error('invalid_public_config');
-      account=createAccount(createClient(config.url,config.publishableKey,{auth:{storageKey:SESSION_KEY+':'+new URL(config.url).host,persistSession:true,autoRefreshToken:true,detectSessionInUrl:accountPage,flowType:'implicit'}}),{redirectTo:config.siteUrl+'/account.html',registrationClient:createClient(config.url,config.publishableKey,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'lambert_registration_memory'}})});
+      const transport={fetch:createCloudFetch(config,configUrl)};
+      account=createAccount(createClient(config.url,config.publishableKey,{global:transport,auth:{storageKey:SESSION_KEY+':'+new URL(config.url).host,persistSession:true,autoRefreshToken:true,detectSessionInUrl:accountPage,flowType:'implicit'}}),{redirectTo:config.siteUrl+'/account.html',registrationClient:createClient(config.url,config.publishableKey,{global:transport,auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'lambert_registration_memory'}})});
       // Subscribe before getSession so PASSWORD_RECOVERY is not missed on the callback page.
       account.subscribe((event,session)=>{setTimeout(()=>{if(leaving)return;const changedUser=(user?.id||null)!==(session?.user?.id||null);user=session?.user||null;if(!enforceWorkspaceUser())return;if(user&&(!journal||changedUser))journal=new WorkspaceJournal(localStorage,user.id);if(event==='PASSWORD_RECOVERY'){recovery=true;open();}if(event==='SIGNED_OUT'){if(window.LambertData?.active){leaveWorkspace();return;}localStorage.removeItem(ACTIVE_KEY);}if(changedUser||event==='PASSWORD_RECOVERY')renderBody();updateEntry();schedule();},0);});
       const session=await account.session();user=session?.user||null;if(!enforceWorkspaceUser())return;if(user)journal=new WorkspaceJournal(localStorage,user.id);
