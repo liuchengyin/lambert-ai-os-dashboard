@@ -1,7 +1,7 @@
 name: Web task transition recovery
 on:
   pull_request:
-    paths: ['task-center*', 'dashboard-v5.js', 'index.html', 'lib/task-center-model.js', 'shared-sync/**', 'scripts/codex/dev-server.mjs', 'tests/web-task-transitions.mjs', 'tests/task-center-ui.mjs', 'tests/codex-tools.test.mjs', 'package.json', '.github/workflows/web-task-transitions.yml']
+    paths: ['task-center*', 'dashboard-v5.js', 'index.html', 'lib/task-center-model.js', 'shared-sync/**', 'scripts/codex/dev-server.mjs', 'tests/web-task-transitions.mjs', 'tests/workspace-reliability.mjs', 'tests/sync-status-recovery.mjs', 'mobile/**', 'tests/task-center-ui.mjs', 'tests/codex-tools.test.mjs', 'package.json', '.github/workflows/web-task-transitions.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,7 +26,10 @@ jobs:
           node tests/task-center-model.mjs
           npm run test:data
       - name: Verify real preview server and conflict recovery
-        run: npm run test:web-tasks
+        run: |
+          npm run test:web-tasks
+          node tests/workspace-reliability.mjs
+          node tests/sync-status-recovery.mjs
       - name: Verify existing task, project and review interactions
         run: |
           python3 -m http.server 8000 --bind 127.0.0.1 &

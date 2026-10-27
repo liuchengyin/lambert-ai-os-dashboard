@@ -41,7 +41,7 @@
   }
   function notice(text) {const el=$('tcNotice');if(el)el.textContent=text;}
   function save() {
-    try {persistTasks();notice('已保存');return true;}
+    try {persistTasks();notice(window.LambertData?.active?'本机已保存 · 云端状态见同步提示':'本机已保存 · 本地模式');return true;}
     catch (error) {
       // A rejected journal write must not leave unsaved mutations in state:
       // later saves submit the whole array, so one failed task can block others.

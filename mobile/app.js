@@ -56,7 +56,7 @@ function taskRow(t,opts){
   var d=el('div','task'+(t.status==='已完成'?' done':''));d.dataset.taskId=t.id;
   var chk=el('button','chk',t.status==='已完成'?'✓':'');chk.type='button';chk.setAttribute('aria-label',(t.status==='已完成'?'重开：':'完成：')+t.title);
   chk.onclick=function(){
-    try{S.write('tasks',window.MobileTaskModel.toggle(S.read('tasks',[]),t.id,today()));render();}catch(e){alert('保存失败：'+e.message);}
+    try{taskAction(t.id,'toggle');render();}catch(e){alert('保存失败：'+e.message);}
   };
   d.appendChild(chk);
   var body=el('button','body task-edit');body.type='button';body.setAttribute('aria-label','编辑：'+t.title);body.onclick=function(){openTaskDialog(t);};
@@ -69,10 +69,18 @@ function taskRow(t,opts){
   if(t.steps&&t.steps.length)meta.appendChild(el('span','task-step-count',t.steps.filter(function(s){return s.done;}).length+'/'+t.steps.length+' 步骤'));
   if(dateMeta)meta.appendChild(dateMeta);if(meta.childNodes.length)body.appendChild(meta);
   d.appendChild(body);
-  if((tab==='tasks'||tab==='projects')&&window.MobileTaskSwipe)return window.MobileTaskSwipe.wrap(d,t.title,function(){softDeleteTask(t.id);},t.status==='已完成'?null:function(){var rows=S.read('tasks',[]),current=rows.find(function(x){return x.id===t.id;});if(!current||current.deletedAt||current.archived)throw Error('任务不存在');if(current.status==='已完成')return;S.write('tasks',window.MobileTaskModel.toggle(rows,t.id,today()));setTimeout(render,200);},t.status==='已完成'?function(){var rows=S.read('tasks',[]),current=rows.find(function(x){return x.id===t.id;});if(!current||current.deletedAt||current.archived||current.status!=='已完成')throw Error('任务状态已变化');current.archived=true;current.archivedAt=new Date().toISOString();current.updatedAt=current.archivedAt;S.write('tasks',rows);setTimeout(render,200);}:null);
+  if((tab==='tasks'||tab==='projects')&&window.MobileTaskSwipe)return window.MobileTaskSwipe.wrap(d,t.title,function(){softDeleteTask(t.id);},t.status==='已完成'?null:function(){var rows=S.read('tasks',[]),current=rows.find(function(x){return x.id===t.id;});if(!current||current.deletedAt||current.archived)throw Error('任务不存在');if(current.status==='已完成')return;taskAction(t.id,'toggle');setTimeout(render,200);},t.status==='已完成'?function(){var rows=S.read('tasks',[]),current=rows.find(function(x){return x.id===t.id;});if(!current||current.deletedAt||current.archived||current.status!=='已完成')throw Error('任务状态已变化');taskAction(t.id,'archive');setTimeout(render,200);}:null);
   return d;
 }
 
+function taskAction(id,kind){
+ var receipt=window.MobileTaskActions.perform(id,kind);
+ if(undoTimer)clearTimeout(undoTimer);if(undoBar)undoBar.remove();
+ var bar=el('div','task-undo'),message=el('span',null,(kind==='archive'?'已归档：':receipt.after.status==='已完成'?'已完成：':'已重开：')+receipt.title),button=el('button',null,'撤销');
+ button.type='button';bar.setAttribute('role','status');bar.setAttribute('aria-label','撤销任务操作');bar.append(message,button);document.body.append(bar);undoBar=bar;
+ button.onclick=function(){try{window.MobileTaskActions.undo(receipt);clearTimeout(undoTimer);bar.remove();undoBar=null;render();}catch(error){message.textContent=error.message||'撤销失败，请重试';}};
+ undoTimer=setTimeout(function(){bar.remove();if(undoBar===bar)undoBar=null;},5000);
+}
 var undoTimer=null,undoBar=null;
 function softDeleteTask(id){
  var all=S.read('tasks',[]),t=all.find(function(t){return t.id===id;});if(!t||t.deletedAt||t.archived)throw Error('任务不存在或已删除');
@@ -194,6 +202,7 @@ window.MobileFilterPages={preview:function(direction){
 }};
 
 document.getElementById('accountButton').onclick=function(){if(window.LambertAccount){window.LambertAccount.open();return;}window.MobilePolish.openAccount({pendingCount:(S.pending()||[]).length,counts:{tasks:tasks().length,projects:projects().filter(function(p){return !p.archived&&!p.deletedAt;}).length,reviews:Object.keys(reviews()).length}});};
+window.addEventListener('lambert-workspace-refresh',function(event){if(event.detail.owner!==window.LambertData?.active)return;if(event.detail.kind==='reviews'&&event.detail.itemId===reviewDate){delete reviewDrafts[reviewDate];app.textContent='';}render();});
 window.addEventListener('mobile-change',function(){refreshStatus();});
 window.addEventListener('storage',function(e){if(['tasks','projects','daily_reviews_v2'].includes(e.key))render();});
 window.addEventListener('resize',function(){if(tab==='review')resizeReviewFields(app);});

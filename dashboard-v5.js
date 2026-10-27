@@ -1,7 +1,7 @@
 // Dashboard V5: overview + Eisenhower tasks + combined filters + minute due time
 (function(){
   const $=id=>document.getElementById(id);
-  const setLS=(k,v)=>(window.LambertData?window.LambertData.write(k,v):localStorage.setItem(k,JSON.stringify(v)));
+  const setLS=(k,v)=>set(k,v);
   const getLS=(k,d)=>{try{return (window.LambertData?window.LambertData.read(k,null):JSON.parse(localStorage.getItem(k)))??d}catch{return d}};
   const esc=v=>String(v??'').replace(/[&<>'"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
   const QUADS={q1:{name:'重要且紧急',short:'重要·紧急',rank:1},q2:{name:'重要不紧急',short:'重要·不紧急',rank:2},q3:{name:'紧急不重要',short:'紧急·不重要',rank:3},q4:{name:'不重要不紧急',short:'不重要·不紧急',rank:4}};
@@ -43,13 +43,8 @@
       return true;
     })
   }
-  function persistAll(){
-    setLS('tasks',state.tasks);
-    renderTaskBoard();renderHome();
-    if(typeof renderProjectBoard==='function')renderProjectBoard();
-    const dash=$('projectDashboard');if(dash&&typeof renderProjectDashboard==='function')renderProjectDashboard();
-  }
-  window.persistTasks=persistAll;
+  // Compatibility for home actions; the sole task commit lives in app.js.
+  function persistAll(){return persistTasks();}
 
   function jumpToTask(id){
     if(window.TaskCenter){TaskCenter.openTask(id);return}
@@ -114,7 +109,7 @@
     home.querySelectorAll('[data-s1-view]').forEach(b=>b.onclick=()=>{const nav=document.querySelector('nav button[data-v="'+b.dataset.s1View+'"]');if(nav)nav.click()});
     home.querySelectorAll('[data-s1-task]').forEach(el=>el.onclick=()=>jumpToTask(el.dataset.s1Task));
     home.querySelectorAll('[data-s1-project]').forEach(el=>el.onclick=()=>jumpToProject(el.dataset.s1Project));
-    home.querySelectorAll('[data-s1-done]').forEach(b=>b.onclick=e=>{e.stopPropagation();const t=state.tasks.find(t=>t.id===b.dataset.s1Done);if(!t||t.status==='已完成')return;t.status='已完成';persistAll()});
+    home.querySelectorAll('[data-s1-done]').forEach(b=>b.onclick=e=>{e.stopPropagation();const t=state.tasks.find(t=>t.id===b.dataset.s1Done);if(!t||t.status==='已完成')return;t.status='已完成';try{persistAll();}catch{/* The shared save status displays the failure; state was restored. */}});
   };
 
   const topDlg=document.createElement('dialog');topDlg.id='top3Dlg';topDlg.innerHTML=`<form method="dialog" class="task-v5-dialog"><h3>定义今日 Top 3</h3><div class="meta">从未完成任务中最多选择 3 个。首页点击后可直接跳到对应任务。</div><input id="top3Search" placeholder="搜索任务"><div id="top3Picker" class="top3-picker"></div><div class="dlgActions"><button value="cancel">取消</button><button id="top3Save" type="button" class="task-primary-btn">保存</button></div></form>`;document.body.appendChild(topDlg);

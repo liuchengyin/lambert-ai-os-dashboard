@@ -168,6 +168,8 @@
   $('rv6Date').onchange=e=>{save(true);load(e.target.value||dateKey())};
   fields.forEach(id=>$(id)?.addEventListener('change',()=>save(true)));
 
+  window.addEventListener('lambert-workspace-will-refresh',event=>{if(event.detail.owner===window.LambertData?.active)reviews=get(STORE,{});});
+  window.addEventListener('lambert-workspace-refresh',event=>{if(event.detail.owner!==window.LambertData?.active)return;if(event.detail.kind==='reviews'&&event.detail.itemId===selected)load(selected);else renderHistory();});
   window.loadReview=key=>load(key||selected);
   load(selected);
 })();

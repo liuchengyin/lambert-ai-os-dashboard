@@ -22,14 +22,36 @@ function enforceWorkspaceUser(){const active=localStorage.getItem(ACTIVE_KEY);if
 function readGuest(){const snapshot={};for(const key of DATA_KEYS){const raw=localStorage.getItem(key);snapshot[key]=raw===null?(key==='daily_reviews_v2'?{}:[]):JSON.parse(raw);}return snapshot;}
 function backup(){const text=JSON.stringify(createWorkspaceBackup(localStorage,journal),null,2);const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));const a=node('a');a.href=url;a.download='Lambert-workspace-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
 
-function status(){if(!user)return '未登录 · 本地模式';if(localStorage.getItem(ACTIVE_KEY)!==user.id)return '已登录 · 尚未启用同步';if(syncError)return syncError;const conflicts=journal?.conflicts().length||0;if(conflicts)return '有 '+conflicts+' 条冲突待处理';const pending=journal?.pending().length||0;if(pending)return '本地已保存 · 待上传 '+pending+' 条';return lastSync?'已同步 · '+lastSync:'云端工作台 · 等待同步';}
-function updateEntry(){if(entry){entry.setAttribute('aria-label',user?'我的账户：'+user.email:'邮箱登录');if(entry.id==='lambertAccountButton')entry.textContent=user?'我的账户':'登录';}const s=document.getElementById('lambertCloudStatus');if(s)s.textContent=status();}
+let savePhase='',saveFailure=null,focusedConflict=null;
+function statusDetail(){
+  let info;try{info=window.LambertData?.syncInfo?.()||{active:null,pending:0,conflicts:0};}catch{return {phase:'error',text:'本机数据读取失败，请打开账户查看'};}
+  if(savePhase==='failed')return {phase:'error',text:saveFailure?.conflict?'修改未保存 · 有同步冲突，点击处理':'修改未保存 · 点击账户查看',conflict:saveFailure?.conflict};
+  if(savePhase==='saving')return {phase:'saving',text:'正在保存到本机…'};
+  if(info.conflicts)return {phase:'conflict',text:'有 '+info.conflicts+' 条同步冲突 · 点击处理',conflict:true};
+  if(!navigator.onLine)return {phase:'offline',text:info.active?'离线 · 本机已保存 · 联网后同步':'离线 · 本机已保存 · 本地模式'};
+  if(!info.active)return {phase:'local',text:user?'本机已保存 · 尚未启用同步':'本机已保存 · 本地模式'};
+  if(info.pending)return {phase:'pending',text:'本机已保存 · 待上传 '+info.pending+' 条'};
+  if(syncError)return {phase:'error',text:syncError};
+  if(inFlight)return {phase:'syncing',text:'本机已保存 · 正在同步…'};
+  return lastSync?{phase:'synced',text:'已同步 · '+lastSync}:{phase:'waiting',text:'本机已保存 · 等待同步'};
+}
+function status(){return statusDetail().text;}
+function updateEntry(){
+  if(entry){entry.setAttribute('aria-label',user?'我的账户：'+user.email:'邮箱登录');if(entry.id==='lambertAccountButton')entry.textContent=user?'我的账户':'登录';}
+  const detail=statusDetail();const s=document.getElementById('lambertCloudStatus');if(s)s.textContent=detail.text;
+  let control=document.getElementById('workspaceSyncState');
+  if(!control){control=button('',()=>open(saveFailure?.conflict?saveFailure:null));control.id='workspaceSyncState';control.className='workspace-sync-state';control.setAttribute('aria-live','polite');
+    const main=document.getElementById('app'),shell=document.querySelector('.shell main');if(main)main.before(control);else if(shell)shell.prepend(control);else document.body.append(control);}
+  control.textContent=detail.text;control.dataset.phase=detail.phase;
+  window.dispatchEvent(new CustomEvent('lambert-sync-state',{detail}));
+}
+
 function changed(){let b=document.getElementById('lambertCloudRefresh');if(!b){b=button('云端数据已更新，点击刷新',()=>location.reload());b.id='lambertCloudRefresh';b.className='lambert-cloud-refresh';document.body.append(b);}}
 async function flush(){
   if(inFlight||!user||localStorage.getItem(ACTIVE_KEY)!==user.id||!navigator.onLine||document.hidden)return;
-  inFlight=true;const current=journal;const visible=()=>stable([...current.entries().values()].map(r=>({kind:r.kind,id:r.item_id,payload:r.payload,deleted:!!r.deleted_at})));const before=visible();
+  inFlight=true;updateEntry();const current=journal;const visible=()=>stable([...current.entries().values()].map(r=>({kind:r.kind,id:r.item_id,payload:r.payload,deleted:!!r.deleted_at})));const before=visible();
   const run=async()=>{try{await synchronize(account.client,current);syncError='';lastSync=new Date().toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});if(before!==visible())changed();}catch(e){syncError=e.message==='account_mismatch'?'请重新登录后同步':'同步未完成 · 本地数据已保留';}finally{updateEntry();}};
-  try{if(navigator.locks)await navigator.locks.request('lambert-sync:'+user.id,{ifAvailable:true},lock=>lock?run():undefined);else await run();}finally{inFlight=false;}
+  try{if(navigator.locks)await navigator.locks.request('lambert-sync:'+user.id,{ifAvailable:true},lock=>lock?run():undefined);else await run();}finally{inFlight=false;updateEntry();}
 }
 function schedule(){clearTimeout(flushTimer);flushTimer=setTimeout(flush,400);updateEntry();}
 function field(label,type,value=''){const l=node('label',label);const input=node('input');input.type=type;input.setAttribute('aria-label',label);input.value=value;input.required=true;input.autocomplete=type==='email'?'email':mode==='login'?'current-password':'new-password';if(type==='password'&&mode!=='login')input.minLength=8;l.append(input);body.append(l);return input;}
@@ -111,7 +133,13 @@ function renderBody(){
       body.append(accountRow('检查并导入本机数据','import',()=>prepareWorkspace(true)),accountRow('立即同步','sync',()=>action(async()=>{await flush();tell(status());})),accountRow('下载完整备份','backup',backup));
       const conflicts=journal.conflicts();for(const op of conflicts){
         const latest=journal.batches().flatMap(b=>b.ops).filter(p=>p.kind===op.kind&&p.itemId===op.itemId).at(-1)||op;
-        body.append(conflictCard(op,latest,choice=>action(async()=>{journal.resolve(op.kind,op.itemId,choice);renderBody();changed();await flush();})));
+        const card=conflictCard(op,latest,choice=>action(async()=>{const owner=user.id;journal.resolve(op.kind,op.itemId,choice);savePhase='';saveFailure=null;await flush();
+          if(localStorage.getItem(ACTIVE_KEY)!==owner)return;
+          window.LambertData.install(new WorkspaceJournal(localStorage,owner));
+          window.dispatchEvent(new CustomEvent('lambert-workspace-will-refresh',{detail:{owner,kind:op.kind,itemId:op.itemId}}));
+          window.dispatchEvent(new CustomEvent('lambert-workspace-refresh',{detail:{owner,kind:op.kind,itemId:op.itemId}}));
+          document.getElementById('lambertCloudRefresh')?.remove();renderBody();}));
+        card.dataset.conflictKind=op.kind;card.dataset.conflictId=op.itemId;body.append(card);
       }
     }
     body.append(accountRow('退出登录','logout',()=>action(async()=>{await account.logout();leaveWorkspace();})));
@@ -123,9 +151,12 @@ function renderBody(){
     }));body.append(update);
   }
   message=node('p','','lambert-account-message');message.setAttribute('role','status');message.setAttribute('aria-live','polite');body.append(message);updateEntry();
+  if(focusedConflict){const card=[...body.querySelectorAll('[data-conflict-id]')].find(c=>c.dataset.conflictId===focusedConflict.itemId&&c.dataset.conflictKind===focusedConflict.kind);if(card){const compare=card.querySelector('details');if(compare)compare.open=true;requestAnimationFrame(()=>card.scrollIntoView({block:'nearest'}));}}
+
 }
-function open(){
-  if(dialog?.open){dialog.focus();return;}
+function open(target){
+  focusedConflict=target&&target.itemId?target:null;
+  if(dialog?.open){renderBody();dialog.focus();return;}
   dialog=node('dialog',undefined,'lambert-account');dialog.setAttribute('aria-label','我的账户');
   const header=node('div',undefined,'lambert-account-head');const brand=node('div',undefined,'lambert-account-brand'),logo=node('span',undefined,'lambert-account-logo');logo.append(accountIcon('check'));brand.append(logo,node('h2','我的账户'));const close=button('',()=>dialog.close());close.append(accountIcon('close'));close.className='lambert-account-close';header.append(brand,close);body=node('form');header.lastChild.setAttribute('aria-label','关闭账户');dialog.append(header,body);document.body.append(dialog);dialog.addEventListener('close',()=>{dialog.remove();dialog=null;body=null;message=null;},{once:true});dialog.addEventListener('click',e=>{if(e.target!==dialog)return;const r=dialog.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dialog.close();});renderBody();dialog.showModal();header.lastChild.focus();
 }
@@ -137,7 +168,7 @@ async function prepareCloudAction(){
   const session=await account.session();if(session?.user?.id!==current.userId||!session.access_token)throw Error('账号已变化，请重新打开复盘');
   return {accessToken:session.access_token};
 }
-window.LambertAccount={open,ready,status,prepareCloudAction};if(entry)entry.onclick=open;
+window.LambertAccount={open,ready,status,statusDetail,prepareCloudAction};if(entry)entry.onclick=open;
 async function start(){
   try{
     try{const response=await fetch(configUrl,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error('config_failed');config=await response.json();localStorage.setItem('lambert_public_config_v1',JSON.stringify(config));}
@@ -153,6 +184,9 @@ async function start(){
 }
 window.addEventListener('storage',event=>{if(user&&event.key?.startsWith('lambert_workspace_v1:'+user.id+':')){changed();updateEntry();}});
 window.addEventListener('lambert-local-change',schedule);
+window.addEventListener('lambert-save-state',event=>{savePhase=event.detail.phase;saveFailure=savePhase==='failed'?event.detail:null;updateEntry();});
+window.addEventListener('offline',updateEntry);
+
 window.addEventListener('online',()=>{if(account)schedule();else start();});document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
 setInterval(()=>{if(!document.hidden)flush();},30000);
 start();

@@ -1,5 +1,10 @@
 const $=id=>document.getElementById(id);
-const get=(k,d)=>{try{return (window.LambertData?window.LambertData.read(k,null):JSON.parse(localStorage.getItem(k)))??d}catch{return d}},set=(k,v)=>(window.LambertData?window.LambertData.write(k,v):localStorage.setItem(k,JSON.stringify(v)));
+const get=(k,d)=>{try{return (window.LambertData?window.LambertData.read(k,null):JSON.parse(localStorage.getItem(k)))??d}catch{return d}},set=(k,v)=>{if(k!=="tasks")return window.LambertData?window.LambertData.write(k,v):localStorage.setItem(k,JSON.stringify(v));
+  // All web task writes share the same durable boundary, including project editors.
+  let previous;try{previous=window.LambertData?window.LambertData.read(k,[]):JSON.parse(localStorage.getItem(k)||'[]');}catch(error){throw error;}
+  try{return window.LambertData?window.LambertData.write(k,v):localStorage.setItem(k,JSON.stringify(v));}
+  catch(error){try{state.tasks=previous;}catch{/* State is not initialized during bootstrap. */}throw error;}
+};
 
 const demoTop3=new Set(["把个人看板上线","补齐项目/任务/复盘框架","把 Notion/飞书链接挂进去"]);
 
@@ -126,7 +131,12 @@ function sortTasks(rows){
     return String(a.createdAt).localeCompare(String(b.createdAt))
   })
 }
-function persistTasks(){set("tasks",state.tasks);renderTaskBoard();renderHome()}
+function persistTasks(){
+  set("tasks",state.tasks);renderTaskBoard();renderHome();
+  if(typeof renderProjectBoard==='function')renderProjectBoard();
+  if(typeof renderProjectDashboard==='function')renderProjectDashboard();
+  document.dispatchEvent(new Event('lambert:tasks-committed'));
+}
 function populateProjectOptions(){
   const selects=[...document.querySelectorAll("#taskProjectInput,#taskEditProject,#tv5Project,#ev5Project")];
   selects.forEach(sel=>{
@@ -252,3 +262,10 @@ $("saveSettings").onclick=()=>{
 
 function refreshAll(){renderTop3();renderHome();renderProjectBoard();renderTaskBoard();populateProjectOptions()}
 refreshAll();links();loadSettings();loadReview(reviewSelectedDate);
+
+window.addEventListener('lambert-workspace-refresh',event=>{
+  if(event.detail.owner!==window.LambertData?.active)return;
+  state.tasks=get('tasks',state.tasks);state.projects=get('projects',state.projects);
+  renderTaskBoard();renderHome();renderProjectBoard();
+  if(typeof renderProjectDashboard==='function')renderProjectDashboard();
+});

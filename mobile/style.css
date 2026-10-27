@@ -94,3 +94,5 @@ header{padding-top:calc(4px + env(safe-area-inset-top));padding-bottom:4px}
 #syncStatus[hidden]{display:none}
 .task-project-picker{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:44px;padding:8px 12px;background:#fff;border:1px solid var(--bd);border-radius:10px;color:var(--tx);font-size:16px;cursor:pointer}
 .task-project-picker span{color:var(--mut);font-size:20px}
+
+.task-undo[aria-label="撤销任务操作"]{bottom:calc(78px + env(safe-area-inset-bottom));font-size:13px}.task-undo[aria-label="撤销任务操作"]>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
