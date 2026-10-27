@@ -3,63 +3,95 @@ import assert from 'node:assert/strict';
 
 const origin=process.env.TEST_ORIGIN||'http://127.0.0.1:8765';
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
-const ctx=await browser.newContext({viewport:{width:1280,height:900},acceptDownloads:true,serviceWorkers:'block'});
-const initial={tasks:[{id:'t1',title:'旧任务',status:'待开始',extra:'保留字段'}],projects:[{id:'p1',name:'旧项目',extra:'保留字段'}],daily_reviews_v2:{'2026-10-27':{goal:'原复盘'}}};
-await ctx.addInitScript(fixture=>{for(const [key,value] of Object.entries(fixture))localStorage.setItem(key,JSON.stringify(value));},initial);
-const page=await ctx.newPage(),errors=[];
+const context=await browser.newContext({viewport:{width:1280,height:900},acceptDownloads:true,serviceWorkers:'block'});
+const fixture={tasks:[{id:'t1',title:'旧任务',extra:'保留属性'}],projects:[{id:'p1',name:'原项目'}],daily_reviews_v2:{'2026-10-28':{goal:'复盘原样'}}};
+await context.addInitScript(seed=>{for(const [key,val] of Object.entries(seed))localStorage.setItem(key,JSON.stringify(val));},fixture);
+const page=await context.newPage(),errors=[];
 page.on('pageerror',e=>errors.push(e.message));
-const raw=key=>page.evaluate(key=>localStorage.getItem(key),key);
-function pass(label,yes){assert.ok(yes,label);console.log('PASS:',label)}
+const read=key=>page.evaluate(key=>localStorage.getItem(key),key);
+function pass(name,ok){assert.ok(ok,name);console.log('PASS',name);}
 try{
-  await page.goto(origin+'/?view=logistics',{waitUntil:'domcontentloaded'});
-  await page.locator('#lkModules .lk-module').first().waitFor();
-  await page.waitForFunction(()=>!document.documentElement.hasAttribute('data-lambert-boot'),null,{timeout:25000});
-  pass('Tool navigation exists',await page.locator('.s1-nav-group[data-group="tools"] button[data-v="logistics"]').count()===1);
-  pass('Direct logistics navigation works',await page.locator('#logistics').isVisible());
-  pass('Default five modules',await page.locator('#lkModules .lk-module').count()===5);
-  pass('Opening read-only demo does not create storage',await raw('lambert_logistics_knowledge_v1')===null);
+ await page.goto(origin+'/?view=logistics',{waitUntil:'domcontentloaded'});
+ await page.locator('#lkModules .lk-canvas-block').first().waitFor({timeout:25000});
+ await page.waitForFunction(()=>!document.documentElement.hasAttribute('data-lambert-boot'),null,{timeout:25000});
+ pass('tools navigation',await page.locator('.s1-nav-group[data-group="tools"] button[data-v="logistics"]').count()===1);
+ pass('Logistics direct route',await page.locator('#logistics').isVisible());
+ pass('five modular blocks',await page.locator('#lkModules .lk-canvas-block').count()===5);
+ pass('untouched initial storage',await read('lambert_logistics_knowledge_v1')===null);
+ const before=Object.fromEntries(await Promise.all(Object.keys(fixture).map(async k=>[k,await read(k)])));
+ const linehaul=page.locator('#lkModules .lk-canvas-block[data-module="linehaul"]');
+ pass('linehaul shows nested operations',await linehaul.locator('.lk-step').count()===5);
+ await linehaul.locator('button[data-action="select-node"][data-id="batch"]').click();
+ pass('operation business detail',await page.locator('#lkDetail h3').innerText()==='创建批次');
+ pass('information shown only when expanded',await page.locator('#lkDetail .lk-related-details').count()===1);
+ await page.locator('#lkDetail .lk-related-details summary').click();
+ pass('info is expandable',await page.locator('#lkDetail .lk-related-details .lk-detail-field').count()===3);
 
-  const previous=Object.fromEntries(await Promise.all(Object.keys(initial).map(async k=>[k,await raw(k)])));
-  await page.locator('#lkModules .lk-module').nth(2).locator('button[data-action="select-module"]').click();
-  pass('Land transport contains five operations',await page.locator('#lkNodes .lk-node').count()===5);
-  await page.locator('#lkNodes .lk-node').filter({hasText:'创建批次'}).click();
-  pass('Batch node details distinguish three flows',await page.locator('#lkDetail .lk-detail-field').count()===4);
-  await page.locator('#lkTabData').click();
-  pass('Separate data view exists',await page.locator('#lkData').isVisible()&&await page.locator('#lkDataRows .lk-data-group').count()===5);
-  await page.locator('#lkDataRows button[data-action="open-node"]').first().click();
-  pass('Data records link back to operation',await page.locator('#lkProcess').isVisible());
-  await page.locator('#lkAddNode').click();
-  await page.locator('#lkTitleInput').fill('自定义陆运操作');
-  await page.locator('#lkActionInput').fill('装车前登记');
-  await page.locator('#lkInfoInput').fill('待核实的接口');
-  await page.locator('#lkRecordInput').fill('车次号、登记时间');
-  await page.locator('#lkNodeForm button[type="submit"]').click();
-  pass('Custom node is stored only in knowledge key',await page.evaluate(()=>{
-    const d=JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1'));
-    return d.modules.some(m=>m.nodes.some(n=>n.title==='自定义陆运操作'));
-  }));
-  const saved=await raw('lambert_logistics_knowledge_v1');
-  await page.locator('#lkDetail button[data-action="edit-node"]').click();
-  await page.locator('#lkTitleInput').fill('已编辑陆运操作');
-  await page.locator('#lkNodeForm button[type="submit"]').click();
-  pass('Editing does not duplicate an operation',await page.evaluate(()=>{
-    const a=JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1')).modules.flatMap(m=>m.nodes);
-    return a.filter(x=>x.title==='已编辑陆运操作').length===1&&!a.some(x=>x.title==='自定义陆运操作');
-  }));
-  await page.locator('#lkAddModule').click();
-  await page.locator('#lkModuleName').fill('海外转运');
-  await page.locator('#lkModuleCategory').selectOption('尾程');
-  await page.locator('#lkModuleForm button[type="submit"]').click();
-  pass('Custom module added',await page.locator('#lkModules .lk-module').count()===6);
-  const [dl]=await Promise.all([page.waitForEvent('download'),page.locator('#lkExport').click()]);
-  pass('Backup exports knowledge JSON',dl.suggestedFilename().endsWith('.json'));
-  const unchanged=Object.fromEntries(await Promise.all(Object.keys(initial).map(async k=>[k,await raw(k)])));
-  pass('Old OS data unchanged',Object.keys(previous).every(k=>previous[k]===unchanged[k]));
-  await page.reload({waitUntil:'domcontentloaded'});
-  await page.locator('#lkModules .lk-module').first().waitFor();
-  pass('Custom module persists after refresh',await page.locator('#lkModules .lk-module').count()===6);
-  await page.setViewportSize({width:390,height:844});
-  pass('Mobile viewport maintains tabs',await page.locator('#lkTabData').isVisible());
-  pass('No runtime page errors',errors.length===0);
-  console.log('Logistics knowledge V1 browser regression passed.');
+ // Operations can be moved with keyboard-accessible buttons.
+ await linehaul.locator('button[data-action="node-right"][data-id="batch"]').click();
+ pass('node moved to following position',await page.evaluate(()=>{
+   const m=JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1')).modules.find(x=>x.id==='linehaul');
+   return m.nodes.map(x=>x.id).indexOf('batch')===2;
+ }));
+ // Cross-module transfer keeps all fields.
+ await page.locator('#lkDetail select[data-move-node="batch"]').selectOption('head');
+ pass('cross-block move keeps details',await page.evaluate(()=>{
+   const d=JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1'));
+   return !d.modules.find(m=>m.id==='linehaul').nodes.some(n=>n.id==='batch')&&
+    d.modules.find(m=>m.id==='head').nodes.some(n=>n.id==='batch'&&n.title==='创建批次'&&n.information.includes('待核实'));
+ }));
+ pass('after move selected detail follows node',await page.locator('#lkDetail h3').innerText()==='创建批次');
+ await page.locator('button[data-action="collapse-module"][data-id="head"]').click();
+ pass('collapse hides cards',await page.locator('.lk-canvas-block[data-module="head"] .lk-step').count()===0);
+ await page.locator('button[data-action="collapse-module"][data-id="head"]').click();
+ pass('expand restores cards',await page.locator('.lk-canvas-block[data-module="head"] .lk-step').count()===4);
+
+ // Module arrows reorder the large blocks and save.
+ await page.locator('button[data-action="module-down"][data-id="head"]').click();
+ pass('module order persists',await page.evaluate(()=>{
+   const m=JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1')).modules;
+   return m[0].id==='export'&&m[1].id==='head';
+ }));
+
+ // Real HTML5 drag event: move batch operation back to linehaul.
+ const drag=page.locator('.lk-canvas-block[data-module="head"] .lk-step[data-drag-node="batch"]');
+ const drop=page.locator('.lk-canvas-block[data-module="linehaul"] .lk-drop-end');
+ await drag.dragTo(drop);
+ pass('drag-and-drop relocates operation',await page.evaluate(()=>{
+   const d=JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1'));
+   return d.modules.find(m=>m.id==='linehaul').nodes.some(n=>n.id==='batch');
+ }));
+
+ await page.locator('#lkAddModule').click();
+ await page.locator('#lkModuleName').fill('海外中转仓');
+ await page.locator('#lkModuleCategory').selectOption('尾程');
+ await page.locator('#lkModuleForm button[type="submit"]').click();
+ pass('add module',await page.locator('#lkModules .lk-canvas-block').count()===6);
+ await page.locator('#lkAddNode').click();
+ await page.locator('#lkTitleInput').fill('自主检验');
+ await page.locator('#lkActionInput').fill('核实业务动作');
+ await page.locator('#lkInfoInput').fill('需核实');
+ await page.locator('#lkRecordInput').fill('时间字段');
+ await page.locator('#lkNodeForm button[type="submit"]').click();
+ pass('add operation',await page.locator('#lkDetail h3').innerText()==='自主检验');
+ await page.locator('#lkDetail button[data-action="edit-node"]').click();
+ await page.locator('#lkTitleInput').fill('自主检验修订');
+ await page.locator('#lkNodeForm button[type="submit"]').click();
+ pass('edit operation',await page.locator('#lkDetail h3').innerText()==='自主检验修订');
+ await page.locator('#lkTabData').click();
+ pass('data page unchanged',await page.locator('#lkDataRows .lk-data-group').count()===6);
+ await page.locator('#lkDataRows button[data-action="open-node"]').first().click();
+ pass('data page links back',await page.locator('#lkProcess').isVisible());
+ const [download]=await Promise.all([page.waitForEvent('download'),page.locator('#lkExport').click()]);
+ pass('JSON export',download.suggestedFilename().endsWith('.json'));
+ const after=Object.fromEntries(await Promise.all(Object.keys(fixture).map(async k=>[k,await read(k)])));
+ pass('OS project/task/review unchanged',Object.keys(before).every(k=>before[k]===after[k]));
+ await page.reload({waitUntil:'domcontentloaded'});
+ await page.locator('#lkModules .lk-canvas-block').first().waitFor();
+ pass('saved module order survives reload',await page.locator('.lk-canvas-block').first().getAttribute('data-module')==='export');
+ pass('saved custom module survives reload',await page.locator('#lkModules .lk-canvas-block').count()===6);
+ await page.setViewportSize({width:390,height:844});
+ pass('mobile fallback arrows visible',await page.locator('.lk-canvas-block .lk-move').first().isVisible());
+ pass('no page errors',errors.length===0);
+ console.log(JSON.stringify({ok:true,checks:22}));
 }finally{await browser.close();}
