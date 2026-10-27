@@ -24,5 +24,18 @@ try{for(const mobile of [false,true]){
  await p.getByRole('button',{name:'关闭账户',exact:true}).click();
  if(mobile){await p.locator('.fold').click();assert.equal(await p.getByRole('button',{name:'重开：冲突定位测试',exact:true}).count(),1);}
  else assert.equal(await p.locator('[data-tc-status="已完成"] [data-tc-task="t"]').count(),1);
+ // Selecting a remote review must replace that date's old draft, on both ends.
+ if(mobile)await p.getByRole('button',{name:'复盘',exact:true}).click();else await p.locator('nav button[data-v="review"]').click();
+ const reviewField=mobile?p.getByLabel('复盘目标',{exact:true}):p.locator('#rv6Goal');
+ await reviewField.fill('仍在界面中的旧草稿');
+ await p.evaluate(({user,mobile})=>{
+  const now=new Date(),day=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-'),payload={goal:'本机复盘',taskIds:[],completion:'0'};
+  const remote={user_id:user,kind:'reviews',item_id:day,payload:{...payload,goal:'明确选择的云端复盘'},version:20,deleted_at:null};
+  localStorage.setItem('lambert_workspace_v1:'+user+':batch:9999999999999999:review',JSON.stringify([{kind:'reviews',itemId:day,payload,expectedVersion:1,deleted:false,mutationId:'review-conflict',conflict:remote}]));
+  try{LambertData.write('daily_reviews_v2',{...LambertData.read('daily_reviews_v2',{}),[day]:{...payload,goal:'试图覆盖'}});}catch{}
+ },{user,mobile});
+ await p.locator('#workspaceSyncState').click();const reviewCard=p.locator('[data-conflict-kind="reviews"]');await reviewCard.getByRole('button',{name:'保留云端',exact:true}).click();
+ await p.waitForFunction(()=>Object.values(LambertData.read('daily_reviews_v2',{})).some(r=>r.goal==='明确选择的云端复盘'));
+ assert.equal(await reviewField.inputValue(),'明确选择的云端复盘');await p.getByRole('button',{name:'关闭账户',exact:true}).click();
  assert.deepEqual(errors,[]);console.log('PASS '+(mobile?'App':'Web')+' sync status / offline-reconnect / conflict deep link / explicit remote resolution / live view refresh');await ctx.close();
 }}finally{await browser.close();await new Promise(r=>server.close(r));}

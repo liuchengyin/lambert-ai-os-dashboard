@@ -36,7 +36,7 @@ try{
   const switched={...expired,expires:Date.now()+5000};localStorage.lambert_active_account_v1='22222222-2222-4222-8222-222222222222';throws(()=>MobileTaskActions.undo(switched),'identity');localStorage.removeItem('lambert_active_account_v1');
  });
  assert.match(await page.locator('#workspaceSyncState').innerText(),/本地模式/);
- await context.setOffline(true);assert.match(await page.locator('#workspaceSyncState').innerText(),/离线/);
+ await context.setOffline(true);await page.waitForFunction(()=>document.getElementById('workspaceSyncState').textContent.includes('离线'));assert.match(await page.locator('#workspaceSyncState').innerText(),/离线/);
  await context.setOffline(false);await page.waitForFunction(()=>!document.getElementById('workspaceSyncState').textContent.includes('离线'));
  await page.evaluate(()=>{const write=LambertData.write;LambertData.write=function(){throw new DOMException('fixture','QuotaExceededError');};window.restoreWrite=()=>LambertData.write=write;try{LambertData.write('tasks',[]);}catch{};window.dispatchEvent(new CustomEvent('lambert-save-state',{detail:{phase:'failed'}}));});
  assert.match(await page.locator('#workspaceSyncState').innerText(),/修改未保存/);await page.evaluate(()=>window.restoreWrite());

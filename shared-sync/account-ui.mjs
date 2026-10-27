@@ -42,7 +42,7 @@ function updateEntry(){
   let control=document.getElementById('workspaceSyncState');
   if(!control){control=button('',()=>open(saveFailure?.conflict?saveFailure:null));control.id='workspaceSyncState';control.className='workspace-sync-state';control.setAttribute('aria-live','polite');
     const main=document.getElementById('app'),shell=document.querySelector('.shell main');if(main)main.before(control);else if(shell)shell.prepend(control);else document.body.append(control);}
-  control.textContent=detail.text;control.dataset.phase=detail.phase;
+  control.disabled=false;control.onclick=()=>open(saveFailure?.conflict?saveFailure:null);control.textContent=detail.text;control.dataset.phase=detail.phase;
   window.dispatchEvent(new CustomEvent('lambert-sync-state',{detail}));
 }
 
