@@ -2,7 +2,7 @@ name: Family accounts DeepSeek review
 on:
   push:
     branches: [feat/web-family-accounts]
-    paths: ['lib/account-relay.cjs', '.github/workflows/family-account-review.yml', 'docs/family-accounts/review-request.md']
+    paths: ['docs/family-accounts/review-request.md']
 permissions:
   contents: read
 jobs:
