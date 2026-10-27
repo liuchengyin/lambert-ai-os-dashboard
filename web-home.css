@@ -28,3 +28,8 @@
   .shell > aside .web-sidebar-account{display:none}
   .shell > aside.s1-mobile-open .web-sidebar-account{display:grid;margin-top:12px}
 }
+
+.web-sidebar-account .app-download-entry{display:flex;align-items:center;gap:10px;padding:10px 12px;color:#ddd6fe;text-decoration:none;border:1px solid #65528e;border-radius:8px;font-size:14px;line-height:1.4}
+.web-sidebar-account .app-download-entry:hover{background:#7357d722}
+.web-sidebar-account .app-download-entry:focus-visible{outline:2px solid #a78bfa;outline-offset:3px}
+@media(min-width:701px){body.s1-sidebar-collapsed .app-download-entry{justify-content:center}body.s1-sidebar-collapsed .app-download-label{display:none}}
