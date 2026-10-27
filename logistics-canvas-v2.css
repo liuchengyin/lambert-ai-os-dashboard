@@ -1,0 +1,45 @@
+/* V2.1 P0 override: the operation flow is a block canvas, not a detail list. */
+#logistics .lk-canvas{display:flex;flex-direction:column;gap:13px;overflow:visible;padding:0;margin:0 0 17px;}
+#logistics .lk-canvas .lk-canvas-block{flex:initial;width:100%;max-width:none;min-width:0;padding:0;border-radius:16px;overflow:visible;background:#fff;border:1px solid #e4def0;box-shadow:0 6px 21px rgba(76,51,117,.04);}
+#logistics .lk-canvas .lk-canvas-block.is-active{border-color:#ae93da;box-shadow:inset 4px 0 #8c69ce,0 6px 24px rgba(108,73,165,.095);}
+#logistics .lk-canvas .lk-canvas-block.is-muted{opacity:.76;}
+#logistics .lk-canvas-block-head{display:flex;align-items:center;gap:10px;padding:13px 15px;border-bottom:1px solid #f1edf6;min-width:0;}
+#logistics .lk-drag-handle{cursor:grab;touch-action:none;flex:0 0 auto;background:#f4f0fa;color:#8d7fa5;border:1px solid #e9e1f3;border-radius:9px;font-size:23px;line-height:1;padding:8px 11px;}
+#logistics .lk-drag-handle:active{cursor:grabbing;}
+#logistics .lk-canvas .lk-module-main{flex:1;min-width:0;min-height:0;padding:4px 1px;display:flex;flex-direction:column-reverse;gap:4px;align-items:flex-start;font-size:15px;color:#2e2642;}
+#logistics .lk-canvas .lk-module-main small{font-size:10px;color:#8b7e9c;}
+#logistics .lk-canvas-controls{display:flex;align-items:center;flex-wrap:wrap;justify-content:flex-end;gap:6px;}
+#logistics .lk-canvas-controls>button{font-size:11px;color:#6d529a;background:#f5f1fa;border:1px solid #e7def2;border-radius:8px;padding:7px 10px;white-space:nowrap;}
+#logistics .lk-canvas-controls>button:hover{background:#ece3fb;}
+#logistics .lk-canvas-controls>button:disabled{opacity:.35;cursor:default;}
+#logistics .lk-canvas-controls .lk-block-add{color:#784fb6;background:#f1eafd;}
+#logistics .lk-canvas .lk-toggle{font-size:11px;white-space:nowrap;padding:5px 8px;}
+#logistics .lk-canvas-lane{display:flex;align-items:stretch;flex-wrap:wrap;gap:9px;padding:14px;min-height:81px;}
+#logistics .lk-step{position:relative;display:flex;flex:0 1 182px;min-width:145px;max-width:235px;flex-direction:column;border:1px solid #e5ddf2;border-radius:12px;background:#faf8fe;cursor:grab;overflow:hidden;transition:box-shadow .15s,border-color .15s;}
+#logistics .lk-step:active{cursor:grabbing}
+#logistics .lk-step:hover{border-color:#c1a5e6;box-shadow:0 3px 10px rgba(91,58,137,.06)}
+#logistics .lk-step.lk-dragging,#logistics .lk-drag-handle.lk-dragging{opacity:.55}
+#logistics .lk-step .lk-canvas-op{background:transparent;border-radius:0;border:0;text-align:left;width:100%;min-width:0;padding:10px 12px 7px;flex:1;align-items:flex-start;display:flex;flex-direction:column;gap:6px;}
+#logistics .lk-step .lk-canvas-op:hover{background:#f3edfb}
+#logistics .lk-step .lk-canvas-op.is-current{background:#eae2f7;}
+#logistics .lk-step .lk-canvas-op strong{font-size:12px;color:#342846;line-height:1.45;overflow-wrap:anywhere;}
+#logistics .lk-step .lk-canvas-op small{font-size:9px;color:#9182a4;}
+#logistics .lk-step .lk-canvas-op span{font-size:9px;color:#9a722b;}
+#logistics .lk-step-actions{display:flex;justify-content:flex-end;gap:5px;padding:0 8px 7px}
+#logistics .lk-step-actions button{padding:4px 8px;background:#eee8f7;color:#745d98;font-size:12px;border-radius:6px}
+#logistics .lk-step-actions button:disabled{opacity:.3;cursor:default}
+#logistics .lk-drop-end{align-self:center;border:1px dashed #d7c9e9;color:#998aae;border-radius:10px;min-height:48px;min-width:160px;display:grid;place-items:center;font-size:10px;flex:0 1 180px;padding:8px;cursor:default}
+#logistics .lk-folded-caption{font-size:12px;color:#8a7d99;padding:11px 19px 16px;margin:0}
+#logistics .lk-canvas-workspace{display:block}
+#logistics #lkNodes[hidden]{display:none!important}
+#logistics .lk-canvas-workspace .lk-detail{max-width:none;width:100%}
+#logistics .lk-related-details{border:1px solid #ece5f5;background:#fcfaff;border-radius:11px;margin-top:16px}
+#logistics .lk-related-details summary{cursor:pointer;font-size:12px;font-weight:650;color:#7556a9;padding:13px 15px;list-style-position:inside}
+#logistics .lk-related-details .lk-detail-field{margin:0 15px}
+#logistics .lk-related-details summary:focus-visible{outline:2px solid #7852c8}
+#logistics .lk-move-to{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:20px;color:#78698c;font-size:12px}
+#logistics .lk-move-to select{min-width:200px;flex:1;border:1px solid #e3d8f1;border-radius:9px;background:white;padding:10px;font-size:12px;color:#42354f}
+#logistics .lk-selection-head{margin-top:3px}
+#logistics .lk-module.is-muted .lk-canvas-block-head{border-color:transparent}
+@media(max-width:900px){#logistics .lk-canvas-block-head{flex-wrap:wrap;gap:8px}#logistics .lk-canvas-controls{width:100%;justify-content:flex-end}#logistics .lk-canvas .lk-module-main{flex:1}#logistics .lk-step{flex:1 0 142px;max-width:215px}}
+@media(max-width:560px){#logistics .lk-canvas-block-head{padding:12px 10px}#logistics .lk-drag-handle{padding:8px}#logistics .lk-canvas .lk-module-main{font-size:13px}#logistics .lk-canvas-controls>button{font-size:10px;padding:6px 8px}#logistics .lk-canvas-lane{padding:10px;gap:7px}#logistics .lk-step{min-width:119px;flex:1 1 calc(50% - 7px);max-width:none}#logistics .lk-drop-end{min-width:120px;min-height:44px;flex:1 1 100%}#logistics .lk-move-to{flex-direction:column;align-items:stretch}#logistics .lk-detail-head h3{font-size:18px}}
