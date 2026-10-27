@@ -1,7 +1,8 @@
 import {prepareLocalImport} from './import-plan.mjs';
-export const DATA_KEYS=['tasks','projects','daily_reviews_v2'];
+import {DOCUMENT_KEYS} from './document-keys.mjs';
+export const DATA_KEYS=['tasks','projects','daily_reviews_v2',...DOCUMENT_KEYS];
 export const ACTIVE_KEY='lambert_active_account_v1';
-const kindFor=k=>k==='daily_reviews_v2'?'reviews':k;
+export const kindFor=k=>DOCUMENT_KEYS.includes(k)?'documents':k==='daily_reviews_v2'?'reviews':k;
 const keyFor=(kind,id)=>JSON.stringify([kind,id]);
 const copy=v=>structuredClone(v);
 export const stable=v=>JSON.stringify(sort(v));
@@ -19,7 +20,8 @@ export class WorkspaceJournal {
     for(const batch of this.batches())for(const op of batch.ops){const key=keyFor(op.kind,op.itemId);map.set(key,{kind:op.kind,item_id:op.itemId,payload:copy(op.payload),version:op.expectedVersion+1,deleted_at:op.deleted?'local':null});}
     return map;
   }
-  read(key,fallback){if(!DATA_KEYS.includes(key))return fallback;const kind=kindFor(key);const rows=this.views.has(key)?[...this.views.get(key).values()]:[...this.entries().values()].filter(r=>r.kind===kind);if(!this.views.has(key))this.views.set(key,new Map(rows.map(r=>[r.item_id,copy(r)])));
+  read(key,fallback){if(!DATA_KEYS.includes(key))return fallback;const kind=kindFor(key);const rows=this.views.has(key)?[...this.views.get(key).values()]:[...this.entries().values()].filter(r=>r.kind===kind&&(kind!=='documents'||r.item_id===key));if(!this.views.has(key))this.views.set(key,new Map(rows.map(r=>[r.item_id,copy(r)])));
+    if(kind==='documents'){const row=rows.find(r=>!r.deleted_at);return row?copy(row.payload.value):copy(fallback);}
     return kind==='reviews'?Object.fromEntries(rows.filter(r=>!r.deleted_at).map(r=>[r.item_id,copy(r.payload)])):rows.filter(r=>!r.deleted_at).map(r=>copy(r.payload));
   }
   changesFor(key,value){
@@ -43,7 +45,7 @@ export class WorkspaceJournal {
     this.save(this.nextBatchKey(),changes);
     // Keep each page's rendered snapshot stable until refresh. Background reads
     // must not advance versions underneath stale form/state objects.
-    for(const op of changes){const key=op.kind==='reviews'?'daily_reviews_v2':op.kind;this.views.get(key).set(op.itemId,{kind:op.kind,item_id:op.itemId,payload:copy(op.payload),version:op.expectedVersion+1,deleted_at:op.deleted?'local':null});}
+    for(const op of changes){const key=op.kind==='documents'?op.itemId:op.kind==='reviews'?'daily_reviews_v2':op.kind;this.views.get(key).set(op.itemId,{kind:op.kind,item_id:op.itemId,payload:copy(op.payload),version:op.expectedVersion+1,deleted_at:op.deleted?'local':null});}
   }
   mergeRemote(rows){const map=new Map(this.load('base',[]).map(r=>[keyFor(r.kind,r.item_id),r]));for(const row of rows){if(row.user_id!==this.userId)throw Error('account_mismatch');const key=keyFor(row.kind,row.item_id);if((map.get(key)?.version||0)<=row.version)map.set(key,copy(row));}this.save('base',[...map.values()]);}
   pending(){return this.batches().flatMap(b=>b.ops).filter(op=>!op.conflict);}

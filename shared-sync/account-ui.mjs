@@ -1,6 +1,6 @@
 import {createClient} from './vendor/supabase-2.118.0.mjs';
 import {createAccount,friendlyAuthError,SESSION_KEY} from './auth.mjs';
-import {WorkspaceJournal,ACTIVE_KEY,DATA_KEYS,stable} from './journal.mjs';
+import {WorkspaceJournal,ACTIVE_KEY,DATA_KEYS,stable,kindFor} from './journal.mjs';
 import {synchronize,pullWorkspace} from './engine.mjs';
 import {prepareLocalImport,planImport} from './import-plan.mjs';
 import {conflictCard} from './conflict-card.mjs';
@@ -19,7 +19,7 @@ let leaving=false;function leaveWorkspace(){if(leaving)return;leaving=true;local
 let resolveReady;const ready=new Promise(r=>{resolveReady=r;});
 function tell(text){if(message)message.textContent=text;}
 function enforceWorkspaceUser(){const active=localStorage.getItem(ACTIVE_KEY);if(active&&user&&active!==user.id){leaveWorkspace();return false;}return true;}
-function readGuest(){const snapshot={};for(const key of DATA_KEYS){const raw=localStorage.getItem(key);snapshot[key]=raw===null?(key==='daily_reviews_v2'?{}:[]):JSON.parse(raw);}return snapshot;}
+function readGuest(){const snapshot={};for(const key of DATA_KEYS){const raw=localStorage.getItem(key);if(raw!==null)snapshot[key]=JSON.parse(raw);else if(['tasks','projects','daily_reviews_v2'].includes(key))snapshot[key]=key==='daily_reviews_v2'?{}:[];}return snapshot;}
 function backup(){const text=JSON.stringify(createWorkspaceBackup(localStorage,journal),null,2);const url=URL.createObjectURL(new Blob([text],{type:'application/json'}));const a=node('a');a.href=url;a.download='Lambert-workspace-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),2000);}
 
 let savePhase='',saveFailure=null,focusedConflict=null;
@@ -110,7 +110,7 @@ async function prepareWorkspace(importLocal){
       ensureSelection();const verifiedNow=await account.verifiedUser();ensureSelection();if(verifiedNow.id!==selectedUser)throw Error('account_mismatch');
       await pullWorkspace(account.client,importJournal);ensureSelection();
       const currentEntries=[...importJournal.entries().values()];if(stable(currentEntries)!==importFingerprint||stable(readGuest())!==guestFingerprint)throw Object.assign(Error('workspace_changed'),{code:'workspace_changed'});
-      const values={};for(const key of DATA_KEYS){const kind=key==='daily_reviews_v2'?'reviews':key;const current=importJournal.read(key,key==='daily_reviews_v2'?{}:[]);const adds=plan.create.filter(r=>r.kind===kind);const merged=kind==='reviews'?{...current,...Object.fromEntries(adds.map(r=>[r.itemId,r.payload]))}:current.concat(adds.map(r=>r.payload));values[key]=merged;}retainWorkspaceBackup(localStorage,importJournal);importJournal.writeMany(values);
+      const values={};for(const key of DATA_KEYS){const kind=kindFor(key);if(kind==='documents'){const add=plan.create.find(r=>r.kind===kind&&r.itemId===key);if(add)values[key]=add.payload.value;continue;}const current=importJournal.read(key,key==='daily_reviews_v2'?{}:[]);const adds=plan.create.filter(r=>r.kind===kind);const merged=kind==='reviews'?{...current,...Object.fromEntries(adds.map(r=>[r.itemId,r.payload]))}:current.concat(adds.map(r=>r.payload));values[key]=merged;}retainWorkspaceBackup(localStorage,importJournal);importJournal.writeMany(values);
       localStorage.setItem(ACTIVE_KEY,user.id);location.reload();
     });}),button('返回',renderBody));
     message=node('p','', 'lambert-account-message');message.setAttribute('role','status');body.append(message);
@@ -124,11 +124,12 @@ function accountRow(label,icon,fn){const row=button('',fn);row.className='lamber
 function accountHero(email,subtitle){const hero=node('div',undefined,'lambert-account-hero'),mark=node('span',undefined,'lambert-account-mark');mark.append(accountIcon('check'));const text=node('div');text.append(node('p',email,'lambert-account-email'),node('p',subtitle));hero.append(mark,text);return hero;}
 function renderBody(){
   if(!body)return;body.replaceChildren();body.onsubmit=null;
+  if(user)body.append(node('p','当前账号独立保存个人资料。阅读笔记与书签可同步；音频文件仅保存在当前设备。'));
   if(!config?.configured){body.append(node('p','邮箱登录正在准备，暂未连接账号服务。现有数据仍保存在本机。'));}
   else if(!user||recovery){if(recovery)mode='password';showForm();}
   else {
     body.append(accountHero(user.email,status()));
-    if(localStorage.getItem(ACTIVE_KEY)!==user.id){body.append(node('p','选择使用云端数据，或将本机任务、项目和复盘导入此账号。登录本身不会自动上传本机内容。'),accountRow('使用云端工作台','cloud',()=>prepareWorkspace(false)),accountRow('检查并导入本机数据','import',()=>prepareWorkspace(true)));}
+    if(localStorage.getItem(ACTIVE_KEY)!==user.id){body.append(node('p','选择使用云端数据，或将本机任务、项目、复盘、阅读笔记和书签导入此账号。登录本身不会自动上传本机内容。'),accountRow('使用云端工作台','cloud',()=>prepareWorkspace(false)),accountRow('检查并导入本机数据','import',()=>prepareWorkspace(true)));}
     else {
       body.append(accountRow('检查并导入本机数据','import',()=>prepareWorkspace(true)),accountRow('立即同步','sync',()=>action(async()=>{await flush();tell(status());})),accountRow('下载完整备份','backup',backup));
       const conflicts=journal.conflicts();for(const op of conflicts){

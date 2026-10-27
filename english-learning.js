@@ -140,8 +140,8 @@
   window.addEventListener('beforeunload',()=>{Object.values(mediaFiles).forEach(f=>{if(f)URL.revokeObjectURL(f.url)});if(recordUrl)URL.revokeObjectURL(recordUrl);if(phoneticAudio)URL.revokeObjectURL(phoneticAudio.url);recordStream?.getTracks().forEach(t=>t.stop())});
   const $=id=>document.getElementById(id);
   const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
-  const get=()=>{try{return JSON.parse(localStorage.getItem(STORE))||null}catch{return null}};
-  const set=v=>{try{localStorage.setItem(STORE,JSON.stringify(v));return true}catch(e){console.warn('English learning progress storage unavailable',e);return false}};
+  const get=()=>{try{return JSON.parse((window.LambertPrivateStorage||localStorage).getItem(STORE))||null}catch{return null}};
+  const set=v=>{try{(window.LambertPrivateStorage||localStorage).setItem(STORE,JSON.stringify(v));return true}catch(e){console.warn('English learning progress storage unavailable',e);return false}};
 
   const seed={
     version:1,

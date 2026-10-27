@@ -10,11 +10,15 @@ function getState(){
 }
 
 function saveState(state){
+  if(localStorage.getItem('lambert_active_account_v1'))throw Error('account_import_requires_confirmation');
   localStorage.setItem(STORE,JSON.stringify(state));
 }
 
 async function syncArchivedCards(){
+  // Extension storage is device-wide: never auto-import another person's cards into a signed-in account.
+  if(localStorage.getItem('lambert_active_account_v1'))return;
   const {lambertArchivedCards=[]}=await chrome.storage.local.get('lambertArchivedCards');
+  if(localStorage.getItem('lambert_active_account_v1'))return;
   if(!Array.isArray(lambertArchivedCards)||!lambertArchivedCards.length)return;
 
   const state=getState();

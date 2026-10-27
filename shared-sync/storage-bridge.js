@@ -1,11 +1,11 @@
 (function(){
   'use strict';
-  var keys=['tasks','projects','daily_reviews_v2'];
+  var keys=['tasks','projects','daily_reviews_v2','reading_workspace_v2','reading_standalone_notes_v1','knowledge_link_library_v1','knowledge_link_personal_v1'];
   // Installed synchronously before the existing app scripts. A signed-in workspace
   // is activated only after the account page has prepared its isolated cache.
   var active=localStorage.getItem('lambert_active_account_v1');
   var adapter=null;
-  function raw(key,fallback){var value=localStorage.getItem(key);return value===null?fallback:JSON.parse(value);}
+  function raw(key,fallback){var value=(window.LambertPrivateStorage||localStorage).getItem(key);return value===null?fallback:JSON.parse(value);}
   window.LambertData={
     active:active,
     syncInfo:function(){return {active:active,pending:adapter&&adapter.pending?adapter.pending().length:0,conflicts:adapter&&adapter.conflicts?adapter.conflicts().length:0};},
@@ -34,7 +34,7 @@
       }
       // Legacy reviews are intentionally kept local; never import them into a different account.
       if(active&&key==='daily_reviews_v1')return;
-      localStorage.setItem(key,JSON.stringify(value));
+      (window.LambertPrivateStorage||localStorage).setItem(key,JSON.stringify(value));
     }
   };
   ['write','writeMany'].forEach(function(name){var original=window.LambertData[name];window.LambertData[name]=function(){

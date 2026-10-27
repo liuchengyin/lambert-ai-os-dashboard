@@ -6,8 +6,8 @@
   if(!BOARD)return;
   let dragged=null,placeholder=null,origin=null,scheduled=false,dropped=false;
 
-  const readOrder=()=>{try{const x=JSON.parse(localStorage.getItem(KEY));return Array.isArray(x)?x:[]}catch{return []}};
-  const writeOrder=ids=>{try{localStorage.setItem(KEY,JSON.stringify(ids))}catch(e){console.warn('Task order not saved',e)}};
+  const readOrder=()=>{try{const x=JSON.parse((window.LambertPrivateStorage||localStorage).getItem(KEY));return Array.isArray(x)?x:[]}catch{return []}};
+  const writeOrder=ids=>{try{(window.LambertPrivateStorage||localStorage).setItem(KEY,JSON.stringify(ids))}catch(e){console.warn('Task order not saved',e)}};
   const allCards=()=>[...BOARD.querySelectorAll('.task-v5-body>.task-v5-card')];
   const statusOf=col=>col?.querySelector('.task-v5-col-head h3')?.textContent?.trim()||'';
 
@@ -44,7 +44,7 @@
       const task=state.tasks.find(t=>t.id===id);
       if(!task||task.status===status)return;
       task.status=status;
-      if(window.LambertData)window.LambertData.write('tasks',state.tasks);else localStorage.setItem('tasks',JSON.stringify(state.tasks));
+      if(window.LambertData)window.LambertData.write('tasks',state.tasks);else (window.LambertPrivateStorage||localStorage).setItem('tasks',JSON.stringify(state.tasks));
       if(typeof renderHome==='function')renderHome();
       if(typeof renderProjectBoard==='function')renderProjectBoard();
       if(typeof renderProjectDashboard==='function')renderProjectDashboard();
