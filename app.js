@@ -1,8 +1,8 @@
 const $=id=>document.getElementById(id);
-const get=(k,d)=>{try{return (window.LambertData?window.LambertData.read(k,null):JSON.parse(localStorage.getItem(k)))??d}catch{return d}},set=(k,v)=>{if(k!=="tasks")return window.LambertData?window.LambertData.write(k,v):localStorage.setItem(k,JSON.stringify(v));
+const get=(k,d)=>{try{return (window.LambertData?window.LambertData.read(k,null):JSON.parse((window.LambertPrivateStorage||localStorage).getItem(k)))??d}catch{return d}},set=(k,v)=>{if(k!=="tasks")return window.LambertData?window.LambertData.write(k,v):(window.LambertPrivateStorage||localStorage).setItem(k,JSON.stringify(v));
   // All web task writes share the same durable boundary, including project editors.
-  let previous;try{previous=window.LambertData?window.LambertData.read(k,[]):JSON.parse(localStorage.getItem(k)||'[]');}catch(error){throw error;}
-  try{return window.LambertData?window.LambertData.write(k,v):localStorage.setItem(k,JSON.stringify(v));}
+  let previous;try{previous=window.LambertData?window.LambertData.read(k,[]):JSON.parse((window.LambertPrivateStorage||localStorage).getItem(k)||'[]');}catch(error){throw error;}
+  try{return window.LambertData?window.LambertData.write(k,v):(window.LambertPrivateStorage||localStorage).setItem(k,JSON.stringify(v));}
   catch(error){try{state.tasks=previous;}catch{/* State is not initialized during bootstrap. */}throw error;}
 };
 

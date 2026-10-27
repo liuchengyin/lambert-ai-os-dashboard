@@ -7,8 +7,8 @@
   const STORE='reading_workspace_v2';
   const LEGACY='daily_reading_v1';
   const $=id=>document.getElementById(id);
-  const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}};
-  const set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+  const get=(k,d)=>{try{return JSON.parse((window.LambertPrivateStorage||localStorage).getItem(k))??d}catch{return d}};
+  const set=(k,v)=>(window.LambertPrivateStorage||localStorage).setItem(k,JSON.stringify(v));
   const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
   const uid=()=>`read_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
   const dateKey=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -214,7 +214,7 @@
   let standaloneSaveTimer=0;
   const standaloneStatus=$('rv2StandaloneStatus');
   try {
-    const stored=JSON.parse(localStorage.getItem(STANDALONE)||'[]');
+    const stored=JSON.parse((window.LambertPrivateStorage||localStorage).getItem(STANDALONE)||'[]');
     if(Array.isArray(stored))standaloneNotes=stored.filter(n=>n&&typeof n.id==='string').map(n=>({
       ...n,id:n.id,title:String(n.title||''),body:String(n.body||''),type:['观念卡','案例卡','方法卡'].includes(n.type)?n.type:'观念卡',updatedAt:String(n.updatedAt||'')
     }));
@@ -224,7 +224,7 @@
   const standaloneReadSafe=standaloneStatus.textContent!=='无法读取旧笔记；为避免覆盖，已暂停保存';
   function persistStandalone(){
     if(!standaloneReadSafe){standaloneStatus.textContent='原数据读取失败，禁止覆盖';return false}
-    try{localStorage.setItem(STANDALONE,JSON.stringify(standaloneNotes));standaloneStatus.textContent='已保存到本地';return true}
+    try{(window.LambertPrivateStorage||localStorage).setItem(STANDALONE,JSON.stringify(standaloneNotes));standaloneStatus.textContent='已保存到本地';return true}
     catch{standaloneStatus.textContent='保存失败，请复制正文备份';return false}
   }
   // Card template is the visible title preset; existing user content is never removed.
@@ -292,7 +292,7 @@
     $('rv2Progress').closest('.reading-progress-field').hidden=solo;
     const destinationUI=document.querySelector('.archive-target-control');
     if(destinationUI){const target=solo?$('rv2StandaloneArchiveTools'):$('rv2Archive').parentElement;if(destinationUI.parentNode!==target)target.appendChild(destinationUI)}
-    try{localStorage.setItem(TAB_PREF,solo?'standalone':'split')}catch{}
+    try{(window.LambertPrivateStorage||localStorage).setItem(TAB_PREF,solo?'standalone':'split')}catch{}
   }
   $('rv2SplitTab').onclick=()=>switchReadingTab('split');
   $('rv2NotesTab').onclick=()=>switchReadingTab('standalone');
@@ -328,7 +328,7 @@
   if(standaloneNotes.length)selectStandalone(standaloneNotes[0].id);
   else if(standaloneReadSafe)newStandalone();
   let preferred='split';
-  try{preferred=localStorage.getItem(TAB_PREF)==='standalone'?'standalone':'split'}catch{}
+  try{preferred=(window.LambertPrivateStorage||localStorage).getItem(TAB_PREF)==='standalone'?'standalone':'split'}catch{}
   switchReadingTab(preferred);
 
   // Reuse the Markdown editor already used by Daily Writing. No cache or hidden autosave.

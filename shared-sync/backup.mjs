@@ -1,12 +1,12 @@
 import {DATA_KEYS,WorkspaceJournal} from './journal.mjs';
 // Export raw guest bytes separately from the signed-in account. Never substitute
 // one workspace for another, and retain queued mutations and both conflict sides.
-export function createWorkspaceBackup(storage, journal=null, now=new Date()) {
-  const raw=Object.fromEntries([...DATA_KEYS,'daily_reviews_v1'].map(key=>[key,storage.getItem(key)]));
+export function createWorkspaceBackup(storage, journal=null, now=new Date(),{includeGuest=false}={}) {
+  const raw=!journal||includeGuest?Object.fromEntries([...DATA_KEYS,'daily_reviews_v1'].map(key=>[key,storage.getItem(key)])):{};
   let account=null;
   if(journal){
     journal=new WorkspaceJournal(storage,journal.userId);
-    const rawStorage={};for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key?.startsWith(journal.prefix))rawStorage[key]=storage.getItem(key);}
+    const rawStorage={};for(let i=0;i<storage.length;i++){const key=storage.key(i);if(key?.startsWith(journal.prefix)||key?.startsWith('lambert_private_v1:'+journal.userId+':'))rawStorage[key]=storage.getItem(key);}
     account={userId:journal.userId,rawStorage};
     try{
       account.snapshot=Object.fromEntries(DATA_KEYS.map(key=>[key,journal.read(key,key==='daily_reviews_v2'?{}:[])]));

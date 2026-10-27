@@ -11,11 +11,11 @@
   ];
   const names={home:'今日总览',projects:'项目看板',tasks:'任务中心',review:'每日复盘',writing:'每日记录',reading:'每日阅读',english:'英语学习',knowledge:'常用链接',settings:'设置'};
   const icons={home:'⌂',projects:'▦',tasks:'☑',review:'◷',writing:'✎',reading:'▤',english:'◎',knowledge:'↗',settings:'⚙'};
-  const stored=(()=>{try{return JSON.parse(localStorage.getItem('s1_nav_groups_v1'))||{}}catch{return {}}})();
+  const stored=(()=>{try{return JSON.parse((window.LambertPrivateStorage||localStorage).getItem('s1_nav_groups_v1'))||{}}catch{return {}}})();
   // Desktop compact rail: persist only presentation state, never alter module data.
   const COLLAPSE_KEY='s1_sidebar_collapsed_v1';
-  const readCollapsed=()=>{try{return localStorage.getItem(COLLAPSE_KEY)==='true'}catch{return false}};
-  const saveCollapsed=value=>{try{localStorage.setItem(COLLAPSE_KEY,String(value))}catch{}};
+  const readCollapsed=()=>{try{return (window.LambertPrivateStorage||localStorage).getItem(COLLAPSE_KEY)==='true'}catch{return false}};
+  const saveCollapsed=value=>{try{(window.LambertPrivateStorage||localStorage).setItem(COLLAPSE_KEY,String(value))}catch{}};
   const desktopToggle=document.createElement('button');
   desktopToggle.type='button';
   desktopToggle.id='s1SidebarToggle';
@@ -41,7 +41,7 @@
     const title=document.createElement('div');title.className='s1-nav-heading';title.setAttribute('role','button');title.setAttribute('tabindex','0');title.setAttribute('aria-expanded',stored[g.id]===false?'false':'true');
     title.innerHTML='<span>'+g.title+'</span><span class="s1-nav-arrow">⌄</span>';
     const items=document.createElement('div');items.className='s1-nav-items';items.hidden=stored[g.id]===false;
-    const toggle=()=>{items.hidden=!items.hidden;title.setAttribute('aria-expanded',String(!items.hidden));stored[g.id]=!items.hidden;localStorage.setItem('s1_nav_groups_v1',JSON.stringify(stored))};
+    const toggle=()=>{items.hidden=!items.hidden;title.setAttribute('aria-expanded',String(!items.hidden));stored[g.id]=!items.hidden;(window.LambertPrivateStorage||localStorage).setItem('s1_nav_groups_v1',JSON.stringify(stored))};
     title.addEventListener('click',toggle);
     title.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}});
     section.append(title,items);nav.appendChild(section);nodes[g.id]=items;
@@ -76,8 +76,8 @@
   const original=window.openView,allowed=new Set(['home','projects','tasks','review','writing','reading','english','knowledge']);
   if(typeof original!=='function')return;
   const KEY='s1_last_view_v1';
-  const read=()=>{try{return localStorage.getItem(KEY)}catch{return null}};
-  const save=id=>{try{localStorage.setItem(KEY,id)}catch{}};
+  const read=()=>{try{return (window.LambertPrivateStorage||localStorage).getItem(KEY)}catch{return null}};
+  const save=id=>{try{(window.LambertPrivateStorage||localStorage).setItem(KEY,id)}catch{}};
   const fromUrl=()=>new URL(location.href).searchParams.get('view');
   const valid=id=>allowed.has(id);
   let current=null,pending=null,observer=null;

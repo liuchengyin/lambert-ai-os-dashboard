@@ -21,6 +21,7 @@ try {
       localStorage.task_center_preferences_v1=JSON.stringify({projectId:'p',view:'board'});
       if(mode==='account'){
         localStorage.lambert_active_account_v1=user;
+        localStorage.setItem('lambert_private_v1:'+user+':task_center_preferences_v1',JSON.stringify({projectId:'p',view:'board'}));
         const base=projects.map(payload=>({kind:'projects',item_id:payload.id,payload,version:1,deleted_at:null}));
         base.push(...tasks.map(payload=>({kind:'tasks',item_id:payload.id,payload,version:1,deleted_at:null})));
         // A cloud tombstone and another account cache must survive every edit.
@@ -67,10 +68,10 @@ try {
         await page.locator('[data-tc-task="two"] .tc-advance').click();await status('two','待开始');
         assert.match(await page.locator('#tcNotice').innerText(),/同步冲突.*未流转/);
         assert.equal(await page.evaluate(()=>state.tasks.find(t=>t.id==='two').status),'待开始','rejected click rolls back in-memory mutation');
-        const beforeOrder=await page.evaluate(()=>localStorage.getItem('task_drag_order_v1'));
+        const beforeOrder=await page.evaluate(()=>LambertPrivateStorage.getItem('task_drag_order_v1'));
         await page.locator('[data-tc-task="three"]').dragTo(page.locator('[data-tc-status="已完成"] header'),{sourcePosition:{x:1,y:1}});await status('three','待开始');
         assert.match(await page.locator('#tcNotice').innerText(),/同步冲突.*未流转/);
-        assert.equal(await page.evaluate(()=>localStorage.getItem('task_drag_order_v1')),beforeOrder,'rejected drop does not save order');
+        assert.equal(await page.evaluate(()=>LambertPrivateStorage.getItem('task_drag_order_v1')),beforeOrder,'rejected drop does not save order');
         // A rejected record used to poison the whole state array, blocking a
         // subsequent save even for an unrelated, conflict-free task.
         await page.locator('[data-tc-task="four"] .tc-advance').click();await status('four','进行中');

@@ -9,7 +9,7 @@
   const presets = ['健康','工作','个人','习惯','金融'];
   const statuses = ['待开始','进行中','已完成'];
   const KEY = 'task_center_preferences_v1';
-  const read = (key, fallback) => {try {return (window.LambertData?window.LambertData.read(key,fallback):JSON.parse(localStorage.getItem(key))) ?? fallback;} catch {return fallback;}};
+  const read = (key, fallback) => {try {return (window.LambertData?window.LambertData.read(key,fallback):JSON.parse((window.LambertPrivateStorage||localStorage).getItem(key))) ?? fallback;} catch {return fallback;}};
   const initial = read(KEY, {});
   let selected = initial.projectId || 'inbox';
   let view = ['board','gantt','table'].includes(initial.view) ? initial.view : 'board';
@@ -20,7 +20,7 @@
   let showArchived=false,filtersExpanded=false;
   function refreshFilterDisclosure(){var panel=$('tcFilterPanel');if(!panel)return;var tb=$('tcFilterToolbar');if(!tb){tb=document.createElement('div');tb.className='tc-filter-toolbar';tb.id='tcFilterToolbar';var btn=document.createElement('button');btn.type='button';btn.id='tcFilterToggle';btn.setAttribute('aria-controls','tcFilterPanel');tb.appendChild(btn);panel.parentNode.insertBefore(tb,panel);}var toggle=$('tcFilterToggle');var arch=$('tcArchiveToggle');if(arch&&arch.parentNode!==tb)tb.appendChild(arch);panel.hidden=!filtersExpanded;var n=0;if(filters.q&&filters.q.trim())n++;if(filters.status!=='all')n++;if(filters.priority!=='all')n++;if(filters.label!=='all')n++;if(filters.date!=='all')n++;if(filters.matrix!=='all')n++;if(filters.sort!=='priority')n++;toggle.setAttribute('aria-expanded',filtersExpanded?'true':'false');toggle.textContent='筛选'+(n?' · '+n:'')+(filtersExpanded?' ▲':' ▼');toggle.onclick=function(){filtersExpanded=!filtersExpanded;refreshFilterDisclosure();};}
   function archiveTask(task){task.archived=!task.archived;save();}
-  function remember() {try {localStorage.setItem(KEY, JSON.stringify({projectId:selected,view}));} catch {}}
+  function remember() {try {(window.LambertPrivateStorage||localStorage).setItem(KEY, JSON.stringify({projectId:selected,view}));} catch {}}
   function today() {const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
   function offsetDay(date,n) {return new Date((M.dayNumber(date)+n)*86400000).toISOString().slice(0,10);}
   function localInput(value, end=false) {return /^\d{4}-\d{2}-\d{2}$/.test(value||'') ? value+(end?'T23:59':'T00:00') : value||'';}
@@ -32,7 +32,7 @@
     const result=M.migrate(state.projects,state.tasks);
     if(result.changed){
       try {
-        if(!localStorage.getItem('task_center_backup_v1'))localStorage.setItem('task_center_backup_v1',JSON.stringify({projects:state.projects,tasks:state.tasks,at:new Date().toISOString()}));
+        if(!(window.LambertPrivateStorage||localStorage).getItem('task_center_backup_v1'))(window.LambertPrivateStorage||localStorage).setItem('task_center_backup_v1',JSON.stringify({projects:state.projects,tasks:state.tasks,at:new Date().toISOString()}));
         set('projects',result.projects);set('tasks',result.tasks);
         state.projects=result.projects;state.tasks=result.tasks;
       } catch {notice('浏览器无法保存升级数据，请先导出或释放存储后重试。');}
@@ -208,7 +208,7 @@ function board(rows){
       const ids=state.tasks.map(t=>t.id),stored=read('task_drag_order_v1',ids),order=[...new Set([...stored,...ids])].filter(id=>id!==task.id);
       const index=target?order.indexOf(target):-1;
       order.splice(index<0?order.length:index,0,task.id);
-      try{localStorage.setItem('task_drag_order_v1',JSON.stringify(order));}catch{}
+      try{(window.LambertPrivateStorage||localStorage).setItem('task_drag_order_v1',JSON.stringify(order));}catch{}
       filters.sort='manual';
       const sortEl=document.getElementById('tcFilterSort');
       if(sortEl)sortEl.value='manual';

@@ -49,7 +49,7 @@
     draft.append(actions);
   }
   function loadRows(key){
-    const parsed=window.LambertData?window.LambertData.read(key,[]):JSON.parse(localStorage.getItem(key)||'[]');
+    const parsed=window.LambertData?window.LambertData.read(key,[]):JSON.parse((window.LambertPrivateStorage||localStorage).getItem(key)||'[]');
     if(!Array.isArray(parsed))throw Error('invalid_storage');return parsed;
   }
   function commit(){
@@ -78,10 +78,10 @@
       const nextProjects=[...newProjects,...projects],nextTasks=[...newTasks,...tasks];
       if(window.LambertData){window.LambertData.writeMany({projects:nextProjects,tasks:nextTasks});}else{
       // Preserve both exact originals if the second localStorage write fails (e.g. quota).
-      const originalProjects=localStorage.getItem('projects');
-      if(newProjects.length)localStorage.setItem('projects',JSON.stringify(nextProjects));
-      try{if(newTasks.length)localStorage.setItem('tasks',JSON.stringify(nextTasks))}
-      catch(error){if(newProjects.length){if(originalProjects===null)localStorage.removeItem('projects');else localStorage.setItem('projects',originalProjects)}throw error}
+      const originalProjects=(window.LambertPrivateStorage||localStorage).getItem('projects');
+      if(newProjects.length)(window.LambertPrivateStorage||localStorage).setItem('projects',JSON.stringify(nextProjects));
+      try{if(newTasks.length)(window.LambertPrivateStorage||localStorage).setItem('tasks',JSON.stringify(nextTasks))}
+      catch(error){if(newProjects.length){if(originalProjects===null)(window.LambertPrivateStorage||localStorage).removeItem('projects');else (window.LambertPrivateStorage||localStorage).setItem('projects',originalProjects)}throw error}
       }
       state.projects=nextProjects;state.tasks=nextTasks;
       committed.add(requestId);proposal=null;showDraft();

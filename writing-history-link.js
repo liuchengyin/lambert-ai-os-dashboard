@@ -1,7 +1,7 @@
 // Make archived Daily Writing history titles link directly to their Feishu documents.
 (function(){
   const STORE='daily_writing_v2';
-  const getStore=()=>{try{return JSON.parse(localStorage.getItem(STORE)||'{}')||{}}catch{return {}}};
+  const getStore=()=>{try{return JSON.parse((window.LambertPrivateStorage||localStorage).getItem(STORE)||'{}')||{}}catch{return {}}};
 
   let observedRoot=null;
   const observer=new MutationObserver(()=>setTimeout(enhance,0));

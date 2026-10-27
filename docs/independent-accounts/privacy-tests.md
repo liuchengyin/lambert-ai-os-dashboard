@@ -1,0 +1,1 @@
+为window.LambertPrivateStorage写node:test测试草稿，不超过45行：用vm加载shared-sync/private-storage.js，Map实现localStorage mock。测试1：访客旧key有私密笔记，账号A首次getItem同key为null；A写后B不可见，A重新进入可见且旧key保留。测试2：创建A facade后切ACTIVE到B，A旧facade.setItem必须抛account_changed且B没有写入。测试3：原任务key直通、音频databaseName各账号不同。不执行测试。输出JS草稿。

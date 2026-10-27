@@ -2,8 +2,8 @@
 (function(){
   const FEISHU_DAILY='';
   const $=id=>document.getElementById(id);
-  const get=(k,d)=>{try{return (window.LambertData?window.LambertData.read(k,null):JSON.parse(localStorage.getItem(k)))??d}catch{return d}};
-  const set=(k,v)=>(window.LambertData?window.LambertData.write(k,v):localStorage.setItem(k,JSON.stringify(v)));
+  const get=(k,d)=>{try{return (window.LambertData?window.LambertData.read(k,null):JSON.parse((window.LambertPrivateStorage||localStorage).getItem(k)))??d}catch{return d}};
+  const set=(k,v)=>(window.LambertData?window.LambertData.write(k,v):(window.LambertPrivateStorage||localStorage).setItem(k,JSON.stringify(v)));
   const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
   function dateKey(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
   function shiftDate(key,n){const [y,m,d]=key.split('-').map(Number);const x=new Date(y,m-1,d);x.setDate(x.getDate()+n);return dateKey(x)}

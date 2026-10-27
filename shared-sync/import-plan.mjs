@@ -1,3 +1,4 @@
+import {DOCUMENT_KEYS} from './document-keys.mjs';
 // Shared, side-effect-free preflight. This module never writes or uploads data.
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const canonical = value => Array.isArray(value) ? value.map(canonical) : object(value)
@@ -25,6 +26,12 @@ export function prepareLocalImport(snapshot) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(itemId) || !object(payload))
       throw new TypeError('复盘日期或内容格式错误');
     records.push({ kind: 'reviews', itemId, payload: structuredClone(payload) });
+  }
+  for(const key of DOCUMENT_KEYS){
+    if(!Object.prototype.hasOwnProperty.call(snapshot,key))continue;
+    const value=snapshot[key];
+    if(value!==null&&(key==='reading_workspace_v2'?!object(value):!Array.isArray(value)))throw new TypeError('阅读或书签数据格式错误：'+key);
+    records.push({kind:'documents',itemId:key,payload:{id:key,value:structuredClone(value)}});
   }
   return records;
 }

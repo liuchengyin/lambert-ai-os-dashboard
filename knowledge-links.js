@@ -4,7 +4,7 @@
   if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261019-prod-links1';document.head.appendChild(l)}
   const navBtn=document.querySelector('nav button[data-v="knowledge"]');if(navBtn)navBtn.textContent='常用链接';
   const STORAGE='knowledge_link_library_v1',PERSONAL='knowledge_link_personal_v1',ACTIVE_TAB='knowledge_active_tab_v1',LOCK='knowledge_link_locked_v1',WALL='knowledge_wallpaper_v1';
-  const get=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+  const get=(k,d)=>{try{return JSON.parse((window.LambertPrivateStorage||localStorage).getItem(k))??d}catch{return d}},set=(k,v)=>(window.LambertPrivateStorage||localStorage).setItem(k,JSON.stringify(v));
   const esc=v=>String(v||'').replace(/[&<>'\"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
   const id=()=>`link_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,gid=()=>`group_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
   const defaults=[
@@ -147,7 +147,7 @@
   lockBtn.onclick=()=>{locked=!locked;set(LOCK,locked);updateLock();render()};
   wallBtn.onclick=()=>{document.getElementById('kwUrl').value=get(WALL,'');wallDlg.showModal()};
   document.getElementById('kwSave').onclick=()=>{const url=safeUrl(document.getElementById('kwUrl').value);if(!url){document.getElementById('kwUrl').focus();return}set(WALL,url);applyWallpaper(url);wallDlg.close()};
-  document.getElementById('kwClear').onclick=()=>{localStorage.removeItem(WALL);applyWallpaper('');wallDlg.close()};
+  document.getElementById('kwClear').onclick=()=>{(window.LambertPrivateStorage||localStorage).removeItem(WALL);applyWallpaper('');wallDlg.close()};
   function searchUrl(){const value=search.value.trim();return /^(https?:\/\/|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[/:?#]|$))/i.test(value)?safeUrl(value):''}
   let searchAutoTimer=null,searchAutoUrl='';
   function clearSearchAuto(){clearTimeout(searchAutoTimer);searchAutoTimer=null;searchAutoUrl='';searchSpinner.hidden=true;manualBtn.hidden=true}
