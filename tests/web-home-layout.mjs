@@ -12,7 +12,7 @@ try{
   const before=await data();
   assert.equal(await page.locator('header #lambertAccountButton').count(),0);
   assert.equal(await page.locator('.shell > aside > .web-sidebar-account #lambertAccountButton').count(),1);
-  assert.equal(await page.locator('#lambertCloudStatus').textContent(),'未登录 · 本地模式');
+  assert.equal(await page.locator('#lambertCloudStatus').textContent(),'本机已保存 · 本地模式');
   assert.ok(await page.locator('#lambertAccountButton').evaluate(e=>getComputedStyle(e,'::before').backgroundImage.includes('svg')));
   const account=await page.locator('.web-sidebar-account').boundingBox();assert.ok(Math.abs(account.y+account.height-1000)<40);
   const left=await page.locator('#aiDailyCard').boundingBox(),right=await page.locator('#aiChatPanel').boundingBox();

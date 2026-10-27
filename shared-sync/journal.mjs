@@ -32,7 +32,7 @@ export class WorkspaceJournal {
     for(const [id,row] of before){if(!row.deleted_at&&!map.has(id))changes.push({kind:row.kind,itemId:id,payload:row.payload,expectedVersion:row.version,deleted:true,mutationId:this.uuid()});}
     if(!changes.length)return [];
     const blocked=new Set(this.conflicts().map(op=>keyFor(op.kind,op.itemId)));
-    if(changes.some(op=>blocked.has(keyFor(op.kind,op.itemId))))throw Error('此记录有同步冲突，请先在账户中处理');
+    const rejected=changes.find(op=>blocked.has(keyFor(op.kind,op.itemId)));if(rejected){const error=Error('此记录有同步冲突，请先在账户中处理');error.kind=rejected.kind;error.itemId=rejected.itemId;throw error;}
     return changes;
   }
   write(key,value){this.writeMany({[key]:value});}

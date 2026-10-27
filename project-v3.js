@@ -269,8 +269,7 @@
   $("projectNameInput").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addProjectFromForm()}});
   $("homeManageProjects").onclick=()=>{openView("projects");$("projectComposeDetails").open=true;setTimeout(()=>$("projectNameInput").focus(),0)};
 
-  const originalPersistTasks=persistTasks;
-  persistTasks=function(){originalPersistTasks();renderProjectDashboard();renderProjectBoard();renderCreateTaskPicker()};
+  document.addEventListener('lambert:tasks-committed',renderCreateTaskPicker);
 
   const originalRenderHome=renderHome;
   renderHome=function(){

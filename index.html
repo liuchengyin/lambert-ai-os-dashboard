@@ -41,7 +41,7 @@ html:not([data-lambert-boot]) #lambertStartup{display:none}
 <link rel="preload" as="script" href="task-drag-v1.js">
 <link rel="preload" as="script" href="reading-polish-v5.js">
 <link rel="preload" as="script" href="dashboard-v5.js">
-<link rel="preload" as="script" href="task-center.js?v=20261020-compact-restore1">
+<link rel="preload" as="script" href="task-center.js?v=20261026-flow-recovery1">
 <!-- startup-prefetch-end -->
 <link rel="icon" type="image/svg+xml" href="brand/logo-mark.svg?v=purple-white-1">
 <link rel="mask-icon" href="brand/logo-mark-black.svg" color="#090c0f">
@@ -51,7 +51,7 @@ html:not([data-lambert-boot]) #lambertStartup{display:none}
 <link rel="stylesheet" href="task-center.css?v=20261020-compact-restore1">
 <link rel="stylesheet" href="web-home.css?v=20261020-home1">
 <link rel="stylesheet" href="english-audio-v2.css?v=20261024-v21">
-</head>
+<link rel="stylesheet" data-lambert-account href="shared-sync/account.css"></head>
 <body>
 <div id="lambertStartup" role="status" aria-live="polite"><strong>Lambert AI OS</strong><p id="lambertStartupMessage">正在打开工作台…</p><button id="lambertStartupRetry" type="button" hidden onclick="location.reload()">重新加载</button></div>
 <div class="shell">
@@ -70,7 +70,7 @@ html:not([data-lambert-boot]) #lambertStartup{display:none}
 </nav>
 <div class="web-sidebar-account"><button id="lambertAccountButton" type="button">登录</button><span id="lambertCloudStatus" role="status" aria-live="polite"></span></div>
 </aside>
-<main>
+<main><button id="workspaceSyncState" class="workspace-sync-state" type="button" aria-live="polite" disabled>同步状态读取中…</button>
 <header class="s1-date-header"><div id="today"></div></header>
 
 <section id="home" class="view activeView">

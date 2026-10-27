@@ -18,6 +18,8 @@ const tasks=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('tasks')));
 const nav=()=>page.locator('nav button[data-v="tasks"]').click();
 const tab=name=>page.getByRole('tab',{name,exact:false}).click();
 try{
+ // All review fixtures use this day, so pin it before modules capture today.
+ await page.clock.install({time:new Date('2026-10-18T01:00:00Z')});
  await page.goto(base);await page.waitForFunction(()=>!!window.TaskCenter);await nav();
  assert.equal(await page.locator('#tcProjectTitle').innerText(),'网络阅读');
  assert.equal(await page.locator('.tc-task').count(),2);assert.ok(!(await page.locator('#tcContent').innerText()).includes('准备案例'));
@@ -48,7 +50,6 @@ await page.locator('#tcFilterToggle').click(); await page.locator('#tcFilterStat
  await page.locator('#tcBackProjects').click();await page.locator('.project-card').filter({has:page.locator('.project-collapse-title',{hasText:'网络阅读'})}).getByRole('button',{name:'编辑',exact:true}).click();
  // Picker cancellation preserves the source; confirmation saves an explicit local time.
  assert.equal(await page.locator('#projectEditDue').inputValue(),'2026-11-01T23:59');
- await page.clock.install({time:new Date('2026-10-18T01:00:00Z')});
  await page.locator('[data-date-for="projectEditStart"]').click();
  await page.locator('[data-quick="nextweek"]').click();
  assert.equal(await page.locator('#projectEditStart').inputValue(),'2026-10-18T00:00');

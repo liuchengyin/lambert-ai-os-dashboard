@@ -53,3 +53,9 @@
 .lambert-account .lambert-conflict-version h3{font-size:13px;font-weight:500;margin:0 0 8px}
 .lambert-conflict-version dt{font-size:11px;color:#929aaa;margin-top:8px}
 .lambert-conflict-version dd{margin:3px 0 0;font-size:13px;color:#4e5869;white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* Shared web/mobile status: part of layout, never a new primary menu. */
+.workspace-sync-state{display:block;max-width:100%;margin:8px 0 12px;padding:7px 12px;border:1px solid #ded7ee;border-radius:9px;background:#f7f5fc;color:#625677;font:inherit;font-size:12px;text-align:left;cursor:pointer;overflow-wrap:anywhere}
+.workspace-sync-state[data-phase=error],.workspace-sync-state[data-phase=conflict]{border-color:#d7a96e;background:#fff7e9;color:#80521e}
+.workspace-sync-state[data-phase=synced]{color:#337452;background:#f1faf5}
+body:has(#app)>.workspace-sync-state{margin:8px 16px 0;max-width:calc(100% - 32px);min-height:36px}

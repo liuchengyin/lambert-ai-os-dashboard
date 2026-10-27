@@ -143,8 +143,9 @@
 }
   $('rvTaskSearch').oninput=renderTaskLinks;
   $('rvTaskProject').onchange=renderTaskLinks;
-  document.addEventListener('tasks-updated',()=>{let changed=false;Object.values(reviews).forEach(r=>{if(Array.isArray(r.taskIds)){const value=String(taskStats(r.taskIds).percent);if(String(r.completion)!==value){r.completion=value;changed=true;}}});if(changed)set(STORE,reviews);renderTaskLinks();renderHistory();});
-  $('rv6Save').onclick=()=>save(false);
+  document.addEventListener('tasks-updated',()=>{let changed=false;Object.values(reviews).forEach(r=>{if(Array.isArray(r.taskIds)){const value=String(taskStats(r.taskIds).percent);if(String(r.completion)!==value){r.completion=value;changed=true;}}});if(changed)attempt(()=>set(STORE,reviews));renderTaskLinks();renderHistory();});
+  function attempt(action){try{action();return true;}catch(error){reviews=get(STORE,{});$('rv6Status').textContent='未保存：'+error.message;return false;}}
+  $('rv6Save').onclick=()=>attempt(()=>save(false));
   let feishuBusy=false;
   $('rv6Feishu').onclick=async()=>{
     if(feishuBusy)return;const date=selected,button=$('rv6Feishu');let archivedUrl='';feishuBusy=true;button.disabled=true;
@@ -161,13 +162,15 @@
     }catch(error){$('rv6Status').textContent=archivedUrl?'飞书已归档，但链接未保存：'+archivedUrl:'暂未完成归档：'+error.message;}
     finally{feishuBusy=false;button.disabled=false;}
   };
-  $('rv6Archive').onclick=()=>{reviews[selected]=read();reviews[selected].archived=!reviews[selected].archived;set(STORE,reviews);load(selected)};
-  $('rv6Prev').onclick=()=>{save(true);load(shiftDate(selected,-1))};
-  $('rv6Next').onclick=()=>{save(true);load(shiftDate(selected,1))};
-  $('rv6Today').onclick=()=>{save(true);load(dateKey())};
-  $('rv6Date').onchange=e=>{save(true);load(e.target.value||dateKey())};
-  fields.forEach(id=>$(id)?.addEventListener('change',()=>save(true)));
+  $('rv6Archive').onclick=()=>attempt(()=>{reviews[selected]=read();reviews[selected].archived=!reviews[selected].archived;set(STORE,reviews);load(selected)});
+  $('rv6Prev').onclick=()=>{if(attempt(()=>save(true)))load(shiftDate(selected,-1))};
+  $('rv6Next').onclick=()=>{if(attempt(()=>save(true)))load(shiftDate(selected,1))};
+  $('rv6Today').onclick=()=>{if(attempt(()=>save(true)))load(dateKey())};
+  $('rv6Date').onchange=e=>{if(attempt(()=>save(true)))load(e.target.value||dateKey());else e.target.value=selected;};
+  fields.forEach(id=>$(id)?.addEventListener('change',()=>attempt(()=>save(true))));
 
+  window.addEventListener('lambert-workspace-will-refresh',event=>{if(event.detail.owner===window.LambertData?.active)reviews=get(STORE,{});});
+  window.addEventListener('lambert-workspace-refresh',event=>{if(event.detail.owner!==window.LambertData?.active)return;if(event.detail.kind==='reviews'&&event.detail.itemId===selected)load(selected);else renderHistory();});
   window.loadReview=key=>load(key||selected);
   load(selected);
 })();

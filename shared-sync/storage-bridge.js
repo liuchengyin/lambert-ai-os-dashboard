@@ -8,6 +8,7 @@
   function raw(key,fallback){var value=localStorage.getItem(key);return value===null?fallback:JSON.parse(value);}
   window.LambertData={
     active:active,
+    syncInfo:function(){return {active:active,pending:adapter&&adapter.pending?adapter.pending().length:0,conflicts:adapter&&adapter.conflicts?adapter.conflicts().length:0};},
     install:function(value){adapter=value;},
     read:function(key,fallback){
       if(active&&key==='daily_reviews_v1')return {};
@@ -36,4 +37,9 @@
       localStorage.setItem(key,JSON.stringify(value));
     }
   };
+  ['write','writeMany'].forEach(function(name){var original=window.LambertData[name];window.LambertData[name]=function(){
+    var args=arguments,key=name==='write'?args[0]:Object.keys(args[0]||{}).join(',');
+    function report(phase,error){window.dispatchEvent(new CustomEvent('lambert-save-state',{detail:{phase:phase,key:key,code:error&&error.name,conflict:!!(error&&String(error.message).includes('冲突')),itemId:error&&error.itemId,kind:error&&error.kind}}));}
+    report('saving');try{var result=original.apply(this,args);report('saved');return result;}catch(error){report('failed',error);throw error;}
+  };});
 })();
