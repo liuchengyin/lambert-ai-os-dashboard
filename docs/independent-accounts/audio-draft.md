@@ -1,0 +1,1 @@
+为附带音频存储模块提供最小补丁建议（不超过35行代码）：使用window.LambertPrivateStorage.databaseName(DB_NAME)为每个账号打开独立数据库，保留访客旧数据库，绝不自动迁移文件。每个db实例与打开时的facade绑定，用WeakMap；每次transaction前assertOwner以阻止A的旧异步保存写进B会话。打开onsuccess时也校验账号，切换时close并reject。保留原objectStore结构和导出API。要兼容没有window的node测试（默认访客）。不声称执行过测试。
