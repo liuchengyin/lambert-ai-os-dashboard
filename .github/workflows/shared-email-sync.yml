@@ -38,6 +38,7 @@ jobs:
           if [ -f tests/mobile-ui-coherence.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-ui-coherence.mjs; fi
           if [ -f tests/mobile-core-space.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-core-space.mjs; fi
           if [ -f tests/mobile-cloud-update.mjs ]; then TEST_ORIGIN=http://127.0.0.1:8765 node tests/mobile-cloud-update.mjs; fi
+          if [ -f tests/app-update-visibility.mjs ]; then node tests/app-update-visibility.mjs; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
