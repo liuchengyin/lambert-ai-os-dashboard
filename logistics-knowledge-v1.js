@@ -101,7 +101,7 @@
   function renderNodes(){
     const m=current(),host=$('lkNodes');host.replaceChildren();
     $('lkNodeTitle').textContent=m?m.name+' · 操作节点':'操作节点';
-    $('lkAddNode').disabled=!m||!m.enabled;
+    $('lkAddNode').disabled=blocked||!m||!m.enabled;
     if(!m||!m.enabled){host.append(node('p','此模块已关闭，重新启用后可查看操作节点。','lk-empty'));return;}
     if(!m.nodes.length)host.append(node('p','暂无操作节点，可以点击“添加操作”。','lk-empty'));
     m.nodes.forEach((n,i)=>{
@@ -147,7 +147,7 @@
     findSelected();
     $('lkProcess').hidden=tab!=='process';$('lkData').hidden=tab!=='data';
     $('lkTabProcess').setAttribute('aria-selected',String(tab==='process'));$('lkTabData').setAttribute('aria-selected',String(tab==='data'));
-    $('lkAddModule').disabled=blocked;$('lkAddNode').disabled=blocked;
+    $('lkAddModule').disabled=blocked;$('lkAddNode').disabled=blocked;$('lkExport').disabled=blocked;
     if(tab==='process'){renderModules();renderNodes();renderDetail();}
     else renderData();
   }
@@ -191,7 +191,7 @@
   root.addEventListener('change',event=>{
     const input=event.target.closest('input[data-toggle]');if(!input)return;
     const id=input.dataset.toggle,enabled=input.checked;
-    mutate(next=>{const item=next.modules.find(x=>x.id===id);if(item)item.enabled=enabled;});
+    if(!mutate(next=>{const item=next.modules.find(x=>x.id===id);if(item)item.enabled=enabled;})) input.checked=!enabled;
   });
   $('lkTabProcess').onclick=()=>{tab='process';render();};
   $('lkTabData').onclick=()=>{tab='data';render();};
