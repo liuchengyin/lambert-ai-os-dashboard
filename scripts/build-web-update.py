@@ -3,6 +3,7 @@ Includes public page assets only, never app data, tooling, secrets, or native co
 """
 from pathlib import Path
 import argparse,hashlib,io,json,os,re,time,zipfile
+from datetime import datetime, timezone, timedelta
 ROOT=Path(__file__).resolve().parents[1]
 
 def build(output,release=None):
@@ -15,18 +16,25 @@ def build(output,release=None):
             if not file.is_file() or 'tooling' in relative.parts or 'node_modules' in relative.parts or 'updates' in relative.parts or file.suffix not in allowed or file.name in ['sw.js','manifest.webmanifest']:
                 continue
             files[str(relative)]=file.read_bytes()
-    html=files['mobile/index.html'].decode()
-    html=re.sub(r"<script>if\('serviceWorker'.*?</script>",'',html)
+    public_html=files['mobile/index.html'].decode()
+    public_html=re.sub(r'<meta name="lambert-page-release" content="[0-9]+">','',public_html)
+    public_html=public_html.replace('</head>','<meta name="lambert-page-release" content="'+str(release)+'"></head>')
+    html=re.sub(r"<script>if\('serviceWorker'.*?</script>",'',public_html)
     html=html.replace('<link rel="manifest" href="manifest.webmanifest">','')
     files['mobile/index.html']=html.encode()
-    files['mobile/release.json']=json.dumps({'release':release,'protocol':1}).encode()
+    version=datetime.fromtimestamp(release/1000,timezone(timedelta(hours=8))).strftime('%Y.%m.%d.%H%M%S')
+    files['mobile/release.json']=json.dumps({'release':release,'protocol':1,'version':version}).encode()
     buffer=io.BytesIO()
     with zipfile.ZipFile(buffer,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as archive:
         for name,data in sorted(files.items()):
             info=zipfile.ZipInfo(name,(2026,1,1,0,0,0));info.compress_type=zipfile.ZIP_DEFLATED
             archive.writestr(info,data)
     content=buffer.getvalue();digest=hashlib.sha256(content).hexdigest()
-    output=Path(output);output.mkdir(parents=True,exist_ok=True)
+    output=Path(output);
+    if output.resolve()==(ROOT/'mobile/updates').resolve():
+        (ROOT/'mobile/index.html').write_text(public_html)
+        (ROOT/'mobile/release.json').write_bytes(files['mobile/release.json'])
+    output.mkdir(parents=True,exist_ok=True)
     (output/(digest+'.zip')).write_bytes(content)
     manifest={'protocol':1,'minNativeVersion':17,'release':release,'sha256':digest,'url':'/mobile/updates/'+digest+'.zip','bytes':len(content),'files':len(files)}
     # Published atomically with the matching immutable ZIP by Vercel.
