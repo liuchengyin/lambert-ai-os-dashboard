@@ -1,3 +1,4 @@
+import {mountUpdatePanel,startAppUpdates} from './app-updates.mjs';
 import {createClient} from './vendor/supabase-2.118.0.mjs';
 import {createAccount,friendlyAuthError,SESSION_KEY} from './auth.mjs';
 import {WorkspaceJournal,ACTIVE_KEY,DATA_KEYS,stable,kindFor} from './journal.mjs';
@@ -145,12 +146,7 @@ function renderBody(){
     }
     body.append(accountRow('退出登录','logout',()=>action(async()=>{await account.logout();leaveWorkspace();})));
   }
-  if(native){
-    const update=accountRow('检查云端更新','sync',()=>action(async()=>{
-      let response=await fetch('/assets/mobile/__updates/check',{cache:'no-store'});if(!response.ok)throw Error('暂时无法检查更新');let state=await response.json();tell(state.message);
-      for(let i=0;i<12&&state.checking;i++){await new Promise(resolve=>setTimeout(resolve,1000));if(!dialog?.open)return;response=await fetch('/assets/mobile/__updates/status',{cache:'no-store'});state=await response.json();tell(state.message);}
-    }));body.append(update);
-  }
+  mountUpdatePanel(body);
   message=node('p','','lambert-account-message');message.setAttribute('role','status');message.setAttribute('aria-live','polite');body.append(message);updateEntry();
   if(focusedConflict){const card=[...body.querySelectorAll('[data-conflict-id]')].find(c=>c.dataset.conflictId===focusedConflict.itemId&&c.dataset.conflictKind===focusedConflict.kind);if(card){const compare=card.querySelector('details');if(compare)compare.open=true;requestAnimationFrame(()=>card.scrollIntoView({block:'nearest'}));}}
 
@@ -191,3 +187,4 @@ window.addEventListener('offline',updateEntry);
 window.addEventListener('online',()=>{if(account)schedule();else start();});document.addEventListener('visibilitychange',()=>{if(!document.hidden)schedule();});
 setInterval(()=>{if(!document.hidden)flush();},30000);
 start();
+startAppUpdates(open).catch(()=>{});
