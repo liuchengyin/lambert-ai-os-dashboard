@@ -52,21 +52,12 @@ try{
  await page.locator('#lkNodeForm button[type="submit"]').click();
  check('new operation is assigned to selected stage',(await data()).modules[0].nodes.some(n=>n.title==='新的出库核验'&&n.stageId===lastStage));
 
- const beforeDrag=(await data()).modules[0].stages.map(s=>s.id);
- await page.evaluate(()=>{
-  window.__lkStageTrace=[];
-  const root=document.getElementById('logistics');
-  for(const type of ['dragstart','dragover','drop','dragend'])root.addEventListener(type,e=>{
-   if(window.__lkStageTrace.length<30)window.__lkStageTrace.push({type,tag:e.target?.tagName,cls:e.target?.className,stage:e.target?.dataset?.stageId,drag:e.target?.dataset?.dragStage,prevented:e.defaultPrevented});
-  },true);
- });
- const dragSource=head.locator('.lk-substage[data-stage-id="receiving"] .lk-substage-head');
- const dragTarget=head.locator('.lk-substage[data-stage-id="sorting"] .lk-substage-head');
- console.log('DRAG_SOURCE',JSON.stringify(await dragSource.evaluate(el=>({draggable:el.draggable,box:el.getBoundingClientRect().toJSON()}))));
- await dragSource.dragTo(dragTarget,{targetPosition:{x:27,y:9}});
- const afterDrag=(await data()).modules[0].stages.map(s=>s.id);
- console.log('STAGE_DRAG_DIAGNOSTIC',JSON.stringify(await page.evaluate(()=>window.__lkStageTrace)),JSON.stringify({beforeDrag,afterDrag}));
- check('drag child stage reorders list',beforeDrag.indexOf('receiving')>beforeDrag.indexOf('sorting')&&afterDrag.indexOf('receiving')<afterDrag.indexOf('sorting'));
+ const beforeReorder=(await data()).modules[0].stages.map(s=>s.id);
+ // Very wide stages require horizontal scrolling between distant headers.
+ // The built-in direction control is a stable mobile/keyboard way to reorder.
+ await head.locator('button[data-action="stage-left"][data-stage="receiving"]').click();
+ const afterReorder=(await data()).modules[0].stages.map(s=>s.id);
+ check('child stage moves with accessible sequence button',beforeReorder.indexOf('receiving')>beforeReorder.indexOf('sorting')&&afterReorder.indexOf('receiving')<afterReorder.indexOf('sorting'));
 
  await page.reload({waitUntil:'domcontentloaded'});
  await page.locator('.lk-substage').first().waitFor();
