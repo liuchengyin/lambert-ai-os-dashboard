@@ -158,7 +158,7 @@
         m.nodes.forEach((n,i)=>{
           const wrap=node('div',undefined,'lk-step');wrap.draggable=!blocked&&!locked;wrap.dataset.dragNode=n.id;wrap.dataset.dragFrom=m.id;
           const step=button('', 'select-node','lk-node lk-canvas-op'+(n.id===selectedId&&m.id===moduleId?' is-current':''));step.dataset.id=n.id;step.dataset.module=m.id;
-          step.append(node('small',String(i+1).padStart(2,'0')+' · '+n.kind),node('strong',n.title),node('span',n.confidence||'待核实'));
+          step.append(node('small',String(i+1).padStart(2,'0')),node('strong',n.title));
           if(n.color)wrap.style.setProperty('--lk-node-accent',flow.color(n.color,'#222222'));
           wrap.append(step);lane.append(wrap);
         });
@@ -213,7 +213,7 @@
     const m=current(),n=m?.enabled?selected():null;
     if(!n){host.append(node('p','在上方画布点击一个操作块，即可查看业务动作、系统关系和数据。','lk-empty'));return;}
     const header=node('div',undefined,'lk-detail-head');
-    const title=node('div');const group=stages.stages(m).find(x=>x.id===stages.stageFor(m,n));title.append(node('small',m.category+' / '+m.name+' / '+(group?.name||'操作流程')+' / '+n.kind),node('h3',n.title));
+    const title=node('div');const group=stages.stages(m).find(x=>x.id===stages.stageFor(m,n));title.append(node('small',m.category+' / '+m.name+' / '+(group?.name||'操作流程')),node('h3',n.title));
     const actions=node('div',undefined,'lk-node-quick-actions');
     const rename=button('编辑名称','rename-node','lk-edit-name',blocked||locked);
     rename.dataset.id=n.id;rename.dataset.module=m.id;
