@@ -240,10 +240,10 @@
     $('lkEditStatus').textContent=blocked?'版本损坏 · 只读':locked
       ?'已锁定 · 已发布 V'+v.number+(hasDraft?' · 有保存的草稿':'')
       :'草稿编辑中 · '+(dirty?'存在未保存更改':hasDraft?'已保存草稿':'尚未保存');
-    $('lkUnlock').disabled=blocked||locked||!locked;
+    $('lkUnlock').disabled=blocked||!locked;
     $('lkUnlock').textContent=hasDraft?'解锁并继续草稿':'解锁编辑';
-    $('lkSaveDraft').disabled=blocked||locked||locked||!dirty;
-    $('lkPublish').disabled=blocked||locked||locked||dirty||!hasDraft;
+    $('lkSaveDraft').disabled=blocked||locked||!dirty;
+    $('lkPublish').disabled=blocked||locked||dirty||!hasDraft;
     $('lkCancelEdit').disabled=locked;
     const select=$('lkHistorySelect'),old=select.value;
     select.replaceChildren();
@@ -254,8 +254,8 @@
       select.append(o);
     });
     select.value=old&&[...select.options].some(o=>o.value===old)?old:'';
-    select.disabled=blocked||locked||!locked||!releaseRecord.history.length;
-    $('lkRollback').disabled=blocked||locked||!locked||!select.value;
+    select.disabled=blocked||!locked||!releaseRecord.history.length;
+    $('lkRollback').disabled=blocked||!locked||!select.value;
     root.querySelector('.lk-route').textContent=v.data.route||'物流路线';
   }
   function render(){
@@ -264,7 +264,7 @@
     $('lkOverview').hidden=tab!=='overview';$('lkProcess').hidden=tab!=='process';$('lkData').hidden=tab!=='data';
     $('lkTabOverview').setAttribute('aria-selected',String(tab==='overview'));
     $('lkTabProcess').setAttribute('aria-selected',String(tab==='process'));$('lkTabData').setAttribute('aria-selected',String(tab==='data'));
-    $('lkAddModule').disabled=blocked||locked||locked;$('lkAddNode').disabled=blocked||locked||locked;$('lkExport').disabled=blocked||locked;
+    $('lkAddModule').disabled=blocked||locked;$('lkAddNode').disabled=blocked||locked;$('lkExport').disabled=blocked;
     renderVersionControls();
     if(tab==='process'){renderModules();renderNodes();renderDetail();}
     else if(tab==='overview'){
@@ -276,7 +276,7 @@
     }else renderData();
   }
   function openEditor(edit){
-    if(blocked||locked||locked)return;
+    if(blocked||locked)return;
     const n=edit?selected():null;
     editorMode=n?'edit':'new';
     $('lkEditorTitle').textContent=n?'编辑操作节点':'添加操作节点';
@@ -290,7 +290,7 @@
     $('lkNodeDialog').showModal();
   }
   function mutate(fn){
-    if(blocked||locked||locked){setMessage('当前为锁定或只读状态，修改未生效。');return false;}
+    if(blocked||locked){setMessage('当前为锁定或只读状态，修改未生效。');return false;}
     const next=copy(state);
     if(fn(next)===false)return false;
     if(!persist(next))return false;
