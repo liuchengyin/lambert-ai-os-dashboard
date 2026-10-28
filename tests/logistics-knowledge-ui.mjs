@@ -56,7 +56,20 @@ try{
  // Real HTML5 drag event: move batch operation back to linehaul.
  const drag=page.locator('.lk-canvas-block[data-module="head"] .lk-step[data-drag-node="batch"]');
  const drop=page.locator('.lk-canvas-block[data-module="linehaul"] .lk-drop-end');
+ await page.evaluate(()=>{
+   window.__lkTrace=[];
+   for(const name of ['dragstart','dragover','drop','dragend']){
+     document.getElementById('logistics').addEventListener(name,e=>{
+       if(window.__lkTrace.length<30)window.__lkTrace.push({event:name,target:e.target?.className,from:e.target?.dataset?.dragFrom,dest:e.target?.dataset?.dropModule,defaultPrevented:e.defaultPrevented});
+     },true);
+   }
+ });
  await drag.dragTo(drop);
+ console.log('DRAG_DIAGNOSTIC',JSON.stringify(await page.evaluate(()=>({
+   trace:window.__lkTrace,
+   state:JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1')).modules.map(m=>({name:m.id,nodes:m.nodes.map(n=>n.id)})),
+   ui:{selected:document.querySelector('#lkDetail h3')?.textContent}
+ }))));
  pass('drag-and-drop relocates operation',await page.evaluate(()=>{
    const d=JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1'));
    return d.modules.find(m=>m.id==='linehaul').nodes.some(n=>n.id==='batch');
