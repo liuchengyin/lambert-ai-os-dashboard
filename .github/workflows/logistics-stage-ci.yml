@@ -1,0 +1,41 @@
+name: Logistics nested stages regression
+on:
+  push:
+    branches: [feat/web-logistics-stage-level-20261028]
+    paths:
+      - '.github/workflows/logistics-stage-ci.yml'
+      - 'logistics-stage-model.js'
+      - 'logistics-stage-view.js'
+      - 'logistics-knowledge-v1.js'
+      - 'logistics-stage-v2.css'
+      - 'tests/logistics-stage-model.test.mjs'
+      - 'tests/logistics-stage-ui.mjs'
+      - 'tests/logistics-knowledge-ui.mjs'
+      - 'index.html'
+permissions:
+  contents: read
+jobs:
+  browser-and-model:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Model regression and safety
+        run: |
+          node tests/logistics-canvas-logic.test.mjs
+          node tests/logistics-stage-model.test.mjs
+      - name: Install Chromium test runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Run new stage UI and existing canvas UI
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/logistics-http.log 2>&1 &
+          sleep 2
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-stage-ui.mjs
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-knowledge-ui.mjs
