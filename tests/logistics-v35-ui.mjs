@@ -20,18 +20,18 @@ try{
  const scan=warehouse.locator('.lk-flow-item').filter({has:page.locator('[data-drag-node="security-scan"]')});
  console.log('DIAG',JSON.stringify({scan:await scan.count(),plus:await scan.locator('.lk-mini-add').count(),errors,
    html:await warehouse.locator('.lk-flow-item').first().evaluate(el=>el.outerHTML.slice(0,1800))}));
- check('each main operation has single compact plus',await scan.locator('.lk-mini-add').count()===1);
+ check('each main operation has single compact plus',await scan.locator(':scope > .lk-mini-add').count()===1);
  check('red branch miniature linked below same operation',await scan.locator('.lk-mini-exception > .lk-mini-card').count()===1);
  check('miniature is narrower than normal operation',await scan.locator('.lk-mini-card').first().evaluate(el=>el.getBoundingClientRect().width)<=100);
- check('locked plus disabled',await scan.locator('.lk-mini-add').first().getAttribute('class').then(x=>x.includes('is-disabled')));
+ check('locked plus disabled',await scan.locator(':scope > .lk-mini-add').getAttribute('class').then(x=>x.includes('is-disabled')));
  check('old local version not mutated merely by viewing',await page.evaluate(()=>localStorage.getItem('lambert_logistics_versions_v1')===null&&localStorage.getItem('lambert_logistics_knowledge_v1')===null));
  await page.locator('#lkTabSetup').click();
  check('new basic-data tool tab exists apart from process',await page.locator('#lkSetupTool').isVisible()&&!await page.locator('#lkProcess').isVisible());
  check('base-data tool shows editable module/stage cards',await page.locator('#lkSetupLibrary .lk-config-section').count()>=5);
  await page.locator('#lkUnlock').click();
  await page.locator('#lkTabProcess').click();
- await scan.locator('.lk-mini-add > summary').first().click();
- await scan.locator('[data-action="branch-quick-choice"][data-branch-type="branch"]').click();
+ await scan.locator(':scope > .lk-mini-add > summary').click();
+ await scan.locator(':scope > .lk-mini-add [data-action="branch-quick-choice"][data-branch-type="branch"]').click();
  check('single plus chooses branching without separate type toolbar',await page.locator('#lkBranchDialog').isVisible()&&await page.locator('#lkBranchType').inputValue()==='branch');
  check('new mini branch operation selected by default',await page.locator('#lkBranchTarget').inputValue()==='__new__');
  await page.locator('#lkBranchLabel').fill('需要复检');
