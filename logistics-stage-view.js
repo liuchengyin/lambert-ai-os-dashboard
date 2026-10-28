@@ -49,6 +49,11 @@
             step.dataset.stageId=stage.id;
             const button=step.querySelector('button[data-action="select-node"]');
             if(button)button.dataset.stage=stage.id;
+            const arrows=step.querySelectorAll('button[data-action="node-left"],button[data-action="node-right"]');
+            arrows.forEach(arrow=>{
+              const j=matching.findIndex(x=>x.id===op.id);
+              arrow.disabled=blocked||(arrow.dataset.action==='node-left'?j===0:j===matching.length-1);
+            });
             ops.append(step);
           });
           const drop=el('div','lk-drop-end','拖动操作到这里');
