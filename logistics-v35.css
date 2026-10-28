@@ -1,0 +1,115 @@
+/* V3.5 visual hierarchy: one compact plus, miniature subflow cards, transport family.
+ * Infrastructure configuration remains a separate reference tool.
+ */
+#logistics .lk-stage-actions [data-action="stage-branch"]{display:none!important}
+#logistics .lk-mode-toolbar{display:none!important}
+#logistics .lk-flow-item{position:relative}
+#logistics .lk-mini-add{position:relative;align-self:flex-end;margin-top:-15px;margin-right:-7px;z-index:4}
+#logistics .lk-mini-add summary{
+ list-style:none;cursor:pointer;display:grid;place-items:center;
+ width:26px;height:26px;box-sizing:border-box;border-radius:50%;
+ background:#fff;border:1px solid #c9aedc;color:#8155a9;
+ box-shadow:0 2px 9px rgba(117,75,170,.13);font-size:19px;line-height:1;font-weight:700;
+}
+#logistics .lk-mini-add summary::-webkit-details-marker{display:none}
+#logistics .lk-mini-add summary:hover{background:#f5ebff;border-color:#9b71c7}
+#logistics .lk-mini-add.is-disabled summary{opacity:.35;cursor:default;pointer-events:none}
+#logistics .lk-mini-choices{
+ position:absolute;top:28px;right:0;
+ display:grid;gap:3px;padding:7px;width:118px;
+ background:white;border:1px solid #dbc9ef;border-radius:10px;box-shadow:0 8px 20px rgba(107,63,155,.19);z-index:12
+}
+#logistics .lk-mini-choices button{
+ width:100%;text-align:left;padding:8px 9px;font-size:12px;
+ background:#faf7ff;border:0;border-radius:7px;color:#554073;cursor:pointer
+}
+#logistics .lk-mini-choices button[data-branch-type="branch"]{color:#326fa8;background:#eff6ff}
+#logistics .lk-mini-choices button[data-branch-type="exception"]{color:#bc4747;background:#fff5f5}
+#logistics .lk-mini-children{
+ margin-top:8px;margin-left:6px;padding-left:9px;
+ border-left:1px dotted #bc9dd5;display:flex;flex-direction:column;gap:6px;
+ max-width:170px;overflow:visible;min-height:0
+}
+#logistics .lk-mini-path{position:relative;display:grid;grid-template-columns:minmax(0,1fr);gap:3px;padding-left:7px;border-left:2px solid #4d8bc9;color:#3175b2}
+#logistics .lk-mini-path.lk-mini-exception{border-left:2px dashed #ce6565;color:#b44d4d}
+#logistics .lk-mini-condition{
+ font-size:9px;line-height:1.25;max-width:92px;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+#logistics .lk-mini-card{
+ width:96px;max-width:96px;min-height:30px;
+ padding:6px 7px!important;border:1px solid #8bb6df!important;border-radius:7px!important;
+ background:#f1f7ff!important;color:#346d9c!important;font-size:10px!important;
+ text-align:left!important;font-weight:650!important;line-height:1.35!important;
+ white-space:normal;overflow-wrap:anywhere;cursor:pointer
+}
+#logistics .lk-mini-exception>.lk-mini-card{
+ border:1px dashed #d47878!important;background:#fff4f4!important;color:#b44f4f!important
+}
+#logistics .lk-mini-descendants{padding-left:9px;display:flex;flex-direction:column;gap:6px;border-left:1px dotted currentColor}
+#logistics .lk-mini-circular{font-size:10px}
+#logistics .lk-flow-main .lk-step{min-height:75px}
+#logistics .lk-trunk-family{
+ display:flex;flex-direction:column;gap:10px;
+ border:1px solid #e0cfef;border-radius:17px;padding:14px;
+ background:#fcfaff;box-shadow:0 5px 18px rgba(116,78,157,.11);
+}
+#logistics .lk-trunk-title{margin:0 0 3px;font-size:18px;color:#5a3d79;font-weight:760}
+#logistics .lk-trunk-grid{
+ display:grid;grid-template-columns:repeat(3,minmax(390px,1fr));
+ gap:12px;overflow-x:auto;padding-bottom:8px
+}
+#logistics .lk-trunk-route{
+ min-width:0;display:flex;flex-direction:column;gap:10px;
+ border:1px solid #e7ddf3;border-radius:13px;padding:10px;
+ background:#f6f3fc
+}
+#logistics .lk-trunk-route:nth-child(2){background:#f0f7ff;border-color:#dfe9f5}
+#logistics .lk-trunk-route:nth-child(3){background:#f2f9f6;border-color:#dceee4}
+#logistics .lk-trunk-route-title{margin:2px 3px 3px;font-size:15px;font-weight:750;color:#5e4783}
+#logistics .lk-trunk-route .lk-canvas-block{min-width:0;width:100%}
+#logistics .lk-trunk-route .lk-stage-board{max-width:100%;overflow-x:auto}
+#logistics .lk-trunk-empty{
+ min-height:130px;display:flex;flex-direction:column;align-items:center;
+ justify-content:center;gap:12px;border:1px dashed #d9cae9;border-radius:12px;background:rgba(255,255,255,.5)
+}
+#logistics .lk-trunk-empty p{color:#887c91;margin:0;font-size:13px}
+#logistics .lk-trunk-empty button{border:1px solid #c8b1db;border-radius:9px;background:#fff;color:#7850a5;padding:9px 13px;font-size:12px;font-weight:700}
+#logistics .lk-config-link{
+ border:1px solid #e3d8ef;background:#fbf9ff;border-radius:9px;
+ padding:7px 13px;margin:8px 14px 12px;font-size:11px;color:#715689;
+ align-self:flex-start
+}
+#logistics .lk-setup-tool-intro{
+ background:#f8f3ff;border:1px solid #e5d8f4;border-radius:14px;
+ padding:17px 20px;margin:14px 0 16px;color:#53406c
+}
+#logistics .lk-setup-tool-intro strong{font-size:17px}
+#logistics .lk-setup-tool-intro p{font-size:13px;line-height:1.7;margin:6px 0 0}
+#logistics #lkSetupLibrary{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+#logistics .lk-config-section{
+ background:#fff;border:1px solid #e7dbf2;border-radius:13px;
+ box-shadow:0 3px 12px rgba(105,70,142,.07);padding:14px;min-width:0
+}
+#logistics .lk-config-section h4{font-size:14px;color:#4c3864;margin:0 0 10px}
+#logistics .lk-config-module{grid-column:1/-1;background:#f7f1ff;padding:8px 13px;border-radius:10px;color:#695087}
+#logistics .lk-config-module h3{font-size:15px;margin:2px}
+#logistics .lk-config-records{display:grid;gap:6px;margin-bottom:12px}
+#logistics .lk-config-record{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;border-bottom:1px solid #eee7f4;padding:6px}
+#logistics .lk-config-record span{color:#6d6180;overflow-wrap:anywhere}
+#logistics .lk-config-record small{grid-column:1/-1;color:#877699}
+#logistics .lk-config-edit{padding:8px 12px;border-radius:8px;background:#f6efff;color:#694b90;border:1px solid #dfcdef;font-weight:650;font-size:12px}
+#logistics .lk-setup-stage-summary{display:none!important}
+#logistics .lk-exchange{border:1px solid #e4d9f0;background:#faf8fe;border-radius:11px;padding:12px;margin:13px 0}
+#logistics .lk-exchange-head{display:flex;align-items:center;justify-content:space-between;gap:9px}
+#logistics .lk-exchange-head h4{font-size:14px;margin:0;color:#674c8f}
+#logistics .lk-exchange-item{display:flex;flex-wrap:wrap;align-items:center;gap:7px;padding:10px 0;border-bottom:1px solid #eae1f3;font-size:12px;color:#4f4661}
+#logistics .lk-exchange-item span{overflow-wrap:anywhere}
+#logistics .lk-exchange-head button,#logistics .lk-exchange-item button{background:#fff;border:1px solid #decdec;color:#6b5193;border-radius:7px;padding:7px 9px;font-size:11px}
+#logistics .lk-exchange-item button{color:#a05858;margin-left:auto}
+@media(max-width:700px){
+ #logistics .lk-trunk-grid{grid-template-columns:repeat(3,minmax(315px,1fr))}
+ #logistics .lk-trunk-family{padding:10px}
+ #logistics .lk-mini-children{max-width:125px}
+ #logistics .lk-mini-card{width:90px;max-width:90px}
+}
