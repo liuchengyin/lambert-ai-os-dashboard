@@ -323,8 +323,7 @@
       const remove=button('移除连线','branch-remove','lk-branch-remove',blocked||locked);
       remove.dataset.id=edge.id;remove.dataset.module=m.id;line.append(remove);graphBox.append(line);
     });
-    const addBranch=button('＋ 添加条件分支','branch-add','lk-add-branch',blocked||locked||m.nodes.length<2);
-    addBranch.dataset.id=n.id;addBranch.dataset.module=m.id;graphBox.append(addBranch);
+    graphBox.append(node('p','新增分支或异常：请在画布的操作节点旁点击小「＋」。','lk-branch-hint'));
     host.append(graphBox);
     const moveBox=node('label','移动操作到其他子环节或大模块','lk-move-to');
     const select=document.createElement('select');select.dataset.moveNode=n.id;select.dataset.moveFrom=m.id;select.disabled=blocked||locked;
