@@ -608,11 +608,14 @@
   $('lkAddNode').onclick=()=>{if(current()?.enabled)openEditor(false);};
   $('lkQuickClose').onclick=closeQuickDetail;
   $('lkQuickUnlock').onclick=()=>{if(!blocked&&locked){$('lkUnlock').click();syncQuickDetail();}};
-  $('lkRenameNodeCancel').onclick=()=>{
-    $('lkRenameNodeDialog').close();
+  const cancelSecondaryEdit=(dialogId)=>{
+    $(dialogId).close();
     if(returnQuickAfterEdit)showQuickDetail();
     returnQuickAfterEdit=false;
   };
+  $('lkRenameNodeCancel').onclick=()=>cancelSecondaryEdit('lkRenameNodeDialog');
+  $('lkRenameNodeDialog').addEventListener('cancel',e=>{e.preventDefault();cancelSecondaryEdit('lkRenameNodeDialog');});
+  $('lkNodeDialog').addEventListener('cancel',e=>{e.preventDefault();cancelSecondaryEdit('lkNodeDialog');});
   $('lkRenameNodeForm').addEventListener('submit',event=>{
     event.preventDefault();
     if(locked||blocked)return;
@@ -637,7 +640,7 @@
     }
     returnQuickAfterEdit=false;
   });
-    $('lkNodeCancel').onclick=()=>$('lkNodeDialog').close();
+  $('lkNodeCancel').onclick=()=>cancelSecondaryEdit('lkNodeDialog');
   $('lkNodeForm').addEventListener('submit',e=>{
     e.preventDefault();if(!current()?.enabled)return;
     const input={
