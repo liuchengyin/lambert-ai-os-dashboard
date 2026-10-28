@@ -28,6 +28,7 @@ try{
  verify('locked detail provides unlock affordance',await page.locator('#lkQuickUnlock').isVisible());
  await page.locator('#lkQuickUnlock').click();
  verify('unlock enables action trio without dismissing detail',await quick.isVisible()&&await readQuick().locator('.lk-node-quick-actions button:enabled').count()===3);
+ verify('unlock preserves the selected security-scan operation',await readQuick().locator('h3').innerText()==='安检扫描');
  await readQuick().locator('button[data-action="rename-node"]').click();
  verify('rename dialog opens directly',await page.locator('#lkRenameNodeDialog').isVisible());
  verify('rename field prefilled',await page.locator('#lkRenameNodeName').inputValue()==='安检扫描');
