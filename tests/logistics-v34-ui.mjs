@@ -53,7 +53,7 @@ try{
  check('published release includes sea/air modes',(await saved()).published.data.modules.some(m=>m.transportMode==='air')&&(await saved()).published.data.modules.some(m=>m.transportMode==='sea'));
  check('A overview lists new air/sea linehauls',await page.locator('#lkOverview .lk-ov-module-head').filter({hasText:'空运干线'}).count()===1);
  const section=page.locator('#lkOverview .lk-ov-module').filter({hasText:'空运干线'});
- await section.locator('.lk-ov-prereq summary').click();
+ await section.locator('.lk-ov-prereq summary').first().click();
  check('overview displays published airport setup',await section.getByText('机场管理 · 嘉兴南湖机场').count()===1);
  await page.locator('#lkModeDetail').click();
  const full=page.locator('#lkOverview .lk-ov-module').filter({hasText:'空运干线'});
