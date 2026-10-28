@@ -92,6 +92,7 @@ try{
  pass('saved custom module survives reload',await page.locator('#lkModules .lk-canvas-block').count()===6);
  await page.setViewportSize({width:390,height:844});
  pass('mobile fallback arrows visible',await page.locator('.lk-canvas-block .lk-move').first().isVisible());
+ if(errors.length)console.log('LOGISTICS_PAGE_ERRORS',JSON.stringify(errors));
  pass('no page errors',errors.length===0);
  console.log(JSON.stringify({ok:true,checks:22}));
 }finally{await browser.close();}
