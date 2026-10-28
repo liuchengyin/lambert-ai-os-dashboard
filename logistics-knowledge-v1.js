@@ -116,6 +116,8 @@
     '<p class="lk-footnote">提示：预配不等于发运，系统生成轨迹也不必然等于实物动作完成。每条事件／接口关系应以系统截图、接口响应或数据库记录确认。</p><p id="lkMessage" class="lk-message" role="status"></p></div>'+
     '<dialog id="lkNodeDialog" class="lk-dialog"><form id="lkNodeForm"><h3 id="lkEditorTitle">操作节点</h3><label>操作名称<input id="lkTitleInput" required maxlength="70"></label>'+
     '<label>进入条件 / 何时开始（可留空待核实）<textarea id="lkEntryCondition" rows="2" maxlength="1000" placeholder="例如：包裹到达中心，等待安检；未核实时可以留空"></textarea></label>'+
+    '<label>执行角色 / 系统（可选）<input id="lkExecutor" maxlength="180" placeholder="例如：中心操作员／多闻 TMS（待核实）"></label>'+
+    '<label>所需输入 / 操作对象（可选）<textarea id="lkOperationInput" rows="2" maxlength="1000" placeholder="例如：运单号、包裹条码、扫描设备；只记录已了解的信息"></textarea></label>'+
     '<label>操作说明<textarea id="lkActionInput" rows="2" maxlength="1500" placeholder="谁在什么场景下执行什么操作"></textarea></label>'+
     '<div class="lk-trigger-field"><div class="lk-trigger-heading"><strong>触发结果</strong><button type="button" id="lkAddTrigger">＋ 增加触发结果</button></div><p class="lk-form-hint">记录操作完成后产生的事件、系统动作或状态变化，可添加多项。新建操作至少填写一项。</p><div id="lkTriggerRows"></div></div>'+
     '<details class="lk-event-bind"><summary>关联轨迹事件码 · 按需展开</summary><label>搜索轨迹事件码或描述<input type="search" id="lkEventSearch" disabled placeholder="等待导入真实操作码表"></label><p class="lk-form-hint" id="lkEventHint">尚未导入事件码表。当前不自动生成或猜测映射关系。</p><div id="lkExistingCodes"></div></details>'+
@@ -289,9 +291,11 @@
     del.dataset.id=n.id;del.dataset.module=m.id;
     actions.append(rename,edit,del);
     header.append(title,actions);host.append(header);
-    host.append(node('p','先研究单节点：进入条件 → 操作动作 → 触发结果，再核对业务分支与上下游。未填写的规则不能视为已确认。','lk-node-focus'));
+    host.append(node('p','先研究单节点：进入条件 → 执行角色/输入 → 操作动作 → 触发结果，再核对分支和上下游。未填写的规则不能视为已确认。','lk-node-focus'));
     host.append(field('进入条件 / 何时开始',n.entryCondition||'尚未核实进入条件'));
-    host.append(field('操作说明 / 谁做什么',n.action||'暂无说明'));
+    host.append(field('执行角色 / 系统',n.executor||'尚未核实执行人或系统'));
+    host.append(field('所需输入 / 操作对象',n.operationInput||'尚未核实所需输入'));
+    host.append(field('操作说明 / 如何执行',n.action||'暂无说明'));
     const outcomes=triggerApi.triggers(n);
     const triggerSection=node('section',undefined,'lk-trigger-summary');
     triggerSection.append(node('h4','触发结果'));
@@ -542,6 +546,8 @@
     $('lkTitleInput').value=n?.title||'';
     $('lkActionInput').value=n?.action||'';
     $('lkEntryCondition').value=n?.entryCondition||'';
+    $('lkExecutor').value=n?.executor||'';
+    $('lkOperationInput').value=n?.operationInput||'';
     $('lkResearchBasis').value=n?.researchBasis||'';
     $('lkNoteInput').value=n?.note||'';
     $('lkTagsInput').value=(n?.tags||[]).join(', ');
@@ -933,7 +939,9 @@
       return;
     }
     const input={title:$('lkTitleInput').value.trim(),action:$('lkActionInput').value.trim(),
-      entryCondition:$('lkEntryCondition').value.trim(),researchBasis:$('lkResearchBasis').value.trim(),
+      entryCondition:$('lkEntryCondition').value.trim(),
+      executor:$('lkExecutor').value.trim(),operationInput:$('lkOperationInput').value.trim(),
+      researchBasis:$('lkResearchBasis').value.trim(),
       note:$('lkNoteInput').value.trim(),tags:editor.labels($('lkTagsInput').value),
       color:$('lkNodeNoColor').checked?null:$('lkNodeColor').value.toUpperCase()};
     if(!input.title)return;
