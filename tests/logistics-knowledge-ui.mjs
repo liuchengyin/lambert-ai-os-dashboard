@@ -75,6 +75,11 @@ try{
    return d.modules.find(m=>m.id==='linehaul').nodes.some(n=>n.id==='batch');
  }));
 
+ // Drag the large linehaul module before the export module.
+ const moduleGrip=page.locator('.lk-canvas-block[data-module="linehaul"] [data-drag-module="linehaul"]');
+ const moduleTarget=page.locator('.lk-canvas-block[data-module="export"] .lk-canvas-block-head');
+ await moduleGrip.dragTo(moduleTarget,{targetPosition:{x:24,y:2}});
+ pass('dragging a large module changes position',await page.locator('#lkModules .lk-canvas-block').first().getAttribute('data-module')==='linehaul');
  await page.locator('#lkAddModule').click();
  await page.locator('#lkModuleName').fill('海外中转仓');
  await page.locator('#lkModuleCategory').selectOption('尾程');
@@ -101,10 +106,14 @@ try{
  pass('OS project/task/review unchanged',Object.keys(before).every(k=>before[k]===after[k]));
  await page.reload({waitUntil:'domcontentloaded'});
  await page.locator('#lkModules .lk-canvas-block').first().waitFor();
- pass('saved module order survives reload',await page.locator('.lk-canvas-block').first().getAttribute('data-module')==='export');
+ pass('saved module order survives reload',await page.locator('.lk-canvas-block').first().getAttribute('data-module')==='linehaul');
  pass('saved custom module survives reload',await page.locator('#lkModules .lk-canvas-block').count()===6);
  await page.setViewportSize({width:390,height:844});
  pass('mobile fallback arrows visible',await page.locator('.lk-canvas-block .lk-move').first().isVisible());
+ const beforeMobile=await page.evaluate(()=>JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1')).modules.find(m=>m.id==='linehaul').nodes.map(n=>n.id));
+ await page.locator('.lk-canvas-block[data-module="linehaul"] button[data-action="node-right"][data-id="vehicle-label"]').click();
+ const afterMobile=await page.evaluate(()=>JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1')).modules.find(m=>m.id==='linehaul').nodes.map(n=>n.id));
+ pass('mobile arrow changes operation order',beforeMobile.indexOf('vehicle-label')===0&&afterMobile.indexOf('vehicle-label')===1);
  if(errors.length)console.log('LOGISTICS_PAGE_ERRORS',JSON.stringify(errors));
  pass('no page errors',errors.length===0);
  console.log(JSON.stringify({ok:true,checks:22}));
