@@ -175,6 +175,32 @@
     });
     window.LambertLogisticsStageView?.renderStageLane(host,state,blocked||locked);
   }
+  function renderSearch(){
+    const host=$('lkSearchResults');host.replaceChildren();
+    $('lkSearch').value=searchTerm;
+    if(!searchTerm.trim())return;
+    const results=editor.tags(state,searchTerm).slice(0,80);
+    host.append(node('span','匹配 '+results.length+(results.length===80?'+' :'')+' 个操作：','lk-search-count'));
+    results.forEach(item=>{
+      const b=button(item.module+' / '+item.title+(item.tags.length?'  #'+item.tags.join(' #'):''),
+        'search-open','lk-search-item');
+      b.dataset.module=item.moduleId;b.dataset.id=item.nodeId;host.append(b);
+    });
+    if(!results.length)host.append(node('span','没有找到匹配操作','lk-empty'));
+  }
+  function renderTrash(){
+    const host=$('lkTrashList');host.replaceChildren();
+    const entries=Array.isArray(state.trash)?state.trash:[];
+    $('lkTrashCount').textContent=String(entries.length);
+    if(!entries.length){host.append(node('p','当前没有已删除的模块或操作。','lk-empty'));return;}
+    entries.slice().reverse().forEach(item=>{
+      const row=node('div',undefined,'lk-trash-row');
+      const names={module:'大模块',stage:'中模块',node:'小操作'};
+      const summary=node('span',(names[item.type]||'模块')+' · '+(item.item?.name||item.item?.title||item.id),'lk-trash-title');
+      const b=button('恢复','trash-restore','lk-control',blocked||locked);
+      b.dataset.id=item.id;row.append(summary,b);host.append(row);
+    });
+  }
   function renderNodes(){
     const m=current();
     $('lkNodeTitle').textContent=m?m.name+' · 操作详情':'操作详情';
@@ -281,7 +307,7 @@
     $('lkTabProcess').setAttribute('aria-selected',String(tab==='process'));$('lkTabData').setAttribute('aria-selected',String(tab==='data'));
     $('lkAddModule').disabled=blocked||locked;$('lkAddNode').disabled=blocked||locked;$('lkExport').disabled=blocked;
     renderVersionControls();
-    if(tab==='process'){renderModules();renderNodes();renderDetail();}
+    if(tab==='process'){renderModules();renderNodes();renderDetail();renderSearch();renderTrash();}
     else if(tab==='overview'){
       $('lkModeMacro').setAttribute('aria-pressed',String(overviewMode==='macro'));
       $('lkModeDetail').setAttribute('aria-pressed',String(overviewMode==='detail'));
@@ -302,6 +328,11 @@
     $('lkRecordInput').value=n?.data||'待核实：关联对象、记录字段及时间';
     $('lkConfidenceInput').value=n?.confidence||'待核实';
     $('lkEvidenceInput').value=n?.evidence||'';
+    $('lkNoteInput').value=n?.note||'';
+    $('lkTagsInput').value=(n?.tags||[]).join(', ');
+    $('lkCodesInput').value=(n?.operationCodes||[]).join(', ');
+    $('lkNodeColor').value=n?.color||'#FFFFFF';
+    $('lkNodeNoColor').checked=!n?.color;
     $('lkNodeDialog').showModal();
   }
   function mutate(fn){
@@ -311,6 +342,43 @@
     if(!persist(next))return false;
     render();return true;
   }
+  function openBranchDialog(sourceId,stageId){
+    if(blocked||locked)return;
+    const m=current();if(!m?.enabled||!m.nodes.length)return;
+    branchSourceId=sourceId&&m.nodes.some(n=>n.id===sourceId)?sourceId:m.nodes.find(n=>stages.stageFor(m,n)===stageId)?.id||m.nodes[0].id;
+    const source=$('lkBranchSource');source.replaceChildren();
+    m.nodes.filter(n=>!stageId||stages.stageFor(m,n)===stageId).forEach(n=>{
+      const o=document.createElement('option');o.value=n.id;o.textContent=n.title;source.append(o);
+    });
+    if(![...source.options].some(o=>o.value===branchSourceId)){
+      const n=m.nodes.find(n=>n.id===branchSourceId);
+      if(n){const o=document.createElement('option');o.value=n.id;o.textContent=n.title;source.append(o);}
+    }
+    source.value=branchSourceId;
+    $('lkBranchLabel').value='异常';$('lkBranchType').value='exception';$('lkBranchOnly').checked=true;
+    $('lkBranchNewTitle').value='';
+    const target=$('lkBranchTarget');target.replaceChildren();
+    const empty=document.createElement('option');empty.value='';empty.textContent='选择分支目标';target.append(empty);
+    const newOption=document.createElement('option');newOption.value='__new__';newOption.textContent='＋ 新建分支／异常操作';target.append(newOption);
+    m.nodes.filter(n=>n.id!==branchSourceId).forEach(n=>{
+      const o=document.createElement('option');o.value=n.id;
+      const sg=stages.stages(m).find(x=>x.id===stages.stageFor(m,n));
+      o.textContent=(sg?.name||'操作流程')+' / '+n.title;target.append(o);
+    });
+    $('lkBranchDialog').showModal();
+  }
+  function removeWithWarning(type,mId,itemId){
+    if(blocked||locked)return;
+    const impact=editor.impact(state,type,mId,itemId,stages.stageFor);
+    if(!impact)return;
+    const message='确定将「'+impact.title+'」移入回收站？\\n影响：'+impact.nodes+' 个操作、'+impact.edges+' 条关联。\\n删除仅进入当前草稿，发布后才影响全链路；可以从回收站恢复。';
+    if(!window.confirm(message))return;
+    const trashId=makeId('trash');
+    if(mutate(next=>editor.remove(next,type,mId,itemId,trashId))){
+      if(type==='module'||type==='stage'){selectedId='';activeStageId='';}
+      render();setMessage('已移入草稿回收站。保存草稿后才落盘，发布后才影响全链路。');
+    }
+  }
   root.addEventListener('click',event=>{
     const b=event.target.closest('button[data-action]');
     if(!b)return;
@@ -319,17 +387,32 @@
       mutate(next=>flow.resetColor(next,type==='color-reset-module'?id:b.dataset.module,type==='color-reset-stage'?b.dataset.stage:null));return;
     }
     if(type==='branch-add'){
-      moduleId=b.dataset.module;selectedId=id;
-      $('lkBranchLabel').value='异常';$('lkBranchType').value='exception';
-      $('lkBranchOnly').checked=false;
-      const select=$('lkBranchTarget');select.replaceChildren();
-      const empty=document.createElement('option');empty.value='';empty.textContent='选择分支目标操作';select.append(empty);
-      current().nodes.filter(n=>n.id!==id).forEach(n=>{
-        const option=document.createElement('option');option.value=n.id;
-        const st=stages.stages(current()).find(s=>s.id===stages.stageFor(current(),n));
-        option.textContent=(st?.name||'操作流程')+' / '+n.title;select.append(option);
-      });
-      $('lkBranchDialog').showModal();return;
+      moduleId=b.dataset.module;selectedId=id;openBranchDialog(id,stages.stageFor(current(),selected()));return;
+    }
+    if(type==='stage-branch'){
+      moduleId=b.dataset.module;activeStageId=b.dataset.stage;
+      openBranchDialog('',b.dataset.stage);return;
+    }
+    if(type==='module-rename'){
+      if(blocked||locked)return;
+      editingModuleId=id;
+      const m=state.modules.find(x=>x.id===id);
+      $('lkModuleDialogTitle').textContent='修改大模块名称';
+      $('lkModuleName').value=m?.name||'';
+      $('lkModuleCategory').value=m?.category||'仓';
+      $('lkModuleDialog').showModal();return;
+    }
+    if(type==='module-delete'){removeWithWarning('module',id,'');return;}
+    if(type==='stage-delete'){removeWithWarning('stage',b.dataset.module,b.dataset.stage);return;}
+    if(type==='node-delete'){removeWithWarning('node',b.dataset.module,id);return;}
+    if(type==='trash-restore'){
+      if(mutate(next=>editor.restore(next,id))){render();setMessage('已从回收站恢复，请保存草稿。');}
+      else setMessage('恢复失败：目标模块不存在、子环节未恢复或 ID 冲突。请先恢复上级模块。');
+      return;
+    }
+    if(type==='search-open'){
+      moduleId=b.dataset.module;selectedId=id;tab='process';render();
+      $('lkDetail').scrollIntoView?.({block:'nearest'});return;
     }
     if(type==='branch-remove'){
       mutate(next=>flow.removeBranch(next,b.dataset.module,id));return;
@@ -467,6 +550,7 @@
     }
   });
   root.addEventListener('dragend',event=>{dragPayload=null;event.target.classList?.remove('lk-dragging');});
+  $('lkSearch').oninput=event=>{searchTerm=event.target.value;renderSearch();};
   $('lkTabOverview').onclick=()=>{tab='overview';render();};
   $('lkModeMacro').onclick=()=>{overviewMode='macro';render();};
   $('lkModeDetail').onclick=()=>{overviewMode='detail';render();};
@@ -479,25 +563,41 @@
     const input={
       title:$('lkTitleInput').value.trim(),kind:$('lkKindInput').value,action:$('lkActionInput').value.trim(),
       information:$('lkInfoInput').value.trim(),data:$('lkRecordInput').value.trim(),
-      confidence:$('lkConfidenceInput').value,evidence:$('lkEvidenceInput').value.trim()
+      confidence:$('lkConfidenceInput').value,evidence:$('lkEvidenceInput').value.trim(),
+      note:$('lkNoteInput').value.trim(),tags:editor.labels($('lkTagsInput').value),
+      operationCodes:editor.codes($('lkCodesInput').value),
+      color:$('lkNodeNoColor').checked?null:$('lkNodeColor').value.toUpperCase()
     };
     if(!input.title)return;
     const id=editorMode==='edit'?selectedId:makeId('op');
     if(mutate(next=>{
       const m=next.modules.find(x=>x.id===moduleId);if(!m)return;
       const old=m.nodes.find(n=>n.id===id);
-      if(old)Object.assign(old,input);
-      else m.nodes.push({id,...input,stageId:activeStageId||stages.stages(m)[0]?.id||''});
+      if(old){Object.assign(old,input);if(!input.color)delete old.color;}
+      else{const entry={id,...input,stageId:activeStageId||stages.stages(m)[0]?.id||''};if(!entry.color)delete entry.color;m.nodes.push(entry);}
     })){selectedId=id;$('lkNodeDialog').close();render();}
   });
   $('lkBranchCancel').onclick=()=>$('lkBranchDialog').close();
   $('lkBranchForm').addEventListener('submit',event=>{
     event.preventDefault();
-    const label=$('lkBranchLabel').value.trim(),target=$('lkBranchTarget').value;
-    if(!label||!target||!selectedId)return;
-    if(mutate(next=>flow.upsertBranch(next,moduleId,{
-      id:makeId('link'),from:selectedId,to:target,label,type:$('lkBranchType').value,branchOnly:$('lkBranchOnly').checked
-    }))){$('lkBranchDialog').close();render();}
+    if(blocked||locked)return;
+    const label=$('lkBranchLabel').value.trim(),from=$('lkBranchSource').value,
+      target=$('lkBranchTarget').value,newTitle=$('lkBranchNewTitle').value.trim();
+    if(!label||!from||!target||target==='__new__'&&!newTitle)return;
+    const id=target==='__new__'?makeId('op'):target;
+    if(mutate(next=>{
+      const m=next.modules.find(x=>x.id===moduleId);if(!m)return false;
+      if(target==='__new__'){
+        const source=m.nodes.find(n=>n.id===from);if(!source)return false;
+        m.nodes.push({id,title:newTitle,kind:'业务操作',action:'',information:'',data:'',
+          note:'待补充流程说明',tags:[],operationCodes:[],confidence:'待核实',evidence:'',
+          stageId:stages.stageFor(m,source),branchOnly:true});
+      }
+      return flow.upsertBranch(next,moduleId,{id:makeId('link'),from,to:id,label,
+        type:$('lkBranchType').value,branchOnly:target==='__new__'||$('lkBranchOnly').checked});
+    })){
+      selectedId=from;$('lkBranchDialog').close();render();
+    }
   });
   $('lkStageCancel').onclick=()=>$('lkStageDialog').close();
   $('lkStageForm').addEventListener('submit',event=>{
@@ -516,6 +616,7 @@
   });
   $('lkAddModule').onclick=()=>{
     if(blocked||locked)return;
+    editingModuleId='';$('lkModuleDialogTitle').textContent='添加大模块';
     $('lkModuleName').value='';$('lkModuleCategory').value='仓';$('lkModuleDialog').showModal();
   };
   $('lkModuleCancel').onclick=()=>$('lkModuleDialog').close();
@@ -523,8 +624,11 @@
     e.preventDefault();
     const name=$('lkModuleName').value.trim(),category=$('lkModuleCategory').value;
     if(!name)return;
-    const id=makeId('module');
-    if(mutate(next=>next.modules.push({id,name,category,enabled:true,stages:[{id:'general',name:'操作流程',collapsed:false}],nodes:[]}))){
+    const id=editingModuleId||makeId('module');
+    if(mutate(next=>{
+      if(editingModuleId){const m=next.modules.find(x=>x.id===id);if(!m)return false;m.name=name;m.category=category;return true;}
+      next.modules.push({id,name,category,enabled:true,stages:[{id:'general',name:'操作流程',collapsed:false}],nodes:[]});return true;
+    })){
       moduleId=id;selectedId='';$('lkModuleDialog').close();render();
     }
   });
