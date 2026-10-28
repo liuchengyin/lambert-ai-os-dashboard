@@ -55,7 +55,7 @@ try{
 
  // Real HTML5 drag event: move batch operation back to linehaul.
  const drag=page.locator('.lk-canvas-block[data-module="linehaul"] .lk-step[data-drag-node="preload"]');
- const drop=page.locator('.lk-canvas-block[data-module="import"] .lk-drop-end');
+ const drop=page.locator('.lk-canvas-block[data-module="linehaul"] .lk-step[data-drag-node="loading"]');
  await page.evaluate(()=>{
    window.__lkTrace=[];
    for(const name of ['dragstart','dragover','drop','dragend']){
@@ -64,15 +64,15 @@ try{
      },true);
    }
  });
- await drag.dragTo(drop);
+ await drag.dragTo(drop,{targetPosition:{x:32,y:65}});
  console.log('DRAG_DIAGNOSTIC',JSON.stringify(await page.evaluate(()=>({
    trace:window.__lkTrace,
    state:JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1')).modules.map(m=>({name:m.id,nodes:m.nodes.map(n=>n.id)})),
    ui:{selected:document.querySelector('#lkDetail h3')?.textContent}
  }))));
- pass('drag-and-drop relocates operation',await page.evaluate(()=>{
+ pass('drag-and-drop reorders operation within stage',await page.evaluate(()=>{
    const d=JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1'));
-   return d.modules.find(m=>m.id==='import').nodes.some(n=>n.id==='preload');
+   return d.modules.find(m=>m.id==='linehaul').nodes.map(n=>n.id).indexOf('preload')===2;
  }));
 
  // Drag the large linehaul module before the export module.
