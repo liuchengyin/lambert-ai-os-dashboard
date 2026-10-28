@@ -15,13 +15,14 @@
   const defaults=()=>({schema:1,route:'中国 → 哈萨克斯坦 · 陆运（研究模板）',modules:[
     {id:'head',name:'国内中心仓',category:'仓',enabled:true,
       stages:[{id:'arrival',name:'到车',collapsed:false},{id:'receiving',name:'收入',collapsed:false},{id:'sorting',name:'分拣',collapsed:false},{id:'dispatch',name:'发出',collapsed:false}],
+      branches:[{id:'security-exception-branch',from:'security-scan',to:'security-exception',label:'安检异常'}],
       nodes:[
         stageNode('arrival','arrive-scan','到车扫描','登记车辆到达及车次信息'),
         stageNode('arrival','unload-scan','下车扫描','确认包裹或包袋从车辆卸下'),
         stageNode('receiving','waybill-print','换单打印','按业务要求打印或更换面单'),
         stageNode('receiving','receiving-op','收入操作','通过 DWS 或操作终端完成收货记录'),
         stageNode('receiving','security-scan','安检扫描','对货件进行安检并登记结果'),
-        stageNode('receiving','security-exception','安检异常上报','对异常安检结果登记并流转处理'),
+        ({...stageNode('receiving','security-exception','安检异常上报','对异常安检结果登记并流转处理'),branchOnly:true}),
         stageNode('sorting','weigh-recheck','称重复核','核实包裹或包袋的重量记录'),
         stageNode('sorting','bag-label','打印包签','为包袋打印可识别的标签'),
         stageNode('sorting','bag-build','建包扫描','扫描建立包袋与运单的关联'),
@@ -56,6 +57,7 @@
   let state=null,blocked=false,tab='process',moduleId='',selectedId='',editorMode='',dragPayload=null,activeStageId='',editingStageId='';
   const moves=window.LambertLogisticsMoves;
   const stages=window.LambertLogisticsStages;
+  const flow=window.LambertLogisticsFlow;
   const copy=x=>JSON.parse(JSON.stringify(x));
   function read() {
     try {
@@ -103,7 +105,12 @@
     '<label>归属环节<select id="lkModuleCategory"><option>仓</option><option>干</option><option>关</option><option>配</option></select></label>'+
     '<div class="lk-dialog-actions"><button type="button" id="lkModuleCancel">取消</button><button type="submit" class="lk-primary">添加模块</button></div></form></dialog>'+
     '<dialog id="lkStageDialog" class="lk-dialog lk-stage-dialog"><form id="lkStageForm"><h3 id="lkStageDialogTitle">添加子环节</h3><label>子环节名称<input id="lkStageName" required maxlength="55" placeholder="例如：收入"></label>'+
-    '<p class="lk-footnote">子环节用于组织操作步骤；原操作和业务字段不会丢失。</p><div class="lk-dialog-actions"><button type="button" id="lkStageCancel">取消</button><button type="submit" class="lk-primary">保存子环节</button></div></form></dialog>';
+    '<p class="lk-footnote">子环节用于组织操作步骤；原操作和业务字段不会丢失。</p><div class="lk-dialog-actions"><button type="button" id="lkStageCancel">取消</button><button type="submit" class="lk-primary">保存子环节</button></div></form></dialog>'+
+    '<dialog id="lkBranchDialog" class="lk-dialog lk-stage-dialog"><form id="lkBranchForm"><h3>添加条件分支</h3><p class="lk-footnote">将当前操作连接到一个已有操作。例如：安检扫描 — 异常 → 安检异常上报。</p>'+
+    '<label>触发条件<input id="lkBranchLabel" required maxlength="40" placeholder="例如：安检异常"></label>'+
+    '<label>流向操作<select id="lkBranchTarget" required></select></label>'+
+    '<label class="lk-branch-checkbox"><input id="lkBranchOnly" type="checkbox">目标只显示在分支上（不加入主线）</label>'+
+    '<div class="lk-dialog-actions"><button type="button" id="lkBranchCancel">取消</button><button type="submit" class="lk-primary">保存条件分支</button></div></form></dialog>';
   const makeId=prefix=>prefix+'_'+(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'_'+Math.random().toString(36).slice(2));
   function renderModules(){
     const host=$('lkModules');host.replaceChildren();
@@ -116,6 +123,13 @@
       const main=button(m.name,'select-module','lk-module-main');main.dataset.id=m.id;
       main.prepend(node('small',m.category+' / '+m.nodes.length+' 个操作节点'));
       const controls=node('div',undefined,'lk-canvas-controls');
+      card.style.setProperty('--lk-module-accent',flow.moduleColor(m));
+      const colorLabel=node('label','颜色','lk-module-color');
+      const colorInput=document.createElement('input');colorInput.type='color';colorInput.value=flow.moduleColor(m);
+      colorInput.dataset.colorModule=m.id;colorInput.disabled=blocked;
+      colorInput.setAttribute('aria-label','设置'+m.name+'模块颜色');colorLabel.prepend(colorInput);
+      const colorReset=button('默认色','color-reset-module','lk-move',blocked||!m.color);
+      colorReset.dataset.id=m.id;
       const fold=button(m.collapsed?'展开':'收起','collapse-module','lk-fold',blocked);fold.dataset.id=m.id;
       fold.setAttribute('aria-expanded',String(!m.collapsed));fold.setAttribute('aria-label',(m.collapsed?'展开':'收起')+m.name);
       const prev=button('↑','module-up','lk-move',blocked||index===0);prev.dataset.id=m.id;prev.setAttribute('aria-label',m.name+'上移');
@@ -123,7 +137,7 @@
       const add=button('＋ 操作','add-here','lk-block-add',blocked||!m.enabled);add.dataset.id=m.id;
       const toggle=node('label','启用','lk-toggle');const check=document.createElement('input');
       check.type='checkbox';check.checked=m.enabled;check.disabled=blocked;check.dataset.toggle=m.id;toggle.prepend(check);
-      controls.append(add,prev,next,fold,toggle);head.append(grip,main,controls);card.append(head);
+      controls.append(colorLabel,colorReset,add,prev,next,fold,toggle);head.append(grip,main,controls);card.append(head);
       if(!m.collapsed&&m.enabled){
         const lane=node('div',undefined,'lk-canvas-lane');lane.dataset.dropModule=m.id;
         if(!m.nodes.length)lane.append(node('p','此模块没有操作，点击「＋ 操作」添加。','lk-empty'));
@@ -170,6 +184,20 @@
     const summary=node('summary','按需展开 · 系统信息流与数据记录');more.append(summary);
     more.append(field('② 信息流 / 系统触发',n.information),field('③ 数据流 / 记录字段',n.data),field('核实依据 / 证据',n.evidence));
     host.append(more);
+    const graphBox=node('section',undefined,'lk-related-graph');
+    graphBox.append(node('h4','④ 条件分支 / 异常路径'));
+    const outgoing=flow.activeBranches(m).filter(edge=>edge.from===n.id);
+    if(!outgoing.length)graphBox.append(node('p','暂未关联分支，可按需添加。','lk-branch-hint'));
+    outgoing.forEach(edge=>{
+      const target=m.nodes.find(item=>item.id===edge.to);
+      const line=node('div',undefined,'lk-related-edge');
+      line.append(node('span',edge.label+' → '+(target?.title||'未知节点')));
+      const remove=button('移除连线','branch-remove','lk-branch-remove',blocked);
+      remove.dataset.id=edge.id;remove.dataset.module=m.id;line.append(remove);graphBox.append(line);
+    });
+    const addBranch=button('＋ 添加条件分支','branch-add','lk-add-branch',blocked||m.nodes.length<2);
+    addBranch.dataset.id=n.id;addBranch.dataset.module=m.id;graphBox.append(addBranch);
+    host.append(graphBox);
     const moveBox=node('label','移动操作到其他子环节或大模块','lk-move-to');
     const select=document.createElement('select');select.dataset.moveNode=n.id;select.dataset.moveFrom=m.id;select.disabled=blocked;
     const empty=document.createElement('option');empty.value='';empty.textContent='选择目标子环节（原资料随节点保留）';select.append(empty);
@@ -234,6 +262,25 @@
     const b=event.target.closest('button[data-action]');
     if(!b)return;
     const type=b.dataset.action,id=b.dataset.id;
+    if(type==='color-reset-module'||type==='color-reset-stage'){
+      mutate(next=>flow.resetColor(next,type==='color-reset-module'?id:b.dataset.module,type==='color-reset-stage'?b.dataset.stage:null));return;
+    }
+    if(type==='branch-add'){
+      moduleId=b.dataset.module;selectedId=id;
+      $('lkBranchLabel').value='异常';
+      $('lkBranchOnly').checked=false;
+      const select=$('lkBranchTarget');select.replaceChildren();
+      const empty=document.createElement('option');empty.value='';empty.textContent='选择分支目标操作';select.append(empty);
+      current().nodes.filter(n=>n.id!==id).forEach(n=>{
+        const option=document.createElement('option');option.value=n.id;
+        const st=stages.stages(current()).find(s=>s.id===stages.stageFor(current(),n));
+        option.textContent=(st?.name||'操作流程')+' / '+n.title;select.append(option);
+      });
+      $('lkBranchDialog').showModal();return;
+    }
+    if(type==='branch-remove'){
+      mutate(next=>flow.removeBranch(next,b.dataset.module,id));return;
+    }
     if(type==='select-module'){moduleId=id;selectedId='';activeStageId='';tab='process';render();return;}
     if(type==='select-node'){moduleId=b.dataset.module||moduleId;selectedId=id;activeStageId=b.dataset.stage||'';render();return;}
     if(type==='add-here'){moduleId=id;selectedId='';activeStageId=stages.stages(current())[0]?.id||'';render();openEditor(false);return;}
@@ -276,6 +323,12 @@
     }
   });
   root.addEventListener('change',event=>{
+    const picker=event.target.closest('input[data-color-module]');
+    if(picker){
+      const module=picker.dataset.colorModule,stage=picker.dataset.colorStage||null;
+      if(!mutate(next=>flow.setColor(next,module,picker.value,stage)))render();
+      return;
+    }
     const selector=event.target.closest('select[data-move-node]');
     if(selector){
       const destination=selector.value,source=selector.dataset.moveFrom,id=selector.dataset.moveNode;
@@ -380,6 +433,15 @@
       if(old)Object.assign(old,input);
       else m.nodes.push({id,...input,stageId:activeStageId||stages.stages(m)[0]?.id||''});
     })){selectedId=id;$('lkNodeDialog').close();render();}
+  });
+  $('lkBranchCancel').onclick=()=>$('lkBranchDialog').close();
+  $('lkBranchForm').addEventListener('submit',event=>{
+    event.preventDefault();
+    const label=$('lkBranchLabel').value.trim(),target=$('lkBranchTarget').value;
+    if(!label||!target||!selectedId)return;
+    if(mutate(next=>flow.upsertBranch(next,moduleId,{
+      id:makeId('link'),from:selectedId,to:target,label,branchOnly:$('lkBranchOnly').checked
+    }))){$('lkBranchDialog').close();render();}
   });
   $('lkStageCancel').onclick=()=>$('lkStageDialog').close();
   $('lkStageForm').addEventListener('submit',event=>{
