@@ -54,7 +54,7 @@
           btn(stage.collapsed?'展开':'收起','stage-collapse',module.id,stage.id,blocked||!!stage.virtual),
           btn('改名','stage-rename',module.id,stage.id,blocked||!!stage.virtual),
           btn('＋ 操作','stage-add-node',module.id,stage.id,blocked||!module.enabled),
-          btn('＋ 分支 / 异常','stage-branch',module.id,stage.id,blocked||!module.enabled),
+          btn('＋ 分支 / 异常','stage-branch',module.id,stage.id,blocked||!module.enabled||!module.nodes.some(n=>stagesAPI.stageFor(module,n)===stage.id)),
           btn('删除','stage-delete',module.id,stage.id,blocked||!!stage.virtual)
         );
         head.append(grip,name,actions);card.append(head);
