@@ -202,7 +202,7 @@
   function mutate(fn){
     if(blocked){setMessage('知识库处于只读保护状态，已停止写入。');return false;}
     const next=copy(state);
-    fn(next);
+    if(fn(next)===false)return false;
     if(!persist(next))return false;
     render();return true;
   }
@@ -226,7 +226,7 @@
     if(type==='module-up'||type==='module-down'){
       mutate(next=>{
         const index=next.modules.findIndex(m=>m.id===id);
-        moves.reorder(next.modules,index,index+(type==='module-up'?-1:1));
+        return moves.reorder(next.modules,index,index+(type==='module-up'?-1:1));
       });return;
     }
   });
