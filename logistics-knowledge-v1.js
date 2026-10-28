@@ -61,6 +61,8 @@
   const versions=window.LambertLogisticsVersion,overview=window.LambertLogisticsOverview;
   const editor=window.LambertLogisticsEditor;
   const triggerApi=window.LambertLogisticsTriggerV33;
+  const setup=window.LambertLogisticsSetupV34;
+  let setupModuleId='',setupStageId=null,editingSetup=false;
   let editingModuleId='',searchTerm='',branchSourceId='',renameModuleId='',renameNodeId='',returnQuickAfterEdit=false;
   const copy=x=>JSON.parse(JSON.stringify(x));
   function read() {
@@ -96,7 +98,7 @@
     '<div class="lk-version-bar"><span id="lkEditStatus">已锁定 · 只读</span><div class="lk-version-actions"><button type="button" id="lkUnlock">解锁编辑</button><button type="button" id="lkSaveDraft" disabled>保存草稿</button><button type="button" id="lkPublish" disabled>确认发布</button><button type="button" id="lkCancelEdit" disabled>取消并锁定</button></div><div class="lk-version-history"><label>历史版本 <select id="lkHistorySelect"><option value="">选择历史版本</option></select></label><button type="button" id="lkRollback" disabled>回滚为新版本</button></div></div>'+
     '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabOverview" aria-selected="false">全链路总览</button><button type="button" role="tab" id="lkTabProcess" aria-selected="true">模块编辑 · 操作＋信息</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button></div>'+
     '<div id="lkOverview" role="tabpanel" aria-labelledby="lkTabOverview" hidden><div class="lk-ov-switch"><span>查看已发布版本</span><div role="group" aria-label="全链路展示模式"><button type="button" id="lkModeMacro" aria-pressed="true">A · 宏观模块</button><button type="button" id="lkModeDetail" aria-pressed="false">B · 完整流程</button></div></div><div id="lkOverviewContent"></div></div>'+
-    '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-search-bar"><label>搜索操作、标签、操作码 <input id="lkSearch" type="search" placeholder="例如：安检 / 上车 / DDS"></label><div id="lkSearchResults" aria-live="polite"></div></div><div class="lk-canvas-categories" aria-label="物流模块底座"><span class="lk-canvas-category">仓</span><span class="lk-canvas-category">干</span><span class="lk-canvas-category">关</span><span class="lk-canvas-category">配</span></div><div class="lk-section-title"><div><strong>模块化操作画布</strong><small>大模块内包含可调整的子环节，例如：国内中心仓 → 到车／收入／分拣／发出。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div id="lkModules" class="lk-modules lk-canvas"></div>'+
+    '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-search-bar"><label>搜索操作、标签、操作码 <input id="lkSearch" type="search" placeholder="例如：安检 / 上车 / DDS"></label><div id="lkSearchResults" aria-live="polite"></div></div><div class="lk-canvas-categories" aria-label="物流模块底座"><span class="lk-canvas-category">仓</span><span class="lk-canvas-category">干</span><span class="lk-canvas-category">关</span><span class="lk-canvas-category">配</span></div><div class="lk-section-title"><div><strong>模块化操作画布</strong><small>大模块内包含可调整的子环节，例如：国内中心仓 → 到车／收入／分拣／发出。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div class="lk-mode-toolbar"><strong>干线类型</strong><span>按运输方式分类，也可为每个环节填写前置配置</span><button type="button" data-action="add-linehaul-mode" data-mode="road">＋ 陆运</button><button type="button" data-action="add-linehaul-mode" data-mode="sea">＋ 海运</button><button type="button" data-action="add-linehaul-mode" data-mode="air">＋ 空运</button></div><div id="lkModules" class="lk-modules lk-canvas"></div>'+
     '<div class="lk-section-title lk-selection-head"><div><strong id="lkNodeTitle">操作节点详情</strong><small>选择上方的小块；系统关系放在详情内按需展开</small></div><button type="button" id="lkAddNode">＋ 为选中模块添加操作</button></div>'+
     '<details class="lk-trash-panel"><summary>回收站 · 可恢复的删除记录 <span id="lkTrashCount">0</span></summary><div id="lkTrashList"></div></details>'+
     '<div class="lk-workspace lk-canvas-workspace"><div id="lkNodes" class="lk-nodes" hidden aria-hidden="true"></div><article id="lkDetail" class="lk-detail"></article></div></div>'+
@@ -112,6 +114,7 @@
     '<div class="lk-dialog-actions"><button type="button" id="lkNodeCancel">取消</button><button type="submit" class="lk-primary">保存节点</button></div></form></dialog>'+
     '<dialog id="lkModuleDialog" class="lk-dialog"><form id="lkModuleForm"><h3 id="lkModuleDialogTitle">添加线路模块</h3><label>模块名称<input id="lkModuleName" maxlength="60" required placeholder="例如：海外转运中心"></label>'+
     '<label>归属环节<select id="lkModuleCategory"><option>仓</option><option>干</option><option>关</option><option>配</option></select></label>'+
+    '<label id="lkModuleModeRow">干线运输类型<select id="lkModuleMode"><option value="">未指定</option><option value="road">陆运</option><option value="sea">海运</option><option value="air">空运</option></select></label>'+
     '<div class="lk-dialog-actions"><button type="button" id="lkModuleCancel">取消</button><button type="submit" class="lk-primary">保存模块</button></div></form></dialog>'+
     '<dialog id="lkStageDialog" class="lk-dialog lk-stage-dialog"><form id="lkStageForm"><h3 id="lkStageDialogTitle">添加子环节</h3><label>子环节名称<input id="lkStageName" required maxlength="55" placeholder="例如：收入"></label>'+
     '<p class="lk-footnote">子环节用于组织操作步骤；原操作和业务字段不会丢失。</p><div class="lk-dialog-actions"><button type="button" id="lkStageCancel">取消</button><button type="submit" class="lk-primary">保存子环节</button></div></form></dialog>'+
@@ -123,6 +126,7 @@
     '<label>新增目标操作名称（仅在选择「新建操作」时填写）<input id="lkBranchNewTitle" maxlength="70" placeholder="例如：异常处理"></label>'+
     '<label class="lk-branch-checkbox"><input id="lkBranchOnly" type="checkbox">目标只显示在分支上（不加入主线）</label>'+
     '<div class="lk-dialog-actions"><button type="button" id="lkBranchCancel">取消</button><button type="submit" class="lk-primary">保存条件分支</button></div></form></dialog>'+
+    '<dialog id="lkSetupDialog" class="lk-dialog lk-setup-dialog"><form id="lkSetupForm"><h3 id="lkSetupTitle">编辑前置配置</h3><p class="lk-form-hint">配置在业务操作前需要准备的基础数据或条件。名称与具体值分开保存，未填写不代表已完成配置。</p><div class="lk-setup-actions"><button id="lkAddSetup" type="button">＋ 增加配置项</button><button id="lkApplyModeSetup" type="button">＋ 套用运输类型参考项</button></div><div id="lkSetupRows"></div><p class="lk-form-hint">注：航班日志属于运行记录入口，标记为「关联记录」，不应自动视为起运前必备条件。</p><div class="lk-dialog-actions"><button type="button" id="lkSetupCancel">取消</button><button type="submit" class="lk-primary">保存前置配置</button></div></form></dialog>'+
     '<dialog id="lkQuickDetailDialog" class="lk-dialog lk-quick-detail-dialog" aria-label="操作模块详情"><div class="lk-quick-bar"><strong>操作模块详情</strong><button type="button" id="lkQuickClose" aria-label="关闭详情">关闭 ×</button></div><div id="lkQuickReadOnly" class="lk-quick-lock-note" hidden>当前已锁定，解锁后可以修改名称、内容或删除。<button type="button" id="lkQuickUnlock">解锁编辑</button></div><article id="lkQuickDetailBody" class="lk-detail"></article></dialog>'+
     '<dialog id="lkRenameNodeDialog" class="lk-dialog lk-rename-dialog" aria-label="修改操作模块名称"><form id="lkRenameNodeForm"><h3>编辑小模块名称</h3><label>操作名称<input id="lkRenameNodeName" type="text" maxlength="70" required placeholder="例如：安检扫描"></label><p class="lk-footnote">只修改名称，保留操作 ID、备注、轨迹事件码及所有流程连线。</p><div class="lk-dialog-actions"><button type="button" id="lkRenameNodeCancel">取消</button><button type="submit" class="lk-primary">保存名称</button></div></form></dialog>';
   const makeId=prefix=>prefix+'_'+(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'_'+Math.random().toString(36).slice(2));
@@ -135,7 +139,7 @@
       head.draggable=!blocked&&!locked;head.dataset.dragModule=m.id;head.title='拖动整个标题区调整模块顺序';
       const grip=button('⠿','noop','lk-drag-handle',blocked||locked);grip.draggable=false;grip.title='拖动标题区改变模块顺序';grip.setAttribute('aria-label','拖动'+m.name);
       const main=button(m.name,'select-module','lk-module-main');main.dataset.id=m.id;
-      main.prepend(node('small',m.category+' / '+m.nodes.length+' 个操作节点'));
+      main.prepend(node('small',m.category+(m.category==='干'&&setup.infer(m)?' · '+setup.MODES[setup.infer(m)]:'')+' / '+m.nodes.length+' 个操作节点'));
       const controls=node('div',undefined,'lk-canvas-controls');
       card.style.setProperty('--lk-module-accent',flow.moduleColor(m));
       const colorLabel=node('label','颜色','lk-module-color');
@@ -151,7 +155,18 @@
       const add=button('＋ 操作','add-here','lk-block-add',blocked||locked||!m.enabled);add.dataset.id=m.id;
       const toggle=node('label','启用','lk-toggle');const check=document.createElement('input');
       check.type='checkbox';check.checked=m.enabled;check.disabled=blocked||locked;check.dataset.toggle=m.id;toggle.prepend(check);
-      controls.append(colorLabel,colorReset,add,rename,remove,fold,toggle);head.append(grip,main,controls);card.append(head);
+      const setupButton=button('前置配置','setup-module','lk-setup-button',blocked||locked);setupButton.dataset.id=m.id;
+      controls.append(colorLabel,colorReset,setupButton,add,rename,remove,fold,toggle);head.append(grip,main,controls);card.append(head);
+      const prereqItems=setup.list(m);
+      const prereq=node('details',undefined,'lk-setup-summary');
+      const summary=node('summary','前置配置 · '+prereqItems.filter(x=>x.role==='prerequisite').length+' 项条件','lk-setup-summary-head');
+      prereq.append(summary);
+      if(prereqItems.length){
+        const list=node('div',undefined,'lk-setup-badges');
+        prereqItems.forEach(item=>list.append(node('span',(item.role==='reference'?'记录：':'')+item.name+' · '+(item.value||'待配置'),'lk-setup-badge')));
+        prereq.append(list);
+      }else prereq.append(node('p','尚未设置，可解锁后添加。','lk-form-hint'));
+      card.append(prereq);
       if(!m.collapsed&&m.enabled){
         const lane=node('div',undefined,'lk-canvas-lane');lane.dataset.dropModule=m.id;
         if(!m.nodes.length)lane.append(node('p','此模块没有操作，点击「＋ 操作」添加。','lk-empty'));
@@ -324,6 +339,7 @@
     $('lkTabOverview').setAttribute('aria-selected',String(tab==='overview'));
     $('lkTabProcess').setAttribute('aria-selected',String(tab==='process'));$('lkTabData').setAttribute('aria-selected',String(tab==='data'));
     $('lkAddModule').disabled=blocked||locked;$('lkAddNode').disabled=blocked||locked;$('lkExport').disabled=blocked;
+    root.querySelectorAll('[data-action="add-linehaul-mode"]').forEach(control=>{control.disabled=blocked||locked;});
     renderVersionControls();
     if(tab==='process'){renderModules();renderNodes();renderDetail();renderSearch();renderTrash();syncQuickDetail();}
     else if(tab==='overview'){
@@ -451,10 +467,66 @@
       render();setMessage('已移入草稿回收站。保存草稿后才落盘，发布后才影响全链路。');
     }
   }
+  function addSetupRow(item){
+    const row=node('div',undefined,'lk-setup-row');row.dataset.setupId=item?.id||makeId('setup');
+    const name=document.createElement('input');name.type='text';name.maxLength=70;name.required=true;name.value=item?.name||'';name.placeholder='配置项名称：如机场管理';name.setAttribute('aria-label','前置配置名称');
+    const value=document.createElement('input');value.type='text';value.maxLength=350;value.value=item?.value||'';value.placeholder='配置值：如目的机场（可留空）';value.setAttribute('aria-label','前置配置值');
+    const note=document.createElement('input');note.type='text';note.maxLength=650;note.value=item?.note||'';note.placeholder='说明 / 注意事项（选填）';note.setAttribute('aria-label','前置配置说明');
+    const role=document.createElement('select');role.setAttribute('aria-label','配置项角色');
+    [['prerequisite','前置条件'],['reference','关联记录']].forEach(([key,label])=>{const option=new Option(label,key);role.append(option);});
+    role.value=item?.role==='reference'?'reference':'prerequisite';
+    const remove=button('删除','setup-row-delete','lk-setup-row-delete');
+    row.append(name,value,note,role,remove);$('lkSetupRows').append(row);
+  }
+  function openSetup(module,stageId=null){
+    if(blocked||locked)return;
+    const m=state.modules.find(x=>x.id===module);
+    const target=setup.scope(state,module,stageId);
+    if(!m||!target)return;
+    setupModuleId=module;setupStageId=stageId;
+    $('lkSetupTitle').textContent='前置配置 · '+m.name+(stageId?' / '+(target.name||'子环节'):'');
+    $('lkSetupRows').replaceChildren();
+    setup.list(target).forEach(addSetupRow);
+    $('lkApplyModeSetup').hidden=!setup.infer(m);
+    $('lkSetupDialog').showModal();
+  }
+  function collectSetupRows(){
+    return [...$('lkSetupRows').querySelectorAll('.lk-setup-row')].map(row=>{
+      const [name,value,note]=row.querySelectorAll('input'),role=row.querySelector('select');
+      return {id:row.dataset.setupId,name:name.value.trim(),value:value.value.trim(),note:note.value.trim(),role:role.value};
+    });
+  }
+  $('lkAddSetup').onclick=()=>{if($('lkSetupRows').children.length<40)addSetupRow();};
+  $('lkApplyModeSetup').onclick=()=>{
+    const m=state.modules.find(x=>x.id===setupModuleId),mode=setup.infer(m);
+    const existing=new Set([...$('lkSetupRows').querySelectorAll('input[aria-label="前置配置名称"]')].map(x=>x.value.trim()));
+    for(const item of setup.preset(mode,()=>makeId('setup'))){
+      if($('lkSetupRows').children.length>=40)break;
+      if(!existing.has(item.name)){addSetupRow(item);existing.add(item.name);}
+    }
+  };
+  $('lkSetupCancel').onclick=()=>$('lkSetupDialog').close();
+  $('lkSetupForm').addEventListener('submit',event=>{
+    event.preventDefault();
+    const rows=collectSetupRows();
+    if(!setup.normalize(rows)){setMessage('配置项名称不能为空或重复 ID 不允许，请检查后保存。');return;}
+    if(mutate(next=>setup.update(next,setupModuleId,setupStageId,rows))){
+      $('lkSetupDialog').close();setMessage('前置配置已加入草稿，保存草稿并确认发布后才更新全链路。');
+    }
+  });
   root.addEventListener('click',event=>{
     const b=event.target.closest('button[data-action]');
     if(!b)return;
     const type=b.dataset.action,id=b.dataset.id;
+    if(type==='setup-row-delete'){b.closest('.lk-setup-row')?.remove();return;}
+    if(type==='setup-module'){openSetup(id);return;}
+    if(type==='setup-stage'){openSetup(b.dataset.module,b.dataset.stage);return;}
+    if(type==='add-linehaul-mode'){
+      if(blocked||locked)return;
+      const mode=b.dataset.mode,id=makeId('linehaul');
+      if(mutate(next=>setup.addModeModule(next,mode,id))){moduleId=id;selectedId='';render();}
+      return;
+    }
     if(type==='trigger-row-delete'){
       const row=b.closest('.lk-trigger-row');
       if(row){row.remove();if(!$('lkTriggerRows').children.length)appendTriggerRow();}
@@ -477,6 +549,8 @@
       $('lkModuleDialogTitle').textContent='修改大模块名称';
       $('lkModuleName').value=m?.name||'';
       $('lkModuleCategory').value=m?.category||'仓';
+      $('lkModuleMode').value=setup.infer(m);
+      $('lkModuleModeRow').hidden=m?.category!=='干';
       $('lkModuleDialog').showModal();return;
     }
     if(type==='module-delete'){removeWithWarning('module',id,'');return;}
@@ -737,17 +811,21 @@
   $('lkAddModule').onclick=()=>{
     if(blocked||locked)return;
     editingModuleId='';$('lkModuleDialogTitle').textContent='添加大模块';
-    $('lkModuleName').value='';$('lkModuleCategory').value='仓';$('lkModuleDialog').showModal();
+    $('lkModuleName').value='';$('lkModuleCategory').value='仓';$('lkModuleMode').value='';$('lkModuleModeRow').hidden=true;$('lkModuleDialog').showModal();
   };
   $('lkModuleCancel').onclick=()=>$('lkModuleDialog').close();
+  $('lkModuleCategory').onchange=()=>{
+    $('lkModuleModeRow').hidden=$('lkModuleCategory').value!=='干';
+    if($('lkModuleCategory').value!=='干')$('lkModuleMode').value='';
+  };
   $('lkModuleForm').addEventListener('submit',e=>{
     e.preventDefault();
-    const name=$('lkModuleName').value.trim(),category=$('lkModuleCategory').value;
+    const name=$('lkModuleName').value.trim(),category=$('lkModuleCategory').value,mode=category==='干'?$('lkModuleMode').value:'';
     if(!name)return;
     const id=editingModuleId||makeId('module');
     if(mutate(next=>{
-      if(editingModuleId){const m=next.modules.find(x=>x.id===id);if(!m)return false;m.name=name;m.category=category;return true;}
-      next.modules.push({id,name,category,enabled:true,stages:[{id:'general',name:'操作流程',collapsed:false}],nodes:[]});return true;
+      if(editingModuleId){const m=next.modules.find(x=>x.id===id);if(!m)return false;m.name=name;m.category=category;if(mode)m.transportMode=mode;else delete m.transportMode;return true;}
+      const newModule={id,name,category,enabled:true,stages:[{id:'general',name:'操作流程',collapsed:false}],nodes:[]};if(mode)newModule.transportMode=mode;next.modules.push(newModule);return true;
     })){
       moduleId=id;selectedId='';$('lkModuleDialog').close();render();
     }
