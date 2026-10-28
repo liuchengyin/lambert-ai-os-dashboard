@@ -1,0 +1,50 @@
+/* V2.3 operation diagram: explicit process arrows, optional exception branches and custom accents.
+ * All presentation is scoped under the logistics tool.
+ */
+#logistics .lk-canvas-block{--lk-module-accent:#7962BE}
+#logistics .lk-canvas .lk-canvas-block{border-top:3px solid var(--lk-module-accent)}
+#logistics .lk-canvas .lk-canvas-block.is-active{box-shadow:inset 4px 0 var(--lk-module-accent),0 7px 26px rgba(62,44,88,.08);border-top-color:var(--lk-module-accent)}
+#logistics .lk-canvas .lk-module-main{color:var(--lk-module-accent)}
+#logistics .lk-substage{--lk-stage-accent:var(--lk-module-accent);width:max-content;min-width:280px;max-width:1070px;flex:0 0 auto;border-top:4px solid var(--lk-stage-accent);background:#fff}
+#logistics .lk-substage-head{background:color-mix(in srgb,var(--lk-stage-accent) 9%,white);border-radius:10px 10px 0 0}
+#logistics .lk-stage-title{color:var(--lk-stage-accent)!important}
+#logistics .lk-module-color,#logistics .lk-stage-color{display:inline-flex;align-items:center;gap:5px;color:#756883;font-size:10px;font-weight:600;white-space:nowrap}
+#logistics .lk-module-color input,#logistics .lk-stage-color input{width:27px;height:27px;min-width:27px;cursor:pointer;padding:1px;border:1px solid #d6cde0;border-radius:7px;background:white}
+#logistics .lk-module-color input:disabled,#logistics .lk-stage-color input:disabled{opacity:.4;cursor:not-allowed}
+#logistics .lk-substage-body{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-height:135px;overflow-x:auto;overflow-y:visible;padding:11px}
+#logistics .lk-flow-main{display:flex;flex-wrap:nowrap;align-items:flex-start;gap:0;width:max-content;min-width:100%;min-height:80px}
+#logistics .lk-flow-item{display:flex;flex-direction:column;flex:0 0 176px;width:176px;min-width:0;align-items:stretch}
+#logistics .lk-flow-main .lk-step{width:100%;min-width:0;max-width:none;flex:0 0 auto;min-height:74px;border-color:color-mix(in srgb,var(--lk-stage-accent) 29%,#e7dfed)}
+#logistics .lk-flow-main .lk-step .lk-node{flex:1;padding:11px 10px}
+#logistics .lk-flow-arrow{flex:0 0 34px;min-width:34px;display:flex;align-items:center;justify-content:center;height:75px;font-size:23px;font-weight:700;color:var(--lk-stage-accent);user-select:none}
+#logistics .lk-substage-body .lk-drop-end{min-width:0;align-self:stretch;min-height:32px;flex:0 0 32px;margin:0;font-size:10px}
+#logistics .lk-flow-branches{display:flex;flex-direction:column;gap:7px;padding-top:5px;overflow:visible}
+#logistics .lk-branch-edge{display:flex;align-items:center;gap:6px;min-width:175px;max-width:235px;padding:6px 0 5px 10px;border-left:2px dashed #c17868;border-bottom:1px dashed #d9b6a7;border-bottom-left-radius:9px}
+#logistics .lk-branch-connector{font-size:19px;color:#b75d58;font-weight:750}
+#logistics .lk-branch-condition{display:inline-block;flex:0 0 auto;background:#fff0e9;border:1px solid #e7b9ae;border-radius:6px;padding:4px 5px;color:#ac554c;font-size:9px;white-space:nowrap;max-width:75px;overflow:hidden;text-overflow:ellipsis}
+#logistics .lk-branch-arrow{font-size:16px;color:#b65f58;flex:0 0 auto}
+#logistics .lk-branch-node{flex:0 0 150px;width:150px;min-width:145px;border-color:#e9afa4!important;background:#fff7f4!important}
+#logistics .lk-branch-node .lk-step-actions{display:none}
+#logistics .lk-branch-target{background:#fff7f4;border:1px dashed #d9a49e;border-radius:8px;color:#954d43;max-width:165px;padding:8px;font-size:10px;white-space:normal;text-align:left}
+#logistics .lk-branch-target:hover{background:#ffebdf}
+#logistics .lk-related-graph{border-top:1px solid #eee7f3;margin-top:15px;padding:16px 0 6px}
+#logistics .lk-related-graph h4{margin:0 0 9px;font-size:12px;color:#7255a9}
+#logistics .lk-branch-hint{color:#8b8198;font-size:12px;margin:0 0 12px}
+#logistics .lk-related-edge{display:flex;gap:11px;align-items:center;justify-content:space-between;border:1px dashed #d7c6e5;background:#faf7fe;border-radius:9px;padding:8px 10px;margin:7px 0;font-size:12px;color:#735c8b}
+#logistics .lk-branch-remove,#logistics .lk-add-branch{font-size:11px;background:#f3edf9;color:#754da9;padding:7px 10px;border:1px solid #e8dcef}
+#logistics .lk-branch-remove{color:#95534c;background:#fff4f2;border-color:#f1d7d0}
+#logistics .lk-add-branch{margin-top:7px}
+#logistics .lk-branch-checkbox{display:flex!important;flex-direction:row;align-items:center;gap:9px;line-height:1.5}
+#logistics .lk-branch-checkbox input{width:16px!important;min-width:16px;accent-color:#8a59bf}
+#logistics .lk-flow-main .lk-step-actions{display:flex;align-items:center}
+#logistics .lk-canvas .lk-category-pill{background:color-mix(in srgb,var(--lk-module-accent) 12%,white)}
+@media(max-width:760px){
+ #logistics .lk-substage{max-width:min(100%,710px);min-width:270px}
+ #logistics .lk-stage-board{scroll-snap-type:x proximity}
+ #logistics .lk-substage{scroll-snap-align:start}
+ #logistics .lk-flow-main .lk-step{width:148px}
+ #logistics .lk-flow-item{width:148px;flex-basis:148px}
+ #logistics .lk-flow-arrow{min-width:26px;flex-basis:26px;font-size:18px}
+ #logistics .lk-branch-edge{max-width:210px}
+ #logistics .lk-module-color{font-size:10px}
+}
