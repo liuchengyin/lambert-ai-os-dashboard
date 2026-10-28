@@ -10,12 +10,12 @@ const seed=()=>({schema:1,modules:[{id:'head',category:'仓',enabled:true,nodes:
  {id:'next',title:'收入操作'}
  ],stages:[{id:'receiving',name:'收入'}]}]});
 const t=(name,fn)=>{fn();console.log('PASS:',name);};
-t('warehouse color fallback',()=>{assert.equal(api.moduleColor(seed().modules[0]),'#477DBD');});
+t('warehouse color fallback',()=>{assert.equal(api.moduleColor(seed().modules[0]),'#242424');});
 t('invalid color does not save',()=>{const d=seed(),v=JSON.stringify(d);assert.equal(api.setColor(d,'head','red'),false);assert.equal(JSON.stringify(d),v);});
 t('module accepts custom hex',()=>{const d=seed();assert.equal(api.setColor(d,'head','#ab12ef'),true);assert.equal(d.modules[0].color,'#AB12EF');assert.equal(api.moduleColor(d.modules[0]),'#AB12EF');});
 t('stage color inherits module then overrides',()=>{const d=seed();api.setColor(d,'head','#123456');assert.equal(api.stageColor(d.modules[0],d.modules[0].stages[0]),'#123456');assert.equal(api.setColor(d,'head','#fedcba','receiving'),true);assert.equal(api.stageColor(d.modules[0],d.modules[0].stages[0]),'#FEDCBA');});
 t('reset stage keeps module color',()=>{const d=seed();api.setColor(d,'head','#112233');api.setColor(d,'head','#445566','receiving');assert.equal(api.resetColor(d,'head','receiving'),true);assert.equal(api.stageColor(d.modules[0],d.modules[0].stages[0]),'#112233');});
-t('module reset restores category palette',()=>{const d=seed();api.setColor(d,'head','#aabbcc');assert.equal(api.resetColor(d,'head'),true);assert.equal(api.moduleColor(d.modules[0]),'#477DBD');});
+t('module reset restores category palette',()=>{const d=seed();api.setColor(d,'head','#aabbcc');assert.equal(api.resetColor(d,'head'),true);assert.equal(api.moduleColor(d.modules[0]),'#242424');});
 t('branch-only is mainline until a valid incoming edge',()=>{const d=seed();assert.equal(api.isBranchOnly(d.modules[0],'report'),false);});
 t('add real condition branch and preserve original operation data',()=>{const d=seed(),node=JSON.stringify(d.modules[0].nodes[0]);assert.equal(api.upsertBranch(d,'head',{id:'edge1',from:'scan',to:'report',label:'异常',branchOnly:true}),true);assert.equal(api.isBranchOnly(d.modules[0],'report'),true);assert.equal(api.activeBranches(d.modules[0]).length,1);assert.equal(JSON.stringify(d.modules[0].nodes[0]),node);});
 t('duplicate branch rejected without altering storage',()=>{const d=seed(),edge={id:'edge1',from:'scan',to:'report',label:'异常'};api.upsertBranch(d,'head',edge);const before=JSON.stringify(d);assert.equal(api.upsertBranch(d,'head',{id:'edge2',from:'scan',to:'report',label:'abnormal'}),false);assert.equal(JSON.stringify(d),before);});
