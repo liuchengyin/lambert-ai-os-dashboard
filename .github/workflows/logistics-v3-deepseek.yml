@@ -1,0 +1,36 @@
+name: Logistics V3 bounded DeepSeek Flash review
+on:
+  push:
+    branches: [feat/logistics-publish-overview-20261028]
+    paths: ['.github/workflows/logistics-v3-deepseek.yml']
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Review preflight without provider request
+        run: node scripts/codex/model-assist.mjs --provider deepseek --task review --prompt-file docs/logistics-v3-deepseek-prompt.md --file logistics-version-model.js
+      - name: One DeepSeek Flash model safety check
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: node scripts/codex/model-assist.mjs --provider deepseek --task review --prompt-file docs/logistics-v3-deepseek-prompt.md --file logistics-version-model.js --run
+      - name: Show exact model usage and findings
+        if: success()
+        run: |
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const dir='.codex-local/assist';
+          const reports=fs.readdirSync(dir).filter(f=>f.endsWith('.json')&&f!=='ledger.json').map(f=>JSON.parse(fs.readFileSync(dir+'/'+f,'utf8')));
+          const r=reports.find(x=>x.task==='review'&&x.provider==='deepseek');
+          if(!r)throw Error('review output absent');
+          console.log(JSON.stringify({model:r.reportedModel,usage:r.usage,retries:r.retries}));
+          console.log('FLASH_REVIEW_BEGIN\n'+r.output.slice(0,3000)+'\nFLASH_REVIEW_END');
+          JS
