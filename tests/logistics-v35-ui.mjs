@@ -23,7 +23,7 @@ try{
  check('air lane can expand independently',await processRoutes.nth(1).evaluate(lane=>lane.open)&&await processRoutes.nth(1).locator('.lk-trunk-add').isVisible()&&await processRoutes.nth(0).evaluate(lane=>lane.open));
  await processRoutes.nth(1).locator(':scope > summary').click();
  await processRoutes.nth(0).locator(':scope > summary').click();
- check('road route can collapse without deleting nodes',!await processRoutes.nth(0).evaluate(lane=>lane.open)&&await processRoutes.nth(0).locator('[data-module="linehaul"]').count()===1);
+ check('road route can collapse without deleting nodes',!await processRoutes.nth(0).evaluate(lane=>lane.open)&&await processRoutes.nth(0).locator('.lk-canvas-block[data-module="linehaul"]').count()===1);
  await processRoutes.nth(0).locator(':scope > summary').click();
  check('road route expands again with original nodes',await processRoutes.nth(0).evaluate(lane=>lane.open)&&await processRoutes.nth(0).locator('[data-module="linehaul"]').isVisible());
  check('stage toolbar has no branch or exception button',await page.locator('.lk-stage-actions [data-action="stage-branch"]').count()===0);
