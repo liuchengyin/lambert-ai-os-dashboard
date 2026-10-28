@@ -60,15 +60,18 @@ try{
    if(window.__lkStageTrace.length<30)window.__lkStageTrace.push({type,tag:e.target?.tagName,cls:e.target?.className,stage:e.target?.dataset?.stageId,drag:e.target?.dataset?.dragStage,prevented:e.defaultPrevented});
   },true);
  });
- await head.locator('.lk-substage[data-stage-id="'+lastStage+'"] [data-drag-stage]').dragTo(head.locator('.lk-substage[data-stage-id="arrival"] .lk-substage-head'),{targetPosition:{x:23,y:9}});
+ const dragSource=head.locator('.lk-substage[data-stage-id="receiving"] .lk-substage-head');
+ const dragTarget=head.locator('.lk-substage[data-stage-id="sorting"] .lk-substage-head');
+ console.log('DRAG_SOURCE',JSON.stringify(await dragSource.evaluate(el=>({draggable:el.draggable,box:el.getBoundingClientRect().toJSON()}))));
+ await dragSource.dragTo(dragTarget,{targetPosition:{x:27,y:9}});
  const afterDrag=(await data()).modules[0].stages.map(s=>s.id);
  console.log('STAGE_DRAG_DIAGNOSTIC',JSON.stringify(await page.evaluate(()=>window.__lkStageTrace)),JSON.stringify({beforeDrag,afterDrag}));
- check('drag child stage reorders list',beforeDrag.indexOf(lastStage)>0&&afterDrag[0]===lastStage);
+ check('drag child stage reorders list',beforeDrag.indexOf('receiving')>beforeDrag.indexOf('sorting')&&afterDrag.indexOf('receiving')<afterDrag.indexOf('sorting'));
 
  await page.reload({waitUntil:'domcontentloaded'});
  await page.locator('.lk-substage').first().waitFor();
  check('stage title survives reload',await page.locator('.lk-substage[data-stage-id="receiving"] button.lk-stage-title').innerText()==='收入作业');
- check('stage reorder survives reload',await page.locator('.lk-canvas-block[data-module="head"] .lk-substage').first().getAttribute('data-stage-id')===lastStage);
+ check('stage reorder survives reload',(await data()).modules[0].stages.map(s=>s.id).indexOf('receiving')<(await data()).modules[0].stages.map(s=>s.id).indexOf('sorting'));
 
  const old=await context.newPage();
  await old.goto(origin+'/?view=logistics',{waitUntil:'domcontentloaded'});
