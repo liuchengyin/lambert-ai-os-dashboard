@@ -551,6 +551,7 @@
   });
   root.addEventListener('dragend',event=>{dragPayload=null;event.target.classList?.remove('lk-dragging');});
   $('lkSearch').oninput=event=>{searchTerm=event.target.value;renderSearch();};
+  $('lkNodeColor').oninput=()=>{$('lkNodeNoColor').checked=false;};
   $('lkTabOverview').onclick=()=>{tab='overview';render();};
   $('lkModeMacro').onclick=()=>{overviewMode='macro';render();};
   $('lkModeDetail').onclick=()=>{overviewMode='detail';render();};
