@@ -66,8 +66,13 @@
     const group=stageFor(m,item),members=m.nodes.filter(n=>stageFor(m,n)===group);
     const index=members.findIndex(n=>n.id===nodeId),to=index+step;
     if(index<0||to<0||to>=members.length||![-1,1].includes(step))return false;
-    const before=step<0?members[to].id:members[index+2]?.id||null;
-    return moves.moveNode(document,moduleId,nodeId,moduleId,before);
+    // Swap only the two selected operations in the flattened list. This
+    // preserves all other stage ordering and keeps the flattened data stable.
+    const first=m.nodes.findIndex(n=>n.id===nodeId);
+    const second=m.nodes.findIndex(n=>n.id===members[to].id);
+    if(first<0||second<0)return false;
+    [m.nodes[first],m.nodes[second]]=[m.nodes[second],m.nodes[first]];
+    return true;
   }
   host.LambertLogisticsStages=Object.freeze({LEGACY,stages,stageFor,moveStage,reorderStage,addStage,moveToStage,reorderWithinStage});
 })(typeof window!=='undefined'?window:globalThis);
