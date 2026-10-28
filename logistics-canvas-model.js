@@ -12,6 +12,8 @@
     if(!Array.isArray(list)||sourceId===targetId)return false;
     const from=list.findIndex(item=>item.id===sourceId),onto=list.findIndex(item=>item.id===targetId);
     if(from<0||onto<0)return false;
+    // Dropping next to the block where it already sits is a no-op.
+    if(after&&from===onto+1||!after&&from===onto-1)return false;
     const [item]=list.splice(from,1);
     const at=list.findIndex(m=>m.id===targetId);
     list.splice(at+(after?1:0),0,item);
@@ -27,15 +29,18 @@
     const modules=document?.modules;
     if(!Array.isArray(modules))return false;
     const source=modules.find(m=>m.id===fromId),target=modules.find(m=>m.id===toId);
-    if(!source||!target||!target.enabled||!Array.isArray(source.nodes)||!Array.isArray(target.nodes))return false;
+    if(!source||!target||!source.enabled||!target.enabled||!Array.isArray(source.nodes)||!Array.isArray(target.nodes))return false;
     const from=source.nodes.findIndex(n=>n.id===nodeId);
     if(from<0)return false;
     if(beforeId===nodeId&&fromId===toId)return false;
-    if(beforeId!==null&&!target.nodes.some(n=>n.id===beforeId))return false;
+    const targetIndex=beforeId===null?target.nodes.length:target.nodes.findIndex(n=>n.id===beforeId);
+    if(targetIndex<0)return false;
     if(fromId!==toId&&target.nodes.some(n=>n.id===nodeId))return false; // never silently duplicate IDs
+    // Find final position before touching either array, so a rejected move
+    // does not remove records or silently save an unchanged layout.
+    const index=fromId===toId&&from<targetIndex?targetIndex-1:targetIndex;
+    if(fromId===toId&&index===from)return false;
     const [item]=source.nodes.splice(from,1);
-    let index=beforeId===null?target.nodes.length:target.nodes.findIndex(n=>n.id===beforeId);
-    if(index<0){source.nodes.splice(from,0,item);return false;}
     target.nodes.splice(index,0,item);
     return true;
   }
