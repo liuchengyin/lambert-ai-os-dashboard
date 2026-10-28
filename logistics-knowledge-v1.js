@@ -85,6 +85,12 @@
   function setMessage(message){$('lkMessage').textContent=message;}
   const current=()=>state.modules.find(m=>m.id===moduleId)||state.modules[0];
   const selected=()=>current()?.nodes.find(n=>n.id===selectedId)||null;
+  function hasCrossModuleLinks(from,nodeId,to){
+    if(from===to)return false;
+    const m=state.modules.find(x=>x.id===from);
+    return Array.isArray(m?.branches)&&m.branches.some(e=>e&&(e.from===nodeId||e.to===nodeId));
+  }
+  const linkedMoveWarning='此操作存在条件或异常关联，跨大模块移动会使连线失效。请先核实并处理关联，再移动；本次未修改数据。';
   function findSelected(){
     if(!current()){moduleId='';selectedId='';return;}
     if(!current().nodes.some(n=>n.id===selectedId)) selectedId=current().nodes[0]?.id||'';
@@ -787,6 +793,9 @@
       const destination=selector.value,source=selector.dataset.moveFrom,id=selector.dataset.moveNode;
       if(!destination)return;
       const [to,stageId]=destination.split('::');
+      if(hasCrossModuleLinks(source,id,to)){
+        selector.value='';setMessage(linkedMoveWarning);return;
+      }
       if(mutate(next=>stages.moveToStage(next,source,id,to,stageId,null,moves))){
         moduleId=to;selectedId=id;activeStageId=stageId;render();
         setMessage('已移动操作节点，原有信息和数据记录均保留。');
@@ -861,6 +870,9 @@
       const rect=target.getBoundingClientRect();
       if(target.closest('.lk-flow-main')?event.clientX<rect.left+rect.width/2:event.clientY<rect.top+rect.height/2)before=target.dataset.dragNode;
       else before=stageNodes[index+1]?.id||null;
+    }
+    if(hasCrossModuleLinks(active.from,active.id,dest)){
+      setMessage(linkedMoveWarning);return;
     }
     if(mutate(next=>stages.moveToStage(next,active.from,active.id,dest,stageId,before,moves))){
       moduleId=dest;selectedId=active.id;activeStageId=stageId;render();
