@@ -46,3 +46,8 @@
 #logistics .lk-tabs{overflow-x:auto;white-space:nowrap}
 #logistics .lk-tabs button{white-space:nowrap}
 @media(max-width:700px){#logistics .lk-version-bar{align-items:stretch}#logistics .lk-version-history{margin-left:0}#logistics .lk-version-actions{gap:5px}#logistics .lk-version-actions button{font-size:10px;padding:7px 8px}#logistics .lk-ov-module{padding:10px}#logistics .lk-ov-stage{min-width:140px}#logistics .lk-ov-switch{align-items:flex-start}#logistics .lk-ov-substages{padding-bottom:11px}}
+
+#logistics .lk-branch-edge.lk-branch-normal{border-left-color:#7b9cc5;border-bottom-color:#b5c9e0}
+#logistics .lk-branch-normal .lk-branch-connector,#logistics .lk-branch-normal .lk-branch-arrow{color:#4b7cae}
+#logistics .lk-branch-normal .lk-branch-condition{background:#eaf3fc;border-color:#bed3e8;color:#4e759d}
+#logistics .lk-branch-normal .lk-branch-target{background:#f0f7ff;border-color:#bdcfe5;color:#456f9a}
