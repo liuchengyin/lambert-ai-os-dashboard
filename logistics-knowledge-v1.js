@@ -169,8 +169,9 @@
       const add=button('＋ 操作','add-here','lk-block-add',blocked||locked||!m.enabled);add.dataset.id=m.id;
       const toggle=node('label','启用','lk-toggle');const check=document.createElement('input');
       check.type='checkbox';check.checked=m.enabled;check.disabled=blocked||locked;check.dataset.toggle=m.id;toggle.prepend(check);
-      const setupButton=button('前置配置','setup-module','lk-setup-button',blocked||locked);setupButton.dataset.id=m.id;
-      controls.append(colorLabel,colorReset,setupButton,add,rename,remove,fold,toggle);head.append(grip,main,controls);card.append(head);
+      // Only a small route-to-tool link remains on the canvas; actual setup
+      // editing happens in the independent base-data tool tab.
+      controls.append(colorLabel,colorReset,add,rename,remove,fold,toggle);head.append(grip,main,controls);card.append(head);
       const prereqItems=setup.list(m);
       const prereq=node('details',undefined,'lk-setup-summary');
       const summary=node('summary','前置配置 · '+prereqItems.filter(x=>x.role==='prerequisite').length+' 项条件','lk-setup-summary-head');
