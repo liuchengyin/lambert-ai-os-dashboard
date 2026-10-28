@@ -5,7 +5,7 @@ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const base=process.env.TEST_ORIGIN||'http://127.0.0.1:8765';
 const context=await browser.newContext({viewport:{width:1440,height:900},acceptDownloads:true,serviceWorkers:'block'});
 const fixture={tasks:[{id:'t-1',title:'保留原任务'}],projects:[{id:'p-1',name:'保留原项目'}],daily_reviews_v2:{'2026-10-28':{notes:'保留原复盘'}}};
-await context.addInitScript(seed=>{for(const [k,v] of Object.entries(seed))localStorage.setItem(k,JSON.stringify(v));},fixture);
+await context.addInitScript(seed=>{if(!sessionStorage.getItem('__logisticsFlowTestSeeded')){for(const [k,v] of Object.entries(seed))localStorage.setItem(k,JSON.stringify(v));sessionStorage.setItem('__logisticsFlowTestSeeded','1');}},fixture);
 const page=await context.newPage(),errors=[];
 page.on('pageerror',e=>errors.push(e.message));
 const current=()=>page.evaluate(()=>JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1')));
