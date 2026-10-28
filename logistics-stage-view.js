@@ -51,11 +51,11 @@
         const actions=el('div','lk-stage-actions');
         const {label:colorLabel,reset}=picker(module,stage,blocked);
         actions.append(colorLabel,reset,
-          btn('←','stage-left',module.id,stage.id,blocked||!!stage.virtual||index===0),
-          btn('→','stage-right',module.id,stage.id,blocked||!!stage.virtual||index===subStages.length-1),
           btn(stage.collapsed?'展开':'收起','stage-collapse',module.id,stage.id,blocked||!!stage.virtual),
           btn('改名','stage-rename',module.id,stage.id,blocked||!!stage.virtual),
-          btn('＋ 操作','stage-add-node',module.id,stage.id,blocked||!module.enabled)
+          btn('＋ 操作','stage-add-node',module.id,stage.id,blocked||!module.enabled),
+          btn('＋ 分支 / 异常','stage-branch',module.id,stage.id,blocked||!module.enabled||!module.nodes.some(n=>stagesAPI.stageFor(module,n)===stage.id)),
+          btn('删除','stage-delete',module.id,stage.id,blocked||!!stage.virtual)
         );
         head.append(grip,name,actions);card.append(head);
         const ops=el('div','lk-substage-body');
@@ -71,9 +71,16 @@
             step.dataset.stageId=stage.id;
             const button=step.querySelector('button[data-action="select-node"]');
             if(button)button.dataset.stage=stage.id;
-            const arrows=step.querySelectorAll('button[data-action="node-left"],button[data-action="node-right"]');
-            arrows.forEach(b=>{b.disabled=blocked||(b.dataset.action==='node-left'?i===0:i===mainMembers.length-1);});
-            cardSlot.append(step);
+            const actions=step.querySelector('.lk-step-actions');if(actions)actions.remove();
+            if(op.color)step.style.setProperty('--lk-node-accent',flow.color(op.color,'#222222'));
+            if(op.note||op.tags?.length||op.operationCodes?.length){
+              const meta=el('div','lk-op-meta');
+              if(op.note)meta.append(el('span','lk-op-note',op.note.slice(0,70)));
+              if(op.tags?.length)meta.append(el('span','lk-op-tags',op.tags.slice(0,3).map(x=>'#'+x).join(' ')));
+              if(op.operationCodes?.length)meta.append(el('span','lk-op-codes','操作码 '+op.operationCodes.slice(0,2).join(', ')));
+              cardSlot.append(meta);
+            }
+            cardSlot.prepend(step);
             const outgoing=edges.filter(e=>e.from===op.id);
             if(outgoing.length){
               const div=el('div','lk-flow-branches');
@@ -91,7 +98,9 @@
                   actual.dataset.stageId=stage.id;
                   const link=actual.querySelector('button[data-action="select-node"]');
                   if(link)link.dataset.stage=stage.id;
-                  actual.querySelectorAll('button[data-action="node-left"],button[data-action="node-right"]').forEach(b=>b.disabled=true);
+                  actual.querySelector('.lk-step-actions')?.remove();
+                  if(target.color)actual.style.setProperty('--lk-node-accent',flow.color(target.color,'#222222'));
+                  branch.classList.add(edge.type==='branch'?'lk-branch-normal':'lk-branch-exception');
                   branch.append(connector,tag,diagonal,actual);
                 }else{
                   const targetLink=btn(target?.title||'未知目标','select-node',module.id,stage.id);
