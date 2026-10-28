@@ -64,4 +64,33 @@ test('preserve schema and unrelated modules',()=>{
  moveModule(d,'warehouse','linehaul',true);moveNode(d,'warehouse','sort','linehaul',null);
  assert.equal(JSON.stringify(d.modules.find(x=>x.id==='customs')),snapshot);assert.deepEqual(d.unknown,{accountLocal:true});assert.equal(d.schema,1);
 });
+test('drag behind target after source moves forward',()=>{
+ const d=fixture();assert.equal(moveModule(d,'customs','warehouse',true),true);assert.deepEqual(d.modules.map(m=>m.id),['warehouse','customs','linehaul']);
+});
+test('drag module to existing adjacent location leaves layout untouched',()=>{
+ const d=fixture(),snapshot=JSON.stringify(d);
+ assert.equal(moveModule(d,'warehouse','linehaul',false),false);
+ assert.equal(moveModule(d,'linehaul','warehouse',true),false);
+ assert.equal(JSON.stringify(d),snapshot);
+});
+test('same module drop before next sibling is no-op',()=>{
+ const d=fixture(),snapshot=JSON.stringify(d);
+ assert.equal(moveNode(d,'warehouse','scan','warehouse','sort'),false);
+ assert.equal(JSON.stringify(d),snapshot);
+});
+test('same module drop before preceding sibling changes order',()=>{
+ const d=fixture();assert.equal(moveNode(d,'warehouse','sort','warehouse','scan'),true);
+ assert.deepEqual(d.modules[0].nodes.map(n=>n.id),['sort','scan']);
+});
+test('last operation drop at end is no-op',()=>{
+ const d=fixture(),snapshot=JSON.stringify(d);
+ assert.equal(moveNode(d,'warehouse','sort','warehouse',null),false);
+ assert.equal(JSON.stringify(d),snapshot);
+});
+test('disabled source cannot move its records',()=>{
+ const d=fixture();d.modules[2].nodes.push({id:'disabled',title:'stays'});
+ const snapshot=JSON.stringify(d);
+ assert.equal(moveNode(d,'customs','disabled','warehouse',null),false);
+ assert.equal(JSON.stringify(d),snapshot);
+});
 console.log(JSON.stringify({ok:true,count:checks.length}));
