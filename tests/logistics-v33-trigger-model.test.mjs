@@ -5,7 +5,7 @@ const host={};vm.createContext(host);
 vm.runInContext(fs.readFileSync(new URL('../logistics-trigger-v33.js',import.meta.url),'utf8'),host);
 const api=host.LambertLogisticsTriggerV33;
 const run=(label,callback)=>{callback();console.log('PASS:',label);};
-const doc=()=>({schema:1,modules:[{id:'warehouse',name:'中心仓',enabled:true,nodes:[{id:'n1',title:'换单打印',stageId:'receiving',kind:'业务操作',action:'打印或换单',information:'upp',data:'old_record',confidence:'已核实',evidence:'历史截图',operationCodes:['DDS'],eventRefs:[{code:'internal'}],branches:[],note:'old',color:'#CDEFFF'}],branches:[{id:'e1',from:'n1',to:'n1',label:'old'}]}]});
+const doc=()=>({schema:1,modules:[{id:'warehouse',name:'中心仓',enabled:true,stages:[{id:'receiving',name:'收入'}],nodes:[{id:'n1',title:'换单打印',stageId:'receiving',kind:'业务操作',action:'打印或换单',information:'upp',data:'old_record',confidence:'已核实',evidence:'历史截图',operationCodes:['DDS'],eventRefs:[{code:'internal'}],branches:[],note:'old',color:'#CDEFFF'}],branches:[{id:'e1',from:'n1',to:'n1',label:'old'}]}]});
 run('legacy node safely displays no invented trigger outcomes',()=>assert.equal(api.triggers(doc().modules[0].nodes[0]).length,0));
 run('reject incomplete / duplicate triggers',()=>{
  assert.equal(api.normalize([{id:'a',description:'扫描'}, {id:'a',description:'事件'}]),null);
@@ -40,10 +40,16 @@ run('existing node can be edited without forced fabricated mappings',()=>{
  assert.equal(d.modules[0].nodes[0].information,'upp');
  assert.equal(d.modules[0].nodes[0].triggers.length,0);
 });
+run('reject invalid node ID and stage before touching business record',()=>{
+ const d=doc(),before=JSON.stringify(d);
+ assert.equal(api.addNode(d,'warehouse','bad-stage','test',{title:'x'},[{id:'t',description:'event'}]),false);
+ assert.equal(api.addNode(d,'warehouse','receiving',{}, {title:'x'},[{id:'t',description:'event'}]),false);
+ assert.equal(JSON.stringify(d),before);
+});
 run('unknown node / invalid name never writes',()=>{
  const d=doc(),snapshot=JSON.stringify(d);
  assert.equal(api.updateNode(d,'warehouse','none',{title:'x'},[]),false);
  assert.equal(api.updateNode(d,'warehouse','n1',{title:''},[]),false);
  assert.equal(JSON.stringify(d),snapshot);
 });
-console.log('V3.3 trigger model: 7 pass');
+console.log('V3.3 trigger model: 8 pass');
