@@ -722,7 +722,9 @@
   $('lkUnlock').onclick=()=>{
     if(blocked||!locked)return;
     state=copy(releaseRecord.draft?.data||releaseRecord.published.data);
-    locked=false;dirty=false;tab='process';selectedId='';render();
+    // Keep the operation the user opened. render()/findSelected() only falls
+    // back if this operation is absent in the saved draft.
+    locked=false;dirty=false;tab='process';render();
     setMessage(releaseRecord.draft?'继续编辑已保存草稿；全链路仍显示已发布版本。':'已解锁。修改暂存在内存，点击「保存草稿」后才写入本地存储。');
   };
   $('lkSaveDraft').onclick=()=>{
