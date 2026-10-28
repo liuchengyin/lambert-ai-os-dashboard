@@ -3,7 +3,7 @@
  */
 (function(host){
   'use strict';
-  const stagesAPI=host.LambertLogisticsStages,flow=host.LambertLogisticsFlow;
+  const stagesAPI=host.LambertLogisticsStages,flow=host.LambertLogisticsFlow,setup=host.LambertLogisticsSetupV34;
   if(!stagesAPI||!flow)return;
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
   const btn=(label,action,moduleId,stageId,disabled=false)=>{
@@ -54,11 +54,20 @@
         actions.append(colorLabel,reset,
           btn(stage.collapsed?'展开':'收起','stage-collapse',module.id,stage.id,blocked||!!stage.virtual),
           btn('改名','stage-rename',module.id,stage.id,blocked||!!stage.virtual),
+          btn('前置配置','setup-stage',module.id,stage.id,blocked||!!stage.virtual),
           btn('＋ 操作','stage-add-node',module.id,stage.id,blocked||!module.enabled),
           btn('＋ 分支 / 异常','stage-branch',module.id,stage.id,blocked||!module.enabled||!module.nodes.some(n=>stagesAPI.stageFor(module,n)===stage.id)),
           btn('删除','stage-delete',module.id,stage.id,blocked||!!stage.virtual)
         );
         head.append(grip,name,actions);card.append(head);
+        const prereqs=setup?.list(stage)||[];
+        if(prereqs.length){
+          const details=el('details','lk-setup-summary lk-setup-stage-summary');
+          details.append(el('summary','', '前置配置 · '+prereqs.filter(x=>x.role==='prerequisite').length+' 项'));
+          const badges=el('div','lk-setup-badges');
+          prereqs.forEach(item=>badges.append(el('span','lk-setup-badge',(item.role==='reference'?'记录：':'')+item.name+' · '+(item.value||'待配置'))));
+          details.append(badges);card.append(details);
+        }
         const ops=el('div','lk-substage-body');
         ops.dataset.dropModule=module.id;ops.dataset.dropStage=stage.id;
         const members=module.nodes.filter(n=>stagesAPI.stageFor(module,n)===stage.id);
