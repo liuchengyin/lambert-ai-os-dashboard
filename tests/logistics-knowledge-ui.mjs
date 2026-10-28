@@ -64,7 +64,7 @@ try{
      },true);
    }
  });
- await drag.dragTo(drop,{targetPosition:{x:32,y:65}});
+ await drag.dragTo(drop,{targetPosition:{x:154,y:37}});
  console.log('DRAG_DIAGNOSTIC',JSON.stringify(await page.evaluate(()=>({
    trace:window.__lkTrace,
    state:JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1')).modules.map(m=>({name:m.id,nodes:m.nodes.map(n=>n.id)})),
