@@ -160,7 +160,7 @@
     const m=current(),n=m?.enabled?selected():null;
     if(!n){host.append(node('p','在上方画布点击一个操作块，即可查看业务动作、系统关系和数据。','lk-empty'));return;}
     const header=node('div',undefined,'lk-detail-head');
-    const title=node('div');title.append(node('small',m.name+' / '+n.kind),node('h3',n.title));
+    const title=node('div');const group=stages.stages(m).find(x=>x.id===stages.stageFor(m,n));title.append(node('small',m.category+' / '+m.name+' / '+(group?.name||'操作流程')+' / '+n.kind),node('h3',n.title));
     const edit=button('编辑节点','edit-node','lk-edit',blocked);edit.dataset.id=n.id;
     header.append(title,edit);host.append(header);
     host.append(node('span','核实状态：'+(n.confidence||'待核实'),'lk-status'));
@@ -169,11 +169,14 @@
     const summary=node('summary','按需展开 · 系统信息流与数据记录');more.append(summary);
     more.append(field('② 信息流 / 系统触发',n.information),field('③ 数据流 / 记录字段',n.data),field('核实依据 / 证据',n.evidence));
     host.append(more);
-    const moveBox=node('label','移动此操作至另一模块','lk-move-to');
+    const moveBox=node('label','移动操作到其他子环节或大模块','lk-move-to');
     const select=document.createElement('select');select.dataset.moveNode=n.id;select.dataset.moveFrom=m.id;select.disabled=blocked;
-    const empty=document.createElement('option');empty.value='';empty.textContent='选择目标模块（保留所有关联字段）';select.append(empty);
-    state.modules.filter(x=>x.enabled&&x.id!==m.id).forEach(x=>{
-      const o=document.createElement('option');o.value=x.id;o.textContent=x.name;select.append(o);
+    const empty=document.createElement('option');empty.value='';empty.textContent='选择目标子环节（原资料随节点保留）';select.append(empty);
+    state.modules.filter(x=>x.enabled).forEach(x=>{
+      stages.stages(x).forEach(stage=>{
+        if(x.id===m.id&&stage.id===stages.stageFor(m,n))return;
+        const o=document.createElement('option');o.value=x.id+'::'+stage.id;o.textContent=x.category+' / '+x.name+' / '+stage.name;select.append(o);
+      });
     });
     moveBox.append(select);host.append(moveBox);
     const go=button('查看此操作的数据关系 →','to-data','lk-go');go.dataset.id=n.id;host.append(go);
@@ -230,15 +233,36 @@
     const b=event.target.closest('button[data-action]');
     if(!b)return;
     const type=b.dataset.action,id=b.dataset.id;
-    if(type==='select-module'){moduleId=id;selectedId='';tab='process';render();return;}
-    if(type==='select-node'){moduleId=b.dataset.module||moduleId;selectedId=id;render();return;}
-    if(type==='add-here'){moduleId=id;selectedId='';render();openEditor(false);return;}
+    if(type==='select-module'){moduleId=id;selectedId='';activeStageId='';tab='process';render();return;}
+    if(type==='select-node'){moduleId=b.dataset.module||moduleId;selectedId=id;activeStageId=b.dataset.stage||'';render();return;}
+    if(type==='add-here'){moduleId=id;selectedId='';activeStageId=stages.stages(current())[0]?.id||'';render();openEditor(false);return;}
     if(type==='collapse-module'){
       mutate(next=>{const m=next.modules.find(m=>m.id===id);if(m)m.collapsed=!m.collapsed;});return;
     }
     if(type==='node-left'||type==='node-right'){
       moduleId=b.dataset.module||moduleId;selectedId=id;
-      mutate(next=>moves.reorderNode(next,moduleId,id,type==='node-left'?-1:1));return;
+      mutate(next=>stages.reorderWithinStage(next,moduleId,id,type==='node-left'?-1:1,moves));return;
+    }
+    if(type==='select-stage'){
+      moduleId=b.dataset.module;activeStageId=b.dataset.stage;selectedId='';render();return;
+    }
+    if(type==='stage-add'||type==='stage-rename'){
+      moduleId=b.dataset.module;editingStageId=type==='stage-rename'?b.dataset.stage:'';
+      const stage=stages.stages(current()).find(x=>x.id===editingStageId);
+      $('lkStageDialogTitle').textContent=editingStageId?'修改子环节名称':'添加子环节';
+      $('lkStageName').value=stage?.name||'';$('lkStageDialog').showModal();return;
+    }
+    if(type==='stage-add-node'){
+      moduleId=b.dataset.module;activeStageId=b.dataset.stage;selectedId='';render();openEditor(false);return;
+    }
+    if(type==='stage-left'||type==='stage-right'){
+      mutate(next=>stages.reorderStage(next,b.dataset.module,b.dataset.stage,type==='stage-left'?-1:1));return;
+    }
+    if(type==='stage-collapse'){
+      mutate(next=>{
+        const m=next.modules.find(x=>x.id===b.dataset.module),stage=m?.stages?.find(x=>x.id===b.dataset.stage);
+        if(!stage)return false;stage.collapsed=!stage.collapsed;
+      });return;
     }
     if(type==='to-data'){tab='data';render();return;}
     if(type==='open-node'){moduleId=b.dataset.module;selectedId=id;tab='process';render();return;}
@@ -255,8 +279,9 @@
     if(selector){
       const destination=selector.value,source=selector.dataset.moveFrom,id=selector.dataset.moveNode;
       if(!destination)return;
-      if(mutate(next=>moves.moveNode(next,source,id,destination))){
-        moduleId=destination;selectedId=id;render();
+      const [to,stageId]=destination.split('::');
+      if(mutate(next=>stages.moveToStage(next,source,id,to,stageId,null,moves))){
+        moduleId=to;selectedId=id;activeStageId=stageId;render();
         setMessage('已移动操作节点，原有信息和数据记录均保留。');
       }else selector.value='';
       return;
@@ -338,8 +363,23 @@
       const m=next.modules.find(x=>x.id===moduleId);if(!m)return;
       const old=m.nodes.find(n=>n.id===id);
       if(old)Object.assign(old,input);
-      else m.nodes.push({id,...input});
+      else m.nodes.push({id,...input,stageId:activeStageId||stages.stages(m)[0]?.id||''});
     })){selectedId=id;$('lkNodeDialog').close();render();}
+  });
+  $('lkStageCancel').onclick=()=>$('lkStageDialog').close();
+  $('lkStageForm').addEventListener('submit',event=>{
+    event.preventDefault();if(blocked)return;
+    const name=$('lkStageName').value.trim();if(!name)return;
+    const id=editingStageId||makeId('stage');
+    const success=mutate(next=>{
+      const m=next.modules.find(x=>x.id===moduleId);if(!m)return false;
+      if(editingStageId){
+        const stage=m.stages?.find(x=>x.id===editingStageId);
+        if(!stage)return false;stage.name=name;return true;
+      }
+      return stages.addStage(next,moduleId,{id,name});
+    });
+    if(success){activeStageId=id;$('lkStageDialog').close();render();}
   });
   $('lkAddModule').onclick=()=>{
     if(blocked)return;
@@ -364,6 +404,6 @@
       setMessage('已发起知识库 JSON 导出；请检查浏览器下载记录。');
     }catch{setMessage('导出失败，请检查浏览器环境。');}
   };
-  state=read();moduleId=state.modules[0]?.id||'';render();
+  state=read();moduleId=state.modules[0]?.id||'';activeStageId=stages.stages(current())[0]?.id||'';render();
   if(blocked)setMessage('检测到既有知识库读取异常：当前为只读示意内容，原记录不会被覆盖。');
 })();
