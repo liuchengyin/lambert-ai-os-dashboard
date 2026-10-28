@@ -106,7 +106,6 @@
         actions.append(colorLabel,reset,
           btn(stage.collapsed?'展开':'收起','stage-collapse',module.id,stage.id,blocked||!!stage.virtual),
           btn('改名','stage-rename',module.id,stage.id,blocked||!!stage.virtual),
-          btn('前置配置','setup-stage',module.id,stage.id,blocked||!!stage.virtual),
           btn('＋ 操作','stage-add-node',module.id,stage.id,blocked||!module.enabled),
           btn('删除','stage-delete',module.id,stage.id,blocked||!!stage.virtual)
         );
