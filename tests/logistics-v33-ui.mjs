@@ -23,6 +23,7 @@ try{
  await page.locator('#lkQuickDetailBody button[data-action="edit-node"]').click();
  check('simplified editor opens',await page.locator('#lkNodeDialog').isVisible());
  check('obsolete kind/status/evidence fields removed from editing UI',await page.locator('#lkKindInput,#lkConfidenceInput,#lkEvidenceInput,#lkRecordInput,#lkInfoInput').count()===0);
+ await page.locator('#lkNodeDialog .lk-event-bind summary').click();
  check('event search honestly disabled until real codebook arrives',await page.locator('#lkEventSearch').isDisabled()&&await page.locator('#lkEventHint').innerText().then(s=>s.includes('码表待导入')));
  check('operation name is already populated',await page.locator('#lkTitleInput').inputValue()==='安检扫描');
  check('legacy operation data displayed separately without modification',await page.locator('#lkExistingCodes').innerText().then(s=>s===''||s.includes('旧码值')));
