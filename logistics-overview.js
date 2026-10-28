@@ -9,6 +9,10 @@
  }
  function render(container,release,mode,open){
    const data=release?.data;
+   // Capture native details state before replacing the overview DOM.
+   // This is transient view state and never enters published snapshots.
+   const expanded=new Map([...container.querySelectorAll('.lk-ov-transport-family .lk-trunk-route')]
+     .map(lane=>[lane.dataset.transportMode,lane.open]));
    container.replaceChildren();
    if(!data?.modules){container.append(el('p','lk-empty','没有可展示的已发布物流线路'));return;}
    const modules=data.modules.filter(m=>m.enabled!==false);
