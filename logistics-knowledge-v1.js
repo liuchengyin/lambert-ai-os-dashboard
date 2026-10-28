@@ -10,35 +10,52 @@
   const seedNode=(id,title,action,information,data,kind='业务操作')=>({
     id,title,kind,action,information,data,confidence:'待核实',evidence:''
   });
+  const stageNode=(stageId,id,title,action)=>({...seedNode(id,title,action,'待核实：对应事件码、系统接口与轨迹处理','待核实：记录字段、操作时间与关联物流对象'),stageId});
   // The first route is a learning example, NOT an assertion about the production system.
   const defaults=()=>({schema:1,route:'中国 → 哈萨克斯坦 · 陆运（研究模板）',modules:[
-    {id:'head',name:'国内头程',category:'头程',enabled:true,nodes:[
-      seedNode('order','OMS 创建订单','客户提交订单，系统受理下单信息','订单创建后，是否向 TMS 发送揽收任务，需要结合接口代码核实','订单号、下单时间、服务类型','系统动作'),
-      seedNode('pickup','揽收扫描','一线操作人员执行揽收扫描','需核实多闻的操作码、事件码以及 EDI 是否接收','扫描时间、网点、运单号'),
-      seedNode('inbound','国内仓入库','包裹到仓后完成入库扫描','需核实入库动作对应的内部事件与轨迹映射','入库时间、仓库、运单号')
-    ]},
-    {id:'export',name:'出口关务',category:'关务',enabled:true,nodes:[
+    {id:'head',name:'国内中心仓',category:'仓',enabled:true,
+      stages:[{id:'arrival',name:'到车',collapsed:false},{id:'receiving',name:'收入',collapsed:false},{id:'sorting',name:'分拣',collapsed:false},{id:'dispatch',name:'发出',collapsed:false}],
+      nodes:[
+        stageNode('arrival','arrive-scan','到车扫描','登记车辆到达及车次信息'),
+        stageNode('arrival','unload-scan','下车扫描','确认包裹或包袋从车辆卸下'),
+        stageNode('receiving','waybill-print','换单打印','按业务要求打印或更换面单'),
+        stageNode('receiving','receiving-op','收入操作','通过 DWS 或操作终端完成收货记录'),
+        stageNode('receiving','security-scan','安检扫描','对货件进行安检并登记结果'),
+        stageNode('receiving','security-exception','安检异常上报','对异常安检结果登记并流转处理'),
+        stageNode('sorting','weigh-recheck','称重复核','核实包裹或包袋的重量记录'),
+        stageNode('sorting','bag-label','打印包签','为包袋打印可识别的标签'),
+        stageNode('sorting','bag-build','建包扫描','扫描建立包袋与运单的关联'),
+        stageNode('sorting','big-bag-check','大包复核','核对包袋及其包含运单'),
+        stageNode('sorting','batch-create','批次创建','建立发运批次并关联运输货件'),
+        stageNode('sorting','batch-bind','批次绑定','将需要发运的货件与批次绑定'),
+        stageNode('dispatch','vehicle-create','创建车签','建立车辆或车次标签'),
+        stageNode('dispatch','vehicle-print','打印车签','打印车签以供出库扫描使用'),
+        stageNode('dispatch','truck-loading','上车扫描','扫描确认货件装载到车辆'),
+        stageNode('dispatch','truck-departure','发车扫描','记录车辆实际发出操作')
+      ]},
+        {id:'export',name:'出口关务',category:'关',enabled:true,nodes:[
       seedNode('export-submit','出口申报','整理申报要素并提交出口申报','需核实申报系统、对接接口和状态回传','申报单号、报关状态、申报时间'),
       seedNode('export-release','出口放行','确认货物已满足出口放行条件','放行结果来源和内部系统更新机制待核实','放行时间、状态、关联运单号','外部事件')
     ]},
-    {id:'linehaul',name:'陆运干线',category:'干线',enabled:true,nodes:[
+    {id:'linehaul',name:'陆运干线',category:'干',enabled:true,nodes:[
       seedNode('vehicle-label','制作车签','创建或维护运输车辆标识','车签与车次、批次的绑定规则待核实','车签、车次标识、创建时间'),
       seedNode('batch','创建批次','将运单组织到运输批次','批次保存是否产生事件、是否触发下游接口待核实','批次号、运单号、创建时间'),
       seedNode('preload','预配载','提前安排批次与车辆的计划关系','预配成功后如何更新计划与通知下游待核实','预配关系、计划时间、车辆'),
       seedNode('loading','装车确认','核实实物装载并确认','是否有装车事件码与对外轨迹需要核实','装车时间、车次、件数'),
       seedNode('departure','实际发运','确认干线车辆实际发出','需核实发运事件经 TMS / EDI / 轨迹中心的实际链路','实际发运时间、运输状态、关联批次')
     ]},
-    {id:'import',name:'进口关务',category:'关务',enabled:true,nodes:[
+    {id:'import',name:'进口关务',category:'关',enabled:true,nodes:[
       seedNode('import-clear','进口清关','根据目的国要求完成清关与放行','服务商清关状态怎样映射内部状态待核实','申报信息、清关状态、完成时间','外部事件')
     ]},
-    {id:'lastmile',name:'海外尾程',category:'尾程',enabled:true,nodes:[
+    {id:'lastmile',name:'海外尾程',category:'配',enabled:true,nodes:[
       seedNode('overseas-scan','海外首扫','海外服务商或网点确认收到货件','首扫信息可能来自合作商 EDI，需核实来源与时间语义','首扫时间、服务商、运单号','外部事件'),
       seedNode('delivery','末端派送','分配派件任务并执行配送','派送状态回传与内部事件映射待核实','派件时间、派件网点、运单状态'),
       seedNode('signed','签收','确认妥投或签收结果','回传签收轨迹及其用于 SLA 的时间字段需核实','签收时间、签收证明、运单号','外部事件')
     ]}
   ]});
-  let state=null,blocked=false,tab='process',moduleId='',selectedId='',editorMode='',dragPayload=null;
+  let state=null,blocked=false,tab='process',moduleId='',selectedId='',editorMode='',dragPayload=null,activeStageId='',editingStageId='';
   const moves=window.LambertLogisticsMoves;
+  const stages=window.LambertLogisticsStages;
   const copy=x=>JSON.parse(JSON.stringify(x));
   function read() {
     try {
@@ -69,7 +86,7 @@
     '<button type="button" id="lkExport">导出知识库</button></header>'+
     '<div class="lk-toolbar"><span class="lk-route">中国 → 哈萨克斯坦 · 陆运示例</span><span class="lk-warning">示意链路 · 实际系统规则待核实</span></div>'+
     '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabProcess" aria-selected="true">业务链路 · 操作＋信息</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button></div>'+
-    '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-section-title"><div><strong>仓 · 干 · 关 · 配 操作画布</strong><small>拖拽大模块或小操作块重新编排；支持跨模块移动、折叠与保存。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div id="lkModules" class="lk-modules lk-canvas"></div>'+
+    '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-canvas-categories" aria-label="物流模块底座"><span class="lk-canvas-category">仓</span><span class="lk-canvas-category">干</span><span class="lk-canvas-category">关</span><span class="lk-canvas-category">配</span></div><div class="lk-section-title"><div><strong>模块化操作画布</strong><small>大模块内包含可调整的子环节，例如：国内中心仓 → 到车／收入／分拣／发出。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div id="lkModules" class="lk-modules lk-canvas"></div>'+
     '<div class="lk-section-title lk-selection-head"><div><strong id="lkNodeTitle">操作节点详情</strong><small>选择上方的小块；系统关系放在详情内按需展开</small></div><button type="button" id="lkAddNode">＋ 为选中模块添加操作</button></div>'+
     '<div class="lk-workspace lk-canvas-workspace"><div id="lkNodes" class="lk-nodes" hidden aria-hidden="true"></div><article id="lkDetail" class="lk-detail"></article></div></div>'+
     '<div id="lkData" role="tabpanel" aria-labelledby="lkTabData" hidden><div class="lk-data-guide"><strong>从业务动作追到数据</strong><p>操作／事件 → 信息变化 → 记录字段 → 后续指标。这里只列研究关系，不假装已接入真实数据表或驾驶舱。</p></div><div id="lkDataRows" class="lk-data-rows"></div></div>'+
@@ -84,7 +101,9 @@
     '<div class="lk-dialog-actions"><button type="button" id="lkNodeCancel">取消</button><button type="submit" class="lk-primary">保存节点</button></div></form></dialog>'+
     '<dialog id="lkModuleDialog" class="lk-dialog"><form id="lkModuleForm"><h3>添加线路模块</h3><label>模块名称<input id="lkModuleName" maxlength="60" required placeholder="例如：海外转运中心"></label>'+
     '<label>归属环节<select id="lkModuleCategory"><option>头程</option><option>关务</option><option>干线</option><option>尾程</option></select></label>'+
-    '<div class="lk-dialog-actions"><button type="button" id="lkModuleCancel">取消</button><button type="submit" class="lk-primary">添加模块</button></div></form></dialog>';
+    '<div class="lk-dialog-actions"><button type="button" id="lkModuleCancel">取消</button><button type="submit" class="lk-primary">添加模块</button></div></form></dialog>'+
+    '<dialog id="lkStageDialog" class="lk-dialog lk-stage-dialog"><form id="lkStageForm"><h3 id="lkStageDialogTitle">添加子环节</h3><label>子环节名称<input id="lkStageName" required maxlength="55" placeholder="例如：收入"></label>'+
+    '<p class="lk-footnote">子环节用于组织操作步骤；原操作和业务字段不会丢失。</p><div class="lk-dialog-actions"><button type="button" id="lkStageCancel">取消</button><button type="submit" class="lk-primary">保存子环节</button></div></form></dialog>';
   const makeId=prefix=>prefix+'_'+(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'_'+Math.random().toString(36).slice(2));
   function renderModules(){
     const host=$('lkModules');host.replaceChildren();
@@ -125,6 +144,7 @@
       }
       host.append(card);
     });
+    window.LambertLogisticsStageView?.renderStageLane(host,state,blocked);
   }
   function renderNodes(){
     const m=current();
