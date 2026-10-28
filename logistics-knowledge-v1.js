@@ -513,6 +513,48 @@
       moduleId=id;selectedId='';$('lkModuleDialog').close();render();
     }
   });
+  $('lkUnlock').onclick=()=>{
+    if(blocked||!locked)return;
+    state=copy(releaseRecord.draft?.data||releaseRecord.published.data);
+    locked=false;dirty=false;tab='process';selectedId='';render();
+    setMessage(releaseRecord.draft?'继续编辑已保存草稿；全链路仍显示已发布版本。':'已解锁。修改暂存在内存，点击「保存草稿」后才写入本地存储。');
+  };
+  $('lkSaveDraft').onclick=()=>{
+    if(blocked||locked||!dirty)return;
+    const next=versions.saveDraft(storage(),releaseRecord,state);
+    if(!next){setMessage('保存草稿失败，编辑数据仍留在页面中，旧版内容未覆盖。');return;}
+    releaseRecord=next;dirty=false;render();
+    setMessage('草稿已保存。全链路总览仍显示 V'+releaseRecord.published.number+'，发布后才生效。');
+  };
+  $('lkPublish').onclick=()=>{
+    if(blocked||locked||dirty||!releaseRecord.draft)return;
+    if(!window.confirm('确认将已保存草稿发布为新版本？发布后全链路总览才会更新，并保存旧版供回滚。'))return;
+    const next=versions.publish(storage(),releaseRecord);
+    if(!next){setMessage('发布失败：请检查存储空间；历史版本未改变。');return;}
+    releaseRecord=next;state=copy(next.published.data);locked=true;dirty=false;tab='overview';overviewMode='macro';render();
+    setMessage('已发布 V'+next.published.number+'。全链路总览已更新并重新锁定。');
+  };
+  $('lkCancelEdit').onclick=()=>{
+    if(locked)return;
+    if(dirty&&!window.confirm('当前有未保存的更改，确定放弃并重新锁定吗？已保存草稿不会被删除。'))return;
+    locked=true;dirty=false;state=copy(releaseRecord.published.data);render();
+    setMessage(releaseRecord.draft?'已锁定；保存的草稿仍保留，可再次解锁继续。':'已锁定，未修改已发布内容。');
+  };
+  $('lkHistorySelect').onchange=()=>{
+    $('lkRollback').disabled=blocked||!locked||!$('lkHistorySelect').value;
+  };
+  $('lkRollback').onclick=()=>{
+    if(blocked||!locked)return;
+    const text=$('lkHistorySelect').value;
+    if(!text)return;
+    const index=Number(text),old=releaseRecord.history[index];
+    if(!old)return;
+    if(!window.confirm('确定将历史 V'+old.number+' 作为新的已发布版本？当前版本会自动存入历史；已保存草稿将清除。'))return;
+    const next=versions.rollback(storage(),releaseRecord,index);
+    if(!next){setMessage('回滚失败，原记录保持不变。');return;}
+    releaseRecord=next;state=copy(next.published.data);dirty=false;locked=true;tab='overview';overviewMode='macro';render();
+    setMessage('历史 V'+old.number+' 已恢复为新发布版本 V'+next.published.number+'。');
+  };
   $('lkExport').onclick=()=>{
     try{
       const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json;charset=utf-8'});
@@ -522,6 +564,19 @@
       setMessage('已发起知识库 JSON 导出；请检查浏览器下载记录。');
     }catch{setMessage('导出失败，请检查浏览器环境。');}
   };
-  state=read();moduleId=state.modules[0]?.id||'';activeStageId=stages.stages(current())[0]?.id||'';render();
-  if(blocked)setMessage('检测到既有知识库读取异常：当前为只读示意内容，原记录不会被覆盖。');
+  // The original V1 storage key is a read-only baseline. All new saves use
+  // the separate version envelope (published + draft + append-only history).
+  const legacy=read();
+  const opened=versions.load(storage(),legacy);
+  if(opened.error)blocked=true;
+  releaseRecord=opened.record||{schema:1,published:{number:0,time:'',data:copy(legacy)},draft:null,history:[]};
+  state=copy(releaseRecord.published.data);
+  moduleId=state.modules[0]?.id||'';
+  activeStageId=stages.stages(current())[0]?.id||'';
+  render();
+  if(blocked)setMessage(opened.error||'知识库记录无法读取，已开启只读保护，原数据未被覆盖。');
+  else setMessage('默认锁定。解锁后修改草稿；只有确认发布才更新全链路总览。');
+  window.addEventListener('beforeunload',event=>{
+    if(!locked&&dirty){event.preventDefault();event.returnValue='';}
+  });
 })();
