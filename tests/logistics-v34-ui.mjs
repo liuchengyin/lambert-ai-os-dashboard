@@ -20,7 +20,7 @@ try{
  await page.locator('[data-action="add-linehaul-mode"][data-mode="air"]').click();
  check('air linehaul template appears as new L2 module',await page.locator('.lk-canvas-block .lk-module-main').filter({hasText:'空运干线'}).count()===1);
  const air=page.locator('.lk-canvas-block').filter({has:page.locator('.lk-module-main',{hasText:'空运干线'})});
- check('air prerequisites are reference template, not fabricated configurations',await air.locator('.lk-setup-badge').count()===0);
+ check('air template entries are visible with unknown values, not fabricated configuration',await air.locator('.lk-setup-badge').count()===6&&await air.locator('.lk-setup-badge').first().innerText().then(t=>t.includes('待配置')));
  await air.locator('[data-action="setup-module"]').click();
  check('air setup editor lists six screenshot menu entries',await page.locator('#lkSetupRows .lk-setup-row').count()===6);
  check('flight log is reference rather than mandatory prerequisite',await page.locator('#lkSetupRows .lk-setup-row').last().locator('select').inputValue()==='reference');
