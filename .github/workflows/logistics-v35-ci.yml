@@ -1,10 +1,14 @@
-name: Logistics V3.5 vertical transport accordion regression
+name: Logistics P0 node-first research and branch integrity
 on:
   push:
-    branches: [fix/logistics-v35-vertical-linehaul-20261029]
+    branches: [feat/logistics-node-first-p0-20261029]
     paths:
       - '.github/workflows/logistics-v35-ci.yml'
       - 'logistics-v35-model.js'
+      - 'logistics-trigger-v33.js'
+      - 'logistics-canvas-model.js'
+      - 'tests/logistics-v33-trigger-model.test.mjs'
+      - 'tests/logistics-canvas-logic.test.mjs'
       - 'logistics-v35.css'
       - 'logistics-stage-view.js'
       - 'logistics-knowledge-v1.js'
@@ -31,7 +35,11 @@ jobs:
           node --check logistics-stage-view.js
           node --check logistics-overview.js
           node --check logistics-v35-model.js
+          node --check logistics-trigger-v33.js
+          node --check logistics-canvas-model.js
           node tests/logistics-v35-model.test.mjs
+          node tests/logistics-canvas-logic.test.mjs
+          node tests/logistics-stage-model.test.mjs
           node tests/logistics-v34-setup-model.test.mjs
           node tests/logistics-v33-trigger-model.test.mjs
           node tests/logistics-version-model.test.mjs
