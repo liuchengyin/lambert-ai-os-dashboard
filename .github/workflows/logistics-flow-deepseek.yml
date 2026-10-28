@@ -1,4 +1,5 @@
 name: Logistics V2.3 DeepSeek Flash static review
+# Concise 200-character review prompt to avoid incomplete provider responses.
 on:
   push:
     branches: [feat/web-logistics-flow-color-20261028]
