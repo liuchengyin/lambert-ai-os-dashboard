@@ -40,7 +40,10 @@
  }
  function addNode(doc,moduleId,stageId,id,fields,rows){
    const m=doc?.modules?.find(x=>x.id===moduleId);
-   if(!m||m.nodes.some(n=>n.id===id)||!id)return false;
+   const validStage=Array.isArray(m?.stages)&&m.stages.length
+     ?m.stages.some(s=>s.id===stageId)
+     :stageId==='general';
+   if(!m?.enabled||typeof id!=='string'||!id||!validStage||m.nodes.some(n=>n.id===id))return false;
    const prepared=normalize(rows);
    if(!prepared?.length)return false;
    const title=clean(fields?.title).slice(0,70);
