@@ -49,6 +49,7 @@
     const oldStage=stageFor(source,sourceNode);
     const stageChanged=fromId!==toId||oldStage!==toStageId;
     const moved=moves.moveNode(document,fromId,nodeId,toId,beforeId);
+    if(fromId!==toId&&!moved)return false;
     if(!moved&&!stageChanged)return false;
     // Same-module stage change can be valid when the operation is already
     // last in the flattened array. This is a stage edit, not a reorder.
@@ -57,5 +58,16 @@
     updated.stageId=toStageId===LEGACY?'':toStageId;
     return true;
   }
-  host.LambertLogisticsStages=Object.freeze({LEGACY,stages,stageFor,moveStage,reorderStage,addStage,moveToStage});
+  function reorderWithinStage(document,moduleId,nodeId,step,moves){
+    const m=document?.modules?.find(x=>x.id===moduleId);
+    if(!m?.enabled||!moves?.moveNode)return false;
+    const item=m.nodes?.find(n=>n.id===nodeId);
+    if(!item)return false;
+    const group=stageFor(m,item),members=m.nodes.filter(n=>stageFor(m,n)===group);
+    const index=members.findIndex(n=>n.id===nodeId),to=index+step;
+    if(index<0||to<0||to>=members.length||![-1,1].includes(step))return false;
+    const before=step<0?members[to].id:members[index+2]?.id||null;
+    return moves.moveNode(document,moduleId,nodeId,moduleId,before);
+  }
+  host.LambertLogisticsStages=Object.freeze({LEGACY,stages,stageFor,moveStage,reorderStage,addStage,moveToStage,reorderWithinStage});
 })(typeof window!=='undefined'?window:globalThis);
