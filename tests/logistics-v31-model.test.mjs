@@ -35,6 +35,27 @@ test('stage removal and restore preserve all children and cross-stage edges',()=
  assert.equal(api.restore(d,'trash2'),true);
  assert.equal(JSON.stringify(d.modules[0]),source);
 });
+test('stage restore stays ordered even when another stage loses its operation',()=>{
+ const d=fixture();
+ const source=new Map(d.modules[0].nodes.map(n=>[n.id,n.title]));
+ assert.equal(api.remove(d,'stage','head','receiving','stage-del'),true);
+ assert.equal(api.remove(d,'node','head','arrive','other-del'),true);
+ assert.equal(api.restore(d,'stage-del'),true);
+ assert.deepEqual(d.modules[0].nodes.map(n=>n.id),['scan','report']);
+ assert.equal(d.modules[0].nodes[0].note,'记录有价值的现场说明');
+ assert.equal(d.modules[0].branches.length,1);
+ assert.equal(api.restore(d,'other-del'),true);
+ assert.equal(d.modules[0].nodes.length,3);
+ assert.deepEqual([...d.modules[0].nodes].map(n=>source.get(n.id)).filter(Boolean).sort(),[...source.values()].sort());
+});
+test('conflicting node ID cannot overwrite an active business record',()=>{
+ const d=fixture();api.remove(d,'stage','head','receiving','stage-del');
+ d.modules[0].nodes.push({id:'scan',title:'另一个不同业务操作'});
+ const old=JSON.stringify(d.modules[0]);
+ assert.equal(api.restore(d,'stage-del'),false);
+ assert.equal(JSON.stringify(d.modules[0]),old);
+ assert.equal(d.trash.length,1);
+});
 test('module restore preserves every field exactly',()=>{
  const d=fixture(),source=JSON.stringify(d.modules[0]);
  assert.equal(api.remove(d,'module','head',null,'trash3'),true);
@@ -71,4 +92,4 @@ test('all deleted records remain in draft not published release',()=>{
  assert.equal(map.has('lambert_logistics_knowledge_v1'),false);
 });
 test('invalid restore ID never removes trash',()=>{const d=fixture();assert.equal(api.restore(d,'not-found'),false);assert.equal(d.modules.length,2)});
-console.log('Logistics V3.1 model: 11 checks passed.');
+console.log('Logistics V3.1 model: 13 checks passed.');
