@@ -55,18 +55,35 @@
  background:#fcfaff;box-shadow:0 5px 18px rgba(116,78,157,.11);
 }
 #logistics .lk-trunk-title{margin:0 0 3px;font-size:18px;color:#5a3d79;font-weight:760}
+/* Full-width transport accordions; open state is view-only, never persisted. */
 #logistics .lk-trunk-grid{
- display:grid;grid-template-columns:repeat(3,minmax(390px,1fr));
- gap:12px;overflow-x:auto;padding-bottom:8px
+ display:grid;grid-template-columns:minmax(0,1fr);
+ gap:10px;overflow-x:visible;padding-bottom:0
 }
 #logistics .lk-trunk-route{
- min-width:0;display:flex;flex-direction:column;gap:10px;
- border:1px solid #e7ddf3;border-radius:13px;padding:10px;
+ display:block;min-width:0;width:100%;box-sizing:border-box;
+ border:1px solid #e7ddf3;border-radius:13px;padding:8px 10px;
  background:#f6f3fc
 }
 #logistics .lk-trunk-route:nth-child(2){background:#f0f7ff;border-color:#dfe9f5}
 #logistics .lk-trunk-route:nth-child(3){background:#f2f9f6;border-color:#dceee4}
-#logistics .lk-trunk-route-title{margin:2px 3px 3px;font-size:15px;font-weight:750;color:#5e4783}
+#logistics .lk-trunk-route-toggle{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ list-style:none;cursor:pointer;min-height:38px;padding:4px 7px;
+ border-radius:8px
+}
+#logistics .lk-trunk-route-toggle::-webkit-details-marker{display:none}
+#logistics .lk-trunk-route-toggle:hover{background:rgba(255,255,255,.64)}
+#logistics .lk-trunk-route-toggle:focus-visible{outline:2px solid #8b66b4;outline-offset:2px}
+#logistics .lk-trunk-route-toggle::after{
+ content:'展开 ▾';flex-shrink:0;font-size:12px;color:#765a94
+}
+#logistics .lk-trunk-route[open]>.lk-trunk-route-toggle::after{content:'收起 ▴'}
+#logistics .lk-trunk-route-title{margin:2px 3px;font-size:15px;font-weight:750;color:#5e4783}
+#logistics .lk-trunk-route-body{
+ display:flex;flex-direction:column;gap:10px;min-width:0;padding-top:10px
+}
+#logistics .lk-trunk-route:not([open])>.lk-trunk-route-body{display:none}
 #logistics .lk-trunk-route .lk-canvas-block{min-width:0;width:100%}
 #logistics .lk-trunk-route .lk-stage-board{max-width:100%;overflow-x:auto}
 #logistics .lk-trunk-empty{
@@ -108,7 +125,7 @@
 #logistics .lk-exchange-head button,#logistics .lk-exchange-item button{background:#fff;border:1px solid #decdec;color:#6b5193;border-radius:7px;padding:7px 9px;font-size:11px}
 #logistics .lk-exchange-item button{color:#a05858;margin-left:auto}
 @media(max-width:700px){
- #logistics .lk-trunk-grid{grid-template-columns:repeat(3,minmax(315px,1fr))}
+ #logistics .lk-trunk-grid{grid-template-columns:minmax(0,1fr)}
  #logistics .lk-trunk-family{padding:10px}
  #logistics .lk-mini-children{max-width:125px}
  #logistics .lk-mini-card{width:90px;max-width:90px}
