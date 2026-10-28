@@ -94,6 +94,12 @@ test('disabled source cannot move its records',()=>{
  assert.equal(JSON.stringify(d),snapshot);
 });
 
+test('target stale edge cannot silently activate after moving matching ID',()=>{
+ const d=fixture();d.modules[1].branches=[{id:'old',from:'batch',to:'scan',type:'exception'}];
+ const before=JSON.stringify(d);
+ assert.equal(moveNode(d,'warehouse','scan','linehaul',null),false);
+ assert.equal(JSON.stringify(d),before);
+});
 test('cross-module move with incoming or outgoing branch is rejected with no mutation',()=>{
  const d=fixture();d.modules[0].branches=[{id:'scan-branch',from:'scan',to:'sort',type:'exception',label:'异常'}];
  const before=JSON.stringify(d);
