@@ -20,6 +20,14 @@ t('branch-only is mainline until a valid incoming edge',()=>{const d=seed();asse
 t('add real condition branch and preserve original operation data',()=>{const d=seed(),node=JSON.stringify(d.modules[0].nodes[0]);assert.equal(api.upsertBranch(d,'head',{id:'edge1',from:'scan',to:'report',label:'异常',branchOnly:true}),true);assert.equal(api.isBranchOnly(d.modules[0],'report'),true);assert.equal(api.activeBranches(d.modules[0]).length,1);assert.equal(JSON.stringify(d.modules[0].nodes[0]),node);});
 t('duplicate branch rejected without altering storage',()=>{const d=seed(),edge={id:'edge1',from:'scan',to:'report',label:'异常'};api.upsertBranch(d,'head',edge);const before=JSON.stringify(d);assert.equal(api.upsertBranch(d,'head',{id:'edge2',from:'scan',to:'report',label:'abnormal'}),false);assert.equal(JSON.stringify(d),before);});
 t('self loop and unknown target refused',()=>{const d=seed(),old=JSON.stringify(d);assert.equal(api.upsertBranch(d,'head',{id:'x',from:'scan',to:'scan',label:'loop'}),false);assert.equal(api.upsertBranch(d,'head',{id:'y',from:'scan',to:'gone',label:'unknown'}),false);assert.equal(JSON.stringify(d),old);});
-t('remove branch restores operation into normal display',()=>{const d=seed();api.upsertBranch(d,'head',{id:'e',from:'scan',to:'report',label:'异常',branchOnly:true});assert.equal(api.removeBranch(d,'head','e'),true);assert.equal(api.isBranchOnly(d.modules[0],'report'),false);assert.equal(d.modules[0].nodes.length,3);});
+t('remove branch restores operation into normal display',()=>{const d=seed();api.upsertBranch(d,'head',{id:'e',from:'scan',to:'report',label:'异常',branchOnly:true});assert.equal(api.removeBranch(d,'head','e'),true);assert.equal(api.isBranchOnly(d.modules[0],'report'),false);assert.equal(d.modules[0].nodes.length,3);assert.equal(d.modules[0].nodes[1].branchOnly,undefined);});
 t('orphan link kept but not displayed or destructively removed',()=>{const d=seed();d.modules[0].branches=[{id:'e',from:'scan',to:'unknown',label:'error'}];assert.equal(api.activeBranches(d.modules[0]).length,0);assert.equal(d.modules[0].branches.length,1);});
-console.log('Flow palette and branches: 12 pass.');
+t('shared branch target retains flag until final incoming link is removed',()=>{
+ const d=seed();api.upsertBranch(d,'head',{id:'a',from:'scan',to:'report',label:'安检异常',branchOnly:true});
+ api.upsertBranch(d,'head',{id:'b',from:'next',to:'report',label:'复检异常',branchOnly:true});
+ assert.equal(api.removeBranch(d,'head','a'),true);
+ assert.equal(d.modules[0].nodes.find(n=>n.id==='report').branchOnly,true);
+ assert.equal(api.removeBranch(d,'head','b'),true);
+ assert.equal(d.modules[0].nodes.find(n=>n.id==='report').branchOnly,undefined);
+});
+console.log('Flow palette and branches: 13 pass.');
