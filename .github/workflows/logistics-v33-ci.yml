@@ -1,0 +1,44 @@
+name: Logistics V3.3 trigger editor and pastel visual checks
+on:
+  push:
+    branches: [feat/logistics-v33-triggers-soft-stages-20261028]
+    paths:
+      - '.github/workflows/logistics-v33-ci.yml'
+      - 'logistics-knowledge-v1.js'
+      - 'logistics-stage-view.js'
+      - 'logistics-trigger-v33.js'
+      - 'logistics-soft-v33.css'
+      - 'index.html'
+      - 'tests/logistics-v33-trigger-model.test.mjs'
+      - 'tests/logistics-v33-ui.mjs'
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and safe pure-model regressions
+        run: |
+          node --check logistics-knowledge-v1.js
+          node --check logistics-stage-view.js
+          node --check logistics-trigger-v33.js
+          node tests/logistics-v33-trigger-model.test.mjs
+          node tests/logistics-version-model.test.mjs
+          node tests/logistics-v31-model.test.mjs
+          node tests/logistics-flow-model.test.mjs
+      - name: Install Playwright browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Real Chromium UI and persistence regression
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/logistics-v33-http.log 2>&1 &
+          sleep 2
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-v33-ui.mjs

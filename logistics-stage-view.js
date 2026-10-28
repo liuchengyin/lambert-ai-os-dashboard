@@ -28,7 +28,7 @@
     for(const module of state.modules){
       const block=[...hostEl.querySelectorAll('.lk-canvas-block')].find(b=>b.dataset.module===module.id);
       if(!block)continue;
-      block.style.setProperty('--lk-module-accent',flow.moduleColor(module));
+      block.style.setProperty('--lk-module-accent',module.color?flow.moduleColor(module):'#B49AD2');
       const main=block.querySelector('.lk-module-main');
       if(main)main.title=(module.category||'业务')+' / '+module.name;
       const lane=block.querySelector('.lk-canvas-lane');if(!lane)continue;
@@ -39,7 +39,8 @@
       subStages.forEach((stage,index)=>{
         const card=el('section','lk-substage');
         card.dataset.stageId=stage.id;card.dataset.module=module.id;
-        card.style.setProperty('--lk-stage-accent',flow.stageColor(module,stage));
+        const softAccents=['#A989CB','#84A8D1','#84B4A0','#D6B28B'];
+        card.style.setProperty('--lk-stage-accent',stage.color||module.color?flow.stageColor(module,stage):softAccents[index%softAccents.length]);
         const head=el('header','lk-substage-head');
         head.draggable=!blocked&&!stage.virtual;
         head.dataset.dragStage=stage.id;head.dataset.module=module.id;head.title='拖动子环节标题区调整顺序';

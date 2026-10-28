@@ -60,6 +60,7 @@
   const flow=window.LambertLogisticsFlow;
   const versions=window.LambertLogisticsVersion,overview=window.LambertLogisticsOverview;
   const editor=window.LambertLogisticsEditor;
+  const triggerApi=window.LambertLogisticsTriggerV33;
   let editingModuleId='',searchTerm='',branchSourceId='',renameModuleId='',renameNodeId='',returnQuickAfterEdit=false;
   const copy=x=>JSON.parse(JSON.stringify(x));
   function read() {
@@ -102,17 +103,12 @@
     '<div id="lkData" role="tabpanel" aria-labelledby="lkTabData" hidden><div class="lk-data-guide"><strong>从业务动作追到数据</strong><p>操作／事件 → 信息变化 → 记录字段 → 后续指标。这里只列研究关系，不假装已接入真实数据表或驾驶舱。</p></div><div id="lkDataRows" class="lk-data-rows"></div></div>'+
     '<p class="lk-footnote">提示：预配不等于发运，系统生成轨迹也不必然等于实物动作完成。每条事件／接口关系应以系统截图、接口响应或数据库记录确认。</p><p id="lkMessage" class="lk-message" role="status"></p></div>'+
     '<dialog id="lkNodeDialog" class="lk-dialog"><form id="lkNodeForm"><h3 id="lkEditorTitle">操作节点</h3><label>操作名称<input id="lkTitleInput" required maxlength="70"></label>'+
-    '<label>动作类型<select id="lkKindInput"><option>业务操作</option><option>系统动作</option><option>外部事件</option></select></label>'+
-    '<label>业务操作 / 触发条件<textarea id="lkActionInput" rows="3" maxlength="1500"></textarea></label>'+
-    '<label>信息传递 / 系统触发<textarea id="lkInfoInput" rows="3" maxlength="1500"></textarea></label>'+
-    '<label>数据字段 / 记录<textarea id="lkRecordInput" rows="2" maxlength="1500"></textarea></label>'+
-    '<label>操作备注<textarea id="lkNoteInput" rows="3" maxlength="2500" placeholder="业务解释、注意事项和待核实问题"></textarea></label>'+
-    '<label>标签（逗号分隔，可搜索）<input id="lkTagsInput" maxlength="600" placeholder="安检, 扫描, 国内中心仓"></label>'+
-    '<label>关联操作码（预留，非自动映射）<input id="lkCodesInput" maxlength="600" placeholder="填写已核实的操作码，不编造代码"></label>'+
-    '<label>小操作块自定义颜色<input id="lkNodeColor" type="color" value="#FFFFFF"></label>'+
-    '<label class="lk-inline-check"><input id="lkNodeNoColor" type="checkbox"> 使用默认白色</label>'+
-    '<label>核实状态<select id="lkConfidenceInput"><option>待核实</option><option>部分核实</option><option>已核实</option></select></label>'+
-    '<label>证据 / 待核实问题<textarea id="lkEvidenceInput" rows="2" maxlength="1500" placeholder="例如：接口路径、截图描述、SQL、待核实问题"></textarea></label>'+
+    '<label>操作说明<textarea id="lkActionInput" rows="2" maxlength="1500" placeholder="谁在什么场景下执行什么操作"></textarea></label>'+
+    '<div class="lk-trigger-field"><div class="lk-trigger-heading"><strong>触发结果</strong><button type="button" id="lkAddTrigger">＋ 增加触发结果</button></div><p class="lk-form-hint">记录操作完成后产生的事件、系统动作或状态变化，可添加多项。新建操作至少填写一项。</p><div id="lkTriggerRows"></div></div>'+
+    '<details class="lk-event-bind"><summary>关联轨迹事件码 · 按需展开</summary><label>搜索轨迹事件码或描述<input type="search" id="lkEventSearch" disabled placeholder="等待导入真实操作码表"></label><p class="lk-form-hint" id="lkEventHint">尚未导入事件码表。当前不自动生成或猜测映射关系。</p><div id="lkExistingCodes"></div></details>'+
+    '<label>备注（可选）<textarea id="lkNoteInput" rows="2" maxlength="2500" placeholder="特殊业务规则、注意事项与待补充信息"></textarea></label>'+
+    '<label>标签（可选，逗号分隔）<input id="lkTagsInput" maxlength="600" placeholder="如：安检, 扫描, 中心仓"></label>'+
+    '<details class="lk-node-appearance"><summary>外观 · 小模块颜色</summary><label>节点颜色<input id="lkNodeColor" type="color" value="#FFFFFF"></label><label class="lk-inline-check"><input id="lkNodeNoColor" type="checkbox"> 使用默认颜色</label></details>'+
     '<div class="lk-dialog-actions"><button type="button" id="lkNodeCancel">取消</button><button type="submit" class="lk-primary">保存节点</button></div></form></dialog>'+
     '<dialog id="lkModuleDialog" class="lk-dialog"><form id="lkModuleForm"><h3 id="lkModuleDialogTitle">添加线路模块</h3><label>模块名称<input id="lkModuleName" maxlength="60" required placeholder="例如：海外转运中心"></label>'+
     '<label>归属环节<select id="lkModuleCategory"><option>仓</option><option>干</option><option>关</option><option>配</option></select></label>'+
@@ -162,7 +158,7 @@
         m.nodes.forEach((n,i)=>{
           const wrap=node('div',undefined,'lk-step');wrap.draggable=!blocked&&!locked;wrap.dataset.dragNode=n.id;wrap.dataset.dragFrom=m.id;
           const step=button('', 'select-node','lk-node lk-canvas-op'+(n.id===selectedId&&m.id===moduleId?' is-current':''));step.dataset.id=n.id;step.dataset.module=m.id;
-          step.append(node('small',String(i+1).padStart(2,'0')+' · '+n.kind),node('strong',n.title),node('span',n.confidence||'待核实'));
+          step.append(node('small',String(i+1).padStart(2,'0')),node('strong',n.title));
           if(n.color)wrap.style.setProperty('--lk-node-accent',flow.color(n.color,'#222222'));
           wrap.append(step);lane.append(wrap);
         });
@@ -217,7 +213,7 @@
     const m=current(),n=m?.enabled?selected():null;
     if(!n){host.append(node('p','在上方画布点击一个操作块，即可查看业务动作、系统关系和数据。','lk-empty'));return;}
     const header=node('div',undefined,'lk-detail-head');
-    const title=node('div');const group=stages.stages(m).find(x=>x.id===stages.stageFor(m,n));title.append(node('small',m.category+' / '+m.name+' / '+(group?.name||'操作流程')+' / '+n.kind),node('h3',n.title));
+    const title=node('div');const group=stages.stages(m).find(x=>x.id===stages.stageFor(m,n));title.append(node('small',m.category+' / '+m.name+' / '+(group?.name||'操作流程')),node('h3',n.title));
     const actions=node('div',undefined,'lk-node-quick-actions');
     const rename=button('编辑名称','rename-node','lk-edit-name',blocked||locked);
     rename.dataset.id=n.id;rename.dataset.module=m.id;
@@ -227,17 +223,32 @@
     del.dataset.id=n.id;del.dataset.module=m.id;
     actions.append(rename,edit,del);
     header.append(title,actions);host.append(header);
-    host.append(node('span','核实状态：'+(n.confidence||'待核实'),'lk-status'));
-    host.append(field('操作备注',n.note||'暂无备注'));
+    host.append(field('操作说明',n.action||'暂无说明'));
+    const outcomes=triggerApi.triggers(n);
+    const triggerSection=node('section',undefined,'lk-trigger-summary');
+    triggerSection.append(node('h4','触发结果'));
+    if(outcomes.length){
+      const list=document.createElement('ul');list.className='lk-trigger-list';
+      outcomes.forEach(t=>list.append(node('li',t.description)));
+      triggerSection.append(list);
+    }else triggerSection.append(node('p','此旧节点尚未整理触发结果，可在编辑内容中补充。','lk-form-hint'));
+    host.append(triggerSection);
+    if(n.note)host.append(field('备注',n.note));
     const tags=node('div',undefined,'lk-node-chips');
     (n.tags||[]).forEach(tag=>tags.append(node('span','#'+tag,'lk-node-chip')));
     (n.operationCodes||[]).forEach(code=>tags.append(node('span','操作码 '+code,'lk-code-chip')));
     host.append(tags);
-    host.append(field('① 业务操作 / 触发条件',n.action));
-    const more=document.createElement('details');more.className='lk-related-details';
-    const summary=node('summary','按需展开 · 系统信息流与数据记录');more.append(summary);
-    more.append(field('② 信息流 / 系统触发',n.information),field('③ 数据流 / 记录字段',n.data),field('核实依据 / 证据',n.evidence));
-    host.append(more);
+    const codes=(n.eventRefs||[]).length?(n.eventRefs||[]).map(x=>x.code||x.id).filter(Boolean):(n.operationCodes||[]);
+    if(codes.length)host.append(field('关联码（旧记录／待字典确认）',codes.join('、')));
+    const legacy=[n.information,n.data,n.evidence].filter(v=>typeof v==='string'&&v.trim());
+    if(legacy.length){
+      const more=document.createElement('details');more.className='lk-related-details';
+      more.append(node('summary','查看历史字段（原样保留）'));
+      if(n.information)more.append(field('原信息传递记录',n.information));
+      if(n.data)more.append(field('原数据字段记录',n.data));
+      if(n.evidence)more.append(field('原证据或研究记录',n.evidence));
+      host.append(more);
+    }
     const graphBox=node('section',undefined,'lk-related-graph');
     graphBox.append(node('h4','④ 条件分支 / 异常路径'));
     const outgoing=flow.activeBranches(m).filter(edge=>edge.from===n.id);
@@ -357,25 +368,42 @@
     $('lkRenameNodeName').focus();
     $('lkRenameNodeName').select();
   }
-    function openEditor(edit){
+    function appendTriggerRow(description='',id=makeId('trigger')){
+    const container=$('lkTriggerRows');
+    if(container.children.length>=25){setMessage('一个操作最多配置 25 项触发结果。');return;}
+    const row=node('div',undefined,'lk-trigger-row');row.dataset.triggerId=id;
+    const input=document.createElement('input');input.type='text';input.maxLength=500;
+    input.placeholder='例如：登记上车状态，产生内部装车事件';input.value=description;
+    input.setAttribute('aria-label','触发结果内容');
+    const remove=button('移除','trigger-row-delete','lk-trigger-row-delete');
+    row.append(input,remove);container.append(row);
+  }
+  function readTriggerRows(){
+    return [...$('lkTriggerRows').querySelectorAll('.lk-trigger-row')].map(el=>({
+      id:el.dataset.triggerId,description:el.querySelector('input').value.trim()
+    })).filter(x=>x.description);
+  }
+  $('lkAddTrigger').onclick=()=>appendTriggerRow();
+  function openEditor(edit){
     if(blocked||locked)return;
     returnQuickAfterEdit=$('lkQuickDetailDialog').open;
     closeQuickDetail();
     const n=edit?selected():null;
     editorMode=n?'edit':'new';
-    $('lkEditorTitle').textContent=n?'编辑操作节点':'添加操作节点';
+    $('lkEditorTitle').textContent=n?'编辑操作':'新增操作';
     $('lkTitleInput').value=n?.title||'';
-    $('lkKindInput').value=n?.kind||'业务操作';
     $('lkActionInput').value=n?.action||'';
-    $('lkInfoInput').value=n?.information||'待核实：操作后哪些系统接收什么事件？';
-    $('lkRecordInput').value=n?.data||'待核实：关联对象、记录字段及时间';
-    $('lkConfidenceInput').value=n?.confidence||'待核实';
-    $('lkEvidenceInput').value=n?.evidence||'';
     $('lkNoteInput').value=n?.note||'';
     $('lkTagsInput').value=(n?.tags||[]).join(', ');
-    $('lkCodesInput').value=(n?.operationCodes||[]).join(', ');
     $('lkNodeColor').value=n?.color||'#FFFFFF';
     $('lkNodeNoColor').checked=!n?.color;
+    $('lkTriggerRows').replaceChildren();
+    triggerApi.triggers(n).forEach(t=>appendTriggerRow(t.description,t.id));
+    if(!triggerApi.triggers(n).length)appendTriggerRow();
+    const oldCodes=(n?.operationCodes||[]).join('、');
+    $('lkExistingCodes').textContent=oldCodes?'保留的旧码值：'+oldCodes+'（未建立新映射）':'';
+    $('lkEventSearch').disabled=true;
+    $('lkEventHint').textContent='码表待导入：收到真实操作码表后，才能启用事件码／轨迹描述搜索并建立关联。';
     $('lkNodeDialog').showModal();
   }
   function mutate(fn){
@@ -427,6 +455,11 @@
     const b=event.target.closest('button[data-action]');
     if(!b)return;
     const type=b.dataset.action,id=b.dataset.id;
+    if(type==='trigger-row-delete'){
+      const row=b.closest('.lk-trigger-row');
+      if(row){row.remove();if(!$('lkTriggerRows').children.length)appendTriggerRow();}
+      return;
+    }
     if(type==='color-reset-module'||type==='color-reset-stage'){
       mutate(next=>flow.resetColor(next,type==='color-reset-module'?id:b.dataset.module,type==='color-reset-stage'?b.dataset.stage:null));return;
     }
@@ -642,23 +675,23 @@
   });
   $('lkNodeCancel').onclick=()=>cancelSecondaryEdit('lkNodeDialog');
   $('lkNodeForm').addEventListener('submit',e=>{
-    e.preventDefault();if(!current()?.enabled)return;
-    const input={
-      title:$('lkTitleInput').value.trim(),kind:$('lkKindInput').value,action:$('lkActionInput').value.trim(),
-      information:$('lkInfoInput').value.trim(),data:$('lkRecordInput').value.trim(),
-      confidence:$('lkConfidenceInput').value,evidence:$('lkEvidenceInput').value.trim(),
+    e.preventDefault();if(!current()?.enabled||blocked||locked)return;
+    const rows=readTriggerRows();
+    if(rows.length>25)return;
+    if(editorMode==='new'&&!rows.length){
+      $('lkTriggerRows').querySelector('input')?.focus();
+      setMessage('新增操作至少需要一项触发结果；已有历史操作可分次补充。');
+      return;
+    }
+    const input={title:$('lkTitleInput').value.trim(),action:$('lkActionInput').value.trim(),
       note:$('lkNoteInput').value.trim(),tags:editor.labels($('lkTagsInput').value),
-      operationCodes:editor.codes($('lkCodesInput').value),
-      color:$('lkNodeNoColor').checked?null:$('lkNodeColor').value.toUpperCase()
-    };
+      color:$('lkNodeNoColor').checked?null:$('lkNodeColor').value.toUpperCase()};
     if(!input.title)return;
-    const id=editorMode==='edit'?selectedId:makeId('op');
-    if(mutate(next=>{
-      const m=next.modules.find(x=>x.id===moduleId);if(!m)return;
-      const old=m.nodes.find(n=>n.id===id);
-      if(old){Object.assign(old,input);if(!input.color)delete old.color;}
-      else{const entry={id,...input,stageId:activeStageId||stages.stages(m)[0]?.id||''};if(!entry.color)delete entry.color;m.nodes.push(entry);}
-    })){
+    const id=editorMode==='edit'?selectedId:makeId('op'),mId=moduleId;
+    const changed=mutate(next=>editorMode==='edit'
+      ?triggerApi.updateNode(next,mId,id,input,rows)
+      :triggerApi.addNode(next,mId,activeStageId||stages.stages(next.modules.find(m=>m.id===mId))[0]?.id||'',id,input,rows));
+    if(changed){
       selectedId=id;$('lkNodeDialog').close();render();
       if(returnQuickAfterEdit)showQuickDetail();
       returnQuickAfterEdit=false;
