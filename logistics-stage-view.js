@@ -41,7 +41,7 @@
     }
     menu.append(summary);return menu;
   }
-  function miniChildren(module,operation,stageId,depth=0,seen=new Set()){
+  function miniChildren(module,operation,stageId,blocked,depth=0,seen=new Set()){
     const children=mini.tree(module,operation.id,seen,depth);
     if(!children.length)return null;
     const wrap=el('div','lk-mini-children');
@@ -53,7 +53,7 @@
       const card=btn(target.title,'select-node',module.id,stageId);
       card.dataset.id=target.id;card.classList.add('lk-mini-card');
       card.title='点击查看详情：'+target.title;
-      row.append(condition,card);
+      row.append(condition,card,miniMenu(module,target,stageId,blocked));
       if(circular)row.append(el('span','lk-mini-circular','↺'));
       if(grandchildren.length){
         const recursive=el('div','lk-mini-descendants');
@@ -64,7 +64,7 @@
             const label=el('span','lk-mini-condition',child.edge.label);
             const button=btn(child.target.title,'select-node',module.id,stageId);
             button.dataset.id=child.target.id;button.classList.add('lk-mini-card');
-            next.append(label,button);
+            next.append(label,button,miniMenu(module,child.target,stageId,blocked));
             if(child.circular)next.append(el('span','lk-mini-circular','↺'));
             if(child.children.length){const nested=el('div','lk-mini-descendants');draw(child.children,nested);next.append(nested);}
             parent.append(next);
@@ -145,7 +145,7 @@
             // One compact + per operation; subflow nodes are half-size and
             // attach below their source without entering the mainline order.
             cardSlot.append(miniMenu(module,op,stage.id,blocked));
-            const children=miniChildren(module,op,stage.id);
+            const children=miniChildren(module,op,stage.id,blocked);
             if(children)cardSlot.append(children);
             mainline.append(cardSlot);
             if(i<mainMembers.length-1)mainline.append(arrow(op.title+' 后续操作'));
