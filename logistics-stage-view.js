@@ -3,7 +3,7 @@
  */
 (function(host){
   'use strict';
-  const stagesAPI=host.LambertLogisticsStages,flow=host.LambertLogisticsFlow,setup=host.LambertLogisticsSetupV34;
+  const stagesAPI=host.LambertLogisticsStages,flow=host.LambertLogisticsFlow,setup=host.LambertLogisticsSetupV34,mini=host.LambertLogisticsV35;
   if(!stagesAPI||!flow)return;
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
   const btn=(label,action,moduleId,stageId,disabled=false)=>{
@@ -23,6 +23,58 @@
     input.setAttribute('aria-label','设置'+stage.name+'子环节颜色');
     const reset=btn('默认色','color-reset-stage',m.id,stage.id,blocked||stage.virtual||!stage.color);
     label.append(txt,input);return {label,reset};
+  }
+  function miniMenu(module,operation,stageId,blocked){
+    const menu=el('details','lk-mini-add');
+    const summary=el('summary','', '＋');
+    summary.title='为「'+operation.title+'」添加业务分支或异常流程';
+    summary.setAttribute('aria-label','为'+operation.title+'添加子流程');
+    if(blocked||module.enabled===false){
+      summary.setAttribute('aria-disabled','true');menu.classList.add('is-disabled');
+    }else{
+      const choices=el('div','lk-mini-choices');
+      [['branch','分支流程'],['exception','异常流程']].forEach(([type,label])=>{
+        const b=btn(label,'branch-quick-choice',module.id,stageId);
+        b.dataset.id=operation.id;b.dataset.branchType=type;choices.append(b);
+      });
+      menu.append(summary,choices);return menu;
+    }
+    menu.append(summary);return menu;
+  }
+  function miniChildren(module,operation,stageId,depth=0,seen=new Set()){
+    const children=mini.tree(module,operation.id,seen,depth);
+    if(!children.length)return null;
+    const wrap=el('div','lk-mini-children');
+    children.forEach(({edge,target,circular,children:grandchildren})=>{
+      if(!target)return;
+      const row=el('div','lk-mini-path '+(edge.type==='exception'?'lk-mini-exception':'lk-mini-branch'));
+      const condition=el('span','lk-mini-condition',edge.label||'条件');
+      condition.title='触发条件：'+(edge.label||'');
+      const card=btn(target.title,'select-node',module.id,stageId);
+      card.dataset.id=target.id;card.classList.add('lk-mini-card');
+      card.title='点击查看详情：'+target.title;
+      row.append(condition,card);
+      if(circular)row.append(el('span','lk-mini-circular','↺'));
+      if(grandchildren.length){
+        const recursive=el('div','lk-mini-descendants');
+        function draw(items,parent){
+          items.forEach(child=>{
+            if(!child.target)return;
+            const next=el('div','lk-mini-path '+(child.edge.type==='exception'?'lk-mini-exception':'lk-mini-branch'));
+            const label=el('span','lk-mini-condition',child.edge.label);
+            const button=btn(child.target.title,'select-node',module.id,stageId);
+            button.dataset.id=child.target.id;button.classList.add('lk-mini-card');
+            next.append(label,button);
+            if(child.circular)next.append(el('span','lk-mini-circular','↺'));
+            if(child.children.length){const nested=el('div','lk-mini-descendants');draw(child.children,nested);next.append(nested);}
+            parent.append(next);
+          });
+        }
+        draw(grandchildren,recursive);row.append(recursive);
+      }
+      wrap.append(row);
+    });
+    return wrap;
   }
   function renderStageLane(hostEl,state,blocked){
     for(const module of state.modules){
@@ -56,7 +108,6 @@
           btn('改名','stage-rename',module.id,stage.id,blocked||!!stage.virtual),
           btn('前置配置','setup-stage',module.id,stage.id,blocked||!!stage.virtual),
           btn('＋ 操作','stage-add-node',module.id,stage.id,blocked||!module.enabled),
-          btn('＋ 分支 / 异常','stage-branch',module.id,stage.id,blocked||!module.enabled||!module.nodes.some(n=>stagesAPI.stageFor(module,n)===stage.id)),
           btn('删除','stage-delete',module.id,stage.id,blocked||!!stage.virtual)
         );
         head.append(grip,name,actions);card.append(head);
@@ -91,36 +142,11 @@
               cardSlot.append(meta);
             }
             cardSlot.prepend(step);
-            const outgoing=edges.filter(e=>e.from===op.id);
-            if(outgoing.length){
-              const div=el('div','lk-flow-branches');
-              outgoing.forEach(edge=>{
-                const target=module.nodes.find(n=>n.id===edge.to);
-                const branch=el('div','lk-branch-edge '+(edge.type==='branch'?'lk-branch-normal':'lk-branch-exception'));
-                const connector=el('span','lk-branch-connector','↳');
-                connector.title='从 '+op.title+' 分支';
-                const tag=el('span','lk-branch-condition',edge.label);
-                const diagonal=el('span','lk-branch-arrow','⟶');
-                const sameStage=target&&stagesAPI.stageFor(module,target)===stage.id;
-                const actual=target&&sameStage&&flow.isBranchOnly(module,target.id)?byId.get(target.id):null;
-                if(actual&&actual.parentElement===null){
-                  actual.classList.add('lk-branch-node');
-                  actual.dataset.stageId=stage.id;
-                  const link=actual.querySelector('button[data-action="select-node"]');
-                  if(link)link.dataset.stage=stage.id;
-                  actual.querySelector('.lk-step-actions')?.remove();
-                  if(target.color)actual.style.setProperty('--lk-node-accent',flow.color(target.color,'#222222'));
-                  branch.classList.add(edge.type==='branch'?'lk-branch-normal':'lk-branch-exception');
-                  branch.append(connector,tag,diagonal,actual);
-                }else{
-                  const targetLink=btn(target?.title||'未知目标','select-node',module.id,stage.id);
-                  targetLink.classList.add('lk-branch-target');targetLink.dataset.id=edge.to;
-                  branch.append(connector,tag,diagonal,targetLink);
-                }
-                div.append(branch);
-              });
-              cardSlot.append(div);
-            }
+            // One compact + per operation; subflow nodes are half-size and
+            // attach below their source without entering the mainline order.
+            cardSlot.append(miniMenu(module,op,stage.id,blocked));
+            const children=miniChildren(module,op,stage.id);
+            if(children)cardSlot.append(children);
             mainline.append(cardSlot);
             if(i<mainMembers.length-1)mainline.append(arrow(op.title+' 后续操作'));
           });
