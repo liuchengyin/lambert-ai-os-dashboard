@@ -18,6 +18,8 @@ try{
  check('stage toolbar has no branch or exception button',await page.locator('.lk-stage-actions [data-action="stage-branch"]').count()===0);
  const warehouse=page.locator('.lk-canvas-block[data-module="head"]');
  const scan=warehouse.locator('.lk-flow-item').filter({has:page.locator('[data-drag-node="security-scan"]')});
+ console.log('DIAG',JSON.stringify({scan:await scan.count(),plus:await scan.locator('.lk-mini-add').count(),errors,
+   html:await warehouse.locator('.lk-flow-item').first().evaluate(el=>el.outerHTML.slice(0,1800))}));
  check('each main operation has single compact plus',await scan.locator('.lk-mini-add').count()===1);
  check('red branch miniature linked below same operation',await scan.locator('.lk-mini-exception > .lk-mini-card').count()===1);
  check('miniature is narrower than normal operation',await scan.locator('.lk-mini-card').first().evaluate(el=>el.getBoundingClientRect().width)<=100);
