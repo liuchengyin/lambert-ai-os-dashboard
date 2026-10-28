@@ -56,7 +56,9 @@ try{
  await page.locator('.lk-canvas-block[data-module="head"] button[data-action="color-reset-module"]').click();
  check('reset returns to warehouse default',(await current()).modules[0].color===undefined);
  check('visual reset applied',await head.evaluate(e=>getComputedStyle(e).getPropertyValue('--lk-module-accent').trim())==='#477DBD');
- check('OS data untouched',await page.evaluate(snapshot=>Object.keys(snapshot).every(k=>localStorage.getItem(k)===snapshot[k]),baseData));
+ const changed=await page.evaluate(snapshot=>Object.fromEntries(Object.keys(snapshot).filter(k=>localStorage.getItem(k)!==snapshot[k]).map(k=>[k,{before:snapshot[k],after:localStorage.getItem(k)}])),baseData);
+ if(Object.keys(changed).length)console.log('OS_DATA_DIFF',JSON.stringify(changed).slice(0,3000));
+ check('OS data untouched',Object.keys(changed).length===0);
  await page.setViewportSize({width:390,height:844});
  check('mobile still shows arrows and color selector',await head.locator('input[data-color-module="head"]:not([data-color-stage])').isVisible() && await head.locator('.lk-flow-arrow').count()>0);
  if(errors.length)console.log('PAGE_ERRORS',JSON.stringify(errors));
