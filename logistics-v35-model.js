@@ -13,10 +13,13 @@
        (mode==='road'?/陆运|公路/.test(m.name):mode==='sea'?/海运/.test(m.name):/空运/.test(m.name)))))
  }));
  const edges=(module,from)=>{
-   const ids=new Set(module?.nodes?.map(n=>n.id)||[]);
-   return (module?.branches||[]).filter(e=>e?.from===from&&ids.has(e.to)&&
-     (e.type==='branch'||e.type==='exception'||e.type===undefined))
-     .map(e=>({...e,type:e.type==='branch'?'branch':e.type==='exception'?'exception':/异常|失败|错误/.test(e.label)?'exception':'branch'}));
+   const ids=new Set(module?.nodes?.map(n=>n.id)||[]),seen=new Set();
+   return (module?.branches||[]).filter(e=>{
+      if(!e||e.from!==from||!ids.has(e.to)||!['branch','exception',undefined].includes(e.type))return false;
+      const key=e.from+'\u0000'+e.to;
+      if(seen.has(key))return false;
+      seen.add(key);return true;
+     }).map(e=>({...e,type:e.type==='branch'?'branch':e.type==='exception'?'exception':/异常|失败|错误/.test(e.label)?'exception':'branch'}));
  };
  const tree=(module,start,seen=new Set(),depth=0)=>{
    if(depth>=MAX_DEPTH)return [];
