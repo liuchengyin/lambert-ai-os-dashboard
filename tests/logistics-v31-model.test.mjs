@@ -50,7 +50,8 @@ test('restoration requires parent and protects against collisions',()=>{
  assert.equal(api.restore(d,'t1'),false);
  assert.equal(JSON.stringify(d),before);
  assert.equal(api.restore(d,'t2'),true);
- assert.equal(api.restore(d,'t1'),false); // duplicate exists in restored parent
+ assert.equal(api.restore(d,'t1'),true); // deleted child can be restored after its parent
+ assert.equal(d.modules[0].nodes.find(n=>n.id==='scan').evidence,'图片A');
 });
 test('same delete ID rejected before mutation',()=>{
  const d=fixture();api.remove(d,'node','head','scan','same');
