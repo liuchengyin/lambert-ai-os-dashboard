@@ -63,7 +63,7 @@
   const triggerApi=window.LambertLogisticsTriggerV33;
   const setup=window.LambertLogisticsSetupV34;
   const mini=window.LambertLogisticsV35;
-  let setupModuleId='',setupStageId=null,editingSetup=false;
+  let setupModuleId='',setupStageId=null,editingSetup=false,exchangeNodeId='',exchangeModuleId='';
   let editingModuleId='',searchTerm='',branchSourceId='',renameModuleId='',renameNodeId='',returnQuickAfterEdit=false;
   const copy=x=>JSON.parse(JSON.stringify(x));
   function read() {
@@ -129,6 +129,7 @@
     '<label class="lk-branch-checkbox" hidden><input id="lkBranchOnly" type="checkbox" checked>目标只显示在分支上（不加入主线）</label>'+
     '<div class="lk-dialog-actions"><button type="button" id="lkBranchCancel">取消</button><button type="submit" class="lk-primary">保存条件分支</button></div></form></dialog>'+
     '<dialog id="lkSetupDialog" class="lk-dialog lk-setup-dialog"><form id="lkSetupForm"><h3 id="lkSetupTitle">编辑前置配置</h3><p class="lk-form-hint">配置在业务操作前需要准备的基础数据或条件。名称与具体值分开保存，未填写不代表已完成配置。</p><div class="lk-setup-actions"><button id="lkAddSetup" type="button">＋ 增加配置项</button><button id="lkApplyModeSetup" type="button">＋ 套用运输类型参考项</button></div><div id="lkSetupRows"></div><p class="lk-form-hint">注：航班日志属于运行记录入口，标记为「关联记录」，不应自动视为起运前必备条件。</p><div class="lk-dialog-actions"><button type="button" id="lkSetupCancel">取消</button><button type="submit" class="lk-primary">保存前置配置</button></div></form></dialog>'+
+    '<dialog id="lkExchangeDialog" class="lk-dialog lk-stage-dialog"><form id="lkExchangeForm"><h3>信息交换 · 独立于业务分支</h3><p class="lk-form-hint">信息交换记录“谁发送 → 谁接收 → 发送什么”，不新增业务流程或异常连线。可作为将来 OMS / TMS / EDI 时序图的数据入口。</p><label>发送方<input id="lkExchangeFrom" required maxlength="90" placeholder="例如 TMS"></label><label>接收方<input id="lkExchangeTo" required maxlength="90" placeholder="例如 EDI"></label><label>交换内容<input id="lkExchangeMessage" required maxlength="300" placeholder="例如 发送包裹扫描事件"></label><label>备注（可选）<textarea id="lkExchangeNote" rows="2" maxlength="500"></textarea></label><div class="lk-dialog-actions"><button id="lkExchangeCancel" type="button">取消</button><button class="lk-primary" type="submit">保存信息交换</button></div></form></dialog>'+
     '<dialog id="lkQuickDetailDialog" class="lk-dialog lk-quick-detail-dialog" aria-label="操作模块详情"><div class="lk-quick-bar"><strong>操作模块详情</strong><button type="button" id="lkQuickClose" aria-label="关闭详情">关闭 ×</button></div><div id="lkQuickReadOnly" class="lk-quick-lock-note" hidden>当前已锁定，解锁后可以修改名称、内容或删除。<button type="button" id="lkQuickUnlock">解锁编辑</button></div><article id="lkQuickDetailBody" class="lk-detail"></article></dialog>'+
     '<dialog id="lkRenameNodeDialog" class="lk-dialog lk-rename-dialog" aria-label="修改操作模块名称"><form id="lkRenameNodeForm"><h3>编辑小模块名称</h3><label>操作名称<input id="lkRenameNodeName" type="text" maxlength="70" required placeholder="例如：安检扫描"></label><p class="lk-footnote">只修改名称，保留操作 ID、备注、轨迹事件码及所有流程连线。</p><div class="lk-dialog-actions"><button type="button" id="lkRenameNodeCancel">取消</button><button type="submit" class="lk-primary">保存名称</button></div></form></dialog>';
   const makeId=prefix=>prefix+'_'+(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'_'+Math.random().toString(36).slice(2));
@@ -278,6 +279,23 @@
       triggerSection.append(list);
     }else triggerSection.append(node('p','此旧节点尚未整理触发结果，可在编辑内容中补充。','lk-form-hint'));
     host.append(triggerSection);
+    const exchangeBox=node('section',undefined,'lk-exchange');
+    const exchangeHead=node('div',undefined,'lk-exchange-head');
+    exchangeHead.append(node('h4','信息交换 · 系统时序'));
+    const addExchange=button('＋ 记录交互','exchange-add','lk-exchange-add',blocked||locked);
+    addExchange.dataset.module=m.id;addExchange.dataset.id=n.id;
+    exchangeHead.append(addExchange);exchangeBox.append(exchangeHead);
+    const items=Array.isArray(n.exchanges)?n.exchanges:[];
+    if(items.length){
+      items.forEach(item=>{
+        const row=node('div',undefined,'lk-exchange-item');
+        row.append(node('strong',item.source||'未知'),node('span','→'),node('strong',item.target||'未知'),node('span',item.message||''));
+        if(item.note)row.append(node('small',item.note));
+        const del=button('移除','exchange-remove','',blocked||locked);
+        del.dataset.id=item.id;del.dataset.module=m.id;del.dataset.node=n.id;row.append(del);exchangeBox.append(row);
+      });
+    }else exchangeBox.append(node('p','尚无信息交换记录，业务分支与信息交换是不同的两种关系。','lk-form-hint'));
+    host.append(exchangeBox);
     if(n.note)host.append(field('备注',n.note));
     const tags=node('div',undefined,'lk-node-chips');
     (n.tags||[]).forEach(tag=>tags.append(node('span','#'+tag,'lk-node-chip')));
@@ -559,6 +577,16 @@
       return {id:row.dataset.setupId,name:name.value.trim(),value:value.value.trim(),note:note.value.trim(),role:role.value};
     });
   }
+  $('lkExchangeCancel').onclick=()=>$('lkExchangeDialog').close();
+  $('lkExchangeForm').addEventListener('submit',e=>{
+    e.preventDefault();
+    if(blocked||locked)return;
+    const exchange={id:makeId('exchange'),source:$('lkExchangeFrom').value,
+      target:$('lkExchangeTo').value,message:$('lkExchangeMessage').value,note:$('lkExchangeNote').value};
+    if(mutate(next=>mini.addExchange(next,exchangeModuleId,exchangeNodeId,exchange))){
+      $('lkExchangeDialog').close();setMessage('信息交换已记录到草稿；它不是流程分支，发布后才生效。');
+    }
+  });
   $('lkAddSetup').onclick=()=>{if($('lkSetupRows').children.length<40)addSetupRow();};
   $('lkApplyModeSetup').onclick=()=>{
     const m=state.modules.find(x=>x.id===setupModuleId),mode=setup.infer(m);
@@ -598,6 +626,20 @@
     }
     if(type==='color-reset-module'||type==='color-reset-stage'){
       mutate(next=>flow.resetColor(next,type==='color-reset-module'?id:b.dataset.module,type==='color-reset-stage'?b.dataset.stage:null));return;
+    }
+    if(type==='exchange-add'){
+      if(locked||blocked)return;
+      exchangeModuleId=b.dataset.module;exchangeNodeId=id;
+      $('lkExchangeFrom').value='';$('lkExchangeTo').value='';$('lkExchangeMessage').value='';$('lkExchangeNote').value='';
+      $('lkExchangeDialog').showModal();return;
+    }
+    if(type==='exchange-remove'){
+      if(locked||blocked)return;
+      const parentId=b.dataset.node,mid=b.dataset.module;
+      if(window.confirm('确定从当前草稿移除这条信息交换记录吗？')){
+        mutate(next=>mini.removeExchange(next,mid,parentId,id));
+      }
+      return;
     }
     if(type==='branch-quick-choice'){
       if(blocked||locked)return;
