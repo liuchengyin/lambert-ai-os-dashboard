@@ -406,7 +406,7 @@
       const stageNodes=m.nodes.filter(n=>stages.stageFor(m,n)===stageId);
       const index=stageNodes.findIndex(n=>n.id===target.dataset.dragNode);
       const rect=target.getBoundingClientRect();
-      if(event.clientY<rect.top+rect.height/2)before=target.dataset.dragNode;
+      if(target.closest('.lk-flow-main')?event.clientX<rect.left+rect.width/2:event.clientY<rect.top+rect.height/2)before=target.dataset.dragNode;
       else before=stageNodes[index+1]?.id||null;
     }
     if(mutate(next=>stages.moveToStage(next,active.from,active.id,dest,stageId,before,moves))){
