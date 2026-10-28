@@ -34,7 +34,14 @@
    if(!m||!Array.isArray(m.branches))return false;
    const i=m.branches.findIndex(b=>b.id===id);
    if(i<0)return false;
-   m.branches.splice(i,1);return true;
+   const [removed]=m.branches.splice(i,1);
+   // Clear the optional presentation flag only when no active branch still
+   // targets this operation. Never delete the operation or its evidence.
+   if(!activeBranches(m).some(edge=>edge.to===removed.to)){
+     const target=m.nodes?.find(n=>n.id===removed.to);
+     if(target?.branchOnly===true)delete target.branchOnly;
+   }
+   return true;
  }
  function setColor(doc,moduleId,value,stageId=null){
    const m=doc?.modules?.find(x=>x.id===moduleId);
