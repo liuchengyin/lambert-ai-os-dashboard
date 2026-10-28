@@ -79,7 +79,7 @@
               const div=el('div','lk-flow-branches');
               outgoing.forEach(edge=>{
                 const target=module.nodes.find(n=>n.id===edge.to);
-                const branch=el('div','lk-branch-edge');
+                const branch=el('div','lk-branch-edge '+(edge.type==='branch'?'lk-branch-normal':'lk-branch-exception'));
                 const connector=el('span','lk-branch-connector','↳');
                 connector.title='从 '+op.title+' 分支';
                 const tag=el('span','lk-branch-condition',edge.label);
