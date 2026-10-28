@@ -1,0 +1,29 @@
+name: Logistics P0 canvas browser validation
+on:
+  push:
+    branches: [feat/web-logistics-canvas-p0-20261028]
+    paths: ['.github/workflows/logistics-p0-browser.yml']
+permissions:
+  contents: read
+jobs:
+  p0-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pure move regression without external dependencies
+        run: node tests/logistics-canvas-logic.test.mjs
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Exercise the real OS page and P0 canvas in browser
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/logistics-http.log 2>&1 &
+          sleep 2
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-knowledge-ui.mjs
