@@ -62,6 +62,7 @@
   const editor=window.LambertLogisticsEditor;
   const triggerApi=window.LambertLogisticsTriggerV33;
   const setup=window.LambertLogisticsSetupV34;
+  const mini=window.LambertLogisticsV35;
   let setupModuleId='',setupStageId=null,editingSetup=false;
   let editingModuleId='',searchTerm='',branchSourceId='',renameModuleId='',renameNodeId='',returnQuickAfterEdit=false;
   const copy=x=>JSON.parse(JSON.stringify(x));
@@ -96,12 +97,13 @@
     '<button type="button" id="lkExport">导出知识库</button></header>'+
     '<div class="lk-toolbar"><span class="lk-route">中国 → 哈萨克斯坦 · 陆运示例</span><span class="lk-warning">示意链路 · 实际系统规则待核实</span></div>'+
     '<div class="lk-version-bar"><span id="lkEditStatus">已锁定 · 只读</span><div class="lk-version-actions"><button type="button" id="lkUnlock">解锁编辑</button><button type="button" id="lkSaveDraft" disabled>保存草稿</button><button type="button" id="lkPublish" disabled>确认发布</button><button type="button" id="lkCancelEdit" disabled>取消并锁定</button></div><div class="lk-version-history"><label>历史版本 <select id="lkHistorySelect"><option value="">选择历史版本</option></select></label><button type="button" id="lkRollback" disabled>回滚为新版本</button></div></div>'+
-    '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabOverview" aria-selected="false">全链路总览</button><button type="button" role="tab" id="lkTabProcess" aria-selected="true">模块编辑 · 操作＋信息</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button></div>'+
+    '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabOverview" aria-selected="false">全链路总览</button><button type="button" role="tab" id="lkTabProcess" aria-selected="true">模块编辑 · 操作＋信息</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button><button type="button" role="tab" id="lkTabSetup" aria-selected="false">基础资料配置</button></div>'+
     '<div id="lkOverview" role="tabpanel" aria-labelledby="lkTabOverview" hidden><div class="lk-ov-switch"><span>查看已发布版本</span><div role="group" aria-label="全链路展示模式"><button type="button" id="lkModeMacro" aria-pressed="true">A · 宏观模块</button><button type="button" id="lkModeDetail" aria-pressed="false">B · 完整流程</button></div></div><div id="lkOverviewContent"></div></div>'+
     '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-search-bar"><label>搜索操作、标签、操作码 <input id="lkSearch" type="search" placeholder="例如：安检 / 上车 / DDS"></label><div id="lkSearchResults" aria-live="polite"></div></div><div class="lk-canvas-categories" aria-label="物流模块底座"><span class="lk-canvas-category">仓</span><span class="lk-canvas-category">干</span><span class="lk-canvas-category">关</span><span class="lk-canvas-category">配</span></div><div class="lk-section-title"><div><strong>模块化操作画布</strong><small>大模块内包含可调整的子环节，例如：国内中心仓 → 到车／收入／分拣／发出。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div class="lk-mode-toolbar"><strong>干线类型</strong><span>按运输方式分类，也可为每个环节填写前置配置</span><button type="button" data-action="add-linehaul-mode" data-mode="road">＋ 陆运</button><button type="button" data-action="add-linehaul-mode" data-mode="sea">＋ 海运</button><button type="button" data-action="add-linehaul-mode" data-mode="air">＋ 空运</button></div><div id="lkModules" class="lk-modules lk-canvas"></div>'+
     '<div class="lk-section-title lk-selection-head"><div><strong id="lkNodeTitle">操作节点详情</strong><small>选择上方的小块；系统关系放在详情内按需展开</small></div><button type="button" id="lkAddNode">＋ 为选中模块添加操作</button></div>'+
     '<details class="lk-trash-panel"><summary>回收站 · 可恢复的删除记录 <span id="lkTrashCount">0</span></summary><div id="lkTrashList"></div></details>'+
     '<div class="lk-workspace lk-canvas-workspace"><div id="lkNodes" class="lk-nodes" hidden aria-hidden="true"></div><article id="lkDetail" class="lk-detail"></article></div></div>'+
+    '<div id="lkSetupTool" role="tabpanel" aria-labelledby="lkTabSetup" hidden><div class="lk-setup-tool-intro"><strong>基础资料配置工具</strong><p>机场、航线、航班、板型、车队等是配置资料，不属于物流操作流程。按模块 / 子环节拼装配置；业务画布只保留配置入口，待后续按 ID 关联操作事件。</p></div><div id="lkSetupLibrary"></div></div>'+
     '<div id="lkData" role="tabpanel" aria-labelledby="lkTabData" hidden><div class="lk-data-guide"><strong>从业务动作追到数据</strong><p>操作／事件 → 信息变化 → 记录字段 → 后续指标。这里只列研究关系，不假装已接入真实数据表或驾驶舱。</p></div><div id="lkDataRows" class="lk-data-rows"></div></div>'+
     '<p class="lk-footnote">提示：预配不等于发运，系统生成轨迹也不必然等于实物动作完成。每条事件／接口关系应以系统截图、接口响应或数据库记录确认。</p><p id="lkMessage" class="lk-message" role="status"></p></div>'+
     '<dialog id="lkNodeDialog" class="lk-dialog"><form id="lkNodeForm"><h3 id="lkEditorTitle">操作节点</h3><label>操作名称<input id="lkTitleInput" required maxlength="70"></label>'+
@@ -120,11 +122,11 @@
     '<p class="lk-footnote">子环节用于组织操作步骤；原操作和业务字段不会丢失。</p><div class="lk-dialog-actions"><button type="button" id="lkStageCancel">取消</button><button type="submit" class="lk-primary">保存子环节</button></div></form></dialog>'+
     '<dialog id="lkBranchDialog" class="lk-dialog lk-stage-dialog"><form id="lkBranchForm"><h3>添加条件分支</h3><p class="lk-footnote">将当前操作连接到一个已有操作。例如：安检扫描 — 异常 → 安检异常上报。</p>'+
     '<label>触发条件<input id="lkBranchLabel" required maxlength="40" placeholder="例如：安检异常"></label>'+
-    '<label>流程类型<select id="lkBranchType"><option value="exception">异常流程</option><option value="branch">普通分支</option></select></label>'+
+    '<label id="lkBranchTypeRow" hidden>流程类型<select id="lkBranchType"><option value="exception">异常流程</option><option value="branch">普通分支</option></select></label>'+
     '<label>分支源操作<select id="lkBranchSource" required></select></label>'+
     '<label>目标操作<select id="lkBranchTarget" required></select></label>'+
     '<label>新增目标操作名称（仅在选择「新建操作」时填写）<input id="lkBranchNewTitle" maxlength="70" placeholder="例如：异常处理"></label>'+
-    '<label class="lk-branch-checkbox"><input id="lkBranchOnly" type="checkbox">目标只显示在分支上（不加入主线）</label>'+
+    '<label class="lk-branch-checkbox" hidden><input id="lkBranchOnly" type="checkbox" checked>目标只显示在分支上（不加入主线）</label>'+
     '<div class="lk-dialog-actions"><button type="button" id="lkBranchCancel">取消</button><button type="submit" class="lk-primary">保存条件分支</button></div></form></dialog>'+
     '<dialog id="lkSetupDialog" class="lk-dialog lk-setup-dialog"><form id="lkSetupForm"><h3 id="lkSetupTitle">编辑前置配置</h3><p class="lk-form-hint">配置在业务操作前需要准备的基础数据或条件。名称与具体值分开保存，未填写不代表已完成配置。</p><div class="lk-setup-actions"><button id="lkAddSetup" type="button">＋ 增加配置项</button><button id="lkApplyModeSetup" type="button">＋ 套用运输类型参考项</button></div><div id="lkSetupRows"></div><p class="lk-form-hint">注：航班日志属于运行记录入口，标记为「关联记录」，不应自动视为起运前必备条件。</p><div class="lk-dialog-actions"><button type="button" id="lkSetupCancel">取消</button><button type="submit" class="lk-primary">保存前置配置</button></div></form></dialog>'+
     '<dialog id="lkQuickDetailDialog" class="lk-dialog lk-quick-detail-dialog" aria-label="操作模块详情"><div class="lk-quick-bar"><strong>操作模块详情</strong><button type="button" id="lkQuickClose" aria-label="关闭详情">关闭 ×</button></div><div id="lkQuickReadOnly" class="lk-quick-lock-note" hidden>当前已锁定，解锁后可以修改名称、内容或删除。<button type="button" id="lkQuickUnlock">解锁编辑</button></div><article id="lkQuickDetailBody" class="lk-detail"></article></dialog>'+
@@ -132,6 +134,17 @@
   const makeId=prefix=>prefix+'_'+(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'_'+Math.random().toString(36).slice(2));
   function renderModules(){
     const host=$('lkModules');host.replaceChildren();
+    const family=node('section',undefined,'lk-trunk-family');
+    family.append(node('h3','干线 · 三条运输线','lk-trunk-title'));
+    const grid=node('div',undefined,'lk-trunk-grid');
+    const lanes=new Map();
+    mini.ORDER.forEach(mode=>{
+      const lane=node('div',undefined,'lk-trunk-route');lane.dataset.transportMode=mode;
+      lane.append(node('h4',mini.LABELS[mode]+'干线','lk-trunk-route-title'));
+      grid.append(lane);lanes.set(mode,lane);
+    });
+    family.append(grid);
+    let familyInserted=false;
     state.modules.forEach((m,index)=>{
       const card=node('section',undefined,'lk-module lk-canvas-block'+(m.id===moduleId?' is-active':'')+(!m.enabled?' is-muted':''));
       card.dataset.module=m.id;
@@ -166,7 +179,11 @@
         prereqItems.forEach(item=>list.append(node('span',(item.role==='reference'?'记录：':'')+item.name+' · '+(item.value||'待配置'),'lk-setup-badge')));
         prereq.append(list);
       }else prereq.append(node('p','尚未设置，可解锁后添加。','lk-form-hint'));
-      card.append(prereq);
+      // Basic configuration is a separate tool rather than an operation step.
+      // Keep a compact link and never insert configuration cards into the flow.
+      prereq.remove();
+      const configLink=button('基础资料 '+prereqItems.length+' 项','setup-go','lk-config-link');
+      configLink.dataset.id=m.id;card.append(configLink);
       if(!m.collapsed&&m.enabled){
         const lane=node('div',undefined,'lk-canvas-lane');lane.dataset.dropModule=m.id;
         if(!m.nodes.length)lane.append(node('p','此模块没有操作，点击「＋ 操作」添加。','lk-empty'));
@@ -184,7 +201,20 @@
       }else{
         card.append(node('p',m.nodes.length+' 个操作已折叠，展开后继续编排。','lk-folded-caption'));
       }
-      host.append(card);
+      const transport=setup.infer(m);
+      if(m.category==='干'&&transport){
+        if(!familyInserted){host.append(family);familyInserted=true;}
+        lanes.get(transport).append(card);
+      }else host.append(card);
+    });
+    if(!familyInserted)host.append(family);
+    mini.ORDER.forEach(mode=>{
+      if(!lanes.get(mode).querySelector('.lk-canvas-block')){
+        const placeholder=node('div',undefined,'lk-trunk-empty');
+        placeholder.append(node('p','暂无'+mini.LABELS[mode]+'业务流程'));
+        const create=button('＋ 新建'+mini.LABELS[mode]+'干线','add-linehaul-mode','lk-trunk-add',blocked||locked);
+        create.dataset.mode=mode;placeholder.append(create);lanes.get(mode).append(placeholder);
+      }
     });
     window.LambertLogisticsStageView?.renderStageLane(host,state,blocked||locked);
   }
@@ -332,12 +362,42 @@
     $('lkRollback').disabled=blocked||!locked||!select.value;
     root.querySelector('.lk-route').textContent=v.data.route||'物流路线';
   }
+  function renderSetupTool(){
+    const host=$('lkSetupLibrary');host.replaceChildren();
+    const build=(m,stage)=>{
+      const section=node('section',undefined,'lk-config-section');
+      const title=stage?m.name+' / '+stage.name:m.name;
+      section.append(node('h4',title));
+      const records=setup.list(stage||m);
+      const line=node('div',undefined,'lk-config-records');
+      records.forEach(record=>{
+        const row=node('div',undefined,'lk-config-record');
+        row.append(node('strong',record.name));
+        row.append(node('span',record.value||'待配置'));
+        if(record.role==='reference')row.append(node('small','关联记录'));
+        line.append(row);
+      });
+      if(!records.length)line.append(node('p','暂无基础资料','lk-form-hint'));
+      section.append(line);
+      const b=button('编辑配置','setup-'+(stage?'stage':'module'),'lk-config-edit',blocked||locked);
+      b.dataset.module=m.id;if(stage)b.dataset.stage=stage.id;else b.dataset.id=m.id;
+      section.append(b);host.append(section);
+    };
+    state.modules.forEach(m=>{
+      const group=node('div',undefined,'lk-config-module');
+      const label=m.category==='干'?('干线 · '+(setup.MODES[setup.infer(m)]||'未分类')):m.category;
+      const heading=node('h3',label+' / '+m.name);
+      group.append(heading);host.append(group);
+      build(m,null);
+      stages.stages(m).filter(stage=>!stage.virtual).forEach(stage=>build(m,stage));
+    });
+  }
   function render(){
     if(!moduleId||!current())moduleId=state.modules[0]?.id||'';
     findSelected();
-    $('lkOverview').hidden=tab!=='overview';$('lkProcess').hidden=tab!=='process';$('lkData').hidden=tab!=='data';
+    $('lkOverview').hidden=tab!=='overview';$('lkProcess').hidden=tab!=='process';$('lkData').hidden=tab!=='data';$('lkSetupTool').hidden=tab!=='setup';
     $('lkTabOverview').setAttribute('aria-selected',String(tab==='overview'));
-    $('lkTabProcess').setAttribute('aria-selected',String(tab==='process'));$('lkTabData').setAttribute('aria-selected',String(tab==='data'));
+    $('lkTabProcess').setAttribute('aria-selected',String(tab==='process'));$('lkTabData').setAttribute('aria-selected',String(tab==='data'));$('lkTabSetup').setAttribute('aria-selected',String(tab==='setup'));
     $('lkAddModule').disabled=blocked||locked;$('lkAddNode').disabled=blocked||locked;$('lkExport').disabled=blocked;
     root.querySelectorAll('[data-action="add-linehaul-mode"]').forEach(control=>{control.disabled=blocked||locked;});
     renderVersionControls();
@@ -349,7 +409,8 @@
         moduleId=mId;selectedId=nId||'';tab='process';render();
         if(nId)showQuickDetail();
       });
-    }else renderData();
+    }else if(tab==='setup')renderSetupTool();
+    else renderData();
   }
   function syncQuickDetail(){
     const dialog=$('lkQuickDetailDialog');
@@ -429,7 +490,7 @@
     if(!persist(next))return false;
     render();return true;
   }
-  function openBranchDialog(sourceId,stageId){
+  function openBranchDialog(sourceId,stageId,chosenType='exception'){
     if(blocked||locked)return;
     const m=current();if(!m?.enabled||!m.nodes.length)return;
     branchSourceId=sourceId&&m.nodes.some(n=>n.id===sourceId)?sourceId:m.nodes.find(n=>stages.stageFor(m,n)===stageId)?.id||m.nodes[0].id;
@@ -442,7 +503,9 @@
       if(n){const o=document.createElement('option');o.value=n.id;o.textContent=n.title;source.append(o);}
     }
     source.value=branchSourceId;
-    $('lkBranchLabel').value='异常';$('lkBranchType').value='exception';$('lkBranchOnly').checked=true;
+    $('lkBranchLabel').value=chosenType==='branch'?'条件分支':'异常';
+    $('lkBranchType').value=chosenType; $('lkBranchOnly').checked=true;
+    $('lkBranchDialog').querySelector('h3').textContent=chosenType==='branch'?'新增分支流程':'新增异常流程';
     $('lkBranchNewTitle').value='';
     const target=$('lkBranchTarget');target.replaceChildren();
     const empty=document.createElement('option');empty.value='';empty.textContent='选择分支目标';target.append(empty);
@@ -452,7 +515,7 @@
       const sg=stages.stages(m).find(x=>x.id===stages.stageFor(m,n));
       o.textContent=(sg?.name||'操作流程')+' / '+n.title;target.append(o);
     });
-    $('lkBranchDialog').showModal();
+    target.value='__new__';$('lkBranchDialog').showModal();
   }
   function removeWithWarning(type,mId,itemId){
     if(blocked||locked)return;
@@ -519,7 +582,8 @@
     if(!b)return;
     const type=b.dataset.action,id=b.dataset.id;
     if(type==='setup-row-delete'){b.closest('.lk-setup-row')?.remove();return;}
-    if(type==='setup-module'){openSetup(id);return;}
+    if(type==='setup-go'){moduleId=id;tab='setup';render();return;}
+    if(type==='setup-module'){openSetup(id||b.dataset.module);return;}
     if(type==='setup-stage'){openSetup(b.dataset.module,b.dataset.stage);return;}
     if(type==='add-linehaul-mode'){
       if(blocked||locked)return;
@@ -534,6 +598,15 @@
     }
     if(type==='color-reset-module'||type==='color-reset-stage'){
       mutate(next=>flow.resetColor(next,type==='color-reset-module'?id:b.dataset.module,type==='color-reset-stage'?b.dataset.stage:null));return;
+    }
+    if(type==='branch-quick-choice'){
+      if(blocked||locked)return;
+      const mid=b.dataset.module||moduleId;
+      moduleId=mid;selectedId=id;
+      const op=current()?.nodes.find(n=>n.id===id);
+      if(!op)return;
+      openBranchDialog(id,stages.stageFor(current(),op),b.dataset.branchType);
+      return;
     }
     if(type==='branch-add'){
       moduleId=b.dataset.module;selectedId=id;openBranchDialog(id,stages.stageFor(current(),selected()));return;
@@ -712,6 +785,7 @@
   $('lkModeDetail').onclick=()=>{overviewMode='detail';render();};
   $('lkTabProcess').onclick=()=>{tab='process';render();};
   $('lkTabData').onclick=()=>{tab='data';render();};
+  $('lkTabSetup').onclick=()=>{tab='setup';render();};
   $('lkAddNode').onclick=()=>{if(current()?.enabled)openEditor(false);};
   $('lkQuickClose').onclick=closeQuickDetail;
   $('lkQuickUnlock').onclick=()=>{if(!blocked&&locked){$('lkUnlock').click();syncQuickDetail();}};
