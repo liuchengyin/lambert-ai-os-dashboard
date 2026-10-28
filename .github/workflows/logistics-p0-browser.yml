@@ -2,7 +2,7 @@ name: Logistics P0 canvas browser validation
 on:
   push:
     branches: [feat/web-logistics-canvas-p0-20261028]
-    paths: ['.github/workflows/logistics-p0-browser.yml']
+    paths: ['.github/workflows/logistics-p0-browser.yml', 'tests/logistics-knowledge-ui.mjs', 'tests/logistics-canvas-logic.test.mjs', 'logistics-canvas-model.js', 'logistics-knowledge-v1.js']
 permissions:
   contents: read
 jobs:
