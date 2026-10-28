@@ -59,6 +59,8 @@
   const stages=window.LambertLogisticsStages;
   const flow=window.LambertLogisticsFlow;
   const versions=window.LambertLogisticsVersion,overview=window.LambertLogisticsOverview;
+  const editor=window.LambertLogisticsEditor;
+  let editingModuleId='',searchTerm='',branchSourceId='';
   const copy=x=>JSON.parse(JSON.stringify(x));
   function read() {
     try {
@@ -93,8 +95,9 @@
     '<div class="lk-version-bar"><span id="lkEditStatus">已锁定 · 只读</span><div class="lk-version-actions"><button type="button" id="lkUnlock">解锁编辑</button><button type="button" id="lkSaveDraft" disabled>保存草稿</button><button type="button" id="lkPublish" disabled>确认发布</button><button type="button" id="lkCancelEdit" disabled>取消并锁定</button></div><div class="lk-version-history"><label>历史版本 <select id="lkHistorySelect"><option value="">选择历史版本</option></select></label><button type="button" id="lkRollback" disabled>回滚为新版本</button></div></div>'+
     '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabOverview" aria-selected="false">全链路总览</button><button type="button" role="tab" id="lkTabProcess" aria-selected="true">模块编辑 · 操作＋信息</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button></div>'+
     '<div id="lkOverview" role="tabpanel" aria-labelledby="lkTabOverview" hidden><div class="lk-ov-switch"><span>查看已发布版本</span><div role="group" aria-label="全链路展示模式"><button type="button" id="lkModeMacro" aria-pressed="true">A · 宏观模块</button><button type="button" id="lkModeDetail" aria-pressed="false">B · 完整流程</button></div></div><div id="lkOverviewContent"></div></div>'+
-    '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-canvas-categories" aria-label="物流模块底座"><span class="lk-canvas-category">仓</span><span class="lk-canvas-category">干</span><span class="lk-canvas-category">关</span><span class="lk-canvas-category">配</span></div><div class="lk-section-title"><div><strong>模块化操作画布</strong><small>大模块内包含可调整的子环节，例如：国内中心仓 → 到车／收入／分拣／发出。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div id="lkModules" class="lk-modules lk-canvas"></div>'+
+    '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-search-bar"><label>搜索操作、标签、操作码 <input id="lkSearch" type="search" placeholder="例如：安检 / 上车 / DDS"></label><div id="lkSearchResults" aria-live="polite"></div></div><div class="lk-canvas-categories" aria-label="物流模块底座"><span class="lk-canvas-category">仓</span><span class="lk-canvas-category">干</span><span class="lk-canvas-category">关</span><span class="lk-canvas-category">配</span></div><div class="lk-section-title"><div><strong>模块化操作画布</strong><small>大模块内包含可调整的子环节，例如：国内中心仓 → 到车／收入／分拣／发出。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div id="lkModules" class="lk-modules lk-canvas"></div>'+
     '<div class="lk-section-title lk-selection-head"><div><strong id="lkNodeTitle">操作节点详情</strong><small>选择上方的小块；系统关系放在详情内按需展开</small></div><button type="button" id="lkAddNode">＋ 为选中模块添加操作</button></div>'+
+    '<details class="lk-trash-panel"><summary>回收站 · 可恢复的删除记录 <span id="lkTrashCount">0</span></summary><div id="lkTrashList"></div></details>'+
     '<div class="lk-workspace lk-canvas-workspace"><div id="lkNodes" class="lk-nodes" hidden aria-hidden="true"></div><article id="lkDetail" class="lk-detail"></article></div></div>'+
     '<div id="lkData" role="tabpanel" aria-labelledby="lkTabData" hidden><div class="lk-data-guide"><strong>从业务动作追到数据</strong><p>操作／事件 → 信息变化 → 记录字段 → 后续指标。这里只列研究关系，不假装已接入真实数据表或驾驶舱。</p></div><div id="lkDataRows" class="lk-data-rows"></div></div>'+
     '<p class="lk-footnote">提示：预配不等于发运，系统生成轨迹也不必然等于实物动作完成。每条事件／接口关系应以系统截图、接口响应或数据库记录确认。</p><p id="lkMessage" class="lk-message" role="status"></p></div>'+
@@ -103,18 +106,25 @@
     '<label>业务操作 / 触发条件<textarea id="lkActionInput" rows="3" maxlength="1500"></textarea></label>'+
     '<label>信息传递 / 系统触发<textarea id="lkInfoInput" rows="3" maxlength="1500"></textarea></label>'+
     '<label>数据字段 / 记录<textarea id="lkRecordInput" rows="2" maxlength="1500"></textarea></label>'+
+    '<label>操作备注<textarea id="lkNoteInput" rows="3" maxlength="2500" placeholder="业务解释、注意事项和待核实问题"></textarea></label>'+
+    '<label>标签（逗号分隔，可搜索）<input id="lkTagsInput" maxlength="600" placeholder="安检, 扫描, 国内中心仓"></label>'+
+    '<label>关联操作码（预留，非自动映射）<input id="lkCodesInput" maxlength="600" placeholder="填写已核实的操作码，不编造代码"></label>'+
+    '<label>小操作块自定义颜色<input id="lkNodeColor" type="color" value="#FFFFFF"></label>'+
+    '<label class="lk-inline-check"><input id="lkNodeNoColor" type="checkbox"> 使用默认白色</label>'+
     '<label>核实状态<select id="lkConfidenceInput"><option>待核实</option><option>部分核实</option><option>已核实</option></select></label>'+
     '<label>证据 / 待核实问题<textarea id="lkEvidenceInput" rows="2" maxlength="1500" placeholder="例如：接口路径、截图描述、SQL、待核实问题"></textarea></label>'+
     '<div class="lk-dialog-actions"><button type="button" id="lkNodeCancel">取消</button><button type="submit" class="lk-primary">保存节点</button></div></form></dialog>'+
-    '<dialog id="lkModuleDialog" class="lk-dialog"><form id="lkModuleForm"><h3>添加线路模块</h3><label>模块名称<input id="lkModuleName" maxlength="60" required placeholder="例如：海外转运中心"></label>'+
+    '<dialog id="lkModuleDialog" class="lk-dialog"><form id="lkModuleForm"><h3 id="lkModuleDialogTitle">添加线路模块</h3><label>模块名称<input id="lkModuleName" maxlength="60" required placeholder="例如：海外转运中心"></label>'+
     '<label>归属环节<select id="lkModuleCategory"><option>仓</option><option>干</option><option>关</option><option>配</option></select></label>'+
-    '<div class="lk-dialog-actions"><button type="button" id="lkModuleCancel">取消</button><button type="submit" class="lk-primary">添加模块</button></div></form></dialog>'+
+    '<div class="lk-dialog-actions"><button type="button" id="lkModuleCancel">取消</button><button type="submit" class="lk-primary">保存模块</button></div></form></dialog>'+
     '<dialog id="lkStageDialog" class="lk-dialog lk-stage-dialog"><form id="lkStageForm"><h3 id="lkStageDialogTitle">添加子环节</h3><label>子环节名称<input id="lkStageName" required maxlength="55" placeholder="例如：收入"></label>'+
     '<p class="lk-footnote">子环节用于组织操作步骤；原操作和业务字段不会丢失。</p><div class="lk-dialog-actions"><button type="button" id="lkStageCancel">取消</button><button type="submit" class="lk-primary">保存子环节</button></div></form></dialog>'+
     '<dialog id="lkBranchDialog" class="lk-dialog lk-stage-dialog"><form id="lkBranchForm"><h3>添加条件分支</h3><p class="lk-footnote">将当前操作连接到一个已有操作。例如：安检扫描 — 异常 → 安检异常上报。</p>'+
     '<label>触发条件<input id="lkBranchLabel" required maxlength="40" placeholder="例如：安检异常"></label>'+
     '<label>流程类型<select id="lkBranchType"><option value="exception">异常流程</option><option value="branch">普通分支</option></select></label>'+
-    '<label>流向操作<select id="lkBranchTarget" required></select></label>'+
+    '<label>分支源操作<select id="lkBranchSource" required></select></label>'+
+    '<label>目标操作<select id="lkBranchTarget" required></select></label>'+
+    '<label>新增目标操作名称（仅在选择「新建操作」时填写）<input id="lkBranchNewTitle" maxlength="70" placeholder="例如：异常处理"></label>'+
     '<label class="lk-branch-checkbox"><input id="lkBranchOnly" type="checkbox">目标只显示在分支上（不加入主线）</label>'+
     '<div class="lk-dialog-actions"><button type="button" id="lkBranchCancel">取消</button><button type="submit" class="lk-primary">保存条件分支</button></div></form></dialog>';
   const makeId=prefix=>prefix+'_'+(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'_'+Math.random().toString(36).slice(2));
@@ -138,12 +148,12 @@
       colorReset.dataset.id=m.id;
       const fold=button(m.collapsed?'展开':'收起','collapse-module','lk-fold',blocked||locked);fold.dataset.id=m.id;
       fold.setAttribute('aria-expanded',String(!m.collapsed));fold.setAttribute('aria-label',(m.collapsed?'展开':'收起')+m.name);
-      const prev=button('↑','module-up','lk-move',blocked||locked||index===0);prev.dataset.id=m.id;prev.setAttribute('aria-label',m.name+'上移');
-      const next=button('↓','module-down','lk-move',blocked||locked||index===state.modules.length-1);next.dataset.id=m.id;next.setAttribute('aria-label',m.name+'下移');
+      const rename=button('改名','module-rename','lk-control',blocked||locked);rename.dataset.id=m.id;
+      const remove=button('删除','module-delete','lk-danger',blocked||locked);remove.dataset.id=m.id;
       const add=button('＋ 操作','add-here','lk-block-add',blocked||locked||!m.enabled);add.dataset.id=m.id;
       const toggle=node('label','启用','lk-toggle');const check=document.createElement('input');
       check.type='checkbox';check.checked=m.enabled;check.disabled=blocked||locked;check.dataset.toggle=m.id;toggle.prepend(check);
-      controls.append(colorLabel,colorReset,add,prev,next,fold,toggle);head.append(grip,main,controls);card.append(head);
+      controls.append(colorLabel,colorReset,add,rename,remove,fold,toggle);head.append(grip,main,controls);card.append(head);
       if(!m.collapsed&&m.enabled){
         const lane=node('div',undefined,'lk-canvas-lane');lane.dataset.dropModule=m.id;
         if(!m.nodes.length)lane.append(node('p','此模块没有操作，点击「＋ 操作」添加。','lk-empty'));
@@ -151,10 +161,8 @@
           const wrap=node('div',undefined,'lk-step');wrap.draggable=!blocked&&!locked;wrap.dataset.dragNode=n.id;wrap.dataset.dragFrom=m.id;
           const step=button('', 'select-node','lk-node lk-canvas-op'+(n.id===selectedId&&m.id===moduleId?' is-current':''));step.dataset.id=n.id;step.dataset.module=m.id;
           step.append(node('small',String(i+1).padStart(2,'0')+' · '+n.kind),node('strong',n.title),node('span',n.confidence||'待核实'));
-          const move=node('div',undefined,'lk-step-actions');
-          const left=button('←','node-left','',blocked||locked||i===0);left.dataset.id=n.id;left.dataset.module=m.id;left.setAttribute('aria-label',n.title+'向前移动');
-          const right=button('→','node-right','',blocked||locked||i===m.nodes.length-1);right.dataset.id=n.id;right.dataset.module=m.id;right.setAttribute('aria-label',n.title+'向后移动');
-          move.append(left,right);wrap.append(step,move);lane.append(wrap);
+          if(n.color)wrap.style.setProperty('--lk-node-accent',flow.color(n.color,'#222222'));
+          wrap.append(step);lane.append(wrap);
         });
         const drop=node('div','拖动操作块到这里追加','lk-drop-end');drop.dataset.dropModule=m.id;lane.append(drop);
         card.append(lane);
@@ -185,6 +193,13 @@
     const edit=button('编辑节点','edit-node','lk-edit',blocked||locked);edit.dataset.id=n.id;
     header.append(title,edit);host.append(header);
     host.append(node('span','核实状态：'+(n.confidence||'待核实'),'lk-status'));
+    host.append(field('操作备注',n.note||'暂无备注'));
+    const tags=node('div',undefined,'lk-node-chips');
+    (n.tags||[]).forEach(tag=>tags.append(node('span','#'+tag,'lk-node-chip')));
+    (n.operationCodes||[]).forEach(code=>tags.append(node('span','操作码 '+code,'lk-code-chip')));
+    host.append(tags);
+    const del=button('删除此操作','node-delete','lk-danger',blocked||locked);del.dataset.id=n.id;del.dataset.module=m.id;
+    host.append(del);
     host.append(field('① 业务操作 / 触发条件',n.action));
     const more=document.createElement('details');more.className='lk-related-details';
     const summary=node('summary','按需展开 · 系统信息流与数据记录');more.append(summary);
