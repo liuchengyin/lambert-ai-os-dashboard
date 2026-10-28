@@ -37,7 +37,8 @@
       seedNode('signed','签收','确认妥投或签收结果','回传签收轨迹及其用于 SLA 的时间字段需核实','签收时间、签收证明、运单号','外部事件')
     ]}
   ]});
-  let state=null,blocked=false,tab='process',moduleId='',selectedId='',editorMode='';
+  let state=null,blocked=false,tab='process',moduleId='',selectedId='',editorMode='',dragPayload=null;
+  const moves=window.LambertLogisticsMoves;
   const copy=x=>JSON.parse(JSON.stringify(x));
   function read() {
     try {
@@ -64,13 +65,13 @@
     const b=node('button',label,cls);b.type='button';b.dataset.action=action;b.disabled=!!disabled;return b;
   }
   root.innerHTML='<div class="lk-page">'+
-    '<header class="lk-head"><div><small>LOGISTICS KNOWLEDGE · V1</small><h2>物流知识库</h2><p>以操作为底座，把业务动作、信息传递和数据记录串起来。</p></div>'+
+    '<header class="lk-head"><div><small>LOGISTICS KNOWLEDGE · P0 CANVAS</small><h2>物流知识库</h2><p>以操作为底座，把业务动作、信息传递和数据记录串起来。</p></div>'+
     '<button type="button" id="lkExport">导出知识库</button></header>'+
     '<div class="lk-toolbar"><span class="lk-route">中国 → 哈萨克斯坦 · 陆运示例</span><span class="lk-warning">示意链路 · 实际系统规则待核实</span></div>'+
     '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabProcess" aria-selected="true">业务链路 · 操作＋信息</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button></div>'+
-    '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-section-title"><div><strong>线路模块</strong><small>可调顺序、开关模块；关务可在出口和进口复用。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div id="lkModules" class="lk-modules"></div>'+
-    '<div class="lk-section-title"><div><strong id="lkNodeTitle">操作节点</strong><small>选中一个动作，查看它引发的信息和数据</small></div><button type="button" id="lkAddNode">＋ 添加操作</button></div>'+
-    '<div class="lk-workspace"><div id="lkNodes" class="lk-nodes"></div><article id="lkDetail" class="lk-detail"></article></div></div>'+
+    '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-section-title"><div><strong>仓 · 干 · 关 · 配 操作画布</strong><small>拖拽大模块或小操作块重新编排；支持跨模块移动、折叠与保存。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div id="lkModules" class="lk-modules lk-canvas"></div>'+
+    '<div class="lk-section-title lk-selection-head"><div><strong id="lkNodeTitle">操作节点详情</strong><small>选择上方的小块；系统关系放在详情内按需展开</small></div><button type="button" id="lkAddNode">＋ 为选中模块添加操作</button></div>'+
+    '<div class="lk-workspace lk-canvas-workspace"><div id="lkNodes" class="lk-nodes" hidden aria-hidden="true"></div><article id="lkDetail" class="lk-detail"></article></div></div>'+
     '<div id="lkData" role="tabpanel" aria-labelledby="lkTabData" hidden><div class="lk-data-guide"><strong>从业务动作追到数据</strong><p>操作／事件 → 信息变化 → 记录字段 → 后续指标。这里只列研究关系，不假装已接入真实数据表或驾驶舱。</p></div><div id="lkDataRows" class="lk-data-rows"></div></div>'+
     '<p class="lk-footnote">提示：预配不等于发运，系统生成轨迹也不必然等于实物动作完成。每条事件／接口关系应以系统截图、接口响应或数据库记录确认。</p><p id="lkMessage" class="lk-message" role="status"></p></div>'+
     '<dialog id="lkNodeDialog" class="lk-dialog"><form id="lkNodeForm"><h3 id="lkEditorTitle">操作节点</h3><label>操作名称<input id="lkTitleInput" required maxlength="70"></label>'+
@@ -88,40 +89,73 @@
   function renderModules(){
     const host=$('lkModules');host.replaceChildren();
     state.modules.forEach((m,index)=>{
-      const card=node('div',undefined,'lk-module'+(m.id===moduleId?' is-active':'')+(!m.enabled?' is-muted':''));
+      const card=node('section',undefined,'lk-module lk-canvas-block'+(m.id===moduleId?' is-active':'')+(!m.enabled?' is-muted':''));
+      card.dataset.module=m.id;
+      const head=node('div',undefined,'lk-canvas-block-head');
+      const grip=button('⠿','noop','lk-drag-handle',blocked);grip.draggable=!blocked;grip.dataset.dragModule=m.id;grip.title='拖动大模块改变顺序';grip.setAttribute('aria-label','拖动'+m.name);
       const main=button(m.name,'select-module','lk-module-main');main.dataset.id=m.id;
-      main.append(node('small',m.category+' · '+m.nodes.length+' 个节点'));
-      const tools=node('div',undefined,'lk-module-tools');
-      const prev=button('↑','module-up','',index===0);prev.dataset.id=m.id;prev.title='模块上移';prev.setAttribute('aria-label',m.name+'上移');
-      const next=button('↓','module-down','',index===state.modules.length-1);next.dataset.id=m.id;next.title='模块下移';next.setAttribute('aria-label',m.name+'下移');
-      const label=node('label','启用','lk-toggle');const check=document.createElement('input');check.type='checkbox';check.checked=m.enabled;check.dataset.toggle=m.id;label.prepend(check);
-      tools.append(prev,next,label);card.append(main,tools);host.append(card);
+      main.prepend(node('small',m.category+' / '+m.nodes.length+' 个操作节点'));
+      const controls=node('div',undefined,'lk-canvas-controls');
+      const fold=button(m.collapsed?'展开':'收起','collapse-module','lk-fold',blocked);fold.dataset.id=m.id;
+      fold.setAttribute('aria-expanded',String(!m.collapsed));fold.setAttribute('aria-label',(m.collapsed?'展开':'收起')+m.name);
+      const prev=button('↑','module-up','lk-move',blocked||index===0);prev.dataset.id=m.id;prev.setAttribute('aria-label',m.name+'上移');
+      const next=button('↓','module-down','lk-move',blocked||index===state.modules.length-1);next.dataset.id=m.id;next.setAttribute('aria-label',m.name+'下移');
+      const add=button('＋ 操作','add-here','lk-block-add',blocked||!m.enabled);add.dataset.id=m.id;
+      const toggle=node('label','启用','lk-toggle');const check=document.createElement('input');
+      check.type='checkbox';check.checked=m.enabled;check.disabled=blocked;check.dataset.toggle=m.id;toggle.prepend(check);
+      controls.append(add,prev,next,fold,toggle);head.append(grip,main,controls);card.append(head);
+      if(!m.collapsed&&m.enabled){
+        const lane=node('div',undefined,'lk-canvas-lane');lane.dataset.dropModule=m.id;
+        if(!m.nodes.length)lane.append(node('p','此模块没有操作，点击「＋ 操作」添加。','lk-empty'));
+        m.nodes.forEach((n,i)=>{
+          const wrap=node('div',undefined,'lk-step');wrap.draggable=!blocked;wrap.dataset.dragNode=n.id;wrap.dataset.dragFrom=m.id;
+          const step=button('', 'select-node','lk-node lk-canvas-op'+(n.id===selectedId&&m.id===moduleId?' is-current':''));step.dataset.id=n.id;step.dataset.module=m.id;
+          step.append(node('small',String(i+1).padStart(2,'0')+' · '+n.kind),node('strong',n.title),node('span',n.confidence||'待核实'));
+          const move=node('div',undefined,'lk-step-actions');
+          const left=button('←','node-left','',blocked||i===0);left.dataset.id=n.id;left.dataset.module=m.id;left.setAttribute('aria-label',n.title+'向前移动');
+          const right=button('→','node-right','',blocked||i===m.nodes.length-1);right.dataset.id=n.id;right.dataset.module=m.id;right.setAttribute('aria-label',n.title+'向后移动');
+          move.append(left,right);wrap.append(step,move);lane.append(wrap);
+        });
+        const drop=node('div','拖动操作块到这里追加','lk-drop-end');drop.dataset.dropModule=m.id;lane.append(drop);
+        card.append(lane);
+      }else if(!m.enabled){
+        card.append(node('p','模块已停用，操作内容保留；重新启用即可展开。','lk-folded-caption'));
+      }else{
+        card.append(node('p',m.nodes.length+' 个操作已折叠，展开后继续编排。','lk-folded-caption'));
+      }
+      host.append(card);
     });
   }
   function renderNodes(){
-    const m=current(),host=$('lkNodes');host.replaceChildren();
-    $('lkNodeTitle').textContent=m?m.name+' · 操作节点':'操作节点';
+    const m=current();
+    $('lkNodeTitle').textContent=m?m.name+' · 操作详情':'操作详情';
     $('lkAddNode').disabled=blocked||!m||!m.enabled;
-    if(!m||!m.enabled){host.append(node('p','此模块已关闭，重新启用后可查看操作节点。','lk-empty'));return;}
-    if(!m.nodes.length)host.append(node('p','暂无操作节点，可以点击“添加操作”。','lk-empty'));
-    m.nodes.forEach((n,i)=>{
-      const b=button('', 'select-node','lk-node'+(n.id===selectedId?' is-current':''));b.dataset.id=n.id;
-      b.append(node('small',String(i+1).padStart(2,'0')+' · '+n.kind),node('strong',n.title),node('span',n.confidence||'待核实'));host.append(b);
-    });
   }
   function field(title,text){
     const card=node('section',undefined,'lk-detail-field');
     card.append(node('h4',title),node('p',text||'尚未补充，待核实。'));return card;
   }
   function renderDetail(){
-    const host=$('lkDetail');host.replaceChildren();const m=current(),n=m?.enabled?selected():null;
-    if(!n){host.append(node('p','请选择一条操作节点。','lk-empty'));return;}
+    const host=$('lkDetail');host.replaceChildren();
+    const m=current(),n=m?.enabled?selected():null;
+    if(!n){host.append(node('p','在上方画布点击一个操作块，即可查看业务动作、系统关系和数据。','lk-empty'));return;}
     const header=node('div',undefined,'lk-detail-head');
     const title=node('div');title.append(node('small',m.name+' / '+n.kind),node('h3',n.title));
-    const edit=button('编辑节点','edit-node','lk-edit');edit.dataset.id=n.id;
+    const edit=button('编辑节点','edit-node','lk-edit',blocked);edit.dataset.id=n.id;
     header.append(title,edit);host.append(header);
-    const badge=node('span','核实状态：'+(n.confidence||'待核实'),'lk-status');
-    host.append(badge,field('① 业务操作',n.action),field('② 信息流 / 系统触发',n.information),field('③ 数据流 / 记录字段',n.data),field('核实依据 / 证据',n.evidence));
+    host.append(node('span','核实状态：'+(n.confidence||'待核实'),'lk-status'));
+    host.append(field('① 业务操作 / 触发条件',n.action));
+    const more=document.createElement('details');more.className='lk-related-details';
+    const summary=node('summary','按需展开 · 系统信息流与数据记录');more.append(summary);
+    more.append(field('② 信息流 / 系统触发',n.information),field('③ 数据流 / 记录字段',n.data),field('核实依据 / 证据',n.evidence));
+    host.append(more);
+    const moveBox=node('label','移动此操作至另一模块','lk-move-to');
+    const select=document.createElement('select');select.dataset.moveNode=n.id;select.dataset.moveFrom=m.id;select.disabled=blocked;
+    const empty=document.createElement('option');empty.value='';empty.textContent='选择目标模块（保留所有关联字段）';select.append(empty);
+    state.modules.filter(x=>x.enabled&&x.id!==m.id).forEach(x=>{
+      const o=document.createElement('option');o.value=x.id;o.textContent=x.name;select.append(o);
+    });
+    moveBox.append(select);host.append(moveBox);
     const go=button('查看此操作的数据关系 →','to-data','lk-go');go.dataset.id=n.id;host.append(go);
   }
   function renderData(){
@@ -168,7 +202,7 @@
   function mutate(fn){
     if(blocked){setMessage('知识库处于只读保护状态，已停止写入。');return false;}
     const next=copy(state);
-    fn(next);
+    if(fn(next)===false)return false;
     if(!persist(next))return false;
     render();return true;
   }
@@ -177,22 +211,96 @@
     if(!b)return;
     const type=b.dataset.action,id=b.dataset.id;
     if(type==='select-module'){moduleId=id;selectedId='';tab='process';render();return;}
-    if(type==='select-node'){selectedId=id;render();return;}
+    if(type==='select-node'){moduleId=b.dataset.module||moduleId;selectedId=id;render();return;}
+    if(type==='add-here'){moduleId=id;selectedId='';render();openEditor(false);return;}
+    if(type==='collapse-module'){
+      mutate(next=>{const m=next.modules.find(m=>m.id===id);if(m)m.collapsed=!m.collapsed;});return;
+    }
+    if(type==='node-left'||type==='node-right'){
+      moduleId=b.dataset.module||moduleId;selectedId=id;
+      mutate(next=>moves.reorderNode(next,moduleId,id,type==='node-left'?-1:1));return;
+    }
     if(type==='to-data'){tab='data';render();return;}
     if(type==='open-node'){moduleId=b.dataset.module;selectedId=id;tab='process';render();return;}
     if(type==='edit-node'){selectedId=id;openEditor(true);return;}
     if(type==='module-up'||type==='module-down'){
       mutate(next=>{
-        const index=next.modules.findIndex(m=>m.id===id),destination=index+(type==='module-up'?-1:1);
-        if(index>=0&&destination>=0&&destination<next.modules.length){const item=next.modules.splice(index,1)[0];next.modules.splice(destination,0,item);}
-      });
+        const index=next.modules.findIndex(m=>m.id===id);
+        return moves.reorder(next.modules,index,index+(type==='module-up'?-1:1));
+      });return;
     }
   });
   root.addEventListener('change',event=>{
+    const selector=event.target.closest('select[data-move-node]');
+    if(selector){
+      const destination=selector.value,source=selector.dataset.moveFrom,id=selector.dataset.moveNode;
+      if(!destination)return;
+      if(mutate(next=>moves.moveNode(next,source,id,destination))){
+        moduleId=destination;selectedId=id;render();
+        setMessage('已移动操作节点，原有信息和数据记录均保留。');
+      }else selector.value='';
+      return;
+    }
     const input=event.target.closest('input[data-toggle]');if(!input)return;
     const id=input.dataset.toggle,enabled=input.checked;
     if(!mutate(next=>{const item=next.modules.find(x=>x.id===id);if(item)item.enabled=enabled;})) input.checked=!enabled;
   });
+  // Native drag-and-drop for desktop; arrow controls and the move selector
+  // provide an accessible non-drag route on mobile and keyboard.
+  root.addEventListener('dragstart',event=>{
+    if(blocked)return;
+    const grip=event.target.closest('[data-drag-module]');
+    const step=event.target.closest('[data-drag-node]');
+    if(grip){dragPayload={kind:'module',id:grip.dataset.dragModule};}
+    else if(step){dragPayload={kind:'node',id:step.dataset.dragNode,from:step.dataset.dragFrom};}
+    else return;
+    if(event.dataTransfer){event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain','lambert-logistics');}
+    event.target.classList.add('lk-dragging');
+  });
+  root.addEventListener('dragover',event=>{
+    if(!dragPayload)return;
+    const isModule=!!event.target.closest('.lk-canvas-block-head');
+    const target=dragPayload.kind==='module'?(isModule?event.target.closest('.lk-canvas-block'):null):event.target.closest('.lk-step,.lk-drop-end,.lk-canvas-lane');
+    if(!target)return;
+    if(dragPayload.kind==='node'){
+      const id=target.dataset.dropModule||target.dataset.dragFrom;
+      if(!state.modules.find(m=>m.id===id)?.enabled)return;
+    }
+    event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='move';
+  });
+  root.addEventListener('drop',event=>{
+    if(!dragPayload)return;
+    const active=dragPayload;dragPayload=null;
+    if(active.kind==='module'){
+      const target=event.target.closest('.lk-canvas-block-head')?.closest('.lk-canvas-block');
+      if(!target)return;
+      event.preventDefault();
+      const rect=target.getBoundingClientRect(),after=event.clientY>=rect.top+rect.height/2;
+      mutate(next=>moves.moveModule(next,active.id,target.dataset.module,after));
+    }else{
+      const target=event.target.closest('.lk-step,.lk-drop-end,.lk-canvas-lane');
+      if(!target)return;
+      const dest=target.dataset.dropModule||target.dataset.dragFrom;
+      const m=state.modules.find(m=>m.id===dest);
+      if(!m?.enabled)return;
+      event.preventDefault();
+      let before=null;
+      if(target.classList.contains('lk-step')){
+        const rect=target.getBoundingClientRect();
+        const after=event.clientX>rect.left+rect.width/2;
+        if(!after)before=target.dataset.dragNode;
+        else{
+          const index=m.nodes.findIndex(n=>n.id===target.dataset.dragNode);
+          before=m.nodes[index+1]?.id||null;
+        }
+      }
+      if(active.from===dest&&before===active.id)return;
+      if(mutate(next=>moves.moveNode(next,active.from,active.id,dest,before))){
+        moduleId=dest;selectedId=active.id;render();
+      }
+    }
+  });
+  root.addEventListener('dragend',event=>{dragPayload=null;event.target.classList?.remove('lk-dragging');});
   $('lkTabProcess').onclick=()=>{tab='process';render();};
   $('lkTabData').onclick=()=>{tab='data';render();};
   $('lkAddNode').onclick=()=>{if(current()?.enabled)openEditor(false);};
