@@ -25,10 +25,12 @@
       stages.forEach((stage,i)=>{
         const card=el('section','lk-substage');card.dataset.stageId=stage.id;card.dataset.module=module.id;
         const head=el('header','lk-substage-head');
+        head.draggable=!blocked&&!stage.virtual;
+        head.dataset.dragStage=stage.id;head.dataset.module=module.id;
+        head.title='拖动子环节标题区调整顺序';
         const grip=btn('⠿','noop',module.id,stage.id,blocked||!!stage.virtual);
-        grip.classList.add('lk-stage-grip');grip.draggable=!grip.disabled;
-        grip.dataset.dragStage=stage.id;
-        grip.title='拖动子环节调整顺序';
+        grip.classList.add('lk-stage-grip');grip.draggable=false;
+        grip.title='按住此标题区并拖动子环节';
         const name=btn(stage.name,'select-stage',module.id,stage.id);
         name.classList.add('lk-stage-title');name.title='选择'+stage.name+'环节';
         const actions=el('div','lk-stage-actions');
