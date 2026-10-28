@@ -31,7 +31,7 @@ check('add stage to legacy module without deleting old nodes',()=>{
  const d=sample(),before=JSON.stringify(d.modules[2].nodes);
  assert.equal(api.addStage(d,'legacy',{id:'new',name:'分拣'}),true);
  assert.equal(JSON.stringify(d.modules[2].nodes),before);
- assert.deepEqual(d.modules[2].stages.map(s=>s.id),['general','new']);
+ assert.deepEqual(Array.from(d.modules[2].stages,s=>s.id),['general','new']);
 });
 check('reorder operations within stage only',()=>{
  const d=sample();
