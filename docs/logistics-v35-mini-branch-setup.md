@@ -16,8 +16,15 @@
 - `logistics-v35.css`：微型路径卡片、红蓝语义标记、淡紫主题三泳道与配置工具。
 
 ## 验证
-- `tests/logistics-v35-model.test.mjs`：6 项流程树、环形保护、三路分组和信息交换安全。
+- `tests/logistics-v35-model.test.mjs`：8 项流程树、环形保护、三路分组和信息交换无损保护。
 - `tests/logistics-v35-ui.mjs`：真实 Chromium 测试 18+ 项，含锁定、三泳道、单小加号、嵌套异常/分支、独立信息交换、草稿隔离、发布后 A/B 模式与无运行时异常。
 - 旧纯模型回归：V3.4 9 项、V3.3 8 项、版本 10 项、V3.1 安全 13 项、流向 13 项。
-- DeepSeek Flash 1 次独立审查：`deepseek-flash`，prompt_tokens=1058、completion_tokens=184、total_tokens=1242，0 retry。按反馈在渲染树中对旧重复 from-to 边去重。其他提醒（孤立节点、非干模块丢失和 HTML 注入）已按渲染结构检查：主线完整绘制且非干模块保持显示，信息字符串以 `textContent` 方式展示。
+- DeepSeek Flash 第一轮独立审查：`deepseek-flash`，prompt_tokens=1058、completion_tokens=184、total_tokens=1242，0 retry。按反馈在渲染树中对旧重复 from-to 边去重。其他提醒（孤立节点、非干模块丢失和 HTML 注入）已按渲染结构检查：主线完整绘制且非干模块保持显示，信息字符串以 `textContent` 方式展示。
 - 正式版 **main 未修改**，使用独立 Vercel Preview 验收。
+
+## 第二轮模型审查与修复（2026-10-29）
+- 再次真实调用 DeepSeek Flash（GitHub Actions `40764868985`）：`deepseek-flash`，2,140 输入 + 287 输出 = **2,427 tokens**，0 retry。
+- 发现并修复：旧数据 `exchanges` 非数组时不能创建空数组覆盖；改为拒绝修改并原样保留现有内容。新增负向模型断言。
+- 发现并修复：微型分支展开深度达到 7 层时，如后续仍有有效路径，标记 `truncated` 并展示「还有更深层分支（未展开）」，提示内容尚在数据中，未执行删除。新增深链模型断言。
+- 分类正则只是旧模块在缺少明确 `transportMode` 时的显示兜底；实际运输方式待用户明确填写，不据此生成业务事实。
+- 本轮没有修改任务、项目、复盘、常用链接及账号隔离存储。最新版 Vercel 预览仍受构建频率限制，不能用旧 Preview 代替验收。
