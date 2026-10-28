@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/logistics-v33-ci.yml'
       - 'logistics-knowledge-v1.js'
+      - 'logistics-stage-view.js'
       - 'logistics-trigger-v33.js'
       - 'logistics-soft-v33.css'
       - 'index.html'
@@ -26,6 +27,7 @@ jobs:
       - name: Syntax and safe pure-model regressions
         run: |
           node --check logistics-knowledge-v1.js
+          node --check logistics-stage-view.js
           node --check logistics-trigger-v33.js
           node tests/logistics-v33-trigger-model.test.mjs
           node tests/logistics-version-model.test.mjs
