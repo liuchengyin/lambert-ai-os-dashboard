@@ -53,8 +53,16 @@ try{
  check('new operation is assigned to selected stage',(await data()).modules[0].nodes.some(n=>n.title==='新的出库核验'&&n.stageId===lastStage));
 
  const beforeDrag=(await data()).modules[0].stages.map(s=>s.id);
+ await page.evaluate(()=>{
+  window.__lkStageTrace=[];
+  const root=document.getElementById('logistics');
+  for(const type of ['dragstart','dragover','drop','dragend'])root.addEventListener(type,e=>{
+   if(window.__lkStageTrace.length<30)window.__lkStageTrace.push({type,tag:e.target?.tagName,cls:e.target?.className,stage:e.target?.dataset?.stageId,drag:e.target?.dataset?.dragStage,prevented:e.defaultPrevented});
+  },true);
+ });
  await head.locator('.lk-substage[data-stage-id="'+lastStage+'"] [data-drag-stage]').dragTo(head.locator('.lk-substage[data-stage-id="arrival"] .lk-substage-head'),{targetPosition:{x:23,y:9}});
  const afterDrag=(await data()).modules[0].stages.map(s=>s.id);
+ console.log('STAGE_DRAG_DIAGNOSTIC',JSON.stringify(await page.evaluate(()=>window.__lkStageTrace)),JSON.stringify({beforeDrag,afterDrag}));
  check('drag child stage reorders list',beforeDrag.indexOf(lastStage)>0&&afterDrag[0]===lastStage);
 
  await page.reload({waitUntil:'domcontentloaded'});
