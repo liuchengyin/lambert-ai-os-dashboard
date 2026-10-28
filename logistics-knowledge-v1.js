@@ -100,7 +100,7 @@
     '<label>证据 / 待核实问题<textarea id="lkEvidenceInput" rows="2" maxlength="1500" placeholder="例如：接口路径、截图描述、SQL、待核实问题"></textarea></label>'+
     '<div class="lk-dialog-actions"><button type="button" id="lkNodeCancel">取消</button><button type="submit" class="lk-primary">保存节点</button></div></form></dialog>'+
     '<dialog id="lkModuleDialog" class="lk-dialog"><form id="lkModuleForm"><h3>添加线路模块</h3><label>模块名称<input id="lkModuleName" maxlength="60" required placeholder="例如：海外转运中心"></label>'+
-    '<label>归属环节<select id="lkModuleCategory"><option>头程</option><option>关务</option><option>干线</option><option>尾程</option></select></label>'+
+    '<label>归属环节<select id="lkModuleCategory"><option>仓</option><option>干</option><option>关</option><option>配</option></select></label>'+
     '<div class="lk-dialog-actions"><button type="button" id="lkModuleCancel">取消</button><button type="submit" class="lk-primary">添加模块</button></div></form></dialog>'+
     '<dialog id="lkStageDialog" class="lk-dialog lk-stage-dialog"><form id="lkStageForm"><h3 id="lkStageDialogTitle">添加子环节</h3><label>子环节名称<input id="lkStageName" required maxlength="55" placeholder="例如：收入"></label>'+
     '<p class="lk-footnote">子环节用于组织操作步骤；原操作和业务字段不会丢失。</p><div class="lk-dialog-actions"><button type="button" id="lkStageCancel">取消</button><button type="submit" class="lk-primary">保存子环节</button></div></form></dialog>';
@@ -294,22 +294,30 @@
   // provide an accessible non-drag route on mobile and keyboard.
   root.addEventListener('dragstart',event=>{
     if(blocked)return;
+    const stageGrip=event.target.closest('[data-drag-stage]');
     const grip=event.target.closest('[data-drag-module]');
     const step=event.target.closest('[data-drag-node]');
-    if(grip){dragPayload={kind:'module',id:grip.dataset.dragModule};}
-    else if(step){dragPayload={kind:'node',id:step.dataset.dragNode,from:step.dataset.dragFrom};}
-    else return;
+    if(stageGrip&&!stageGrip.disabled){
+      dragPayload={kind:'stage',id:stageGrip.dataset.dragStage,module:stageGrip.dataset.module};
+    }else if(grip){
+      dragPayload={kind:'module',id:grip.dataset.dragModule};
+    }else if(step){
+      dragPayload={kind:'node',id:step.dataset.dragNode,from:step.dataset.dragFrom};
+    }else return;
     if(event.dataTransfer){event.dataTransfer.effectAllowed='move';event.dataTransfer.setData('text/plain','lambert-logistics');}
     event.target.classList.add('lk-dragging');
   });
   root.addEventListener('dragover',event=>{
     if(!dragPayload)return;
-    const isModule=!!event.target.closest('.lk-canvas-block-head');
-    const target=dragPayload.kind==='module'?(isModule?event.target.closest('.lk-canvas-block'):null):event.target.closest('.lk-step,.lk-drop-end,.lk-canvas-lane');
+    let target=null;
+    if(dragPayload.kind==='module')target=event.target.closest('.lk-canvas-block-head');
+    else if(dragPayload.kind==='stage')target=event.target.closest('.lk-substage-head');
+    else target=event.target.closest('.lk-step,.lk-drop-end,.lk-substage-body');
     if(!target)return;
+    if(dragPayload.kind==='stage'&&target.closest('.lk-substage')?.dataset.module!==dragPayload.module)return;
     if(dragPayload.kind==='node'){
-      const id=target.dataset.dropModule||target.dataset.dragFrom;
-      if(!state.modules.find(m=>m.id===id)?.enabled)return;
+      const to=target.dataset.dropModule||target.dataset.dragFrom;
+      if(!state.modules.find(m=>m.id===to)?.enabled)return;
     }
     event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='move';
   });
@@ -321,28 +329,34 @@
       if(!target)return;
       event.preventDefault();
       const rect=target.getBoundingClientRect(),after=event.clientY>=rect.top+rect.height/2;
-      mutate(next=>moves.moveModule(next,active.id,target.dataset.module,after));
-    }else{
-      const target=event.target.closest('.lk-step,.lk-drop-end,.lk-canvas-lane');
-      if(!target)return;
-      const dest=target.dataset.dropModule||target.dataset.dragFrom;
-      const m=state.modules.find(m=>m.id===dest);
-      if(!m?.enabled)return;
+      mutate(next=>moves.moveModule(next,active.id,target.dataset.module,after));return;
+    }
+    if(active.kind==='stage'){
+      const target=event.target.closest('.lk-substage-head')?.closest('.lk-substage');
+      if(!target||target.dataset.module!==active.module)return;
       event.preventDefault();
-      let before=null;
-      if(target.classList.contains('lk-step')){
-        const rect=target.getBoundingClientRect();
-        const after=event.clientX>rect.left+rect.width/2;
-        if(!after)before=target.dataset.dragNode;
-        else{
-          const index=m.nodes.findIndex(n=>n.id===target.dataset.dragNode);
-          before=m.nodes[index+1]?.id||null;
-        }
-      }
-      if(active.from===dest&&before===active.id)return;
-      if(mutate(next=>moves.moveNode(next,active.from,active.id,dest,before))){
-        moduleId=dest;selectedId=active.id;render();
-      }
+      const rect=target.getBoundingClientRect(),after=event.clientX>=rect.left+rect.width/2;
+      mutate(next=>stages.moveStage(next,active.module,active.id,target.dataset.stageId,after));return;
+    }
+    const target=event.target.closest('.lk-step,.lk-drop-end,.lk-substage-body');
+    if(!target)return;
+    const dest=target.dataset.dropModule||target.dataset.dragFrom;
+    const targetStage=target.dataset.dropStage||target.dataset.stageId;
+    const m=state.modules.find(x=>x.id===dest);
+    if(!m?.enabled)return;
+    const stageId=targetStage||stages.stageFor(m,m.nodes.find(n=>n.id===target.dataset.dragNode));
+    if(!stages.stages(m).some(x=>x.id===stageId))return;
+    event.preventDefault();
+    let before=null;
+    if(target.classList.contains('lk-step')){
+      const stageNodes=m.nodes.filter(n=>stages.stageFor(m,n)===stageId);
+      const index=stageNodes.findIndex(n=>n.id===target.dataset.dragNode);
+      const rect=target.getBoundingClientRect();
+      if(event.clientY<rect.top+rect.height/2)before=target.dataset.dragNode;
+      else before=stageNodes[index+1]?.id||null;
+    }
+    if(mutate(next=>stages.moveToStage(next,active.from,active.id,dest,stageId,before,moves))){
+      moduleId=dest;selectedId=active.id;activeStageId=stageId;render();
     }
   });
   root.addEventListener('dragend',event=>{dragPayload=null;event.target.classList?.remove('lk-dragging');});
@@ -383,7 +397,7 @@
   });
   $('lkAddModule').onclick=()=>{
     if(blocked)return;
-    $('lkModuleName').value='';$('lkModuleCategory').value='干线';$('lkModuleDialog').showModal();
+    $('lkModuleName').value='';$('lkModuleCategory').value='仓';$('lkModuleDialog').showModal();
   };
   $('lkModuleCancel').onclick=()=>$('lkModuleDialog').close();
   $('lkModuleForm').addEventListener('submit',e=>{
@@ -391,7 +405,7 @@
     const name=$('lkModuleName').value.trim(),category=$('lkModuleCategory').value;
     if(!name)return;
     const id=makeId('module');
-    if(mutate(next=>next.modules.push({id,name,category,enabled:true,nodes:[]}))){
+    if(mutate(next=>next.modules.push({id,name,category,enabled:true,stages:[{id:'general',name:'操作流程',collapsed:false}],nodes:[]}))){
       moduleId=id;selectedId='';$('lkModuleDialog').close();render();
     }
   });
