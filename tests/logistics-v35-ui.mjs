@@ -15,6 +15,17 @@ try{
  check('process contains one linehaul parent and three transport lanes',await page.locator('.lk-trunk-family').count()===1&&await page.locator('.lk-trunk-route').count()===3);
  check('original road operations under road lane',await page.locator('.lk-trunk-route[data-transport-mode="road"] [data-module="linehaul"]').count()>=1);
  check('sea and air lanes have their own add placeholders',await page.locator('.lk-trunk-route[data-transport-mode="sea"] .lk-trunk-add').count()===1&&await page.locator('.lk-trunk-route[data-transport-mode="air"] .lk-trunk-add').count()===1);
+ const processRoutes=page.locator('#lkProcess .lk-trunk-route');
+ check('transport routes stack vertically at desktop width',await processRoutes.evaluateAll(routes=>routes.length===3&&routes.every((route,i)=>i===0||route.getBoundingClientRect().top>=routes[i-1].getBoundingClientRect().bottom)));
+ check('road initially expanded; air and sea collapsed',await processRoutes.evaluateAll(routes=>routes[0].open&&!routes[1].open&&!routes[2].open));
+ check('collapsed air lane hides new-route action',!await processRoutes.nth(1).locator('.lk-trunk-add').isVisible());
+ await processRoutes.nth(1).locator(':scope > summary').click();
+ check('air lane can expand independently',await processRoutes.nth(1).evaluate(lane=>lane.open)&&await processRoutes.nth(1).locator('.lk-trunk-add').isVisible()&&await processRoutes.nth(0).evaluate(lane=>lane.open));
+ await processRoutes.nth(1).locator(':scope > summary').click();
+ await processRoutes.nth(0).locator(':scope > summary').click();
+ check('road route can collapse without deleting nodes',!await processRoutes.nth(0).evaluate(lane=>lane.open)&&await processRoutes.nth(0).locator('.lk-canvas-block[data-module="linehaul"]').count()===1);
+ await processRoutes.nth(0).locator(':scope > summary').click();
+ check('road route expands again with original nodes',await processRoutes.nth(0).evaluate(lane=>lane.open)&&await processRoutes.nth(0).locator('.lk-canvas-block[data-module="linehaul"]').isVisible());
  check('stage toolbar has no branch or exception button',await page.locator('.lk-stage-actions [data-action="stage-branch"]').count()===0);
  const warehouse=page.locator('.lk-canvas-block[data-module="head"]');
  const scan=warehouse.locator('.lk-flow-item').filter({has:page.locator('[data-drag-node="security-scan"]')});
@@ -63,8 +74,18 @@ try{
  check('publish updates release',!!(await version()).published.data.modules.find(m=>m.id==='head').nodes.find(n=>n.id==='security-scan').exchanges?.length);
  check('A overview is macro only',await page.locator('#lkOverview .lk-ov-op').count()===0);
  check('published linehaul has a 3-branch transport parent',await page.locator('#lkOverview .lk-ov-transport-family .lk-trunk-route').count()===3);
+
+ check('published transport routes also stack vertically',await page.locator('#lkOverview .lk-ov-transport-family .lk-trunk-route').evaluateAll(routes=>routes.length===3&&routes.every((r,i)=>i===0||r.getBoundingClientRect().top>=routes[i-1].getBoundingClientRect().bottom)));
+ const publishedAir=page.locator('#lkOverview .lk-ov-transport-family .lk-trunk-route[data-transport-mode="air"]');
+ await publishedAir.locator(':scope > summary').click();
+ check('published air route expands independently',await publishedAir.evaluate(lane=>lane.open));
  await page.locator('#lkModeDetail').click();
+ check('published expansion survives A/B overview switch',await publishedAir.evaluate(lane=>lane.open));
  check('B overview displays detailed operation nodes',await page.locator('#lkOverview .lk-ov-op').count()>0);
+ await page.setViewportSize({width:390,height:830});
+ check('transport lanes remain vertical at mobile width',await page.locator('#lkOverview .lk-ov-transport-family .lk-trunk-route').evaluateAll(routes=>routes.length===3&&routes.every((r,i)=>i===0||r.getBoundingClientRect().top>=routes[i-1].getBoundingClientRect().bottom)));
+ check('mobile transport cards stay inside their parent',await page.locator('#lkOverview .lk-ov-transport-family .lk-trunk-route').evaluateAll(routes=>routes.every(r=>r.getBoundingClientRect().width<=r.parentElement.getBoundingClientRect().width+1)));
+
  check('no runtime errors',errors.length===0);
  console.log('V3.5 browser checks passed');
 }finally{await browser.close();}

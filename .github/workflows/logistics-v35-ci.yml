@@ -1,7 +1,7 @@
-name: Logistics V3.5 compact branch and setup library regression
+name: Logistics V3.5 vertical transport accordion regression
 on:
   push:
-    branches: [feat/logistics-v35-branch-mini-tool-20261028]
+    branches: [fix/logistics-v35-vertical-linehaul-20261029]
     paths:
       - '.github/workflows/logistics-v35-ci.yml'
       - 'logistics-v35-model.js'

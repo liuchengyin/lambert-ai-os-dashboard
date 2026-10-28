@@ -134,15 +134,24 @@
     '<dialog id="lkRenameNodeDialog" class="lk-dialog lk-rename-dialog" aria-label="修改操作模块名称"><form id="lkRenameNodeForm"><h3>编辑小模块名称</h3><label>操作名称<input id="lkRenameNodeName" type="text" maxlength="70" required placeholder="例如：安检扫描"></label><p class="lk-footnote">只修改名称，保留操作 ID、备注、轨迹事件码及所有流程连线。</p><div class="lk-dialog-actions"><button type="button" id="lkRenameNodeCancel">取消</button><button type="submit" class="lk-primary">保存名称</button></div></form></dialog>';
   const makeId=prefix=>prefix+'_'+(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'_'+Math.random().toString(36).slice(2));
   function renderModules(){
-    const host=$('lkModules');host.replaceChildren();
+    const host=$('lkModules');
+    // Preserve what the user expanded during any canvas repaint without
+    // writing transient presentation state into the logistics document.
+    const expanded=new Map([...host.querySelectorAll('.lk-trunk-route')]
+      .map(lane=>[lane.dataset.transportMode,lane.open]));
+    host.replaceChildren();
     const family=node('section',undefined,'lk-trunk-family');
     family.append(node('h3','干线 · 三条运输线','lk-trunk-title'));
     const grid=node('div',undefined,'lk-trunk-grid');
     const lanes=new Map();
     mini.ORDER.forEach(mode=>{
-      const lane=node('div',undefined,'lk-trunk-route');lane.dataset.transportMode=mode;
-      lane.append(node('h4',mini.LABELS[mode]+'干线','lk-trunk-route-title'));
-      grid.append(lane);lanes.set(mode,lane);
+      const lane=node('details',undefined,'lk-trunk-route');lane.dataset.transportMode=mode;
+      lane.open=expanded.has(mode)?expanded.get(mode):mode==='road';
+      const toggle=node('summary',undefined,'lk-trunk-route-toggle');
+      toggle.append(node('h4',mini.LABELS[mode]+'干线','lk-trunk-route-title'));
+      const body=node('div',undefined,'lk-trunk-route-body');
+      lane.append(toggle,body);
+      grid.append(lane);lanes.set(mode,body);
     });
     family.append(grid);
     let familyInserted=false;

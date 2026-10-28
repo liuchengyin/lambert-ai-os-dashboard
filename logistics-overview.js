@@ -9,6 +9,10 @@
  }
  function render(container,release,mode,open){
    const data=release?.data;
+   // Capture native details state before replacing the overview DOM.
+   // This is transient view state and never enters published snapshots.
+   const expanded=new Map([...container.querySelectorAll('.lk-ov-transport-family .lk-trunk-route')]
+     .map(lane=>[lane.dataset.transportMode,lane.open]));
    container.replaceChildren();
    if(!data?.modules){container.append(el('p','lk-empty','没有可展示的已发布物流线路'));return;}
    const modules=data.modules.filter(m=>m.enabled!==false);
@@ -80,10 +84,14 @@
          const grid=el('div','lk-trunk-grid');
          const lanes={};
          mini.ORDER.forEach(key=>{
-           const lane=el('div','lk-trunk-route');
+           const lane=el('details','lk-trunk-route');
            lane.dataset.transportMode=key;
-           lane.append(el('h4','lk-trunk-route-title',mini.LABELS[key]+'干线'));
-           lanes[key]=lane;grid.append(lane);
+           lane.open=expanded.has(key)?expanded.get(key):key==='road';
+           const toggle=el('summary','lk-trunk-route-toggle');
+           toggle.append(el('h4','lk-trunk-route-title',mini.LABELS[key]+'干线'));
+           const body=el('div','lk-trunk-route-body');
+           lane.append(toggle,body);
+           lanes[key]=body;grid.append(lane);
          });
          family.append(grid);line._trunkLanes=lanes;line.append(family);
        }
