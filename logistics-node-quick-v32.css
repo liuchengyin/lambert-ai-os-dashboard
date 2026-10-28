@@ -1,0 +1,103 @@
+/* V3.2: clicking an operation opens an immediately actionable detail dialog.
+ * Keep operation text legible and original storage/version protections intact. */
+#logistics #lkQuickDetailDialog {
+  width:min(760px,calc(100vw - 32px));
+  max-width:760px;
+  max-height:min(90dvh,940px);
+  overflow-y:auto;
+  border:1px solid #c9c9c9;
+  border-radius:16px;
+  padding:0;
+  background:#fff;
+  color:#1c1c1c;
+  box-shadow:0 18px 65px rgba(0,0,0,.19);
+  margin:auto;
+}
+#logistics #lkQuickDetailDialog::backdrop,#logistics #lkRenameNodeDialog::backdrop {
+  background:rgba(19,21,23,.46);
+}
+#logistics .lk-quick-bar {
+  position:sticky;top:0;z-index:3;
+  padding:14px 20px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  background:#fff;border-bottom:1px solid #dedede;
+}
+#logistics .lk-quick-bar strong {font-size:15px;color:#292929}
+#logistics #lkQuickClose {
+  border:1px solid #d2d2d2;
+  background:#f8f8f8;
+  color:#333;
+  font-size:13px;
+  padding:8px 12px;
+  border-radius:9px;
+  cursor:pointer;
+}
+#logistics #lkQuickDetailBody {
+  padding:20px 23px 25px;
+  border:0!important;
+  border-radius:0!important;
+  max-width:none!important;
+  background:#fff!important;
+  box-shadow:none!important;
+  overflow:visible;
+}
+#logistics #lkQuickDetailBody .lk-detail-head,#logistics #lkDetail .lk-detail-head {
+  display:flex;align-items:flex-start;justify-content:space-between;gap:16px;
+  flex-wrap:wrap;
+}
+#logistics .lk-node-quick-actions {
+  display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+  margin-left:auto;
+}
+#logistics .lk-node-quick-actions button {
+  font-size:13px!important;font-weight:650;
+  border:1px solid #aaa!important;border-radius:9px!important;
+  color:#222!important;background:#fff!important;
+  padding:10px 12px!important;min-height:40px;
+  cursor:pointer;
+}
+#logistics .lk-node-quick-actions button:hover:not(:disabled) {background:#f2f2f2!important}
+#logistics .lk-node-quick-actions button.lk-edit-name {
+  background:#212121!important;color:#fff!important;border-color:#212121!important;
+}
+#logistics .lk-node-quick-actions button.lk-edit-name:hover:not(:disabled) {background:#3c3c3c!important}
+#logistics .lk-node-quick-actions button.lk-danger {
+  background:#fff!important;color:#a43c3c!important;border-color:#cfaaaa!important;
+}
+#logistics .lk-node-quick-actions button:disabled {cursor:not-allowed;opacity:.46}
+#logistics .lk-quick-lock-note {
+  background:#f6f6f6;color:#494949;
+  border-bottom:1px solid #dedede;
+  padding:12px 22px;font-size:13px;line-height:1.65;
+}
+#logistics .lk-quick-lock-note button {
+  margin-left:12px;font-size:13px;font-weight:700;
+  background:#222;color:#fff;border:1px solid #222;
+  padding:8px 13px;border-radius:8px;
+}
+#logistics #lkRenameNodeDialog {
+  width:min(440px,calc(100vw - 30px));
+  max-height:85dvh;
+  border-radius:15px;
+  background:#fff;
+  color:#202020;
+  padding:25px;
+}
+#logistics #lkRenameNodeDialog h3 {margin:0 0 15px;font-size:19px}
+#logistics #lkRenameNodeDialog label {display:flex;flex-direction:column;gap:8px;font-size:14px;font-weight:700}
+#logistics #lkRenameNodeName {
+  width:100%;box-sizing:border-box;
+  font-size:16px!important;line-height:1.4;
+  padding:11px 12px;border-radius:9px;border:1px solid #acacac;background:#fff;color:#111;
+}
+#logistics .lk-canvas-op {cursor:pointer}
+#logistics .lk-canvas-op:focus-visible {outline:3px solid #222;outline-offset:2px}
+@media(max-width:620px){
+  #logistics #lkQuickDetailDialog {width:calc(100vw - 18px);max-height:93dvh;}
+  #logistics #lkQuickDetailBody {padding:16px 13px 24px}
+  #logistics .lk-quick-bar {padding:11px 14px}
+  #logistics .lk-node-quick-actions {width:100%;margin-left:0;gap:6px}
+  #logistics .lk-node-quick-actions button {font-size:12px!important;flex:1 1 auto;padding:9px!important}
+  #logistics .lk-quick-lock-note {padding:11px 14px}
+  #logistics #lkRenameNodeDialog {padding:20px}
+}

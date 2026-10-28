@@ -1,0 +1,40 @@
+name: Logistics V3.2 click-to-edit operation detail
+on:
+  push:
+    branches: [feat/logistics-v32-quick-node-edit-20261028]
+    paths:
+      - '.github/workflows/logistics-v32-quick-ui.yml'
+      - 'logistics-knowledge-v1.js'
+      - 'logistics-node-quick-v32.css'
+      - 'index.html'
+      - 'tests/logistics-v32-quick-ui.mjs'
+permissions:
+  contents: read
+jobs:
+  quick-edit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JS validation + prior safe model regressions
+        run: |
+          node --check logistics-knowledge-v1.js
+          node --check logistics-stage-view.js
+          node --check logistics-editor-v31.js
+          node tests/logistics-v31-model.test.mjs
+          node tests/logistics-version-model.test.mjs
+          node tests/logistics-flow-model.test.mjs
+      - name: Install isolated Playwright Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Exercise modal edit, draft isolation and published graph
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/logistics-quick-http.log 2>&1 &
+          sleep 2
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-v32-quick-ui.mjs

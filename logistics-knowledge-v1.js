@@ -60,7 +60,7 @@
   const flow=window.LambertLogisticsFlow;
   const versions=window.LambertLogisticsVersion,overview=window.LambertLogisticsOverview;
   const editor=window.LambertLogisticsEditor;
-  let editingModuleId='',searchTerm='',branchSourceId='';
+  let editingModuleId='',searchTerm='',branchSourceId='',renameModuleId='',renameNodeId='',returnQuickAfterEdit=false;
   const copy=x=>JSON.parse(JSON.stringify(x));
   function read() {
     try {
@@ -126,7 +126,9 @@
     '<label>目标操作<select id="lkBranchTarget" required></select></label>'+
     '<label>新增目标操作名称（仅在选择「新建操作」时填写）<input id="lkBranchNewTitle" maxlength="70" placeholder="例如：异常处理"></label>'+
     '<label class="lk-branch-checkbox"><input id="lkBranchOnly" type="checkbox">目标只显示在分支上（不加入主线）</label>'+
-    '<div class="lk-dialog-actions"><button type="button" id="lkBranchCancel">取消</button><button type="submit" class="lk-primary">保存条件分支</button></div></form></dialog>';
+    '<div class="lk-dialog-actions"><button type="button" id="lkBranchCancel">取消</button><button type="submit" class="lk-primary">保存条件分支</button></div></form></dialog>'+
+    '<dialog id="lkQuickDetailDialog" class="lk-dialog lk-quick-detail-dialog" aria-label="操作模块详情"><div class="lk-quick-bar"><strong>操作模块详情</strong><button type="button" id="lkQuickClose" aria-label="关闭详情">关闭 ×</button></div><div id="lkQuickReadOnly" class="lk-quick-lock-note" hidden>当前已锁定，解锁后可以修改名称、内容或删除。<button type="button" id="lkQuickUnlock">解锁编辑</button></div><article id="lkQuickDetailBody" class="lk-detail"></article></dialog>'+
+    '<dialog id="lkRenameNodeDialog" class="lk-dialog lk-rename-dialog" aria-label="修改操作模块名称"><form id="lkRenameNodeForm"><h3>编辑小模块名称</h3><label>操作名称<input id="lkRenameNodeName" type="text" maxlength="70" required placeholder="例如：安检扫描"></label><p class="lk-footnote">只修改名称，保留操作 ID、备注、轨迹事件码及所有流程连线。</p><div class="lk-dialog-actions"><button type="button" id="lkRenameNodeCancel">取消</button><button type="submit" class="lk-primary">保存名称</button></div></form></dialog>';
   const makeId=prefix=>prefix+'_'+(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'_'+Math.random().toString(36).slice(2));
   function renderModules(){
     const host=$('lkModules');host.replaceChildren();
@@ -216,16 +218,21 @@
     if(!n){host.append(node('p','在上方画布点击一个操作块，即可查看业务动作、系统关系和数据。','lk-empty'));return;}
     const header=node('div',undefined,'lk-detail-head');
     const title=node('div');const group=stages.stages(m).find(x=>x.id===stages.stageFor(m,n));title.append(node('small',m.category+' / '+m.name+' / '+(group?.name||'操作流程')+' / '+n.kind),node('h3',n.title));
-    const edit=button('编辑节点','edit-node','lk-edit',blocked||locked);edit.dataset.id=n.id;
-    header.append(title,edit);host.append(header);
+    const actions=node('div',undefined,'lk-node-quick-actions');
+    const rename=button('编辑名称','rename-node','lk-edit-name',blocked||locked);
+    rename.dataset.id=n.id;rename.dataset.module=m.id;
+    const edit=button('编辑内容','edit-node','lk-edit',blocked||locked);
+    edit.dataset.id=n.id;edit.dataset.module=m.id;
+    const del=button('删除模块','node-delete','lk-danger',blocked||locked);
+    del.dataset.id=n.id;del.dataset.module=m.id;
+    actions.append(rename,edit,del);
+    header.append(title,actions);host.append(header);
     host.append(node('span','核实状态：'+(n.confidence||'待核实'),'lk-status'));
     host.append(field('操作备注',n.note||'暂无备注'));
     const tags=node('div',undefined,'lk-node-chips');
     (n.tags||[]).forEach(tag=>tags.append(node('span','#'+tag,'lk-node-chip')));
     (n.operationCodes||[]).forEach(code=>tags.append(node('span','操作码 '+code,'lk-code-chip')));
     host.append(tags);
-    const del=button('删除此操作','node-delete','lk-danger',blocked||locked);del.dataset.id=n.id;del.dataset.module=m.id;
-    host.append(del);
     host.append(field('① 业务操作 / 触发条件',n.action));
     const more=document.createElement('details');more.className='lk-related-details';
     const summary=node('summary','按需展开 · 系统信息流与数据记录');more.append(summary);
@@ -307,17 +314,53 @@
     $('lkTabProcess').setAttribute('aria-selected',String(tab==='process'));$('lkTabData').setAttribute('aria-selected',String(tab==='data'));
     $('lkAddModule').disabled=blocked||locked;$('lkAddNode').disabled=blocked||locked;$('lkExport').disabled=blocked;
     renderVersionControls();
-    if(tab==='process'){renderModules();renderNodes();renderDetail();renderSearch();renderTrash();}
+    if(tab==='process'){renderModules();renderNodes();renderDetail();renderSearch();renderTrash();syncQuickDetail();}
     else if(tab==='overview'){
       $('lkModeMacro').setAttribute('aria-pressed',String(overviewMode==='macro'));
       $('lkModeDetail').setAttribute('aria-pressed',String(overviewMode==='detail'));
       overview.render($('lkOverviewContent'),releaseRecord.published,overviewMode,(mId,nId)=>{
         moduleId=mId;selectedId=nId||'';tab='process';render();
+        if(nId)showQuickDetail();
       });
     }else renderData();
   }
-  function openEditor(edit){
+  function syncQuickDetail(){
+    const dialog=$('lkQuickDetailDialog');
+    if(!dialog.open)return;
+    const m=current(),n=m?.nodes.find(item=>item.id===selectedId);
+    if(!n){dialog.close();return;}
+    const body=$('lkQuickDetailBody');
+    body.replaceChildren(...Array.from($('lkDetail').cloneNode(true).childNodes));
+    $('lkQuickReadOnly').hidden=!locked||blocked;
+    $('lkQuickUnlock').disabled=blocked;
+  }
+  function showQuickDetail(){
+    const m=current(),n=m?.nodes.find(item=>item.id===selectedId);
+    if(!n)return;
+    const dialog=$('lkQuickDetailDialog');
+    if(!dialog.open)dialog.showModal();
+    syncQuickDetail();
+  }
+  function closeQuickDetail(){
+    const dialog=$('lkQuickDetailDialog');
+    if(dialog.open)dialog.close();
+  }
+  function openRenameNode(module,key){
     if(blocked||locked)return;
+    const m=state.modules.find(x=>x.id===module),n=m?.nodes.find(x=>x.id===key);
+    if(!n)return;
+    renameModuleId=module;renameNodeId=key;
+    returnQuickAfterEdit=$('lkQuickDetailDialog').open;
+    closeQuickDetail();
+    $('lkRenameNodeName').value=n.title;
+    $('lkRenameNodeDialog').showModal();
+    $('lkRenameNodeName').focus();
+    $('lkRenameNodeName').select();
+  }
+    function openEditor(edit){
+    if(blocked||locked)return;
+    returnQuickAfterEdit=$('lkQuickDetailDialog').open;
+    closeQuickDetail();
     const n=edit?selected():null;
     editorMode=n?'edit':'new';
     $('lkEditorTitle').textContent=n?'编辑操作节点':'添加操作节点';
@@ -375,6 +418,7 @@
     if(!window.confirm(message))return;
     const trashId=makeId('trash');
     if(mutate(next=>editor.remove(next,type,mId,itemId,trashId))){
+      closeQuickDetail();
       if(type==='module'||type==='stage'){selectedId='';activeStageId='';}
       render();setMessage('已移入草稿回收站。保存草稿后才落盘，发布后才影响全链路。');
     }
@@ -412,13 +456,16 @@
     }
     if(type==='search-open'){
       moduleId=b.dataset.module;selectedId=id;tab='process';render();
-      $('lkDetail').scrollIntoView?.({block:'nearest'});return;
+      showQuickDetail();return;
     }
     if(type==='branch-remove'){
       mutate(next=>flow.removeBranch(next,b.dataset.module,id));return;
     }
     if(type==='select-module'){moduleId=id;selectedId='';activeStageId='';tab='process';render();return;}
-    if(type==='select-node'){moduleId=b.dataset.module||moduleId;selectedId=id;activeStageId=b.dataset.stage||'';render();return;}
+    if(type==='select-node'){
+      moduleId=b.dataset.module||moduleId;selectedId=id;activeStageId=b.dataset.stage||'';
+      tab='process';render();showQuickDetail();return;
+    }
     if(type==='add-here'){moduleId=id;selectedId='';activeStageId=stages.stages(current())[0]?.id||'';render();openEditor(false);return;}
     if(type==='collapse-module'){
       mutate(next=>{const m=next.modules.find(m=>m.id===id);if(m)m.collapsed=!m.collapsed;});return;
@@ -448,9 +495,10 @@
         if(!stage)return false;stage.collapsed=!stage.collapsed;
       });return;
     }
-    if(type==='to-data'){tab='data';render();return;}
-    if(type==='open-node'){moduleId=b.dataset.module;selectedId=id;tab='process';render();return;}
-    if(type==='edit-node'){selectedId=id;openEditor(true);return;}
+    if(type==='to-data'){closeQuickDetail();tab='data';render();return;}
+    if(type==='open-node'){moduleId=b.dataset.module;selectedId=id;tab='process';render();showQuickDetail();return;}
+    if(type==='rename-node'){openRenameNode(b.dataset.module||moduleId,id);return;}
+    if(type==='edit-node'){moduleId=b.dataset.module||moduleId;selectedId=id;openEditor(true);return;}
     if(type==='module-up'||type==='module-down'){
       mutate(next=>{
         const index=next.modules.findIndex(m=>m.id===id);
@@ -558,7 +606,41 @@
   $('lkTabProcess').onclick=()=>{tab='process';render();};
   $('lkTabData').onclick=()=>{tab='data';render();};
   $('lkAddNode').onclick=()=>{if(current()?.enabled)openEditor(false);};
-  $('lkNodeCancel').onclick=()=>$('lkNodeDialog').close();
+  $('lkQuickClose').onclick=closeQuickDetail;
+  $('lkQuickUnlock').onclick=()=>{if(!blocked&&locked){$('lkUnlock').click();syncQuickDetail();}};
+  const cancelSecondaryEdit=(dialogId)=>{
+    $(dialogId).close();
+    if(returnQuickAfterEdit)showQuickDetail();
+    returnQuickAfterEdit=false;
+  };
+  $('lkRenameNodeCancel').onclick=()=>cancelSecondaryEdit('lkRenameNodeDialog');
+  $('lkRenameNodeDialog').addEventListener('cancel',e=>{e.preventDefault();cancelSecondaryEdit('lkRenameNodeDialog');});
+  $('lkNodeDialog').addEventListener('cancel',e=>{e.preventDefault();cancelSecondaryEdit('lkNodeDialog');});
+  $('lkRenameNodeForm').addEventListener('submit',event=>{
+    event.preventDefault();
+    if(locked||blocked)return;
+    const title=$('lkRenameNodeName').value.trim();
+    if(!title)return;
+    const modId=renameModuleId,key=renameNodeId;
+    const changed=mutate(next=>{
+      const target=next.modules.find(m=>m.id===modId)?.nodes.find(n=>n.id===key);
+      if(!target)return false;
+      if(target.title===title)return false;
+      target.title=title;
+      return true;
+    });
+    if(changed){
+      moduleId=modId;selectedId=key;
+      $('lkRenameNodeDialog').close();render();
+      if(returnQuickAfterEdit)showQuickDetail();
+      setMessage('小模块名称已修改（未保存草稿）。操作 ID、分支及其他字段保持不变。');
+    }else{
+      $('lkRenameNodeDialog').close();
+      if(returnQuickAfterEdit)showQuickDetail();
+    }
+    returnQuickAfterEdit=false;
+  });
+  $('lkNodeCancel').onclick=()=>cancelSecondaryEdit('lkNodeDialog');
   $('lkNodeForm').addEventListener('submit',e=>{
     e.preventDefault();if(!current()?.enabled)return;
     const input={
@@ -576,7 +658,11 @@
       const old=m.nodes.find(n=>n.id===id);
       if(old){Object.assign(old,input);if(!input.color)delete old.color;}
       else{const entry={id,...input,stageId:activeStageId||stages.stages(m)[0]?.id||''};if(!entry.color)delete entry.color;m.nodes.push(entry);}
-    })){selectedId=id;$('lkNodeDialog').close();render();}
+    })){
+      selectedId=id;$('lkNodeDialog').close();render();
+      if(returnQuickAfterEdit)showQuickDetail();
+      returnQuickAfterEdit=false;
+    }
   });
   $('lkBranchCancel').onclick=()=>$('lkBranchDialog').close();
   $('lkBranchForm').addEventListener('submit',event=>{
@@ -636,7 +722,9 @@
   $('lkUnlock').onclick=()=>{
     if(blocked||!locked)return;
     state=copy(releaseRecord.draft?.data||releaseRecord.published.data);
-    locked=false;dirty=false;tab='process';selectedId='';render();
+    // Keep the operation the user opened. render()/findSelected() only falls
+    // back if this operation is absent in the saved draft.
+    locked=false;dirty=false;tab='process';render();
     setMessage(releaseRecord.draft?'继续编辑已保存草稿；全链路仍显示已发布版本。':'已解锁。修改暂存在内存，点击「保存草稿」后才写入本地存储。');
   };
   $('lkSaveDraft').onclick=()=>{
