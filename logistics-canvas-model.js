@@ -36,6 +36,10 @@
     const targetIndex=beforeId===null?target.nodes.length:target.nodes.findIndex(n=>n.id===beforeId);
     if(targetIndex<0)return false;
     if(fromId!==toId&&target.nodes.some(n=>n.id===nodeId))return false; // never silently duplicate IDs
+    // Moving an endpoint while leaving its edges in the source module makes
+    // those branches disappear from the canvas. Reject instead of orphaning.
+    if(fromId!==toId&&Array.isArray(source.branches)&&source.branches.some(e=>
+      e&&(e.from===nodeId||e.to===nodeId)))return false;
     // Find final position before touching either array, so a rejected move
     // does not remove records or silently save an unchanged layout.
     const index=fromId===toId&&from<targetIndex?targetIndex-1:targetIndex;
