@@ -1,0 +1,46 @@
+name: Logistics diagram arrows and custom colors
+on:
+  push:
+    branches: [feat/web-logistics-flow-color-20261028]
+    paths:
+      - '.github/workflows/logistics-flow-ci.yml'
+      - 'logistics-flow-model.js'
+      - 'logistics-stage-view.js'
+      - 'logistics-knowledge-v1.js'
+      - 'logistics-flow-v2.css'
+      - 'tests/logistics-flow-model.test.mjs'
+      - 'tests/logistics-flow-ui.mjs'
+      - 'tests/logistics-stage-ui.mjs'
+      - 'tests/logistics-knowledge-ui.mjs'
+      - 'index.html'
+permissions:
+  contents: read
+jobs:
+  model-and-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate independent logical models
+        run: |
+          node --check logistics-knowledge-v1.js
+          node --check logistics-stage-view.js
+          node tests/logistics-flow-model.test.mjs
+          node tests/logistics-stage-model.test.mjs
+          node tests/logistics-canvas-logic.test.mjs
+      - name: Install Playwright browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Run full integration regressions
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/logistics-http.log 2>&1 &
+          sleep 2
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-flow-ui.mjs
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-stage-ui.mjs
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-knowledge-ui.mjs
