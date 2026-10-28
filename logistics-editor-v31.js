@@ -28,6 +28,7 @@
      const index=mod.stages.findIndex(s=>s.id===itemId);
      if(index<0)return false;
      entry.index=index;entry.item=clone(mod.stages[index]);
+     entry.nodeOrder=mod.nodes.map(n=>n.id);
      entry.nodes=mod.nodes.map((n,i)=>({...clone(n),_trashIndex:i})).filter(n=>(n.stageId||'general')===itemId);
      const ids=new Set(entry.nodes.map(n=>n.id));
      entry.branches=(mod.branches||[]).filter(e=>ids.has(e.from)||ids.has(e.to)).map(clone);
@@ -54,7 +55,23 @@
      if(!mod||!Array.isArray(mod.stages)||mod.stages.some(s=>s.id===t.item.id))return false;
      if((t.nodes||[]).some(n=>mod.nodes.some(x=>x.id===n.id)))return false;
      mod.stages.splice(Math.min(t.index,mod.stages.length),0,clone(t.item));
-     (t.nodes||[]).forEach(n=>{const at=n._trashIndex;const item=clone(n);delete item._trashIndex;mod.nodes.splice(Math.min(at,mod.nodes.length),0,item);});
+     // Use the original neighboring node IDs as anchors. A later deletion
+     // or edit outside this stage must not unpredictably shift restored nodes.
+     const original=t.nodeOrder||[];
+     (t.nodes||[]).slice().sort((a,b)=>a._trashIndex-b._trashIndex).forEach(n=>{
+       const item=clone(n),at=item._trashIndex;delete item._trashIndex;
+       let insertAt=Math.min(at,mod.nodes.length);
+       if(original.length){
+         const position=original.indexOf(item.id);
+         const after=original.slice(position+1).find(id=>mod.nodes.some(x=>x.id===id));
+         if(after){insertAt=mod.nodes.findIndex(x=>x.id===after);}
+         else{
+           const before=original.slice(0,position).reverse().find(id=>mod.nodes.some(x=>x.id===id));
+           if(before)insertAt=mod.nodes.findIndex(x=>x.id===before)+1;
+         }
+       }
+       mod.nodes.splice(insertAt,0,item);
+     });
      const ids=new Set(mod.nodes.map(n=>n.id)),edges=new Set((mod.branches||[]).map(e=>e.id));
      for(const e of t.branches||[])if(ids.has(e.from)&&ids.has(e.to)&&!edges.has(e.id)){mod.branches=mod.branches||[];mod.branches.push(clone(e));edges.add(e.id);}
    }else if(t.type==='node'){
