@@ -1,0 +1,44 @@
+name: Logistics V3.1 editor and safety regression
+on:
+  push:
+    branches: [feat/logistics-v31-editor-20261028]
+    paths:
+      - '.github/workflows/logistics-v31-ci.yml'
+      - 'logistics-editor-v31.js'
+      - 'logistics-editor-v31.css'
+      - 'logistics-knowledge-v1.js'
+      - 'logistics-stage-view.js'
+      - 'logistics-flow-model.js'
+      - 'logistics-overview.js'
+      - 'index.html'
+      - 'tests/logistics-v31-ui.mjs'
+      - 'tests/logistics-v31-model.test.mjs'
+permissions:
+  contents: read
+jobs:
+  editor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate syntax and safe pure model
+        run: |
+          node --check logistics-knowledge-v1.js
+          node --check logistics-editor-v31.js
+          node --check logistics-stage-view.js
+          node tests/logistics-v31-model.test.mjs
+          node tests/logistics-version-model.test.mjs
+      - name: Install isolated Playwright Chromium runtime
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Exercise V3.1 feature in real OS browser
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/logistics-http.log 2>&1 &
+          sleep 2
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-v31-ui.mjs
