@@ -51,6 +51,12 @@ try{
  await page.locator('#lkUnlock').click();
  await page.locator('.lk-canvas-block[data-module="head"] button[data-action="select-node"][data-id="security-scan"]').click();
  await page.locator('#lkDetail button[data-action="branch-remove"]').click();
+ await page.locator('.lk-canvas-block[data-module="head"] button[data-action="select-node"][data-id="batch-create"]').click();
+ await page.locator('#lkDetail button[data-action="branch-add"]').click();
+ await page.locator('#lkBranchType').selectOption('branch');
+ await page.locator('#lkBranchLabel').fill('批次人工复核');
+ await page.locator('#lkBranchTarget').selectOption('batch-bind');
+ await page.locator('#lkBranchForm button[type="submit"]').click();
  await page.locator('#lkSaveDraft').click();
  await page.locator('#lkTabOverview').click();
  await page.locator('#lkModeDetail').click();
@@ -58,6 +64,8 @@ try{
  await page.locator('#lkPublish').click();
  pass('second release removes exception from published graph',(await envelope()).published.number===2&&!(await envelope()).published.data.modules[0].branches.some(e=>e.id==='security-exception-branch'));
  pass('exception removed in B overview',await page.locator('#lkModeDetail').click().then(()=>page.locator('#lkOverview .lk-ov-exception').count())===0);
+ pass('ordinary branch displayed separately in B',await page.locator('#lkOverview .lk-ov-branch').count()===1);
+ pass('ordinary branch saved with explicit type',(await envelope()).published.data.modules[0].branches.some(e=>e.type==='branch'&&e.label==='批次人工复核'));
  await page.locator('#lkHistorySelect').selectOption('0');
  pass('rollback button available when locked and chosen history',await page.locator('#lkRollback').isEnabled());
  await page.locator('#lkRollback').click();
