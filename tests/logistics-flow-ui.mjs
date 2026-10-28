@@ -14,6 +14,7 @@ try{
  await page.goto(base+'/?view=logistics',{waitUntil:'domcontentloaded'});
  await page.locator('.lk-flow-main').first().waitFor({timeout:28000});
  await page.waitForFunction(()=>!document.documentElement.hasAttribute('data-lambert-boot'),null,{timeout:28000});
+ const baseData=await page.evaluate(keys=>Object.fromEntries(keys.map(k=>[k,localStorage.getItem(k)])),Object.keys(fixture));
  const head=page.locator('.lk-canvas-block[data-module="head"]');
  const receipt=head.locator('.lk-substage[data-stage-id="receiving"]');
  check('default preview remains unpersisted until edit',await page.evaluate(()=>localStorage.getItem('lambert_logistics_knowledge_v1')===null));
@@ -55,7 +56,7 @@ try{
  await page.locator('.lk-canvas-block[data-module="head"] button[data-action="color-reset-module"]').click();
  check('reset returns to warehouse default',(await current()).modules[0].color===undefined);
  check('visual reset applied',await head.evaluate(e=>getComputedStyle(e).getPropertyValue('--lk-module-accent').trim())==='#477DBD');
- check('OS data untouched',await page.evaluate(seed=>Object.keys(seed).every(k=>JSON.stringify(JSON.parse(localStorage.getItem(k)))===JSON.stringify(seed[k])),fixture));
+ check('OS data untouched',await page.evaluate(snapshot=>Object.keys(snapshot).every(k=>localStorage.getItem(k)===snapshot[k]),baseData));
  await page.setViewportSize({width:390,height:844});
  check('mobile still shows arrows and color selector',await head.locator('input[data-color-module="head"]:not([data-color-stage])').isVisible() && await head.locator('.lk-flow-arrow').count()>0);
  if(errors.length)console.log('PAGE_ERRORS',JSON.stringify(errors));
