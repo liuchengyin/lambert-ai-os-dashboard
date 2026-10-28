@@ -36,11 +36,42 @@ try{
  check('miniature is narrower than normal operation',await scan.locator('.lk-mini-card').first().evaluate(el=>el.getBoundingClientRect().width)<=100);
  check('locked plus disabled',await scan.locator(':scope > .lk-mini-add').getAttribute('class').then(x=>x.includes('is-disabled')));
  check('old local version not mutated merely by viewing',await page.evaluate(()=>localStorage.getItem('lambert_logistics_versions_v1')===null&&localStorage.getItem('lambert_logistics_knowledge_v1')===null));
+
+ await scan.locator('.lk-step button[data-action="select-node"][data-id="security-scan"]').click();
+ check('node-first details show entry condition, operation and trigger outcomes in order',
+   await page.locator('#lkQuickDetailBody').innerText().then(t=>t.includes('进入条件 / 何时开始')&&t.includes('执行角色 / 系统')&&t.includes('所需输入 / 操作对象')&&t.includes('操作说明 / 如何执行')&&t.includes('触发结果')));
+ const research=page.locator('#lkQuickDetailBody .lk-node-context');
+ check('node context clearly flags display order not proven relationship',await research.innerText().then(t=>t.includes('操作排序不等于真实触发')));
+ check('existing exception edge is distinguished from normal operation sequence',
+   await research.locator('.lk-context-exception').count()===1&&await research.innerText().then(t=>t.includes('安检异常')));
+ await research.locator('.lk-context-exception [data-action="select-node"][data-id="security-exception"]').click();
+ check('following exception opens target and displays incoming source',
+   await page.locator('#lkQuickDetailBody h3').innerText().then(t=>t.includes('安检异常上报'))&&
+   await page.locator('#lkQuickDetailBody .lk-node-context').innerText().then(t=>t.includes('安检扫描')));
+ await page.locator('#lkQuickClose').click();
+
  await page.locator('#lkTabSetup').click();
  check('new basic-data tool tab exists apart from process',await page.locator('#lkSetupTool').isVisible()&&!await page.locator('#lkProcess').isVisible());
  check('base-data tool shows editable module/stage cards',await page.locator('#lkSetupLibrary .lk-config-section').count()>=5);
  await page.locator('#lkUnlock').click();
  await page.locator('#lkTabProcess').click();
+
+ await scan.locator('.lk-step button[data-action="select-node"][data-id="security-scan"]').click();
+ await page.locator('#lkQuickDetailBody [data-action="edit-node"]').click();
+ await page.locator('#lkEntryCondition').fill('中心收到包裹后执行安检');
+ await page.locator('#lkExecutor').fill('中心安检员');
+ await page.locator('#lkOperationInput').fill('包裹条码、安检设备');
+ await page.locator('#lkResearchBasis').fill('待核实：安检操作 SOP 和接口记录');
+ await page.locator('#lkNodeForm button[type="submit"]').click();
+ check('node-first fields save in unsaved working copy without losing links',
+   await page.locator('#lkQuickDetailBody').innerText().then(t=>t.includes('中心收到包裹后执行安检')&&t.includes('中心安检员')&&t.includes('包裹条码、安检设备')&&t.includes('待核实：安检操作 SOP')));
+ const moveSelector=page.locator('#lkQuickDetailBody select[data-move-node]');
+ await moveSelector.selectOption('linehaul::general');
+ check('linked source cannot be moved to another module without relinking',
+   await page.locator('#lkMessage').innerText().then(t=>t.includes('跨大模块移动会使连线失效'))&&
+   await scan.locator('.lk-step button[data-id="security-scan"]').count()===1);
+ await page.locator('#lkQuickClose').click();
+
  await scan.locator(':scope > .lk-mini-add > summary').click();
  await scan.locator(':scope > .lk-mini-add [data-action="branch-quick-choice"][data-branch-type="branch"]').click();
  check('single plus chooses branching without separate type toolbar',await page.locator('#lkBranchDialog').isVisible()&&await page.locator('#lkBranchType').inputValue()==='branch');
@@ -69,6 +100,7 @@ try{
  const draft=await version();const m=draft.draft.data.modules.find(x=>x.id==='head'),orig=draft.published.data.modules.find(x=>x.id==='head');
  check('two new branches survive in draft',m.branches.some(e=>e.label==='需要复检'&&e.type==='branch')&&m.branches.some(e=>e.label==='二次异常'&&e.type==='exception'));
  check('exchanges are not branch edges',m.nodes.find(n=>n.id==='security-scan').exchanges.length===1&&m.branches.every(e=>!e.message));
+ check('node-first research fields survive draft save',m.nodes.find(n=>n.id==='security-scan').entryCondition==='中心收到包裹后执行安检'&&m.nodes.find(n=>n.id==='security-scan').executor==='中心安检员'&&m.nodes.find(n=>n.id==='security-scan').operationInput.includes('包裹条码')&&m.nodes.find(n=>n.id==='security-scan').researchBasis.includes('待核实'));
  check('published graph unchanged by saved draft',orig.branches.length===1&&!orig.nodes.find(n=>n.id==='security-scan').exchanges);
  await page.locator('#lkPublish').click();
  check('publish updates release',!!(await version()).published.data.modules.find(m=>m.id==='head').nodes.find(n=>n.id==='security-scan').exchanges?.length);

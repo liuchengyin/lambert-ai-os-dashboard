@@ -130,3 +130,27 @@
  #logistics .lk-mini-children{max-width:125px}
  #logistics .lk-mini-card{width:90px;max-width:90px}
 }
+
+/* P0: research one operation before asserting its business relationships. */
+#logistics .lk-node-focus{
+ margin:10px 0 0;padding:10px 12px;border-radius:9px;
+ background:#f5f2fc;color:#654a81;font-size:12px;line-height:1.6
+}
+#logistics .lk-node-context{
+ margin:15px 0;padding:15px;border:1px solid #dfd6ed;border-radius:12px;
+ background:#fbfaff;min-width:0
+}
+#logistics .lk-node-context h4{font-size:15px;margin:0 0 6px;color:#4d396c}
+#logistics .lk-node-context h5{font-size:12px;margin:0 0 7px;color:#634a7b}
+#logistics .lk-context-caution{font-size:11px;line-height:1.6;color:#796d89;margin:0 0 10px}
+#logistics .lk-context-group{margin-top:11px;padding-top:10px;border-top:1px solid #e9e3f2}
+#logistics .lk-context-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#logistics .lk-context-step{display:flex;flex-direction:column;gap:7px;padding:10px;border-radius:8px;background:#fff;border:1px solid #ede6f5;min-width:0}
+#logistics .lk-context-step small{color:#8b779e;font-size:10px}
+#logistics .lk-context-step span{font-size:12px;color:#8a7f92}
+#logistics .lk-context-jump{border:1px solid #ded0ee!important;background:#fff!important;color:#6e4da2!important;border-radius:7px!important;padding:6px 9px!important;font-size:12px!important;text-align:left;max-width:100%;white-space:normal;overflow-wrap:anywhere;cursor:pointer}
+#logistics .lk-node-context .lk-related-edge{display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:8px 4px;border-bottom:1px solid #eee9f5;font-size:11px}
+#logistics .lk-context-type{border-radius:5px;padding:3px 6px;font-size:10px;font-weight:700;background:#eef5fd;color:#3672ad}
+#logistics .lk-context-exception .lk-context-type{background:#fff0f0;color:#ad4848}
+#logistics .lk-node-context .lk-branch-remove{margin-left:auto}
+@media(max-width:540px){#logistics .lk-context-pair{grid-template-columns:minmax(0,1fr)}}

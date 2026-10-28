@@ -11,7 +11,7 @@
     n.dataset.action=action;n.dataset.module=moduleId;n.dataset.stage=stageId;n.disabled=disabled;return n;
   };
   const arrow=label=>{
-    const a=el('span','lk-flow-arrow','→');a.setAttribute('aria-label',label||'下一操作');a.title=label||'操作顺序';return a;
+    const a=el('span','lk-flow-arrow','→');a.setAttribute('aria-label',label||'下一操作');a.title='当前画布排列顺序（非已核实的真实触发关系）';return a;
   };
   function picker(m,stage,blocked){
     const label=el('label','lk-stage-color');

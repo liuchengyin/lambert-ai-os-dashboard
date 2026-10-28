@@ -52,4 +52,20 @@ run('unknown node / invalid name never writes',()=>{
  assert.equal(api.updateNode(d,'warehouse','n1',{title:''},[]),false);
  assert.equal(JSON.stringify(d),snapshot);
 });
-console.log('V3.3 trigger model: 8 pass');
+
+run('optional entry condition and research basis survive updates without erasing legacy evidence',()=>{
+ const d=doc(),oldEvidence=d.modules[0].nodes[0].evidence;
+ assert.equal(api.updateNode(d,'warehouse','n1',{
+   title:'换单扫描',action:'扫描',entryCondition:'到达中心后',executor:'仓库操作员',operationInput:'包裹条码',researchBasis:'需核实 SOP',note:'',tags:[],color:null
+ },[]),true);
+ assert.equal(d.modules[0].nodes[0].entryCondition,'到达中心后');
+ assert.equal(d.modules[0].nodes[0].executor,'仓库操作员');
+ assert.equal(d.modules[0].nodes[0].operationInput,'包裹条码');
+ assert.equal(d.modules[0].nodes[0].researchBasis,'需核实 SOP');
+ assert.equal(d.modules[0].nodes[0].evidence,oldEvidence);
+ assert.equal(api.addNode(d,'warehouse','receiving','new',{title:'新节点',entryCondition:'有任务',researchBasis:'接口待核实'},
+   [{id:'trigger',description:'生成记录'}]),true);
+ assert.equal(d.modules[0].nodes[1].entryCondition,'有任务');
+ assert.equal(d.modules[0].nodes[1].researchBasis,'接口待核实');
+});
+console.log('V3.3 trigger model: 9 pass');

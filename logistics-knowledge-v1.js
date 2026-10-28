@@ -85,6 +85,14 @@
   function setMessage(message){$('lkMessage').textContent=message;}
   const current=()=>state.modules.find(m=>m.id===moduleId)||state.modules[0];
   const selected=()=>current()?.nodes.find(n=>n.id===selectedId)||null;
+  function crossModuleMoveWarning(from,nodeId,to){
+    if(from===to)return '';
+    const source=state.modules.find(x=>x.id===from),target=state.modules.find(x=>x.id===to);
+    const hasEdge=m=>Array.isArray(m?.branches)&&m.branches.some(e=>e&&(e.from===nodeId||e.to===nodeId));
+    if(hasEdge(source))return '此操作存在条件或异常关联，跨大模块移动会使连线失效。请先核实并处理关联，再移动；本次未修改数据。';
+    if(hasEdge(target))return '目标模块存在指向该操作 ID 的历史关联，移动可能让旧连线意外生效。请先核实目标关联；本次未修改数据。';
+    return '';
+  }
   function findSelected(){
     if(!current()){moduleId='';selectedId='';return;}
     if(!current().nodes.some(n=>n.id===selectedId)) selectedId=current().nodes[0]?.id||'';
@@ -107,9 +115,13 @@
     '<div id="lkData" role="tabpanel" aria-labelledby="lkTabData" hidden><div class="lk-data-guide"><strong>从业务动作追到数据</strong><p>操作／事件 → 信息变化 → 记录字段 → 后续指标。这里只列研究关系，不假装已接入真实数据表或驾驶舱。</p></div><div id="lkDataRows" class="lk-data-rows"></div></div>'+
     '<p class="lk-footnote">提示：预配不等于发运，系统生成轨迹也不必然等于实物动作完成。每条事件／接口关系应以系统截图、接口响应或数据库记录确认。</p><p id="lkMessage" class="lk-message" role="status"></p></div>'+
     '<dialog id="lkNodeDialog" class="lk-dialog"><form id="lkNodeForm"><h3 id="lkEditorTitle">操作节点</h3><label>操作名称<input id="lkTitleInput" required maxlength="70"></label>'+
+    '<label>进入条件 / 何时开始（可留空待核实）<textarea id="lkEntryCondition" rows="2" maxlength="1000" placeholder="例如：包裹到达中心，等待安检；未核实时可以留空"></textarea></label>'+
+    '<label>执行角色 / 系统（可选）<input id="lkExecutor" maxlength="180" placeholder="例如：中心操作员／多闻 TMS（待核实）"></label>'+
+    '<label>所需输入 / 操作对象（可选）<textarea id="lkOperationInput" rows="2" maxlength="1000" placeholder="例如：运单号、包裹条码、扫描设备；只记录已了解的信息"></textarea></label>'+
     '<label>操作说明<textarea id="lkActionInput" rows="2" maxlength="1500" placeholder="谁在什么场景下执行什么操作"></textarea></label>'+
     '<div class="lk-trigger-field"><div class="lk-trigger-heading"><strong>触发结果</strong><button type="button" id="lkAddTrigger">＋ 增加触发结果</button></div><p class="lk-form-hint">记录操作完成后产生的事件、系统动作或状态变化，可添加多项。新建操作至少填写一项。</p><div id="lkTriggerRows"></div></div>'+
     '<details class="lk-event-bind"><summary>关联轨迹事件码 · 按需展开</summary><label>搜索轨迹事件码或描述<input type="search" id="lkEventSearch" disabled placeholder="等待导入真实操作码表"></label><p class="lk-form-hint" id="lkEventHint">尚未导入事件码表。当前不自动生成或猜测映射关系。</p><div id="lkExistingCodes"></div></details>'+
+    '<label>研究依据 / 待核实问题（可选）<textarea id="lkResearchBasis" rows="2" maxlength="1500" placeholder="记录 SOP、系统截图、接口响应、数据库字段或仍待确认的问题；填写不等于已核实"></textarea></label>'+
     '<label>备注（可选）<textarea id="lkNoteInput" rows="2" maxlength="2500" placeholder="特殊业务规则、注意事项与待补充信息"></textarea></label>'+
     '<label>标签（可选，逗号分隔）<input id="lkTagsInput" maxlength="600" placeholder="如：安检, 扫描, 中心仓"></label>'+
     '<details class="lk-node-appearance"><summary>外观 · 小模块颜色</summary><label>节点颜色<input id="lkNodeColor" type="color" value="#FFFFFF"></label><label class="lk-inline-check"><input id="lkNodeNoColor" type="checkbox"> 使用默认颜色</label></details>'+
@@ -279,7 +291,11 @@
     del.dataset.id=n.id;del.dataset.module=m.id;
     actions.append(rename,edit,del);
     header.append(title,actions);host.append(header);
-    host.append(field('操作说明',n.action||'暂无说明'));
+    host.append(node('p','先研究单节点：进入条件 → 执行角色/输入 → 操作动作 → 触发结果，再核对分支和上下游。未填写的规则不能视为已确认。','lk-node-focus'));
+    host.append(field('进入条件 / 何时开始',n.entryCondition||'尚未核实进入条件'));
+    host.append(field('执行角色 / 系统',n.executor||'尚未核实执行人或系统'));
+    host.append(field('所需输入 / 操作对象',n.operationInput||'尚未核实所需输入'));
+    host.append(field('操作说明 / 如何执行',n.action||'暂无说明'));
     const outcomes=triggerApi.triggers(n);
     const triggerSection=node('section',undefined,'lk-trigger-summary');
     triggerSection.append(node('h4','触发结果'));
@@ -289,6 +305,7 @@
       triggerSection.append(list);
     }else triggerSection.append(node('p','此旧节点尚未整理触发结果，可在编辑内容中补充。','lk-form-hint'));
     host.append(triggerSection);
+    host.append(field('研究依据 / 待核实问题',n.researchBasis||'尚未记录证据；节点顺序和路径需用真实 SOP / 系统记录核实'));
     const exchangeBox=node('section',undefined,'lk-exchange');
     const exchangeHead=node('div',undefined,'lk-exchange-head');
     exchangeHead.append(node('h4','信息交换 · 系统时序'));
@@ -322,18 +339,49 @@
       if(n.evidence)more.append(field('原证据或研究记录',n.evidence));
       host.append(more);
     }
-    const graphBox=node('section',undefined,'lk-related-graph');
-    graphBox.append(node('h4','④ 条件分支 / 异常路径'));
-    const outgoing=flow.activeBranches(m).filter(edge=>edge.from===n.id);
-    if(!outgoing.length)graphBox.append(node('p','暂未关联分支，可按需添加。','lk-branch-hint'));
-    outgoing.forEach(edge=>{
-      const target=m.nodes.find(item=>item.id===edge.to);
-      const line=node('div',undefined,'lk-related-edge');
-      line.append(node('span',edge.label+' → '+(target?.title||'未知节点')));
-      const remove=button('移除连线','branch-remove','lk-branch-remove',blocked||locked);
-      remove.dataset.id=edge.id;remove.dataset.module=m.id;line.append(remove);graphBox.append(line);
-    });
-    graphBox.append(node('p','新增分支或异常：请在画布的操作节点旁点击小「＋」。','lk-branch-hint'));
+    // Keep the distinction between displayed sequence and confirmed edges.
+    const context=mini.operationContext(m,n.id,stages.stageFor);
+    const graphBox=node('section',undefined,'lk-node-context');
+    graphBox.append(node('h4','业务路径 / 上下游研究'));
+    graphBox.append(node('p','操作排序不等于真实触发或信息传输；只有下列已录入的分支边明确表达条件关系。','lk-context-caution'));
+    const jump=(target,label)=>{
+      const link=button(label,'select-node','lk-context-jump');
+      link.dataset.module=m.id;link.dataset.id=target.id;return link;
+    };
+    const orderBox=node('div',undefined,'lk-context-group');
+    orderBox.append(node('h5','① 同子环节正常排列 · 仅研究参考'));
+    if(context?.branchOnly){
+      orderBox.append(node('p','这是仅通过分支到达的操作，不属于默认主线排列。','lk-branch-hint'));
+    }else{
+      const pair=node('div',undefined,'lk-context-pair');
+      const before=node('div',undefined,'lk-context-step');
+      before.append(node('small','前序显示操作'));
+      before.append(context?.previous?jump(context.previous,context.previous.title):node('span','本子环节无前一操作'));
+      const after=node('div',undefined,'lk-context-step');
+      after.append(node('small','后序显示操作'));
+      after.append(context?.next?jump(context.next,context.next.title):node('span','本子环节无后一操作'));
+      pair.append(before,after);orderBox.append(pair);
+    }
+    graphBox.append(orderBox);
+    const paths=(heading,items,incoming)=>{
+      const group=node('div',undefined,'lk-context-group');
+      group.append(node('h5',heading));
+      if(!items?.length)group.append(node('p','尚未记录对应的条件关联。','lk-branch-hint'));
+      (items||[]).forEach(link=>{
+        const row=node('div',undefined,'lk-related-edge '+(link.type==='exception'?'lk-context-exception':'lk-context-normal'));
+        const tag=node('span',link.type==='exception'?'异常':'条件分支','lk-context-type');
+        const peer=incoming?link.from:link.to;
+        row.append(tag,jump(peer,peer.title),node('span','条件：'+(link.edge.label||'未填写')));
+        if(!incoming){
+          const remove=button('移除连线','branch-remove','lk-branch-remove',blocked||locked);
+          remove.dataset.id=link.edge.id;remove.dataset.module=m.id;row.append(remove);
+        }
+        group.append(row);
+      });return group;
+    };
+    graphBox.append(paths('② 进入本节点的条件 / 异常',context?.incoming,true));
+    graphBox.append(paths('③ 离开本节点的条件 / 异常',context?.outgoing,false));
+    graphBox.append(node('p','跨子环节、跨模块的真实正常流转尚需核实；这里不会凭画布顺序推断 EDI、轨迹或 SLA。新增分支请使用节点旁的「＋」。','lk-branch-hint'));
     host.append(graphBox);
     const moveBox=node('label','移动操作到其他子环节或大模块','lk-move-to');
     const select=document.createElement('select');select.dataset.moveNode=n.id;select.dataset.moveFrom=m.id;select.disabled=blocked||locked;
@@ -497,6 +545,10 @@
     $('lkEditorTitle').textContent=n?'编辑操作':'新增操作';
     $('lkTitleInput').value=n?.title||'';
     $('lkActionInput').value=n?.action||'';
+    $('lkEntryCondition').value=n?.entryCondition||'';
+    $('lkExecutor').value=n?.executor||'';
+    $('lkOperationInput').value=n?.operationInput||'';
+    $('lkResearchBasis').value=n?.researchBasis||'';
     $('lkNoteInput').value=n?.note||'';
     $('lkTagsInput').value=(n?.tags||[]).join(', ');
     $('lkNodeColor').value=n?.color||'#FFFFFF';
@@ -749,6 +801,8 @@
       const destination=selector.value,source=selector.dataset.moveFrom,id=selector.dataset.moveNode;
       if(!destination)return;
       const [to,stageId]=destination.split('::');
+      const warning=crossModuleMoveWarning(source,id,to);
+      if(warning){selector.value='';setMessage(warning);return;}
       if(mutate(next=>stages.moveToStage(next,source,id,to,stageId,null,moves))){
         moduleId=to;selectedId=id;activeStageId=stageId;render();
         setMessage('已移动操作节点，原有信息和数据记录均保留。');
@@ -824,6 +878,8 @@
       if(target.closest('.lk-flow-main')?event.clientX<rect.left+rect.width/2:event.clientY<rect.top+rect.height/2)before=target.dataset.dragNode;
       else before=stageNodes[index+1]?.id||null;
     }
+    const warning=crossModuleMoveWarning(active.from,active.id,dest);
+    if(warning){setMessage(warning);return;}
     if(mutate(next=>stages.moveToStage(next,active.from,active.id,dest,stageId,before,moves))){
       moduleId=dest;selectedId=active.id;activeStageId=stageId;render();
     }
@@ -883,6 +939,9 @@
       return;
     }
     const input={title:$('lkTitleInput').value.trim(),action:$('lkActionInput').value.trim(),
+      entryCondition:$('lkEntryCondition').value.trim(),
+      executor:$('lkExecutor').value.trim(),operationInput:$('lkOperationInput').value.trim(),
+      researchBasis:$('lkResearchBasis').value.trim(),
       note:$('lkNoteInput').value.trim(),tags:editor.labels($('lkTagsInput').value),
       color:$('lkNodeNoColor').checked?null:$('lkNodeColor').value.toUpperCase()};
     if(!input.title)return;

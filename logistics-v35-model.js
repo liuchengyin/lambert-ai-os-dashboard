@@ -31,6 +31,30 @@
      return {edge,target,circular,truncated,children:circular||truncated?[]:tree(module,edge.to,path,depth+1)};
    });
  };
+ // Node-first research context. Ordering is a visual study hint, never a
+ // confirmed operational/EDI dependency. Branches are explicit saved links.
+ function operationContext(module,nodeId,stageFor){
+   const nodes=Array.isArray(module?.nodes)?module.nodes:[];
+   const selected=nodes.find(n=>n?.id===nodeId);
+   if(!selected)return null;
+   const inStage=typeof stageFor==='function'?stageFor:(m,n)=>n?.stageId||'general';
+   const stage=inStage(module,selected);
+   const known=new Map(nodes.filter(n=>n&&typeof n.id==='string').map(n=>[n.id,n]));
+   const links=(Array.isArray(module?.branches)?module.branches:[])
+     .filter(e=>e&&known.has(e.from)&&known.has(e.to)&&e.from!==e.to)
+     .map(e=>({edge:e,from:known.get(e.from),to:known.get(e.to),
+       type:e.type==='branch'?'branch':e.type==='exception'?'exception':
+       /异常|失败|错误|报错/.test(String(e.label||''))?'exception':'branch'}));
+   const incoming=links.filter(x=>x.to.id===nodeId);
+   const outgoing=links.filter(x=>x.from.id===nodeId);
+   const branchOnly=selected.branchOnly===true&&incoming.length>0;
+   const sequence=nodes.filter(n=>n&&inStage(module,n)===stage
+     &&!(n.branchOnly===true&&links.some(x=>x.to.id===n.id)));
+   const at=sequence.findIndex(n=>n.id===nodeId);
+   return {node:selected,stageId:stage,branchOnly,incoming,outgoing,
+     previous:at>0?sequence[at-1]:null,
+     next:at>=0&&at<sequence.length-1?sequence[at+1]:null};
+ }
  function addExchange(doc,moduleId,nodeId,entry){
    const m=doc?.modules?.find(m=>m.id===moduleId),n=m?.nodes?.find(n=>n.id===nodeId);
    if(!n||!entry||typeof entry.id!=='string'||!entry.id)return false;
@@ -55,5 +79,5 @@
    if(i<0)return false;
    n.exchanges.splice(i,1);return true;
  }
- root.LambertLogisticsV35=Object.freeze({LABELS,ORDER,trunkModules,edges,tree,addExchange,removeExchange});
+ root.LambertLogisticsV35=Object.freeze({LABELS,ORDER,trunkModules,edges,tree,operationContext,addExchange,removeExchange});
 })(typeof window!=='undefined'?window:globalThis);

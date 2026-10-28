@@ -29,6 +29,10 @@
    if(!title)return false;
    n.title=title;
    n.action=clean(fields.action).slice(0,1500);
+   n.entryCondition=clean(fields.entryCondition).slice(0,1000);
+   n.executor=clean(fields.executor).slice(0,180);
+   n.operationInput=clean(fields.operationInput).slice(0,1000);
+   n.researchBasis=clean(fields.researchBasis).slice(0,1500);
    n.note=clean(fields.note).slice(0,2500);
    if(Array.isArray(fields.tags))n.tags=[...fields.tags];
    if(fields.color===null)delete n.color;
@@ -49,6 +53,10 @@
    const title=clean(fields?.title).slice(0,70);
    if(!title)return false;
    const n={id,title,kind:'业务操作',action:clean(fields.action).slice(0,1500),
+      entryCondition:clean(fields.entryCondition).slice(0,1000),
+      executor:clean(fields.executor).slice(0,180),
+      operationInput:clean(fields.operationInput).slice(0,1000),
+      researchBasis:clean(fields.researchBasis).slice(0,1500),
       note:clean(fields.note).slice(0,2500),tags:Array.isArray(fields.tags)?[...fields.tags]:[],
       triggers:prepared,eventRefs:[],stageId:stageId||'',information:'',data:'',evidence:'',confidence:'待核实'};
    if(/^#[0-9A-F]{6}$/i.test(fields.color||''))n.color=fields.color.toUpperCase();

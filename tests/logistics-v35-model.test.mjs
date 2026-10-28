@@ -66,4 +66,29 @@ check('branch truncation is visible while preserving the full original graph',()
  assert.equal(deepest.truncated,true);
  assert.equal(JSON.stringify(d),old);
 });
-console.log('V3.5 model: 8 checks passed');
+
+check('node-first context separates display order and explicit incoming/outgoing branches',()=>{
+ const m={id:'head',nodes:[{id:'scan',title:'安检',stageId:'receiving'}, {id:'error',title:'异常',stageId:'receiving',branchOnly:true},
+   {id:'next',title:'复检',stageId:'receiving'}, {id:'other',title:'发运',stageId:'dispatch'}],
+   branches:[{id:'e1',from:'scan',to:'error',type:'exception',label:'安检失败'},
+             {id:'e2',from:'error',to:'next',type:'branch',label:'再次检查'}]};
+ const stageFor=(_m,n)=>n.stageId;
+ const scan=model.operationContext(m,'scan',stageFor);
+ assert.equal(scan.previous,null);assert.equal(scan.next.id,'next');
+ assert.equal(scan.incoming.length,0);assert.equal(scan.outgoing.length,1);
+ assert.equal(scan.outgoing[0].type,'exception');
+ const error=model.operationContext(m,'error',stageFor);
+ assert.equal(error.branchOnly,true);assert.equal(error.previous,null);assert.equal(error.next,null);
+ assert.equal(error.incoming[0].from.id,'scan');assert.equal(error.outgoing[0].to.id,'next');
+ assert.equal(model.operationContext(m,'missing',stageFor),null);
+});
+check('node-first context ignores broken legacy edges but keeps source intact',()=>{
+ const m=document().modules[0],snapshot=JSON.stringify(m);
+ m.branches.push({id:'missing',from:'unknown',to:'a',type:'exception'});
+ const ctx=model.operationContext(m,'a');
+ assert.equal(ctx.incoming.length,0);
+ assert.equal(ctx.outgoing.length,2);
+ assert.equal(m.branches.at(-1).id,'missing');
+ assert.ok(JSON.stringify(m).includes(snapshot.slice(0,30)));
+});
+console.log('V3.5 model: 10 checks passed');
