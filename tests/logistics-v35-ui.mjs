@@ -25,7 +25,7 @@ try{
  await processRoutes.nth(0).locator(':scope > summary').click();
  check('road route can collapse without deleting nodes',!await processRoutes.nth(0).evaluate(lane=>lane.open)&&await processRoutes.nth(0).locator('.lk-canvas-block[data-module="linehaul"]').count()===1);
  await processRoutes.nth(0).locator(':scope > summary').click();
- check('road route expands again with original nodes',await processRoutes.nth(0).evaluate(lane=>lane.open)&&await processRoutes.nth(0).locator('[data-module="linehaul"]').isVisible());
+ check('road route expands again with original nodes',await processRoutes.nth(0).evaluate(lane=>lane.open)&&await processRoutes.nth(0).locator('.lk-canvas-block[data-module="linehaul"]').isVisible());
  check('stage toolbar has no branch or exception button',await page.locator('.lk-stage-actions [data-action="stage-branch"]').count()===0);
  const warehouse=page.locator('.lk-canvas-block[data-module="head"]');
  const scan=warehouse.locator('.lk-flow-item').filter({has:page.locator('[data-drag-node="security-scan"]')});
