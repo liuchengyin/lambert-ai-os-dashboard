@@ -93,4 +93,15 @@ test('disabled source cannot move its records',()=>{
  assert.equal(moveNode(d,'customs','disabled','warehouse',null),false);
  assert.equal(JSON.stringify(d),snapshot);
 });
+
+test('cross-module move with incoming or outgoing branch is rejected with no mutation',()=>{
+ const d=fixture();d.modules[0].branches=[{id:'scan-branch',from:'scan',to:'sort',type:'exception',label:'异常'}];
+ const before=JSON.stringify(d);
+ assert.equal(moveNode(d,'warehouse','scan','linehaul',null),false);
+ assert.equal(moveNode(d,'warehouse','sort','linehaul',null),false);
+ assert.equal(JSON.stringify(d),before);
+ // Reordering within the owning module does not invalidate edges.
+ assert.equal(moveNode(d,'warehouse','scan','warehouse',null),true);
+ assert.equal(d.modules[0].branches[0].from,'scan');
+});
 console.log(JSON.stringify({ok:true,count:checks.length}));
