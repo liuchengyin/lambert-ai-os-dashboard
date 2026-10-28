@@ -22,7 +22,8 @@
    if(list.some(b=>b.from===edge.from&&b.to===edge.to))return false;
    const id=String(edge.id||'');
    if(!id||list.some(b=>b.id===id))return false;
-   list.push({id,from:edge.from,to:edge.to,label});
+   const type=edge.type==='exception'||edge.type==='branch'?edge.type:(/异常|失败|错误/.test(label)?'exception':'branch');
+   list.push({id,from:edge.from,to:edge.to,label,type});
    if(edge.branchOnly===true){
      const n=m.nodes.find(n=>n.id===edge.to);
      n.branchOnly=true;
