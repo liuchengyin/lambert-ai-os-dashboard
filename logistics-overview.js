@@ -1,7 +1,7 @@
 /* Read-only logistics release overview. Macro / full-route modes share one snapshot. */
 (function(host){
  'use strict';
- const stages=host.LambertLogisticsStages,flow=host.LambertLogisticsFlow;
+ const stages=host.LambertLogisticsStages,flow=host.LambertLogisticsFlow,setup=host.LambertLogisticsSetupV34;
  const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e;};
  function button(label,m,n,open){
    const b=el('button','lk-ov-link',label);b.type='button';b.title='查看模块操作详情';
@@ -21,9 +21,18 @@
      const section=el('section','lk-ov-module');
      section.style.setProperty('--lk-ov-color',flow.moduleColor(m));
      const title=el('header','lk-ov-module-head');
-     title.append(el('span','lk-ov-category',m.category||'业务'),button(m.name,m,null,open));
+     const mode=setup?.infer(m);
+     title.append(el('span','lk-ov-category',m.category+(mode?' · '+setup.MODES[mode]:'')),button(m.name,m,null,open));
      title.append(el('small','',m.nodes.length+' 个操作'));
      section.append(title);
+     const related=setup?.list(m)||[];
+     if(related.length){
+       const detail=el('details','lk-ov-prereq');
+       detail.append(el('summary','','前置配置 · '+related.filter(item=>item.role==='prerequisite').length+' 项'));
+       const content=el('div','lk-setup-badges');
+       related.forEach(item=>content.append(el('span','lk-setup-badge',(item.role==='reference'?'记录：':'')+item.name+' · '+(item.value||'待配置'))));
+       detail.append(content);section.append(detail);
+     }
      const groups=stages.stages(m);
      if(mode==='macro'){
        section.append(el('p','lk-ov-summary',groups.map(s=>s.name).join(' → ')));
@@ -33,6 +42,14 @@
        groups.forEach((stage,si)=>{
          const group=el('section','lk-ov-stage');group.style.setProperty('--lk-ov-stage-color',flow.stageColor(m,stage));
          group.append(el('h4','',stage.name));
+         const subRelated=setup?.list(stage)||[];
+         if(subRelated.length){
+           const detail=el('details','lk-ov-prereq');
+           detail.append(el('summary','','前置配置 · '+subRelated.filter(item=>item.role==='prerequisite').length+' 项'));
+           const content=el('div','lk-setup-badges');
+           subRelated.forEach(item=>content.append(el('span','lk-setup-badge',(item.role==='reference'?'记录：':'')+item.name+' · '+(item.value||'待配置'))));
+           detail.append(content);group.append(detail);
+         }
          const ops=el('div','lk-ov-ops');
          const members=m.nodes.filter(n=>stages.stageFor(m,n)===stage.id);
          const main=members.filter(n=>!flow.isBranchOnly(m,n.id));
