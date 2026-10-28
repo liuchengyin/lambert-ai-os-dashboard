@@ -45,7 +45,7 @@
     const children=mini.tree(module,operation.id,seen,depth);
     if(!children.length)return null;
     const wrap=el('div','lk-mini-children');
-    children.forEach(({edge,target,circular,children:grandchildren})=>{
+    children.forEach(({edge,target,circular,truncated,children:grandchildren})=>{
       if(!target)return;
       const row=el('div','lk-mini-path '+(edge.type==='exception'?'lk-mini-exception':'lk-mini-branch'));
       const condition=el('span','lk-mini-condition',edge.label||'条件');
@@ -55,6 +55,7 @@
       card.title='点击查看详情：'+target.title;
       row.append(condition,card,miniMenu(module,target,stageId,blocked));
       if(circular)row.append(el('span','lk-mini-circular','↺'));
+      if(truncated)row.append(el('span','lk-mini-condition','还有更深层分支（未展开）'));
       if(grandchildren.length){
         const recursive=el('div','lk-mini-descendants');
         function draw(items,parent){
@@ -66,6 +67,7 @@
             button.dataset.id=child.target.id;button.classList.add('lk-mini-card');
             next.append(label,button,miniMenu(module,child.target,stageId,blocked));
             if(child.circular)next.append(el('span','lk-mini-circular','↺'));
+            if(child.truncated)next.append(el('span','lk-mini-condition','还有更深层分支（未展开）'));
             if(child.children.length){const nested=el('div','lk-mini-descendants');draw(child.children,nested);next.append(nested);}
             parent.append(next);
           });
