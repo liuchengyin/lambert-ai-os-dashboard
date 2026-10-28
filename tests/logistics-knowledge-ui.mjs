@@ -54,8 +54,8 @@ try{
  }));
 
  // Real HTML5 drag event: move batch operation back to linehaul.
- const drag=page.locator('.lk-canvas-block[data-module="head"] .lk-step[data-drag-node="batch"]');
- const drop=page.locator('.lk-canvas-block[data-module="linehaul"] .lk-drop-end');
+ const drag=page.locator('.lk-canvas-block[data-module="linehaul"] .lk-step[data-drag-node="preload"]');
+ const drop=page.locator('.lk-canvas-block[data-module="import"] .lk-drop-end');
  await page.evaluate(()=>{
    window.__lkTrace=[];
    for(const name of ['dragstart','dragover','drop','dragend']){
@@ -72,7 +72,7 @@ try{
  }))));
  pass('drag-and-drop relocates operation',await page.evaluate(()=>{
    const d=JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1'));
-   return d.modules.find(m=>m.id==='linehaul').nodes.some(n=>n.id==='batch');
+   return d.modules.find(m=>m.id==='import').nodes.some(n=>n.id==='preload');
  }));
 
  // Drag the large linehaul module before the export module.
