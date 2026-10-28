@@ -54,10 +54,11 @@
       seedNode('signed','签收','确认妥投或签收结果','回传签收轨迹及其用于 SLA 的时间字段需核实','签收时间、签收证明、运单号','外部事件')
     ]}
   ]});
-  let state=null,blocked=false,tab='process',moduleId='',selectedId='',editorMode='',dragPayload=null,activeStageId='',editingStageId='';
+  let state=null,blocked=false,locked=true,dirty=false,releaseRecord=null,tab='process',overviewMode='macro',moduleId='',selectedId='',editorMode='',dragPayload=null,activeStageId='',editingStageId='';
   const moves=window.LambertLogisticsMoves;
   const stages=window.LambertLogisticsStages;
   const flow=window.LambertLogisticsFlow;
+  const versions=window.LambertLogisticsVersion,overview=window.LambertLogisticsOverview;
   const copy=x=>JSON.parse(JSON.stringify(x));
   function read() {
     try {
@@ -69,9 +70,11 @@
     }catch { blocked=true;return defaults(); }
   }
   function persist(draft){
-    if(blocked){setMessage('无法读取已有知识库记录，已禁止覆盖。请先备份或检查本机存储。');return false;}
-    try {storage().setItem(KEY,JSON.stringify(draft));state=draft;setMessage('已保存到当前浏览器的独立知识库空间');return true;}
-    catch {setMessage('保存失败，本次修改未写入。请检查浏览器存储空间或账号状态。');return false;}
+    if(blocked||locked){setMessage('当前已锁定。请先解锁编辑。');return false;}
+    if(!versions.validData(draft)){setMessage('数据结构校验失败，修改未生效。');return false;}
+    state=draft;dirty=true;
+    setMessage('有未保存的草稿修改；全链路仍显示已发布版本。');
+    return true;
   }
   function setMessage(message){$('lkMessage').textContent=message;}
   const current=()=>state.modules.find(m=>m.id===moduleId)||state.modules[0];
@@ -87,7 +90,9 @@
     '<header class="lk-head"><div><small>LOGISTICS KNOWLEDGE · P0 CANVAS</small><h2>物流知识库</h2><p>以操作为底座，把业务动作、信息传递和数据记录串起来。</p></div>'+
     '<button type="button" id="lkExport">导出知识库</button></header>'+
     '<div class="lk-toolbar"><span class="lk-route">中国 → 哈萨克斯坦 · 陆运示例</span><span class="lk-warning">示意链路 · 实际系统规则待核实</span></div>'+
-    '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabProcess" aria-selected="true">业务链路 · 操作＋信息</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button></div>'+
+    '<div class="lk-version-bar"><span id="lkEditStatus">已锁定 · 只读</span><div class="lk-version-actions"><button type="button" id="lkUnlock">解锁编辑</button><button type="button" id="lkSaveDraft" disabled>保存草稿</button><button type="button" id="lkPublish" disabled>确认发布</button><button type="button" id="lkCancelEdit" disabled>取消并锁定</button></div><div class="lk-version-history"><label>历史版本 <select id="lkHistorySelect"><option value="">选择历史版本</option></select></label><button type="button" id="lkRollback" disabled>回滚为新版本</button></div></div>'+
+    '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabOverview" aria-selected="false">全链路总览</button><button type="button" role="tab" id="lkTabProcess" aria-selected="true">模块编辑 · 操作＋信息</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button></div>'+
+    '<div id="lkOverview" role="tabpanel" aria-labelledby="lkTabOverview" hidden><div class="lk-ov-switch"><span>查看已发布版本</span><div role="group" aria-label="全链路展示模式"><button type="button" id="lkModeMacro" aria-pressed="true">A · 宏观模块</button><button type="button" id="lkModeDetail" aria-pressed="false">B · 完整流程</button></div></div><div id="lkOverviewContent"></div></div>'+
     '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-canvas-categories" aria-label="物流模块底座"><span class="lk-canvas-category">仓</span><span class="lk-canvas-category">干</span><span class="lk-canvas-category">关</span><span class="lk-canvas-category">配</span></div><div class="lk-section-title"><div><strong>模块化操作画布</strong><small>大模块内包含可调整的子环节，例如：国内中心仓 → 到车／收入／分拣／发出。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div id="lkModules" class="lk-modules lk-canvas"></div>'+
     '<div class="lk-section-title lk-selection-head"><div><strong id="lkNodeTitle">操作节点详情</strong><small>选择上方的小块；系统关系放在详情内按需展开</small></div><button type="button" id="lkAddNode">＋ 为选中模块添加操作</button></div>'+
     '<div class="lk-workspace lk-canvas-workspace"><div id="lkNodes" class="lk-nodes" hidden aria-hidden="true"></div><article id="lkDetail" class="lk-detail"></article></div></div>'+
@@ -108,6 +113,7 @@
     '<p class="lk-footnote">子环节用于组织操作步骤；原操作和业务字段不会丢失。</p><div class="lk-dialog-actions"><button type="button" id="lkStageCancel">取消</button><button type="submit" class="lk-primary">保存子环节</button></div></form></dialog>'+
     '<dialog id="lkBranchDialog" class="lk-dialog lk-stage-dialog"><form id="lkBranchForm"><h3>添加条件分支</h3><p class="lk-footnote">将当前操作连接到一个已有操作。例如：安检扫描 — 异常 → 安检异常上报。</p>'+
     '<label>触发条件<input id="lkBranchLabel" required maxlength="40" placeholder="例如：安检异常"></label>'+
+    '<label>流程类型<select id="lkBranchType"><option value="exception">异常流程</option><option value="branch">普通分支</option></select></label>'+
     '<label>流向操作<select id="lkBranchTarget" required></select></label>'+
     '<label class="lk-branch-checkbox"><input id="lkBranchOnly" type="checkbox">目标只显示在分支上（不加入主线）</label>'+
     '<div class="lk-dialog-actions"><button type="button" id="lkBranchCancel">取消</button><button type="submit" class="lk-primary">保存条件分支</button></div></form></dialog>';
@@ -118,36 +124,36 @@
       const card=node('section',undefined,'lk-module lk-canvas-block'+(m.id===moduleId?' is-active':'')+(!m.enabled?' is-muted':''));
       card.dataset.module=m.id;
       const head=node('div',undefined,'lk-canvas-block-head');
-      head.draggable=!blocked;head.dataset.dragModule=m.id;head.title='拖动整个标题区调整模块顺序';
-      const grip=button('⠿','noop','lk-drag-handle',blocked);grip.draggable=false;grip.title='拖动标题区改变模块顺序';grip.setAttribute('aria-label','拖动'+m.name);
+      head.draggable=!blocked&&!locked;head.dataset.dragModule=m.id;head.title='拖动整个标题区调整模块顺序';
+      const grip=button('⠿','noop','lk-drag-handle',blocked||locked);grip.draggable=false;grip.title='拖动标题区改变模块顺序';grip.setAttribute('aria-label','拖动'+m.name);
       const main=button(m.name,'select-module','lk-module-main');main.dataset.id=m.id;
       main.prepend(node('small',m.category+' / '+m.nodes.length+' 个操作节点'));
       const controls=node('div',undefined,'lk-canvas-controls');
       card.style.setProperty('--lk-module-accent',flow.moduleColor(m));
       const colorLabel=node('label','颜色','lk-module-color');
       const colorInput=document.createElement('input');colorInput.type='color';colorInput.value=flow.moduleColor(m);
-      colorInput.dataset.colorModule=m.id;colorInput.disabled=blocked;
+      colorInput.dataset.colorModule=m.id;colorInput.disabled=blocked||locked;
       colorInput.setAttribute('aria-label','设置'+m.name+'模块颜色');colorLabel.prepend(colorInput);
-      const colorReset=button('默认色','color-reset-module','lk-move',blocked||!m.color);
+      const colorReset=button('默认色','color-reset-module','lk-move',blocked||locked||!m.color);
       colorReset.dataset.id=m.id;
-      const fold=button(m.collapsed?'展开':'收起','collapse-module','lk-fold',blocked);fold.dataset.id=m.id;
+      const fold=button(m.collapsed?'展开':'收起','collapse-module','lk-fold',blocked||locked);fold.dataset.id=m.id;
       fold.setAttribute('aria-expanded',String(!m.collapsed));fold.setAttribute('aria-label',(m.collapsed?'展开':'收起')+m.name);
-      const prev=button('↑','module-up','lk-move',blocked||index===0);prev.dataset.id=m.id;prev.setAttribute('aria-label',m.name+'上移');
-      const next=button('↓','module-down','lk-move',blocked||index===state.modules.length-1);next.dataset.id=m.id;next.setAttribute('aria-label',m.name+'下移');
-      const add=button('＋ 操作','add-here','lk-block-add',blocked||!m.enabled);add.dataset.id=m.id;
+      const prev=button('↑','module-up','lk-move',blocked||locked||index===0);prev.dataset.id=m.id;prev.setAttribute('aria-label',m.name+'上移');
+      const next=button('↓','module-down','lk-move',blocked||locked||index===state.modules.length-1);next.dataset.id=m.id;next.setAttribute('aria-label',m.name+'下移');
+      const add=button('＋ 操作','add-here','lk-block-add',blocked||locked||!m.enabled);add.dataset.id=m.id;
       const toggle=node('label','启用','lk-toggle');const check=document.createElement('input');
-      check.type='checkbox';check.checked=m.enabled;check.disabled=blocked;check.dataset.toggle=m.id;toggle.prepend(check);
+      check.type='checkbox';check.checked=m.enabled;check.disabled=blocked||locked;check.dataset.toggle=m.id;toggle.prepend(check);
       controls.append(colorLabel,colorReset,add,prev,next,fold,toggle);head.append(grip,main,controls);card.append(head);
       if(!m.collapsed&&m.enabled){
         const lane=node('div',undefined,'lk-canvas-lane');lane.dataset.dropModule=m.id;
         if(!m.nodes.length)lane.append(node('p','此模块没有操作，点击「＋ 操作」添加。','lk-empty'));
         m.nodes.forEach((n,i)=>{
-          const wrap=node('div',undefined,'lk-step');wrap.draggable=!blocked;wrap.dataset.dragNode=n.id;wrap.dataset.dragFrom=m.id;
+          const wrap=node('div',undefined,'lk-step');wrap.draggable=!blocked&&!locked;wrap.dataset.dragNode=n.id;wrap.dataset.dragFrom=m.id;
           const step=button('', 'select-node','lk-node lk-canvas-op'+(n.id===selectedId&&m.id===moduleId?' is-current':''));step.dataset.id=n.id;step.dataset.module=m.id;
           step.append(node('small',String(i+1).padStart(2,'0')+' · '+n.kind),node('strong',n.title),node('span',n.confidence||'待核实'));
           const move=node('div',undefined,'lk-step-actions');
-          const left=button('←','node-left','',blocked||i===0);left.dataset.id=n.id;left.dataset.module=m.id;left.setAttribute('aria-label',n.title+'向前移动');
-          const right=button('→','node-right','',blocked||i===m.nodes.length-1);right.dataset.id=n.id;right.dataset.module=m.id;right.setAttribute('aria-label',n.title+'向后移动');
+          const left=button('←','node-left','',blocked||locked||i===0);left.dataset.id=n.id;left.dataset.module=m.id;left.setAttribute('aria-label',n.title+'向前移动');
+          const right=button('→','node-right','',blocked||locked||i===m.nodes.length-1);right.dataset.id=n.id;right.dataset.module=m.id;right.setAttribute('aria-label',n.title+'向后移动');
           move.append(left,right);wrap.append(step,move);lane.append(wrap);
         });
         const drop=node('div','拖动操作块到这里追加','lk-drop-end');drop.dataset.dropModule=m.id;lane.append(drop);
@@ -159,12 +165,12 @@
       }
       host.append(card);
     });
-    window.LambertLogisticsStageView?.renderStageLane(host,state,blocked);
+    window.LambertLogisticsStageView?.renderStageLane(host,state,blocked||locked);
   }
   function renderNodes(){
     const m=current();
     $('lkNodeTitle').textContent=m?m.name+' · 操作详情':'操作详情';
-    $('lkAddNode').disabled=blocked||!m||!m.enabled;
+    $('lkAddNode').disabled=blocked||locked||!m||!m.enabled;
   }
   function field(title,text){
     const card=node('section',undefined,'lk-detail-field');
@@ -176,7 +182,7 @@
     if(!n){host.append(node('p','在上方画布点击一个操作块，即可查看业务动作、系统关系和数据。','lk-empty'));return;}
     const header=node('div',undefined,'lk-detail-head');
     const title=node('div');const group=stages.stages(m).find(x=>x.id===stages.stageFor(m,n));title.append(node('small',m.category+' / '+m.name+' / '+(group?.name||'操作流程')+' / '+n.kind),node('h3',n.title));
-    const edit=button('编辑节点','edit-node','lk-edit',blocked);edit.dataset.id=n.id;
+    const edit=button('编辑节点','edit-node','lk-edit',blocked||locked);edit.dataset.id=n.id;
     header.append(title,edit);host.append(header);
     host.append(node('span','核实状态：'+(n.confidence||'待核实'),'lk-status'));
     host.append(field('① 业务操作 / 触发条件',n.action));
@@ -192,14 +198,14 @@
       const target=m.nodes.find(item=>item.id===edge.to);
       const line=node('div',undefined,'lk-related-edge');
       line.append(node('span',edge.label+' → '+(target?.title||'未知节点')));
-      const remove=button('移除连线','branch-remove','lk-branch-remove',blocked);
+      const remove=button('移除连线','branch-remove','lk-branch-remove',blocked||locked);
       remove.dataset.id=edge.id;remove.dataset.module=m.id;line.append(remove);graphBox.append(line);
     });
-    const addBranch=button('＋ 添加条件分支','branch-add','lk-add-branch',blocked||m.nodes.length<2);
+    const addBranch=button('＋ 添加条件分支','branch-add','lk-add-branch',blocked||locked||m.nodes.length<2);
     addBranch.dataset.id=n.id;addBranch.dataset.module=m.id;graphBox.append(addBranch);
     host.append(graphBox);
     const moveBox=node('label','移动操作到其他子环节或大模块','lk-move-to');
-    const select=document.createElement('select');select.dataset.moveNode=n.id;select.dataset.moveFrom=m.id;select.disabled=blocked;
+    const select=document.createElement('select');select.dataset.moveNode=n.id;select.dataset.moveFrom=m.id;select.disabled=blocked||locked;
     const empty=document.createElement('option');empty.value='';empty.textContent='选择目标子环节（原资料随节点保留）';select.append(empty);
     state.modules.filter(x=>x.enabled).forEach(x=>{
       stages.stages(x).forEach(stage=>{
@@ -228,17 +234,49 @@
       host.append(group);
     });
   }
+  function renderVersionControls(){
+    if(!releaseRecord)return;
+    const v=releaseRecord.published,hasDraft=!!releaseRecord.draft;
+    $('lkEditStatus').textContent=blocked?'版本损坏 · 只读':locked
+      ?'已锁定 · 已发布 V'+v.number+(hasDraft?' · 有保存的草稿':'')
+      :'草稿编辑中 · '+(dirty?'存在未保存更改':hasDraft?'已保存草稿':'尚未保存');
+    $('lkUnlock').disabled=blocked||locked||!locked;
+    $('lkUnlock').textContent=hasDraft?'解锁并继续草稿':'解锁编辑';
+    $('lkSaveDraft').disabled=blocked||locked||locked||!dirty;
+    $('lkPublish').disabled=blocked||locked||locked||dirty||!hasDraft;
+    $('lkCancelEdit').disabled=locked;
+    const select=$('lkHistorySelect'),old=select.value;
+    select.replaceChildren();
+    const blank=document.createElement('option');blank.value='';blank.textContent='选择历史版本';select.append(blank);
+    releaseRecord.history.forEach((r,i)=>{
+      const o=document.createElement('option');o.value=String(i);
+      o.textContent='V'+r.number+' · '+(r.time?r.time.slice(0,10):'原始基线');
+      select.append(o);
+    });
+    select.value=old&&[...select.options].some(o=>o.value===old)?old:'';
+    select.disabled=blocked||locked||!locked||!releaseRecord.history.length;
+    $('lkRollback').disabled=blocked||locked||!locked||!select.value;
+    root.querySelector('.lk-route').textContent=v.data.route||'物流路线';
+  }
   function render(){
     if(!moduleId||!current())moduleId=state.modules[0]?.id||'';
     findSelected();
-    $('lkProcess').hidden=tab!=='process';$('lkData').hidden=tab!=='data';
+    $('lkOverview').hidden=tab!=='overview';$('lkProcess').hidden=tab!=='process';$('lkData').hidden=tab!=='data';
+    $('lkTabOverview').setAttribute('aria-selected',String(tab==='overview'));
     $('lkTabProcess').setAttribute('aria-selected',String(tab==='process'));$('lkTabData').setAttribute('aria-selected',String(tab==='data'));
-    $('lkAddModule').disabled=blocked;$('lkAddNode').disabled=blocked;$('lkExport').disabled=blocked;
+    $('lkAddModule').disabled=blocked||locked||locked;$('lkAddNode').disabled=blocked||locked||locked;$('lkExport').disabled=blocked||locked;
+    renderVersionControls();
     if(tab==='process'){renderModules();renderNodes();renderDetail();}
-    else renderData();
+    else if(tab==='overview'){
+      $('lkModeMacro').setAttribute('aria-pressed',String(overviewMode==='macro'));
+      $('lkModeDetail').setAttribute('aria-pressed',String(overviewMode==='detail'));
+      overview.render($('lkOverviewContent'),releaseRecord.published,overviewMode,(mId,nId)=>{
+        moduleId=mId;selectedId=nId||'';tab='process';render();
+      });
+    }else renderData();
   }
   function openEditor(edit){
-    if(blocked)return;
+    if(blocked||locked||locked)return;
     const n=edit?selected():null;
     editorMode=n?'edit':'new';
     $('lkEditorTitle').textContent=n?'编辑操作节点':'添加操作节点';
@@ -252,7 +290,7 @@
     $('lkNodeDialog').showModal();
   }
   function mutate(fn){
-    if(blocked){setMessage('知识库处于只读保护状态，已停止写入。');return false;}
+    if(blocked||locked||locked){setMessage('当前为锁定或只读状态，修改未生效。');return false;}
     const next=copy(state);
     if(fn(next)===false)return false;
     if(!persist(next))return false;
@@ -267,7 +305,7 @@
     }
     if(type==='branch-add'){
       moduleId=b.dataset.module;selectedId=id;
-      $('lkBranchLabel').value='异常';
+      $('lkBranchLabel').value='异常';$('lkBranchType').value='exception';
       $('lkBranchOnly').checked=false;
       const select=$('lkBranchTarget');select.replaceChildren();
       const empty=document.createElement('option');empty.value='';empty.textContent='选择分支目标操作';select.append(empty);
@@ -347,7 +385,7 @@
   // Native drag-and-drop for desktop; arrow controls and the move selector
   // provide an accessible non-drag route on mobile and keyboard.
   root.addEventListener('dragstart',event=>{
-    if(blocked)return;
+    if(blocked||locked)return;
     const stageGrip=event.target.closest('[data-drag-stage]');
     const grip=event.target.closest('[data-drag-module]');
     const step=event.target.closest('[data-drag-node]');
@@ -414,6 +452,9 @@
     }
   });
   root.addEventListener('dragend',event=>{dragPayload=null;event.target.classList?.remove('lk-dragging');});
+  $('lkTabOverview').onclick=()=>{tab='overview';render();};
+  $('lkModeMacro').onclick=()=>{overviewMode='macro';render();};
+  $('lkModeDetail').onclick=()=>{overviewMode='detail';render();};
   $('lkTabProcess').onclick=()=>{tab='process';render();};
   $('lkTabData').onclick=()=>{tab='data';render();};
   $('lkAddNode').onclick=()=>{if(current()?.enabled)openEditor(false);};
@@ -440,12 +481,12 @@
     const label=$('lkBranchLabel').value.trim(),target=$('lkBranchTarget').value;
     if(!label||!target||!selectedId)return;
     if(mutate(next=>flow.upsertBranch(next,moduleId,{
-      id:makeId('link'),from:selectedId,to:target,label,branchOnly:$('lkBranchOnly').checked
+      id:makeId('link'),from:selectedId,to:target,label,type:$('lkBranchType').value,branchOnly:$('lkBranchOnly').checked
     }))){$('lkBranchDialog').close();render();}
   });
   $('lkStageCancel').onclick=()=>$('lkStageDialog').close();
   $('lkStageForm').addEventListener('submit',event=>{
-    event.preventDefault();if(blocked)return;
+    event.preventDefault();if(blocked||locked)return;
     const name=$('lkStageName').value.trim();if(!name)return;
     const id=editingStageId||makeId('stage');
     const success=mutate(next=>{
@@ -459,7 +500,7 @@
     if(success){activeStageId=id;$('lkStageDialog').close();render();}
   });
   $('lkAddModule').onclick=()=>{
-    if(blocked)return;
+    if(blocked||locked)return;
     $('lkModuleName').value='';$('lkModuleCategory').value='仓';$('lkModuleDialog').showModal();
   };
   $('lkModuleCancel').onclick=()=>$('lkModuleDialog').close();
