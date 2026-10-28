@@ -50,4 +50,20 @@ check('orphan branches ignored when target node does not exist',()=>{
  const d=document();d.modules[0].branches.push({id:'missing',from:'a',to:'never',label:'missing',type:'branch'});
  assert.equal(model.tree(d.modules[0],'a').length,2);
 });
-console.log('V3.5 model: 6 checks passed');
+check('malformed legacy exchange data must not be overwritten',()=>{
+ const d=document(),n=d.modules[0].nodes[0];n.exchanges={legacy:{custom:'keep'}};
+ const old=JSON.stringify(d);
+ assert.equal(model.addExchange(d,'road','a',{id:'valid',source:'OMS',target:'EDI',message:'notify'}),false);
+ assert.equal(JSON.stringify(d),old);
+});
+check('branch truncation is visible while preserving the full original graph',()=>{
+ const d=document(),m=d.modules[0];
+ m.nodes='abcdefghi'.split('').map(id=>({id,title:id}));
+ m.branches='abcdefgh'.split('').map((id,i)=>({id:'edge'+i,from:id,to:'bcdefghi'[i],type:'branch'}));
+ const old=JSON.stringify(d),top=model.tree(m,'a');
+ let deepest=top[0];while(deepest.children.length)deepest=deepest.children[0];
+ assert.equal(deepest.target.id,'h');
+ assert.equal(deepest.truncated,true);
+ assert.equal(JSON.stringify(d),old);
+});
+console.log('V3.5 model: 8 checks passed');
