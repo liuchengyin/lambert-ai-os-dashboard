@@ -42,12 +42,14 @@ try{
  await page.locator('#lkDetail button[data-action="branch-add"]').click();
  await page.locator('#lkBranchLabel').fill('批次异常');
  await page.locator('#lkBranchTarget').selectOption('batch-bind');
+ await page.locator('#lkBranchOnly').check();
  await page.locator('#lkBranchForm button[type="submit"]').click();
  check('custom condition branch saved',(await current()).modules[0].branches.some(x=>x.from==='batch-create'&&x.to==='batch-bind'&&x.label==='批次异常'));
  check('custom branch label rendered',await head.locator('.lk-substage[data-stage-id="sorting"] .lk-branch-condition').filter({hasText:'批次异常'}).count()===1);
+ check('branch-only target separated from main flow',(await current()).modules[0].nodes.find(n=>n.id==='batch-bind').branchOnly===true);
  const beforeData=(await current()).modules[0].nodes.find(x=>x.id==='batch-bind');
  await page.locator('#lkDetail button[data-action="branch-remove"]').click();
- check('branch removed and the original operation unchanged', (await current()).modules[0].nodes.find(x=>x.id==='batch-bind').title===beforeData.title && !(await current()).modules[0].branches.some(x=>x.from==='batch-create'));
+ check('branch removed and original operation returns to main', (await current()).modules[0].nodes.find(x=>x.id==='batch-bind').title===beforeData.title && (await current()).modules[0].nodes.find(x=>x.id==='batch-bind').branchOnly===undefined && !(await current()).modules[0].branches.some(x=>x.from==='batch-create'));
 
  await page.reload({waitUntil:'domcontentloaded'});
  await page.locator('.lk-flow-main').first().waitFor();
