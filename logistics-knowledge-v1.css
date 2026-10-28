@@ -1,0 +1,79 @@
+/* Logistics knowledge V1. Scoped strictly to #logistics. */
+#logistics{--lk-ink:#262239;--lk-muted:#7a7891;--lk-line:#e8e2f1;--lk-surface:#fff;--lk-violet:#7550c4;color:var(--lk-ink);}
+#logistics *{box-sizing:border-box}
+#logistics .lk-page{max-width:1380px;margin:0 auto;padding:8px 0 32px}
+#logistics .lk-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:0 0 16px}
+#logistics .lk-head small{font-size:10px;letter-spacing:.13em;font-weight:750;color:#9875c9}
+#logistics .lk-head h2{font-size:27px;letter-spacing:-.04em;margin:5px 0;color:#302544}
+#logistics .lk-head p{margin:0;font-size:13px;color:var(--lk-muted)}
+#logistics button{font:inherit}
+#logistics .lk-head button,#logistics .lk-section-title button{background:#f3eefe;border:1px solid #e4d8f9;color:#7047be;font-size:12px;font-weight:700;white-space:nowrap;padding:10px 13px}
+#logistics .lk-head button:hover,#logistics .lk-section-title button:hover{background:#eae0fd}
+#logistics .lk-toolbar{display:flex;justify-content:space-between;align-items:center;gap:9px;flex-wrap:wrap;padding:14px 17px;background:linear-gradient(110deg,#f0ebfa,#fcfaff);border:1px solid #ece6f6;border-radius:13px;margin-bottom:14px}
+#logistics .lk-route{font-size:13px;font-weight:750}
+#logistics .lk-warning{color:#99672a;font-size:11px;background:#fff7e8;padding:6px 10px;border-radius:20px}
+#logistics .lk-tabs{display:flex;gap:8px;margin-bottom:20px;border-bottom:1px solid var(--lk-line);padding:0 0 9px}
+#logistics .lk-tabs button{border:1px solid transparent;border-radius:9px;background:transparent;font-size:13px;color:#787188;padding:10px 16px;font-weight:650}
+#logistics .lk-tabs button[aria-selected="true"]{background:#eee8fa;color:#7047be;border-color:#e7dcf8}
+#logistics .lk-section-title{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 11px}
+#logistics .lk-section-title strong{display:block;font-size:16px}
+#logistics .lk-section-title small{display:block;font-size:11px;color:var(--lk-muted);margin-top:4px}
+#logistics .lk-modules{display:flex;gap:10px;overflow-x:auto;padding:0 0 18px;margin-bottom:6px}
+#logistics .lk-module{flex:1 0 150px;max-width:238px;min-width:146px;background:white;border:1px solid var(--lk-line);border-radius:13px;box-shadow:0 3px 13px rgba(70,53,90,.035);overflow:hidden}
+#logistics .lk-module.is-active{border-color:#aa8bdf;box-shadow:inset 0 3px #8a68d1,0 8px 23px rgba(126,82,180,.1)}
+#logistics .lk-module.is-muted{opacity:.55}
+#logistics .lk-module-main{display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:100%;background:transparent;color:#302642;font-size:13px;font-weight:760;text-align:left;min-height:74px;border-radius:0;padding:15px 13px 8px}
+#logistics .lk-module-main:hover{background:#f9f6ff}
+#logistics .lk-module-main small{font-size:10px;color:var(--lk-muted);font-weight:450}
+#logistics .lk-module-tools{display:flex;align-items:center;gap:5px;padding:0 11px 10px}
+#logistics .lk-module-tools>button{background:#f5f2fa;color:#74608c;border:1px solid #ede6f5;padding:3px 9px;font-size:12px;border-radius:6px}
+#logistics .lk-module-tools button:disabled{opacity:.3;cursor:default}
+#logistics .lk-toggle{display:flex;align-items:center;gap:4px;margin-left:auto;font-size:10px;color:#777184;cursor:pointer}
+#logistics .lk-toggle input{accent-color:#7453bf;margin:0}
+#logistics .lk-workspace{display:grid;grid-template-columns:minmax(185px,250px) minmax(0,1fr);gap:15px;align-items:start}
+#logistics .lk-nodes{border:1px solid var(--lk-line);background:#fff;border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:6px;max-height:680px;overflow-y:auto}
+#logistics .lk-node{border:1px solid transparent;background:#fbfafd;text-align:left;padding:12px;display:flex;flex-direction:column;align-items:stretch;gap:6px;color:#393248;border-radius:10px;min-width:0}
+#logistics .lk-node:hover{background:#f3edfc}
+#logistics .lk-node.is-current{background:#eee7fa;border-color:#d9c9f1}
+#logistics .lk-node small{font-size:10px;color:#8e84a2}
+#logistics .lk-node strong{font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+#logistics .lk-node span{font-size:10px;color:#a06b23}
+#logistics .lk-detail{min-width:0;background:#fff;border:1px solid var(--lk-line);border-radius:15px;padding:20px 22px;box-shadow:0 6px 18px rgba(70,53,90,.035)}
+#logistics .lk-detail-head{display:flex;justify-content:space-between;align-items:start;gap:14px}
+#logistics .lk-detail-head small{color:#8e7baa;font-size:11px}
+#logistics .lk-detail-head h3{font-size:21px;letter-spacing:-.02em;margin:6px 0 12px}
+#logistics .lk-edit{background:#f2ecfc;border:1px solid #e3d5f5;color:#7450bb;white-space:nowrap;font-size:12px;padding:8px 12px}
+#logistics .lk-status{display:inline-block;border-radius:20px;padding:5px 9px;background:#fff5e6;color:#9a691f;font-size:10px}
+#logistics .lk-detail-field{border-bottom:1px solid #f0eaf5;padding:13px 0}
+#logistics .lk-detail-field:last-of-type{border-bottom:0}
+#logistics .lk-detail-field h4{font-size:12px;color:#6b52a5;margin:0 0 8px}
+#logistics .lk-detail-field p{font-size:13px;line-height:1.8;color:#555068;white-space:pre-wrap;overflow-wrap:anywhere;margin:0}
+#logistics .lk-go{background:#f1edfa;color:#7655b6;border:1px solid #e5dbf2;font-size:12px;font-weight:650;margin-top:18px}
+#logistics .lk-empty{font-size:12px;color:#9a93a5;padding:22px 12px;margin:0}
+#logistics .lk-data-guide{border:1px solid #e7dbf4;background:linear-gradient(100deg,#fff,#f8f4fc);padding:18px 20px;border-radius:14px;margin-bottom:18px}
+#logistics .lk-data-guide strong{font-size:17px}
+#logistics .lk-data-guide p{margin:7px 0 0;font-size:12px;color:var(--lk-muted);line-height:1.7}
+#logistics .lk-data-rows{display:flex;flex-direction:column;gap:18px}
+#logistics .lk-data-group{border:1px solid var(--lk-line);background:#fff;padding:16px;border-radius:15px}
+#logistics .lk-data-group h3{font-size:15px;margin:0 0 13px}
+#logistics .lk-data-row{display:grid;grid-template-columns:minmax(110px,.75fr) minmax(160px,1.4fr) minmax(140px,1fr);border:1px solid #eee9f4;border-radius:11px;gap:0;margin-bottom:10px;background:#fefeff;overflow:hidden}
+#logistics .lk-data-row>.lk-detail-field{border-bottom:0;border-right:1px solid #eee9f4;padding:12px 14px;min-width:0}
+#logistics .lk-data-row>.lk-detail-field:last-of-type{border-right:0}
+#logistics .lk-data-row>.lk-detail-field h4{font-size:11px}
+#logistics .lk-data-row>.lk-detail-field p{font-size:12px;line-height:1.6}
+#logistics .lk-data-foot{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid #eee9f4;background:#fbf9fe;padding:7px 12px}
+#logistics .lk-data-foot small{font-size:10px;color:#99712b}
+#logistics .lk-jump{font-size:11px;background:transparent;color:#7652b2;padding:6px 8px}
+#logistics .lk-footnote{font-size:11px;line-height:1.7;color:#8d859c;margin:18px 0 6px}
+#logistics .lk-message{font-size:12px;color:#7c5bb0;min-height:18px;margin:6px 0}
+#logistics .lk-dialog{max-width:600px;width:min(600px,calc(100vw - 26px));padding:22px;border-radius:16px;border:1px solid #ece4f3}
+#logistics .lk-dialog h3{margin:0 0 3px;color:#352b49}
+#logistics .lk-dialog form{display:flex;flex-direction:column;gap:12px}
+#logistics .lk-dialog label{font-size:12px;color:#615575;font-weight:650}
+#logistics .lk-dialog input,#logistics .lk-dialog select,#logistics .lk-dialog textarea{font:inherit;font-size:13px;line-height:1.6;margin-top:5px;width:100%;padding:10px;border:1px solid #ddd5e8;border-radius:9px;background:#fff;color:#2a2237}
+#logistics .lk-dialog textarea{min-height:68px;resize:vertical}
+#logistics .lk-dialog-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:4px}
+#logistics .lk-dialog-actions button{background:#f3f0f8;color:#695b7e}
+#logistics .lk-dialog-actions .lk-primary{background:#7852c8;color:#fff;font-weight:650}
+@media(max-width:850px){#logistics .lk-workspace{grid-template-columns:1fr}#logistics .lk-nodes{display:flex;flex-direction:row;overflow-x:auto;max-height:none;min-height:0}#logistics .lk-node{min-width:135px;flex:1 0 150px}#logistics .lk-detail{padding:17px}#logistics .lk-data-row{grid-template-columns:1fr}#logistics .lk-data-row>.lk-detail-field{border-right:0;border-bottom:1px solid #f0eaf5}}
+@media(max-width:520px){#logistics .lk-head{align-items:flex-start;flex-direction:column}#logistics .lk-head h2{font-size:24px}#logistics .lk-modules{margin-right:-14px}#logistics .lk-module{flex-basis:155px}#logistics .lk-tabs button{flex:1;font-size:11px;padding:10px 7px}#logistics .lk-section-title small{font-size:10px}#logistics .lk-section-title button{font-size:11px;padding:9px}#logistics .lk-data-guide{padding:15px}}

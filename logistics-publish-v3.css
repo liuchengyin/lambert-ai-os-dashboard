@@ -1,0 +1,53 @@
+/* Logistics V3: protected editing, version history, released overview. */
+#logistics .lk-version-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;padding:13px 15px;border:1px solid #e8def5;background:#faf8fe;border-radius:13px;margin:12px 0 15px}
+#logistics #lkEditStatus{font-size:12px;font-weight:750;color:#62408e;min-width:150px}
+#logistics .lk-version-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#logistics .lk-version-actions button,#logistics .lk-version-history button{padding:8px 11px;font-size:11px;border-radius:8px;border:1px solid #d9cbe9;background:#efe9fa;color:#6944a0;font-weight:650}
+#logistics .lk-version-actions button:disabled,#logistics .lk-version-history button:disabled{opacity:.38;cursor:default}
+#logistics #lkUnlock:not(:disabled){background:#6f4cbb;color:white}
+#logistics #lkPublish:not(:disabled){background:#227d6e;border-color:#227d6e;color:white}
+#logistics .lk-version-history{margin-left:auto;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#logistics .lk-version-history label{font-size:11px;color:#74677e;display:flex;align-items:center;gap:6px}
+#logistics .lk-version-history select{max-width:195px;min-height:34px;background:#fff;color:#5c4a6c;border:1px solid #d9cbe9;border-radius:8px;font-size:11px;padding:5px}
+#logistics #lkOverview{width:100%;max-width:100%;overflow:visible}
+#logistics .lk-ov-switch{display:flex;align-items:center;gap:16px;justify-content:space-between;flex-wrap:wrap;padding:12px 14px;border:1px solid #e7dff0;border-radius:13px;margin:0 0 14px;background:white}
+#logistics .lk-ov-switch>span{font-size:12px;font-weight:700;color:#79658b}
+#logistics .lk-ov-switch>div{display:flex;gap:5px}
+#logistics .lk-ov-switch button{border:1px solid #e9ddf2;background:#f9f6fc;color:#75628e;border-radius:8px;padding:8px 12px;font-size:12px}
+#logistics .lk-ov-switch button[aria-pressed=true]{background:#7350bd;color:white;border-color:#7350bd}
+#logistics .lk-ov-intro{padding:15px 18px;background:#f6f2fb;border-radius:12px;margin-bottom:16px}
+#logistics .lk-ov-intro strong{font-size:15px}
+#logistics .lk-ov-intro p{font-size:11px;color:#83758e;margin:6px 0 0;line-height:1.6}
+#logistics .lk-overview-chain{display:flex;flex-direction:column;gap:9px;align-items:stretch;max-width:100%;overflow-x:auto}
+#logistics .lk-ov-module{flex:1 1 auto;border:1px solid #e7dfef;border-left:5px solid var(--lk-ov-color,#7962be);border-radius:12px;background:#fff;padding:14px;min-width:0}
+#logistics .lk-ov-module-head{display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+#logistics .lk-ov-category{display:inline-flex;font-size:11px;border-radius:7px;padding:5px 8px;background:color-mix(in srgb,var(--lk-ov-color) 13%,white);color:var(--lk-ov-color);font-weight:750}
+#logistics .lk-ov-link{background:none;border:0;text-align:left;color:#48335c;padding:3px 5px;font-weight:700;line-height:1.5;overflow-wrap:anywhere}
+#logistics .lk-ov-link:hover{text-decoration:underline;color:var(--lk-ov-color,#784fae)}
+#logistics .lk-ov-module-head .lk-ov-link{font-size:15px}
+#logistics .lk-ov-module-head small{font-size:10px;color:#8b7c98;margin-left:auto}
+#logistics .lk-ov-summary{font-size:12px;color:#766985;margin:11px 0 0;line-height:1.6}
+#logistics .lk-ov-module-arrow{align-self:center;color:#957aaf;font-size:24px;font-weight:700;line-height:1}
+#logistics .lk-ov-substages{display:flex;align-items:stretch;gap:7px;overflow-x:auto;max-width:100%;padding:12px 1px 4px}
+#logistics .lk-ov-stage{border:1px dashed #d8cbe5;border-top:3px solid var(--lk-ov-stage-color,#8062ac);border-radius:10px;padding:11px;background:#fdfcff;flex:0 0 auto;min-width:145px;max-width:85vw}
+#logistics .lk-ov-stage h4{font-size:12px;color:var(--lk-ov-stage-color);margin:0 0 10px}
+#logistics .lk-ov-ops{display:flex;align-items:flex-start;gap:5px;overflow-x:auto;padding:5px 1px 8px;max-width:100%}
+#logistics .lk-ov-op{flex:0 0 126px;min-width:126px;border:1px solid #e5dbed;border-radius:8px;background:white;padding:7px 5px}
+#logistics .lk-ov-op>.lk-ov-link{font-size:11px;font-weight:700;min-height:32px;display:block;width:100%}
+#logistics .lk-ov-step-arrow{padding:13px 2px;color:var(--lk-ov-stage-color);font-size:19px;font-weight:700}
+#logistics .lk-ov-stage-arrow{align-self:center;color:#9883a7;font-size:20px}
+#logistics .lk-ov-edge{border-left:2px dashed #c6a2d3;font-size:10px;padding:5px 0 0 6px;display:flex;align-items:center;flex-wrap:wrap;gap:2px;margin:7px 0}
+#logistics .lk-ov-exception{color:#b65e5e;border-left-color:#c77b7b}
+#logistics .lk-ov-branch{color:#537eab;border-left-color:#80a2d4}
+#logistics .lk-ov-edge .lk-ov-link{font-size:10px;color:inherit;font-weight:650}
+#logistics .lk-ov-edge-label{font-size:9px;color:inherit}
+#logistics .lk-ov-noops{color:#96879d;font-size:11px}
+#logistics .lk-ov-disclaimer{font-size:11px;color:#8b8098;margin:14px 0;line-height:1.7}
+#logistics .lk-tabs{overflow-x:auto;white-space:nowrap}
+#logistics .lk-tabs button{white-space:nowrap}
+@media(max-width:700px){#logistics .lk-version-bar{align-items:stretch}#logistics .lk-version-history{margin-left:0}#logistics .lk-version-actions{gap:5px}#logistics .lk-version-actions button{font-size:10px;padding:7px 8px}#logistics .lk-ov-module{padding:10px}#logistics .lk-ov-stage{min-width:140px}#logistics .lk-ov-switch{align-items:flex-start}#logistics .lk-ov-substages{padding-bottom:11px}}
+
+#logistics .lk-branch-edge.lk-branch-normal{border-left-color:#7b9cc5;border-bottom-color:#b5c9e0}
+#logistics .lk-branch-normal .lk-branch-connector,#logistics .lk-branch-normal .lk-branch-arrow{color:#4b7cae}
+#logistics .lk-branch-normal .lk-branch-condition{background:#eaf3fc;border-color:#bed3e8;color:#4e759d}
+#logistics .lk-branch-normal .lk-branch-target{background:#f0f7ff;border-color:#bdcfe5;color:#456f9a}

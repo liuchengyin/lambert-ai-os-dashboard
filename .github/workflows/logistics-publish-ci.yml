@@ -1,0 +1,48 @@
+name: Logistics V3 protected publishing and overview
+on:
+  push:
+    branches: [feat/logistics-publish-overview-20261028]
+    paths:
+      - '.github/workflows/logistics-publish-ci.yml'
+      - 'logistics-version-model.js'
+      - 'logistics-overview.js'
+      - 'logistics-stage-view.js'
+      - 'logistics-publish-v3.css'
+      - 'logistics-knowledge-v1.js'
+      - 'tests/logistics-publish-ui.mjs'
+      - 'tests/logistics-version-model.test.mjs'
+      - 'logistics-flow-model.js'
+      - 'index.html'
+permissions:
+  contents: read
+jobs:
+  publish-regression:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript and pure models
+        run: |
+          node --check logistics-knowledge-v1.js
+          node --check logistics-version-model.js
+          node --check logistics-overview.js
+          node --check logistics-stage-view.js
+          node --check logistics-flow-model.js
+          node tests/logistics-version-model.test.mjs
+          node tests/logistics-flow-model.test.mjs
+          node tests/logistics-stage-model.test.mjs
+          node tests/logistics-canvas-logic.test.mjs
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Exercise the real OS in Chromium
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/logistics-http.log 2>&1 &
+          sleep 2
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-publish-ui.mjs
