@@ -27,7 +27,8 @@
    return edges(module,start).map(edge=>{
      const target=module.nodes.find(n=>n.id===edge.to);
      const circular=path.has(edge.to);
-     return {edge,target,circular,children:circular?[]:tree(module,edge.to,path,depth+1)};
+     const truncated=!circular&&depth+1>=MAX_DEPTH&&edges(module,edge.to).length>0;
+     return {edge,target,circular,truncated,children:circular||truncated?[]:tree(module,edge.to,path,depth+1)};
    });
  };
  function addExchange(doc,moduleId,nodeId,entry){
@@ -37,9 +38,14 @@
    const target=String(entry.target||'').trim().slice(0,90);
    const message=String(entry.message||'').trim().slice(0,300);
    if(!source||!target||!message)return false;
-   const items=Array.isArray(n.exchanges)?n.exchanges:(n.exchanges=[]);
-   if(items.some(x=>x.id===entry.id)||items.length>=25)return false;
-   items.push({id:entry.id,source,target,message,note:String(entry.note||'').trim().slice(0,500)});
+   // Do not replace unexpected legacy data. An explicit malformed value is
+   // preserved so the user can recover/export it rather than lose information.
+   if(n.exchanges!==undefined&&!Array.isArray(n.exchanges))return false;
+   const items=Array.isArray(n.exchanges)?n.exchanges:[];
+   if(items.some(x=>x?.id===entry.id)||items.length>=25)return false;
+   const clean={id:entry.id,source,target,message,note:String(entry.note||'').trim().slice(0,500)};
+   if(!Array.isArray(n.exchanges))n.exchanges=items;
+   items.push(clean);
    return true;
  }
  function removeExchange(doc,moduleId,nodeId,exchangeId){
