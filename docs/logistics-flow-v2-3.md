@@ -25,3 +25,8 @@ TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-stage-ui.mjs
 TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-knowledge-ui.mjs
 ```
 通过 `.github/workflows/logistics-flow-ci.yml` 在 GitHub Actions 使用真实 Chromium 检查。基于未合并的 V2.2 分支；仅预览，不直接发布正式版。
+
+## DeepSeek Flash 独立静态复核
+- 经 GitHub Actions 实际调用一次 `deepseek-flash` 完成审查（运行记录 `40625519570`）：输入 1,186 tokens、输出 97 tokens、总计 1,283 tokens、0 次重试。此前两次受输入大小和输出完整性限制失败，不能计作完成审查。
+- 提示移除关联后残留的 `branchOnly` 标记。现在只在**目标节点不再有任何有效入边**时清除标记；绝不删除节点和原有字段。新增双入边、仅移除其中一条的回归测试，并在真实浏览器验证分支删除后操作回归主线。
+- 此版仅保证条件关系可视化，不替代一线 SOP 核实或真实 EDI 系统架构证明。
