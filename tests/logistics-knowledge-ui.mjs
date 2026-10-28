@@ -75,7 +75,10 @@ try{
    return d.modules.find(m=>m.id==='linehaul').nodes.map(n=>n.id).indexOf('preload')===2;
  }));
 
- // Drag the large linehaul module before the export module.
+ // Collapse the long warehouse before testing neighboring large-block drag;
+ // the separate nested-stage test validates expanding its four inner lanes.
+ await page.locator('button[data-action="collapse-module"][data-id="head"]').click();
+ // Drag neighboring large modules while both headers are on the same screen.
  const moduleGrip=page.locator('.lk-canvas-block[data-module="import"] [data-drag-module="import"]');
  const moduleTarget=page.locator('.lk-canvas-block[data-module="linehaul"] .lk-canvas-block-head');
  await moduleGrip.dragTo(moduleTarget,{targetPosition:{x:24,y:2}});
