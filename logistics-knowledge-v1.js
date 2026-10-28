@@ -111,7 +111,8 @@
       const card=node('section',undefined,'lk-module lk-canvas-block'+(m.id===moduleId?' is-active':'')+(!m.enabled?' is-muted':''));
       card.dataset.module=m.id;
       const head=node('div',undefined,'lk-canvas-block-head');
-      const grip=button('⠿','noop','lk-drag-handle',blocked);grip.draggable=!blocked;grip.dataset.dragModule=m.id;grip.title='拖动大模块改变顺序';grip.setAttribute('aria-label','拖动'+m.name);
+      head.draggable=!blocked;head.dataset.dragModule=m.id;head.title='拖动整个标题区调整模块顺序';
+      const grip=button('⠿','noop','lk-drag-handle',blocked);grip.draggable=false;grip.title='拖动标题区改变模块顺序';grip.setAttribute('aria-label','拖动'+m.name);
       const main=button(m.name,'select-module','lk-module-main');main.dataset.id=m.id;
       main.prepend(node('small',m.category+' / '+m.nodes.length+' 个操作节点'));
       const controls=node('div',undefined,'lk-canvas-controls');
