@@ -6,6 +6,8 @@ on:
       - '.github/workflows/logistics-publish-ci.yml'
       - 'logistics-version-model.js'
       - 'logistics-overview.js'
+      - 'logistics-stage-view.js'
+      - 'logistics-publish-v3.css'
       - 'logistics-knowledge-v1.js'
       - 'tests/logistics-publish-ui.mjs'
       - 'tests/logistics-version-model.test.mjs'
@@ -29,6 +31,7 @@ jobs:
           node --check logistics-knowledge-v1.js
           node --check logistics-version-model.js
           node --check logistics-overview.js
+          node --check logistics-stage-view.js
           node --check logistics-flow-model.js
           node tests/logistics-version-model.test.mjs
           node tests/logistics-flow-model.test.mjs
