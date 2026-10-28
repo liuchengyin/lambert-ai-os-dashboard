@@ -34,7 +34,7 @@ try{
    return m.nodes.map(x=>x.id).indexOf('batch')===2;
  }));
  // Cross-module transfer keeps all fields.
- await page.locator('#lkDetail select[data-move-node="batch"]').selectOption('head');
+ await page.locator('#lkDetail select[data-move-node="batch"]').selectOption('head::arrival');
  pass('cross-block move keeps details',await page.evaluate(()=>{
    const d=JSON.parse(localStorage.getItem('lambert_logistics_knowledge_v1'));
    return !d.modules.find(m=>m.id==='linehaul').nodes.some(n=>n.id==='batch')&&
@@ -44,7 +44,7 @@ try{
  await page.locator('button[data-action="collapse-module"][data-id="head"]').click();
  pass('collapse hides cards',await page.locator('.lk-canvas-block[data-module="head"] .lk-step').count()===0);
  await page.locator('button[data-action="collapse-module"][data-id="head"]').click();
- pass('expand restores cards',await page.locator('.lk-canvas-block[data-module="head"] .lk-step').count()===4);
+ pass('expand restores cards',await page.locator('.lk-canvas-block[data-module="head"] .lk-step').count()===17);
 
  // Module arrows reorder the large blocks and save.
  await page.locator('button[data-action="module-down"][data-id="head"]').click();
