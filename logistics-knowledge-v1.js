@@ -339,6 +339,7 @@
     $('lkTabOverview').setAttribute('aria-selected',String(tab==='overview'));
     $('lkTabProcess').setAttribute('aria-selected',String(tab==='process'));$('lkTabData').setAttribute('aria-selected',String(tab==='data'));
     $('lkAddModule').disabled=blocked||locked;$('lkAddNode').disabled=blocked||locked;$('lkExport').disabled=blocked;
+    root.querySelectorAll('[data-action="add-linehaul-mode"]').forEach(control=>{control.disabled=blocked||locked;});
     renderVersionControls();
     if(tab==='process'){renderModules();renderNodes();renderDetail();renderSearch();renderTrash();syncQuickDetail();}
     else if(tab==='overview'){
