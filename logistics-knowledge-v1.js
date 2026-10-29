@@ -449,7 +449,27 @@
         const foot=node('div',undefined,'lk-data-foot');
         foot.append(node('small','状态：'+(n.confidence||'待核实')));
         const link=button('定位操作 ↗','open-node','lk-jump');link.dataset.module=m.id;link.dataset.id=n.id;foot.append(link);
-        row.append(foot);group.append(row);
+        // The data tab is the research-facing counterpart of node wiring:
+        // show known sources and destinations without inventing live joins.
+        const infra=wiring.read(n),status=wiring.progress(n);
+        const detail=node('details',undefined,'lk-data-lineage');
+        detail.append(node('summary','信息 / 数据 / SLA / 任务连接 · '+(status.invalid?'旧格式待检查':status.count+'/5 已配置')));
+        if(status.invalid)detail.append(node('p','保留了异常格式的历史数据，未覆盖。','lk-infra-note'));
+        else{
+          const part=(title,value)=>detail.append(field(title,value||'待配置'));
+          part('内部事件 / 日志 / 记录表',
+            [infra.trace.event,infra.trace.eventCode,infra.trace.logLocation,infra.trace.recordTable,infra.trace.recordKey].filter(Boolean).join(' · '));
+          part('是否对外推送',
+            ({unknown:'待核实',internal:'不对外推送 · 内部留痕',conditional:'按条件推送',external:'对外推送（需核实）'})[infra.routing.policy||'unknown']+
+            (infra.routing.rule?' / 规则：'+infra.routing.rule:'')+(infra.routing.destination?' / 至 '+infra.routing.destination:''));
+          part('数据消费来源',
+            infra.sources.map(x=>(x.kind||'其他')+' · '+x.table+(x.joinKey?' / '+x.joinKey:'')+(x.fields?' / '+x.fields:'')).join('；'));
+          part('指标 / SLA / 数据看板',
+            [infra.metric.name,infra.metric.formula,infra.metric.timeField,infra.metric.slaTarget,infra.metric.dashboard].filter(Boolean).join(' · '));
+          part('任务规则 / 看板 / 责任',
+            [infra.task.board,infra.task.condition,infra.task.owner,infra.task.action].filter(Boolean).join(' · '));
+        }
+        row.append(detail,foot);group.append(row);
       });
       host.append(group);
     });

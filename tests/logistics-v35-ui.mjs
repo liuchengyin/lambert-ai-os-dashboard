@@ -146,6 +146,13 @@ try{
  check('published graph unchanged by saved draft',orig.branches.length===1&&!orig.nodes.find(n=>n.id==='security-scan').exchanges);
  await page.locator('#lkPublish').click();
  check('publish updates release',!!(await version()).published.data.modules.find(m=>m.id==='head').nodes.find(n=>n.id==='security-scan').exchanges?.length);
+ await page.locator('#lkTabData').click();
+ const dataScan=page.locator('#lkDataRows .lk-data-row').filter({hasText:'安检扫描'}).first();
+ await dataScan.locator('.lk-data-lineage > summary').click();
+ check('data relationship tab can consume configured OMS/EDI source descriptions',
+   await dataScan.locator('.lk-data-lineage').innerText().then(t=>
+     t.includes('待核实订单表')&&t.includes('待核实轨迹表')&&t.includes('不对外推送')&&t.includes('履约数据看板')&&t.includes('异常任务看板')));
+ await page.locator('#lkTabOverview').click();
  check('A overview is macro only',await page.locator('#lkOverview .lk-ov-op').count()===0);
  check('published linehaul has a 3-branch transport parent',await page.locator('#lkOverview .lk-ov-transport-family .lk-trunk-route').count()===3);
 
