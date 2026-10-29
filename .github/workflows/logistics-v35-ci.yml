@@ -1,10 +1,13 @@
-name: Logistics P0 node-first research and branch integrity
+name: Logistics V3.6 operation to information to dashboard wiring
 on:
   push:
-    branches: [feat/logistics-node-first-p0-20261029]
+    branches: [feat/logistics-infra-wiring-v36-20261029]
     paths:
       - '.github/workflows/logistics-v35-ci.yml'
       - 'logistics-v35-model.js'
+      - 'logistics-wiring-v36.js'
+      - 'logistics-wiring-v36.css'
+      - 'tests/logistics-wiring-v36-model.test.mjs'
       - 'logistics-trigger-v33.js'
       - 'logistics-canvas-model.js'
       - 'tests/logistics-v33-trigger-model.test.mjs'
@@ -35,9 +38,11 @@ jobs:
           node --check logistics-stage-view.js
           node --check logistics-overview.js
           node --check logistics-v35-model.js
+          node --check logistics-wiring-v36.js
           node --check logistics-trigger-v33.js
           node --check logistics-canvas-model.js
           node tests/logistics-v35-model.test.mjs
+          node tests/logistics-wiring-v36-model.test.mjs
           node tests/logistics-canvas-logic.test.mjs
           node tests/logistics-stage-model.test.mjs
           node tests/logistics-v34-setup-model.test.mjs

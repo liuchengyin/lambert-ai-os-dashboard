@@ -63,8 +63,10 @@
   const triggerApi=window.LambertLogisticsTriggerV33;
   const setup=window.LambertLogisticsSetupV34;
   const mini=window.LambertLogisticsV35;
+  const wiring=window.LambertLogisticsWiringV36;
   let setupModuleId='',setupStageId=null,editingSetup=false,exchangeNodeId='',exchangeModuleId='';
   let editingModuleId='',searchTerm='',branchSourceId='',renameModuleId='',renameNodeId='',returnQuickAfterEdit=false;
+  let wiringModuleId='',wiringNodeId='',wiringReturnQuick=false;
   const copy=x=>JSON.parse(JSON.stringify(x));
   function read() {
     try {
@@ -107,7 +109,7 @@
     '<div class="lk-version-bar"><span id="lkEditStatus">已锁定 · 只读</span><div class="lk-version-actions"><button type="button" id="lkUnlock">解锁编辑</button><button type="button" id="lkSaveDraft" disabled>保存草稿</button><button type="button" id="lkPublish" disabled>确认发布</button><button type="button" id="lkCancelEdit" disabled>取消并锁定</button></div><div class="lk-version-history"><label>历史版本 <select id="lkHistorySelect"><option value="">选择历史版本</option></select></label><button type="button" id="lkRollback" disabled>回滚为新版本</button></div></div>'+
     '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabOverview" aria-selected="false">全链路总览</button><button type="button" role="tab" id="lkTabProcess" aria-selected="true">模块编辑 · 操作＋信息</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button><button type="button" role="tab" id="lkTabSetup" aria-selected="false">基础资料配置</button></div>'+
     '<div id="lkOverview" role="tabpanel" aria-labelledby="lkTabOverview" hidden><div class="lk-ov-switch"><span>查看已发布版本</span><div role="group" aria-label="全链路展示模式"><button type="button" id="lkModeMacro" aria-pressed="true">A · 宏观模块</button><button type="button" id="lkModeDetail" aria-pressed="false">B · 完整流程</button></div></div><div id="lkOverviewContent"></div></div>'+
-    '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-search-bar"><label>搜索操作、标签、操作码 <input id="lkSearch" type="search" placeholder="例如：安检 / 上车 / DDS"></label><div id="lkSearchResults" aria-live="polite"></div></div><div class="lk-canvas-categories" aria-label="物流模块底座"><span class="lk-canvas-category">仓</span><span class="lk-canvas-category">干</span><span class="lk-canvas-category">关</span><span class="lk-canvas-category">配</span></div><div class="lk-section-title"><div><strong>模块化操作画布</strong><small>大模块内包含可调整的子环节，例如：国内中心仓 → 到车／收入／分拣／发出。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div class="lk-mode-toolbar"><strong>干线类型</strong><span>按运输方式分类，也可为每个环节填写前置配置</span><button type="button" data-action="add-linehaul-mode" data-mode="road">＋ 陆运</button><button type="button" data-action="add-linehaul-mode" data-mode="sea">＋ 海运</button><button type="button" data-action="add-linehaul-mode" data-mode="air">＋ 空运</button></div><div id="lkModules" class="lk-modules lk-canvas"></div>'+
+    '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-search-bar"><label>搜索操作、标签、操作码 <input id="lkSearch" type="search" placeholder="例如：安检 / 上车 / DDS"></label><div id="lkSearchResults" aria-live="polite"></div></div><div class="lk-canvas-categories" aria-label="物流模块底座"><span class="lk-canvas-category">仓</span><span class="lk-canvas-category">干</span><span class="lk-canvas-category">关</span><span class="lk-canvas-category">配</span></div><div class="lk-section-title"><div><strong>模块化操作画布</strong><small>大模块内包含可调整的子环节，例如：国内中心仓 → 到车／收入／分拣／发出。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div class="lk-mode-toolbar"><strong>干线类型</strong><span>按运输方式分类，也可为每个环节填写前置配置</span><button type="button" data-action="add-linehaul-mode" data-mode="road">＋ 陆运</button><button type="button" data-action="add-linehaul-mode" data-mode="sea">＋ 海运</button><button type="button" data-action="add-linehaul-mode" data-mode="air">＋ 空运</button></div><details class="lk-infra-base" id="lkInfrastructureBase"><summary>信息与数据基础设施 · 所有操作节点可复用（展开查看）</summary><p>这不是业务分支，也不是已经连接系统的实时数据。操作的内部事件、日志、推送决策、数据表、指标和任务，逐节点配置；无证据时保持待配置。</p><div class="lk-infra-chain"><div><strong>① 操作</strong><small>谁执行 / 操作动作</small></div><div><strong>② 事件与留痕</strong><small>内部事件 / 日志 / 记录表</small></div><div><strong>③ 推送判断</strong><small>仅内部 / 条件推送 / 对外</small></div><div><strong>④ 数据来源</strong><small>OMS / EDI / TMS 等表及关联键</small></div><div><strong>⑤ 指标与 SLA</strong><small>业务规则 / 时间口径 / 目标</small></div><div><strong>⑥ 看板与任务</strong><small>数据看板 / 预警与任务入口</small></div></div><p>不对外推送的事件仍可有内部日志与持久化记录；是否真的产生轨迹、是否入库，都待真实系统证据核实。</p></details><div id="lkModules" class="lk-modules lk-canvas"></div>'+
     '<div class="lk-section-title lk-selection-head"><div><strong id="lkNodeTitle">操作节点详情</strong><small>选择上方的小块；系统关系放在详情内按需展开</small></div><button type="button" id="lkAddNode">＋ 为选中模块添加操作</button></div>'+
     '<details class="lk-trash-panel"><summary>回收站 · 可恢复的删除记录 <span id="lkTrashCount">0</span></summary><div id="lkTrashList"></div></details>'+
     '<div class="lk-workspace lk-canvas-workspace"><div id="lkNodes" class="lk-nodes" hidden aria-hidden="true"></div><article id="lkDetail" class="lk-detail"></article></div></div>'+
@@ -142,7 +144,13 @@
     '<div class="lk-dialog-actions"><button type="button" id="lkBranchCancel">取消</button><button type="submit" class="lk-primary">保存条件分支</button></div></form></dialog>'+
     '<dialog id="lkSetupDialog" class="lk-dialog lk-setup-dialog"><form id="lkSetupForm"><h3 id="lkSetupTitle">编辑前置配置</h3><p class="lk-form-hint">配置在业务操作前需要准备的基础数据或条件。名称与具体值分开保存，未填写不代表已完成配置。</p><div class="lk-setup-actions"><button id="lkAddSetup" type="button">＋ 增加配置项</button><button id="lkApplyModeSetup" type="button">＋ 套用运输类型参考项</button></div><div id="lkSetupRows"></div><p class="lk-form-hint">注：航班日志属于运行记录入口，标记为「关联记录」，不应自动视为起运前必备条件。</p><div class="lk-dialog-actions"><button type="button" id="lkSetupCancel">取消</button><button type="submit" class="lk-primary">保存前置配置</button></div></form></dialog>'+
     '<dialog id="lkExchangeDialog" class="lk-dialog lk-stage-dialog"><form id="lkExchangeForm"><h3>信息交换 · 独立于业务分支</h3><p class="lk-form-hint">信息交换记录“谁发送 → 谁接收 → 发送什么”，不新增业务流程或异常连线。可作为将来 OMS / TMS / EDI 时序图的数据入口。</p><label>发送方<input id="lkExchangeFrom" required maxlength="90" placeholder="例如 TMS"></label><label>接收方<input id="lkExchangeTo" required maxlength="90" placeholder="例如 EDI"></label><label>交换内容<input id="lkExchangeMessage" required maxlength="300" placeholder="例如 发送包裹扫描事件"></label><label>备注（可选）<textarea id="lkExchangeNote" rows="2" maxlength="500"></textarea></label><div class="lk-dialog-actions"><button id="lkExchangeCancel" type="button">取消</button><button class="lk-primary" type="submit">保存信息交换</button></div></form></dialog>'+
-    '<dialog id="lkQuickDetailDialog" class="lk-dialog lk-quick-detail-dialog" aria-label="操作模块详情"><div class="lk-quick-bar"><strong>操作模块详情</strong><button type="button" id="lkQuickClose" aria-label="关闭详情">关闭 ×</button></div><div id="lkQuickReadOnly" class="lk-quick-lock-note" hidden>当前已锁定，解锁后可以修改名称、内容或删除。<button type="button" id="lkQuickUnlock">解锁编辑</button></div><article id="lkQuickDetailBody" class="lk-detail"></article></dialog>'+
+    '<dialog id="lkWiringDialog" class="lk-dialog lk-wiring-dialog"><form id="lkWiringForm"><h3>节点的信息 / 数据 / SLA / 任务配置</h3><p class="lk-form-hint">只记录研究中的连接关系；不会调用 OMS/EDI、写数据库或创建任务。未知信息可留空，保存后仍需保存草稿。</p>'+
+'<section class="lk-wiring-form-group"><h4>① 内部事件、日志与持久化</h4><p>操作可能产生内部事件；是否有对应日志、轨迹码或持久化表，分别填写。不要把日志自动等同于对外轨迹。</p><label>事件名称<input name="trace.event" maxlength="180" placeholder="待核实"></label><label>内部事件码<input name="trace.eventCode" maxlength="100" placeholder="需从真实码表确认"></label><label>日志位置或查询入口<input name="trace.logLocation" maxlength="220" placeholder="日志服务 / 路径（待核实）"></label><label>持久化记录表<input name="trace.recordTable" maxlength="180" placeholder="真实表名待核实"></label><label>记录关联键<input name="trace.recordKey" maxlength="180" placeholder="例如运单 ID（待核实）"></label></section>'+
+'<section class="lk-wiring-form-group"><h4>② 是否对外推送 · 路由规则</h4><label>推送策略<select name="routing.policy"><option value="unknown">待核实</option><option value="internal">不对外推送 · 仅内部留痕</option><option value="conditional">满足条件才推送</option><option value="external">对外推送（需核实）</option></select></label><label>判断 / 映射 / 过滤规则<textarea name="routing.rule" maxlength="500" rows="2" placeholder="EDI 判断规则待核实"></textarea></label><label>接收系统或平台<input name="routing.destination" maxlength="220" placeholder="没有或待核实均可留空"></label></section>'+
+'<section class="lk-wiring-form-group"><h4>③ 数据看板可消费的数据源</h4><p>可以关联多张订单、EDI、轨迹或其他表；不是马上连数据库。仅声明表、关联键及消费字段。</p><div id="lkWiringSources"></div><button type="button" class="lk-wiring-add-source" id="lkWiringAddSource">＋ 数据源 / 表</button></section>'+
+'<section class="lk-wiring-form-group"><h4>④ 指标规则、SLA 与数据看板</h4><label>指标名称<input name="metric.name" maxlength="180"></label><label>计算口径 / 规则<textarea name="metric.formula" maxlength="500" rows="2"></textarea></label><label>时间维度 / 字段<input name="metric.timeField" maxlength="180"></label><label>SLA 目标值<input name="metric.slaTarget" maxlength="180"></label><label>数据看板名称或入口<input name="metric.dashboard" maxlength="180"></label></section>'+
+'<section class="lk-wiring-form-group"><h4>⑤ 任务 / 异常处理看板</h4><label>任务看板或工单入口<input name="task.board" maxlength="180"></label><label>任务触发条件<textarea name="task.condition" rows="2" maxlength="500"></textarea></label><label>责任人 / 角色<input name="task.owner" maxlength="180"></label><label>触发后的动作<textarea name="task.action" rows="2" maxlength="360"></textarea></label></section>'+
+'<div class="lk-dialog-actions"><button type="button" id="lkWiringCancel">取消</button><button type="submit" class="lk-primary">保存此节点配置</button></div></form></dialog>'+'<dialog id="lkQuickDetailDialog" class="lk-dialog lk-quick-detail-dialog" aria-label="操作模块详情"><div class="lk-quick-bar"><strong>操作模块详情</strong><button type="button" id="lkQuickClose" aria-label="关闭详情">关闭 ×</button></div><div id="lkQuickReadOnly" class="lk-quick-lock-note" hidden>当前已锁定，解锁后可以修改名称、内容或删除。<button type="button" id="lkQuickUnlock">解锁编辑</button></div><article id="lkQuickDetailBody" class="lk-detail"></article></dialog>'+
     '<dialog id="lkRenameNodeDialog" class="lk-dialog lk-rename-dialog" aria-label="修改操作模块名称"><form id="lkRenameNodeForm"><h3>编辑小模块名称</h3><label>操作名称<input id="lkRenameNodeName" type="text" maxlength="70" required placeholder="例如：安检扫描"></label><p class="lk-footnote">只修改名称，保留操作 ID、备注、轨迹事件码及所有流程连线。</p><div class="lk-dialog-actions"><button type="button" id="lkRenameNodeCancel">取消</button><button type="submit" class="lk-primary">保存名称</button></div></form></dialog>';
   const makeId=prefix=>prefix+'_'+(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'_'+Math.random().toString(36).slice(2));
   function renderModules(){
@@ -276,6 +284,38 @@
     const card=node('section',undefined,'lk-detail-field');
     card.append(node('h4',title),node('p',text||'尚未补充，待核实。'));return card;
   }
+  function renderWiring(m,n){
+    const snapshot=wiring.read(n),status=wiring.progress(n);
+    const box=node('section',undefined,'lk-infra-node');
+    const head=node('div',undefined,'lk-infra-head');
+    head.append(node('h4','信息流 → 表 → SLA → 任务 · '+(status.invalid?'需检查旧数据':status.count+'/5 层已配置')));
+    const edit=button('配置此节点连接','wiring-edit','lk-wiring-edit',blocked||locked||status.invalid);
+    edit.dataset.module=m.id;edit.dataset.id=n.id;head.append(edit);box.append(head);
+    box.append(node('p','业务操作与信息交换分开：无对外推送仍可记录内部日志与数据库记录。以下是配置资料，不会产生真实推送、计算指标或创建任务。','lk-infra-note'));
+    if(status.invalid){
+      box.append(node('p','该节点保留了无法识别的历史配置信息。编辑已禁止，请先导出备份核实，未覆盖原始数据。','lk-infra-unset'));return box;
+    }
+    const cards=node('div',undefined,'lk-infra-cards');
+    const card=(title,rows,configured)=>{
+      const c=node('div',undefined,'lk-infra-card');
+      c.append(node('strong',title));
+      if(!rows.length)c.append(node('p','待配置','lk-infra-unset'));
+      else rows.forEach(row=>c.append(node('p',row,'lk-infra-configured')));
+      cards.append(c);
+    };
+    const r=snapshot;
+    const list=(obj,names)=>Object.entries(names).filter(([key])=>obj[key]).map(([key,label])=>label+'：'+obj[key]);
+    card('① 内部事件 / 日志 / 记录表',list(r.trace,{event:'事件',eventCode:'内部码',logLocation:'日志',recordTable:'记录表',recordKey:'关联键'}));
+    const statusLabel={unknown:'',internal:'仅内部留痕 · 不对外推送',conditional:'按条件对外推送',external:'对外推送（需证据）'};
+    card('② 推送判断',[
+      ...(statusLabel[r.routing.policy]?[statusLabel[r.routing.policy]]:[]),
+      ...list(r.routing,{rule:'规则',destination:'接收方'})
+    ]);
+    card('③ 数据来源 / 表',r.sources.map(x=>(x.kind||'其他')+' · '+x.table+(x.joinKey?'（键：'+x.joinKey+'）':'')+(x.fields?' · '+x.fields:'')));
+    card('④ 指标 / SLA / 数据看板',list(r.metric,{name:'指标',formula:'计算口径',timeField:'时间字段',slaTarget:'目标',dashboard:'看板'}));
+    card('⑤ 任务看板 / 异常处理',list(r.task,{board:'任务入口',condition:'触发条件',owner:'责任角色',action:'处理动作'}));
+    box.append(cards);return box;
+  }
   function renderDetail(){
     const host=$('lkDetail');host.replaceChildren();
     const m=current(),n=m?.enabled?selected():null;
@@ -305,6 +345,7 @@
       triggerSection.append(list);
     }else triggerSection.append(node('p','此旧节点尚未整理触发结果，可在编辑内容中补充。','lk-form-hint'));
     host.append(triggerSection);
+    host.append(renderWiring(m,n));
     host.append(field('研究依据 / 待核实问题',n.researchBasis||'尚未记录证据；节点顺序和路径需用真实 SOP / 系统记录核实'));
     const exchangeBox=node('section',undefined,'lk-exchange');
     const exchangeHead=node('div',undefined,'lk-exchange-head');
@@ -536,6 +577,84 @@
     })).filter(x=>x.description);
   }
   $('lkAddTrigger').onclick=()=>appendTriggerRow();
+  function appendWiringSource(source={}){
+    const host=$('lkWiringSources');
+    if(host.children.length>=12){setMessage('一个节点最多记录 12 个数据源。');return;}
+    const row=node('div',undefined,'lk-wiring-source-row');
+    row.dataset.sourceId=source.id||makeId('datasrc');
+    const labelInput=(title,value,max,field)=>{
+      const label=node('label',title);
+      const input=document.createElement('input');input.type='text';
+      input.maxLength=max;input.value=value||'';input.dataset.wiringSource=field;
+      label.append(input);row.append(label);return input;
+    };
+    const kindLabel=node('label','数据域类型');
+    const kind=document.createElement('select');kind.dataset.wiringSource='kind';
+    wiring.KINDS.forEach(key=>{
+      const o=document.createElement('option');o.value=key;o.textContent=key;kind.append(o);
+    });kind.value=wiring.KINDS.includes(source.kind)?source.kind:'其他';
+    kindLabel.append(kind);row.append(kindLabel);
+    const table=labelInput('真实表名 / 数据集',source.table,180,'table');
+    table.required=true;
+    labelInput('关联键',source.joinKey,180,'joinKey');
+    labelInput('消费字段 / 备注',source.fields,500,'fields');
+    const remove=button('移除这条来源','wiring-remove-source','lk-wiring-remove-source');
+    row.append(remove);host.append(row);
+  }
+  function wiringInput(){
+    const form=$('lkWiringForm');
+    const field=name=>form.querySelector('[name="'+name+'"]')?.value.trim()||'';
+    const group=(section,keys)=>Object.fromEntries(keys.map(k=>[k,field(section+'.'+k)]));
+    const sources=[...$('lkWiringSources').children].map(row=>{
+      const get=k=>row.querySelector('[data-wiring-source="'+k+'"]')?.value.trim()||'';
+      return {id:row.dataset.sourceId,kind:get('kind'),table:get('table'),joinKey:get('joinKey'),fields:get('fields')};
+    });
+    return {trace:group('trace',['event','eventCode','logLocation','recordTable','recordKey']),
+      routing:{...group('routing',['rule','destination']),policy:field('routing.policy')},
+      sources,metric:group('metric',['name','formula','timeField','slaTarget','dashboard']),
+      task:group('task',['board','condition','owner','action'])};
+  }
+  function openWiring(mid,nid){
+    if(blocked||locked){setMessage('当前是只读模式，请先解锁编辑。');return;}
+    const n=state.modules.find(m=>m.id===mid)?.nodes.find(x=>x.id===nid);
+    if(!n)return;
+    const saved=wiring.read(n);
+    if(saved.invalid){setMessage('节点存在异常历史配置，为防止覆盖已禁止编辑，请先导出备份。');return;}
+    wiringModuleId=mid;wiringNodeId=nid;
+    wiringReturnQuick=$('lkQuickDetailDialog').open;
+    closeQuickDetail();
+    const form=$('lkWiringForm');
+    const fill=(prefix,values)=>Object.entries(values).forEach(([key,val])=>{
+      const input=form.querySelector('[name="'+prefix+'.'+key+'"]');
+      if(input)input.value=typeof val==='string'?val:'';
+    });
+    fill('trace',saved.trace);fill('routing',saved.routing);
+    fill('metric',saved.metric);fill('task',saved.task);
+    form.querySelector('[name="routing.policy"]').value=wiring.POLICIES.includes(saved.routing.policy)?saved.routing.policy:'unknown';
+    $('lkWiringSources').replaceChildren();
+    saved.sources.forEach(appendWiringSource);
+    $('lkWiringDialog').showModal();
+  }
+  function closeWiring(){
+    $('lkWiringDialog').close();
+    if(wiringReturnQuick)showQuickDetail();
+    wiringReturnQuick=false;
+  }
+  $('lkWiringCancel').onclick=closeWiring;
+  $('lkWiringDialog').addEventListener('cancel',event=>{event.preventDefault();closeWiring();});
+  $('lkWiringAddSource').onclick=()=>appendWiringSource();
+  $('lkWiringForm').addEventListener('submit',event=>{
+    event.preventDefault();
+    if(blocked||locked)return;
+    const input=wiringInput(),module=wiringModuleId,id=wiringNodeId;
+    if(mutate(next=>wiring.update(next,module,id,input))){
+      $('lkWiringDialog').close();
+      moduleId=module;selectedId=id;render();
+      if(wiringReturnQuick)showQuickDetail();
+      wiringReturnQuick=false;
+      setMessage('节点信息/数据/SLA/任务连接已加入未保存草稿；未执行外部推送、数据库写入或任务创建。');
+    }else setMessage('连接配置未更新：请检查必填表名、字段长度、旧格式或重复项。');
+  });
   function openEditor(edit){
     if(blocked||locked)return;
     returnQuickAfterEdit=$('lkQuickDetailDialog').open;
@@ -670,6 +789,8 @@
     const b=event.target.closest('button[data-action]');
     if(!b)return;
     const type=b.dataset.action,id=b.dataset.id;
+    if(type==='wiring-remove-source'){b.closest('.lk-wiring-source-row')?.remove();return;}
+    if(type==='wiring-edit'){openWiring(b.dataset.module||moduleId,id);return;}
     if(type==='setup-row-delete'){b.closest('.lk-setup-row')?.remove();return;}
     if(type==='setup-go'){moduleId=id;tab='setup';render();return;}
     if(type==='setup-module'){openSetup(id||b.dataset.module);return;}

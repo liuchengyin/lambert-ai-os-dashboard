@@ -3,7 +3,7 @@
  */
 (function(host){
   'use strict';
-  const stagesAPI=host.LambertLogisticsStages,flow=host.LambertLogisticsFlow,setup=host.LambertLogisticsSetupV34,mini=host.LambertLogisticsV35;
+  const stagesAPI=host.LambertLogisticsStages,flow=host.LambertLogisticsFlow,setup=host.LambertLogisticsSetupV34,mini=host.LambertLogisticsV35,wiring=host.LambertLogisticsWiringV36;
   if(!stagesAPI||!flow)return;
   const el=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=text;return n;};
   const btn=(label,action,moduleId,stageId,disabled=false)=>{
@@ -132,7 +132,15 @@
             const step=byId.get(op.id);if(!step)return;
             step.dataset.stageId=stage.id;
             const button=step.querySelector('button[data-action="select-node"]');
-            if(button)button.dataset.stage=stage.id;
+            if(button){
+              button.dataset.stage=stage.id;
+              const progress=wiring?.progress(op);
+              if(progress){
+                const status=el('span','lk-wiring-indicator'+(progress.count?' is-ready':''),progress.invalid?'信息层待检查':('信息层 '+progress.count+'/'+progress.total));
+                status.title='查看操作信息流、日志、表、SLA 和任务配置';
+                button.append(status);
+              }
+            }
             const actions=step.querySelector('.lk-step-actions');if(actions)actions.remove();
             if(op.color)step.style.setProperty('--lk-node-accent',flow.color(op.color,'#222222'));
             if(op.note||op.tags?.length||op.operationCodes?.length){
