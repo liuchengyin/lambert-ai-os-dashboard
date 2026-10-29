@@ -62,4 +62,33 @@ check('unknown policy never claims outbound push',()=>{
  assert.equal(d.modules[0].nodes[0].infrastructure.sources.length,0);
  assert.equal(api.progress(d.modules[0].nodes[0]).count,3);
 });
+check('malformed legacy fields and half-specified old sources are protected',()=>{
+ const damaged=[
+  {trace:{event:123}},
+  {sources:[{id:'x'}]},
+  {routing:{policy:'not-real'}},
+  {sources:[{id:'x',kind:'OMS',table:'record'},{id:'x',kind:'EDI',table:'another'}]}
+ ];
+ for(const legacy of damaged){
+  const d=doc(),n=d.modules[0].nodes[0];n.infrastructure=legacy;
+  const before=JSON.stringify(d);
+  assert.equal(api.read(n).invalid,true);
+  assert.equal(api.progress(n).invalid,true);
+  assert.equal(api.update(d,'head','scan',input()),false);
+  assert.equal(JSON.stringify(d),before);
+ }
+});
+check('routing internal-only policy is a meaningful configured decision',()=>{
+ const n={infrastructure:{routing:{policy:'internal'}}};
+ assert.equal(api.progress(n).count,1);
+});
+check('explicitly clearing a known field is allowed but leaves custom extensions intact',()=>{
+ const d=doc(),p=input();
+ assert.equal(api.update(d,'head','scan',p),true);
+ d.modules[0].nodes[0].infrastructure.trace.unknown='keep';
+ p.trace.event='';
+ assert.equal(api.update(d,'head','scan',p),true);
+ assert.equal(d.modules[0].nodes[0].infrastructure.trace.event,'');
+ assert.equal(d.modules[0].nodes[0].infrastructure.trace.unknown,'keep');
+});
 console.log('V3.6 wiring model checks passed');

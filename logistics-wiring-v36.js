@@ -17,7 +17,28 @@
   const r=raw(node);
   if(node?.infrastructure!==undefined&&!r)return {invalid:true};
   if(r&&SECTIONS.some(k=>k!=='sources'&&r[k]!==undefined&&!isRecord(r[k])))return {invalid:true};
-  if(r&&r.sources!==undefined&&(!Array.isArray(r.sources)||r.sources.some(x=>!isRecord(x)||typeof x.id!=='string')))return {invalid:true};
+  if(r){
+   for(const [section,fields] of Object.entries(limits)){
+    if(!r[section])continue;
+    for(const [key,max] of Object.entries(fields)){
+     const val=r[section][key];
+     if(val!==undefined&&(typeof val!=='string'||val.length>max))return {invalid:true};
+    }
+   }
+   if(r.routing?.policy!==undefined&&!POLICIES.includes(r.routing.policy))return {invalid:true};
+   if(r.sources!==undefined){
+    if(!Array.isArray(r.sources))return {invalid:true};
+    const ids=new Set();
+    for(const source of r.sources){
+     if(!isRecord(source)||typeof source.id!=='string'||!source.id.trim()||
+       source.id.length>90||ids.has(source.id)||!KINDS.includes(source.kind)||
+       typeof source.table!=='string'||!source.table.trim()||source.table.length>180||
+       source.joinKey!==undefined&&(typeof source.joinKey!=='string'||source.joinKey.length>180)||
+       source.fields!==undefined&&(typeof source.fields!=='string'||source.fields.length>500))return {invalid:true};
+     ids.add(source.id);
+    }
+   }
+  }
   return {invalid:false,trace:r?.trace||{},routing:r?.routing||{},sources:r?.sources||[],metric:r?.metric||{},task:r?.task||{}};
  }
  const filled=section=>Object.values(section||{}).some(v=>typeof v==='string'&&v.trim());
