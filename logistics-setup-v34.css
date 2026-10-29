@@ -1,0 +1,55 @@
+/* Logistics V3.4: transportation modes and before-operation setup cards. */
+#logistics .lk-mode-toolbar{
+ display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+ margin:0 0 16px;padding:12px 15px;
+ border:1px solid #e6d8f1;background:#faf7ff;border-radius:12px;
+}
+#logistics .lk-mode-toolbar strong{font-size:14px;color:#62438a}
+#logistics .lk-mode-toolbar span{font-size:12px;color:#84778f;margin-right:auto}
+#logistics .lk-mode-toolbar button{
+ font-size:12px;font-weight:650;padding:8px 13px;border-radius:9px;
+ color:#6d5096;border:1px solid #dac6eb;background:#fff;
+ box-shadow:0 1px 4px rgba(108,73,151,.06);
+}
+#logistics .lk-mode-toolbar button:hover:not(:disabled){border-color:#9673c9;background:#f3ebfd}
+#logistics .lk-mode-toolbar button:disabled{opacity:.43;cursor:not-allowed}
+#logistics .lk-setup-button{color:#70539b!important;background:#f7f0ff!important;border-color:#e0cff4!important}
+#logistics .lk-setup-summary{
+ background:#fcfaff!important;border:1px solid #e9dff4;border-radius:9px;
+ padding:9px 12px;margin:8px 13px 11px;
+ font-size:12px;color:#59456d;
+}
+#logistics .lk-setup-summary summary{cursor:pointer;font-weight:700}
+#logistics .lk-setup-stage-summary{margin:8px 8px}
+#logistics .lk-setup-badges{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+#logistics .lk-setup-badge{
+ display:inline-flex;align-items:center;max-width:100%;overflow-wrap:anywhere;
+ background:#fff;border:1px solid #e2d6ee;padding:6px 9px;
+ border-radius:8px;font-size:11px;color:#665277;
+}
+#logistics .lk-ov-prereq{font-size:11px;margin:7px 0;border-top:1px solid #eee4f5;padding-top:7px}
+#logistics .lk-ov-prereq summary{font-weight:650;cursor:pointer;color:#664c83}
+#logistics .lk-setup-dialog{width:min(760px,calc(100vw - 25px));max-height:88vh;overflow:auto}
+#logistics .lk-setup-dialog h3{font-size:19px;color:#423151}
+#logistics .lk-setup-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 0}
+#logistics .lk-setup-actions button{
+ border:1px solid #d8c2ed;border-radius:8px;background:#f8f2ff;color:#6b5195;
+ font-size:13px;font-weight:650;padding:9px 13px;
+}
+#logistics .lk-setup-row{
+ display:grid;grid-template-columns:minmax(110px,.85fr) minmax(135px,1.2fr);
+ gap:7px;padding:10px;margin:9px 0;border:1px solid #e8dff1;
+ border-radius:10px;background:#fbf9fe;align-items:center;
+}
+#logistics .lk-setup-row input,#logistics .lk-setup-row select{
+ box-sizing:border-box;min-width:0;width:100%;background:white;
+ padding:9px 10px;font-size:13px;color:#493859;border:1px solid #e1d5ea;
+ border-radius:8px;
+}
+#logistics .lk-setup-row-delete{border:1px solid #ebced6;background:#fff;color:#a45a6b;border-radius:8px;padding:8px;font-size:12px}
+#logistics [hidden]{display:none!important}
+@media(max-width:660px){
+ #logistics .lk-setup-row{grid-template-columns:minmax(0,1fr)}
+ #logistics .lk-mode-toolbar{padding:10px}
+ #logistics .lk-mode-toolbar span{flex-basis:100%}
+}

@@ -1,0 +1,61 @@
+name: Logistics V3.6 operation to information to dashboard wiring
+on:
+  push:
+    branches: [feat/logistics-infra-wiring-v36-20261029]
+    paths:
+      - '.github/workflows/logistics-v35-ci.yml'
+      - 'logistics-v35-model.js'
+      - 'logistics-wiring-v36.js'
+      - 'logistics-wiring-v36.css'
+      - 'tests/logistics-wiring-v36-model.test.mjs'
+      - 'logistics-trigger-v33.js'
+      - 'logistics-canvas-model.js'
+      - 'tests/logistics-v33-trigger-model.test.mjs'
+      - 'tests/logistics-canvas-logic.test.mjs'
+      - 'logistics-v35.css'
+      - 'logistics-stage-view.js'
+      - 'logistics-knowledge-v1.js'
+      - 'logistics-overview.js'
+      - 'index.html'
+      - 'tests/logistics-v35-model.test.mjs'
+      - 'tests/logistics-v35-ui.mjs'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and pure model safety
+        run: |
+          node --check logistics-knowledge-v1.js
+          node --check logistics-stage-view.js
+          node --check logistics-overview.js
+          node --check logistics-v35-model.js
+          node --check logistics-wiring-v36.js
+          node --check logistics-trigger-v33.js
+          node --check logistics-canvas-model.js
+          node tests/logistics-v35-model.test.mjs
+          node tests/logistics-wiring-v36-model.test.mjs
+          node tests/logistics-canvas-logic.test.mjs
+          node tests/logistics-stage-model.test.mjs
+          node tests/logistics-v34-setup-model.test.mjs
+          node tests/logistics-v33-trigger-model.test.mjs
+          node tests/logistics-version-model.test.mjs
+          node tests/logistics-v31-model.test.mjs
+          node tests/logistics-flow-model.test.mjs
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Browser test flow editor, setup tool and release
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/logistics-v35-server.log 2>&1 &
+          sleep 2
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-v35-ui.mjs

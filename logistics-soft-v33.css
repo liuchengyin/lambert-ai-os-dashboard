@@ -1,0 +1,188 @@
+/* V3.3 logistics soft pastel UI. Scoped to the knowledge base only. */
+#logistics {
+ --lk-v33-purple:#8058b5;
+ --lk-v33-purple-light:#eee5fb;
+ --lk-v33-shadow:0 4px 18px rgba(115,78,169,.13),0 1px 4px rgba(115,78,169,.09);
+}
+#logistics .lk-page{
+ background:#fbfaff!important;
+ color:#302c39!important;
+}
+#logistics .lk-canvas .lk-canvas-block{
+ background:#fff!important;
+ border-color:#e6ddf1!important;
+ border-top:3px solid var(--lk-module-accent,#9f82c8)!important;
+ box-shadow:var(--lk-v33-shadow)!important;
+}
+#logistics .lk-canvas .lk-canvas-block.is-active{
+ border-color:#bda1de!important;
+ box-shadow:0 0 0 1px rgba(155,113,206,.19),0 6px 22px rgba(113,69,172,.17)!important;
+}
+#logistics .lk-canvas-block-head{
+ background:#fdfaff!important;
+ border-bottom-color:#e9e1f2!important;
+}
+#logistics .lk-canvas .lk-module-main{
+ color:#392b52!important;
+}
+#logistics .lk-substage{
+ background:#f6f2ff!important;
+ border:1px solid #e8dbf7!important;
+ border-top:3px solid var(--lk-stage-accent,#a381c9)!important;
+ box-shadow:0 3px 12px rgba(113,73,174,.09)!important;
+}
+#logistics .lk-substage:nth-of-type(4n+2){background:#f1f7ff!important;border-color:#dce8f6!important}
+#logistics .lk-substage:nth-of-type(4n+3){background:#f1faf5!important;border-color:#dbeee4!important}
+#logistics .lk-substage:nth-of-type(4n+4){background:#fff8f1!important;border-color:#f4e5d4!important}
+#logistics .lk-substage-head{
+ background:transparent!important;
+ border-bottom:1px solid rgba(138,113,165,.16)!important;
+}
+#logistics .lk-substage .lk-stage-title{
+ color:#4b3564!important;
+ font-size:15px!important;
+ font-weight:750!important;
+}
+#logistics .lk-substage .lk-stage-actions button{
+ background:rgba(255,255,255,.82)!important;
+ border:1px solid rgba(153,126,181,.19)!important;
+ border-radius:8px!important;
+ color:#574968!important;
+}
+#logistics .lk-substage .lk-stage-actions button:disabled{opacity:.5}
+#logistics .lk-stage-grip{color:#79648f!important}
+#logistics .lk-flow-main .lk-step,#logistics .lk-step{
+ background:#fff!important;
+ border:1px solid #e3dcf0!important;
+ border-left:4px solid var(--lk-node-accent,#b5a0d0)!important;
+ box-shadow:0 2px 7px rgba(119,82,158,.065)!important;
+}
+#logistics .lk-flow-arrow{
+ color:#907bb2!important;
+}
+#logistics .lk-node-quick-actions button.lk-edit-name{
+ background:#7954b1!important;
+ color:white!important;
+ border-color:#7954b1!important;
+}
+#logistics .lk-node-quick-actions button.lk-edit-name:hover:not(:disabled){
+ background:#65439e!important;
+}
+#logistics #lkQuickDetailDialog,#logistics .lk-dialog{
+ border-color:#e1d7ec!important;
+ box-shadow:0 16px 52px rgba(86,50,137,.21)!important;
+}
+#logistics .lk-version-actions #lkUnlock:not(:disabled),
+#logistics .lk-version-actions #lkPublish:not(:disabled){
+ background:#7954b1!important;
+ border-color:#7954b1!important;
+ color:#fff!important;
+}
+#logistics .lk-tabs button[aria-selected="true"]{
+ color:#664394!important;
+ background:#f7f1ff!important;
+ border-color:#a585cd!important;
+}
+#logistics .lk-trigger-field{
+ border:1px solid #e4d9ef;
+ background:#faf7ff;
+ border-radius:12px;
+ padding:13px;
+ margin:8px 0;
+}
+#logistics .lk-trigger-heading{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ flex-wrap:wrap;
+ gap:8px;
+ color:#48365d;
+ font-size:14px;
+}
+#logistics .lk-trigger-heading button{
+ background:white;
+ border:1px solid #cdb6e8;
+ border-radius:8px;
+ color:#754fa0;
+ font-size:13px;
+ padding:8px 11px;
+}
+#logistics .lk-form-hint{
+ color:#80758b;
+ font-size:12px;
+ margin:7px 0;
+ line-height:1.6;
+}
+#logistics .lk-trigger-row{
+ display:flex;
+ align-items:center;
+ gap:8px;
+ margin:10px 0 0;
+}
+#logistics .lk-trigger-row input{
+ flex:1;
+ min-width:0;
+ box-sizing:border-box;
+ padding:11px 12px;
+ background:white;
+ border:1px solid #d7cde2;
+ border-radius:8px;
+ font-size:14px;
+ color:#30283a;
+}
+#logistics .lk-trigger-row-delete{
+ flex:0 0 auto;
+ padding:9px 10px;
+ background:#fff!important;
+ color:#966074!important;
+ border:1px solid #e1c7d2!important;
+ border-radius:8px;
+}
+#logistics .lk-event-bind,#logistics .lk-node-appearance{
+ border:1px solid #e9e0ef;
+ border-radius:11px;
+ background:#fff;
+ padding:12px 14px;
+ margin:8px 0;
+}
+#logistics .lk-event-bind summary,#logistics .lk-node-appearance summary{
+ color:#664c7e;
+ font-weight:650;
+ cursor:pointer;
+ font-size:14px;
+}
+#logistics .lk-event-bind label,#logistics .lk-node-appearance label{margin-top:12px}
+#logistics #lkEventSearch:disabled{color:#96899c;background:#faf9fc;cursor:not-allowed}
+#logistics #lkExistingCodes{font-size:12px;color:#6c6280;line-height:1.7}
+#logistics .lk-trigger-summary{
+ background:#f8f4ff;
+ border:1px solid #e7daef;
+ border-radius:12px;
+ padding:12px 15px;
+ margin:10px 0;
+}
+#logistics .lk-trigger-summary h4{
+ font-size:14px;
+ color:#5e4783;
+ margin:0 0 5px;
+}
+#logistics .lk-trigger-list{
+ margin:6px 0;
+ padding-left:22px;
+ font-size:14px;
+ color:#40344f;
+ line-height:1.65;
+}
+#logistics .lk-trigger-list li{padding:3px 0}
+#logistics .lk-ov-stage{
+ background:#f7f4fc!important;
+ border-color:#e8def2!important;
+ box-shadow:0 2px 9px rgba(116,83,155,.08)!important;
+}
+#logistics .lk-ov-stage:nth-of-type(4n+2){background:#f1f7ff!important}
+#logistics .lk-ov-stage:nth-of-type(4n+3){background:#f1faf6!important}
+#logistics .lk-ov-stage:nth-of-type(4n+4){background:#fff8f2!important}
+@media(max-width:700px){
+ #logistics .lk-trigger-row{flex-wrap:wrap}
+ #logistics .lk-trigger-row input{flex-basis:100%}
+}

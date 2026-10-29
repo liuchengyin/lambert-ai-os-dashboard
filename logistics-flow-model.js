@@ -3,9 +3,9 @@
  */
 (function(host){
  'use strict';
- const DEFAULTS=Object.freeze({'仓':'#477DBD','干':'#7962BE','关':'#C08C36','配':'#389482','头程':'#477DBD','干线':'#7962BE','关务':'#C08C36','尾程':'#389482'});
- const color=(value,fallback='#7962BE')=>typeof value==='string'&&/^#[0-9a-fA-F]{6}$/.test(value)?value.toUpperCase():fallback;
- const moduleColor=m=>color(m?.color,DEFAULTS[m?.category]||'#7962BE');
+ const DEFAULTS=Object.freeze({'仓':'#242424','干':'#242424','关':'#242424','配':'#242424','头程':'#242424','干线':'#242424','关务':'#242424','尾程':'#242424'});
+ const color=(value,fallback='#242424')=>typeof value==='string'&&/^#[0-9a-fA-F]{6}$/.test(value)?value.toUpperCase():fallback;
+ const moduleColor=m=>color(m?.color,DEFAULTS[m?.category]||'#242424');
  const stageColor=(m,s)=>color(s?.color,moduleColor(m));
  const branches=m=>Array.isArray(m?.branches)?m.branches.filter(x=>x&&typeof x.from==='string'&&typeof x.to==='string'&&typeof x.id==='string'&&x.from!==x.to):[];
  const nodeIn=m=>new Set((m?.nodes||[]).map(n=>n?.id));

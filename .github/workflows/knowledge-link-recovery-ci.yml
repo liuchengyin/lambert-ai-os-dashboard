@@ -1,0 +1,43 @@
+name: Common Links Recovery + V3.6 Release Safety
+on:
+  push:
+    branches: [fix/restore-knowledge-links-and-release-v36-20261029]
+    paths:
+      - 'knowledge-links.js'
+      - 'knowledge-itab-v2.css'
+      - 'index.html'
+      - 'lib/link-recovery.js'
+      - 'tests/link-recovery-model.test.mjs'
+      - 'tests/link-recovery-ui.mjs'
+      - '.github/workflows/knowledge-link-recovery-ci.yml'
+permissions:
+  contents: read
+jobs:
+  recovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 17
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Static safety and recovery rules
+        run: |
+          node --check knowledge-links.js
+          node --check lib/link-recovery.js
+          node --check logistics-knowledge-v1.js
+          node tests/link-recovery-model.test.mjs
+          node tests/logistics-wiring-v36-model.test.mjs
+      - name: Install browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Real Chromium recovery and existing common links UI
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/lambert-links-server.log 2>&1 &
+          sleep 2
+          TEST_BASE_URL=http://127.0.0.1:8765/ node tests/link-recovery-ui.mjs
+          TEST_BASE_URL=http://127.0.0.1:8765/ node tests/common-links-ui.mjs
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-v35-ui.mjs

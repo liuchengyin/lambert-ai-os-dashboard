@@ -1,10 +1,18 @@
 // Common links dashboard: iTab-style launcher + editable groups + wallpaper
 (function(){
   const section=document.getElementById('knowledge');if(!section)return;
-  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261019-prod-links1';document.head.appendChild(l)}
+  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261029-restore1';document.head.appendChild(l)}
   const navBtn=document.querySelector('nav button[data-v="knowledge"]');if(navBtn)navBtn.textContent='常用链接';
   const STORAGE='knowledge_link_library_v1',PERSONAL='knowledge_link_personal_v1',ACTIVE_TAB='knowledge_active_tab_v1',LOCK='knowledge_link_locked_v1',WALL='knowledge_wallpaper_v1';
-  const get=(k,d)=>{try{return JSON.parse((window.LambertPrivateStorage||localStorage).getItem(k))??d}catch{return d}},set=(k,v)=>(window.LambertPrivateStorage||localStorage).setItem(k,JSON.stringify(v));
+  let libraryReadFailed=false;
+  const get=(k,d)=>{
+    try{return JSON.parse((window.LambertPrivateStorage||localStorage).getItem(k))??d}
+    catch(error){if(k===STORAGE||k===PERSONAL)libraryReadFailed=true;return d}
+  };
+  const set=(k,v)=>{
+    if(libraryReadFailed)throw Error('link_library_read_failed');
+    return (window.LambertPrivateStorage||localStorage).setItem(k,JSON.stringify(v));
+  };
   const esc=v=>String(v||'').replace(/[&<>'\"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[ch]));
   const id=()=>`link_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,gid=()=>`group_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
   const defaults=[
@@ -27,6 +35,7 @@
 
   section.innerHTML=`<div class="knowledge-page">
     <div class="knowledge-head"><div><h2>常用链接</h2><p>个人快捷启动台</p></div><div class="knowledge-head-actions"><button id="knowledgeTabSwitch" class="knowledge-tab-switch" type="button" aria-label="切换链接分类">切换</button><button id="knowledgeWallpaper" class="knowledge-wallpaper-btn" type="button">壁纸</button><button id="knowledgeLock" class="knowledge-lock"></button></div></div>
+    <div class="knowledge-recovery"><button type="button" id="knowledgeRecoverLocal">检查并恢复旧链接</button><span id="knowledgeRecoveryStatus" role="status" aria-live="polite"></span></div>
     <div class="knowledge-searchbar"><input id="knowledgeSearch" placeholder="搜索 / 粘贴网址，回车快速添加"><button id="knowledgeQuickAdd" type="button">添加链接</button><button id="knowledgeManualCreate" type="button" hidden>手动创建</button><span id="knowledgeSearchSpinner" class="knowledge-spinner" aria-label="识别中" hidden></span></div>
     <div id="knowledgeEditBar" class="knowledge-editbar"><button id="knowledgeAddGroup" type="button">+ 添加分组</button><span>编辑模式：可改名、拖动分组、编辑链接</span></div>
     <div class="knowledge-library-indicator"><span id="knowledgeLibraryTag" class="knowledge-library-tag" data-library="common">常用</span></div>
@@ -35,6 +44,45 @@
   </div>`;
 
   const tabBtn=document.getElementById('knowledgeTabSwitch'),libraryTag=document.getElementById('knowledgeLibraryTag'),lockBtn=document.getElementById('knowledgeLock'),wallBtn=document.getElementById('knowledgeWallpaper'),search=document.getElementById('knowledgeSearch'),root=document.getElementById('knowledgeGroups'),editBar=document.getElementById('knowledgeEditBar'),quickBtn=document.getElementById('knowledgeQuickAdd'),manualBtn=document.getElementById('knowledgeManualCreate'),searchSpinner=document.getElementById('knowledgeSearchSpinner');
+  const recoveryStatus=document.getElementById('knowledgeRecoveryStatus');
+  if(libraryReadFailed){
+    recoveryStatus.textContent='当前账号链接库读取失败；为保护旧数据，已禁止修改。请检查账号登录及同步状态。';
+  }
+  document.getElementById('knowledgeRecoverLocal').onclick=()=>{
+    if(!window.LambertLinkRecovery){recoveryStatus.textContent='恢复工具未加载，未修改链接。';return;}
+    if(libraryReadFailed){recoveryStatus.textContent='链接数据读取异常，已拒绝覆盖。请先解决账号同步问题。';return;}
+    const api=window.LambertLinkRecovery;
+    const store=window.LambertPrivateStorage||localStorage;
+    const current={},raw={};
+    try{
+      for(const key of api.KEYS){
+        const text=store.getItem(key);
+        raw[key]=text;
+        current[key]=text===null?null:JSON.parse(text);
+        if(current[key]!==null&&!api.validGroups(current[key]))throw Error('当前链接库格式不完整');
+      }
+      const sources=api.findSources(localStorage,window.LambertPrivateStorage?.owner||'');
+      const plan=api.preview(current,sources);
+      if(!plan.total){
+        recoveryStatus.textContent='未发现当前浏览器中可合并的旧链接；原数据未修改。请检查其他设备的浏览器或已有备份。';
+        return;
+      }
+      const breakdown='常用 '+plan.count[STORAGE].links+' 条，个人 '+plan.count[PERSONAL].links+' 条';
+      if(!window.confirm('找到可恢复的旧链接：'+breakdown+'。将先备份当前链接，再将缺少的链接合并（不会删除已有链接）。确认恢复吗？'))return;
+      // The local backup is durable before any account-cloud write begins.
+      const backupKey='lambert_link_recovery_backup_v1:'+new Date().toISOString()+':'+crypto.randomUUID();
+      localStorage.setItem(backupKey,JSON.stringify({
+        format:'lambert-link-recovery-backup-v1',createdAt:new Date().toISOString(),
+        owner:window.LambertPrivateStorage?.owner||'',original:raw
+      }));
+      if(!window.LambertData?.writeMany)throw Error('数据写入服务未准备好');
+      window.LambertData.writeMany(plan.updates);
+      groups=loadGroups();query='';search.value='';render();
+      recoveryStatus.textContent='已恢复 '+plan.total+' 条旧链接（'+breakdown+'）。原内容未删除，恢复前备份已保存在本机；登录账号的云端同步状态请在账户菜单核对。';
+    }catch(error){
+      recoveryStatus.textContent='恢复已停止，未自动清空原数据。请检查登录、存储空间或同步冲突后再重试。';
+    }
+  };
   const applyWallpaper=url=>{if(url){section.style.setProperty('--knowledge-wallpaper',`url("${url.replace(/"/g,'\\\"')}")`)}else section.style.removeProperty('--knowledge-wallpaper')};
   applyWallpaper(get(WALL,''));
 

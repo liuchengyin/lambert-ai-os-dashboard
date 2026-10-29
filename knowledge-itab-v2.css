@@ -135,3 +135,8 @@ body.knowledge-unlocked #knowledge .knowledge-card-actions{top:auto;right:auto;j
 #knowledge .knowledge-library-tag{display:inline-flex;align-items:center;gap:8px;min-height:25px;padding:3px 2px;color:#334155;font-size:13px;font-weight:700;line-height:1.2}
 #knowledge .knowledge-library-tag::before{content:'';display:block;width:15px;height:19px;flex:0 0 15px;background:#1296db;clip-path:polygon(0 0,100% 0,100% 100%,50% 70%,0 100%);border-radius:2px 2px 0 0}
 @media(max-width:640px){#knowledge .knowledge-head-actions{gap:6px}#knowledge .knowledge-tab-switch{min-width:56px;padding:0 9px;font-size:12px}}
+
+/* Recovery is user-initiated: never overwrite links during initialization. */
+#knowledge .knowledge-recovery{display:flex;align-items:center;gap:11px;flex-wrap:wrap;padding:7px 2px 13px}
+#knowledge .knowledge-recovery button{border:1px solid #d6d8eb;background:#f8f9ff;border-radius:8px;color:#58668b;padding:7px 11px;font-size:12px;cursor:pointer}
+#knowledge #knowledgeRecoveryStatus{font-size:12px;line-height:1.7;color:#6c748a;white-space:normal;overflow-wrap:anywhere}

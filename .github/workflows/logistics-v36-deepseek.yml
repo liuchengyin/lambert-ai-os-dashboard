@@ -1,0 +1,36 @@
+name: Logistics V3.6 bounded DeepSeek Flash safety audit
+on:
+  push:
+    branches: [feat/logistics-infra-wiring-v36-20261029]
+    paths: ['.github/workflows/logistics-v36-deepseek.yml']
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Estimate budget without model call
+        run: node scripts/codex/model-assist.mjs --provider deepseek --task review --prompt-file docs/logistics-v36-deepseek-prompt.md --file logistics-wiring-v36.js --file tests/logistics-wiring-v36-model.test.mjs
+      - name: DeepSeek Flash infrastructure data safety review
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: node scripts/codex/model-assist.mjs --provider deepseek --task review --prompt-file docs/logistics-v36-deepseek-prompt.md --file logistics-wiring-v36.js --file tests/logistics-wiring-v36-model.test.mjs --run
+      - name: Print answer and exact usage
+        if: success()
+        run: |
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const dir='.codex-local/assist';
+          const reports=fs.readdirSync(dir).filter(f=>f.endsWith('.json')&&f!=='ledger.json').map(f=>JSON.parse(fs.readFileSync(dir+'/'+f,'utf8')));
+          const r=reports.find(x=>x.provider==='deepseek'&&x.task==='review');
+          if(!r)throw Error('missing DeepSeek report');
+          console.log(JSON.stringify({model:r.reportedModel,usage:r.usage,retries:r.retries}));
+          console.log('DEEPSEEK_AUDIT_START\n'+r.output.slice(0,3600)+'\nDEEPSEEK_AUDIT_END');
+          JS

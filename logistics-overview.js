@@ -1,7 +1,7 @@
 /* Read-only logistics release overview. Macro / full-route modes share one snapshot. */
 (function(host){
  'use strict';
- const stages=host.LambertLogisticsStages,flow=host.LambertLogisticsFlow;
+ const stages=host.LambertLogisticsStages,flow=host.LambertLogisticsFlow,setup=host.LambertLogisticsSetupV34,mini=host.LambertLogisticsV35;
  const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e;};
  function button(label,m,n,open){
    const b=el('button','lk-ov-link',label);b.type='button';b.title='查看模块操作详情';
@@ -9,6 +9,10 @@
  }
  function render(container,release,mode,open){
    const data=release?.data;
+   // Capture native details state before replacing the overview DOM.
+   // This is transient view state and never enters published snapshots.
+   const expanded=new Map([...container.querySelectorAll('.lk-ov-transport-family .lk-trunk-route')]
+     .map(lane=>[lane.dataset.transportMode,lane.open]));
    container.replaceChildren();
    if(!data?.modules){container.append(el('p','lk-empty','没有可展示的已发布物流线路'));return;}
    const modules=data.modules.filter(m=>m.enabled!==false);
@@ -21,9 +25,18 @@
      const section=el('section','lk-ov-module');
      section.style.setProperty('--lk-ov-color',flow.moduleColor(m));
      const title=el('header','lk-ov-module-head');
-     title.append(el('span','lk-ov-category',m.category||'业务'),button(m.name,m,null,open));
+     const transportMode=setup?.infer(m);
+     title.append(el('span','lk-ov-category',m.category+(transportMode?' · '+setup.MODES[transportMode]:'')),button(m.name,m,null,open));
      title.append(el('small','',m.nodes.length+' 个操作'));
      section.append(title);
+     const related=setup?.list(m)||[];
+     if(related.length){
+       const detail=el('details','lk-ov-prereq');
+       detail.append(el('summary','','前置配置 · '+related.filter(item=>item.role==='prerequisite').length+' 项'));
+       const content=el('div','lk-setup-badges');
+       related.forEach(item=>content.append(el('span','lk-setup-badge',(item.role==='reference'?'记录：':'')+item.name+' · '+(item.value||'待配置'))));
+       detail.append(content);section.append(detail);
+     }
      const groups=stages.stages(m);
      if(mode==='macro'){
        section.append(el('p','lk-ov-summary',groups.map(s=>s.name).join(' → ')));
@@ -33,6 +46,14 @@
        groups.forEach((stage,si)=>{
          const group=el('section','lk-ov-stage');group.style.setProperty('--lk-ov-stage-color',flow.stageColor(m,stage));
          group.append(el('h4','',stage.name));
+         const subRelated=setup?.list(stage)||[];
+         if(subRelated.length){
+           const detail=el('details','lk-ov-prereq');
+           detail.append(el('summary','','前置配置 · '+subRelated.filter(item=>item.role==='prerequisite').length+' 项'));
+           const content=el('div','lk-setup-badges');
+           subRelated.forEach(item=>content.append(el('span','lk-setup-badge',(item.role==='reference'?'记录：':'')+item.name+' · '+(item.value||'待配置'))));
+           detail.append(content);group.append(detail);
+         }
          const ops=el('div','lk-ov-ops');
          const members=m.nodes.filter(n=>stages.stageFor(m,n)===stage.id);
          const main=members.filter(n=>!flow.isBranchOnly(m,n.id));
@@ -56,8 +77,29 @@
        });
        section.append(lanes);
      }
-     line.append(section);
-     if(index<modules.length-1)line.append(el('div','lk-ov-module-arrow','↓'));
+     if(m.category==='干'&&transportMode&&mini){
+       if(!line._trunkLanes){
+         const family=el('section','lk-trunk-family lk-ov-transport-family');
+         family.append(el('h3','lk-trunk-title','干线 · 陆运 / 空运 / 海运'));
+         const grid=el('div','lk-trunk-grid');
+         const lanes={};
+         mini.ORDER.forEach(key=>{
+           const lane=el('details','lk-trunk-route');
+           lane.dataset.transportMode=key;
+           lane.open=expanded.has(key)?expanded.get(key):key==='road';
+           const toggle=el('summary','lk-trunk-route-toggle');
+           toggle.append(el('h4','lk-trunk-route-title',mini.LABELS[key]+'干线'));
+           const body=el('div','lk-trunk-route-body');
+           lane.append(toggle,body);
+           lanes[key]=body;grid.append(lane);
+         });
+         family.append(grid);line._trunkLanes=lanes;line.append(family);
+       }
+       line._trunkLanes[transportMode].append(section);
+     }else{
+       line.append(section);
+       if(index<modules.length-1)line.append(el('div','lk-ov-module-arrow','↓'));
+     }
    });
    container.append(line);
    container.append(el('p','lk-ov-disclaimer','仅展示已发布版本；模块编辑与草稿变更不会立即影响本页。流程数据需与真实业务 SOP 核实。'));
