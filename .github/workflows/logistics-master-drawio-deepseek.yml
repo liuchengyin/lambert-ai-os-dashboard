@@ -1,0 +1,35 @@
+name: DeepSeek implements drawio bridge module
+on:
+  push:
+    branches: [feat/logistics-master-drawio-full-20261030]
+    paths:
+      - '.github/workflows/logistics-master-drawio-deepseek.yml'
+permissions:
+  contents: read
+jobs:
+  draft:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: DeepSeek Flash draft communication adapter
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: node scripts/codex/model-assist.mjs --provider deepseek --task draft --prompt-file docs/logistics-master-drawio-prompt.md --run
+      - name: Print model-produced code and usage
+        run: |
+          node --input-type=module - <<'JS'
+          import fs from 'node:fs';
+          const files=fs.readdirSync('.codex-local/assist').filter(f=>f.endsWith('.json')&&f!=='ledger.json');
+          const r=files.map(f=>JSON.parse(fs.readFileSync('.codex-local/assist/'+f,'utf8'))).find(r=>r.provider==='deepseek'&&r.task==='draft');
+          if(!r)throw Error('draft_not_generated');
+          console.log('DEEPSEEK_DRAFT_USAGE',JSON.stringify(r.usage));
+          console.log('DEEPSEEK_DRAFT_BEGIN');
+          console.log(r.output);
+          console.log('DEEPSEEK_DRAFT_END');
+          JS
