@@ -82,7 +82,7 @@ export function addTracks(db,entries){
   });
 }
 export function updateTrack(db,id,patch){
-  const fields=['title','collection','note','loop','a','b','nativeReady','completed','listenedSeconds'];
+  const fields=['title','collection','note','loop','a','b','nativeReady','completed','listenedSeconds','subtitlesVisible'];
   return transaction(db,['tracks'],'readwrite',tx=>{
     const store=tx.objectStore('tracks');store.get(id).onsuccess=e=>{
       if(!e.target.result){tx.abort();return;}
