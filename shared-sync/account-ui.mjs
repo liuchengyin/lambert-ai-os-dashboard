@@ -165,7 +165,20 @@ async function prepareCloudAction(){
   const session=await account.session();if(session?.user?.id!==current.userId||!session.access_token)throw Error('账号已变化，请重新打开复盘');
   return {accessToken:session.access_token};
 }
-window.LambertAccount={open,ready,status,statusDetail,prepareCloudAction};if(entry)entry.onclick=open;
+async function mediaContext(){
+  await ready;
+  const owner=window.LambertPrivateStorage?.owner;
+  if(!account||!owner)throw Error('请先登录账户以保存到云端');
+  window.LambertPrivateStorage.assertOwner();
+  const session=await account.session();
+  if(session?.user?.id!==owner)throw Error('账户已变化，请重新打开页面');
+  const {data,error}=await account.client.auth.getUser(session.access_token);
+  if(error||data?.user?.id!==owner)throw Error('登录已过期，请重新登录');
+  const token=session.access_token;
+  // A pinned client prevents an in-flight upload from following an account switch.
+  return {userId:owner,client:createClient(config.url,config.publishableKey,{accessToken:async()=>token})};
+}
+window.LambertAccount={open,ready,status,statusDetail,prepareCloudAction,mediaContext};if(entry)entry.onclick=open;
 async function start(){
   try{
     try{const response=await fetch(configUrl,{cache:'no-store',credentials:'omit',signal:AbortSignal.timeout(12000)});if(!response.ok)throw Error('config_failed');config=await response.json();localStorage.setItem('lambert_public_config_v1',JSON.stringify(config));}
