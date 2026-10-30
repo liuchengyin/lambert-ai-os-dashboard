@@ -8,6 +8,7 @@ import org.json.JSONObject;
 final class AudioBridge {
  private final Activity activity;private final AudioFiles files;
  AudioBridge(Activity a){activity=a;files=new AudioFiles(a);}
+ @JavascriptInterface public boolean supportsSubtitlePicker(){return true;}
  @JavascriptInterface public void setOwner(String owner){if(!AudioFiles.validOwner(owner))return;files.owner(owner);activity.runOnUiThread(()->AudioPlaybackService.changeOwner(owner));}
  @JavascriptInterface public boolean hasFile(String owner,String id){try{return files.file(owner,id).isFile();}catch(Exception e){return false;}}
  @JavascriptInterface public String beginImport(String owner,String id,long size){try{return files.begin(owner,id,size);}catch(Exception e){return "";}}

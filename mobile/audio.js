@@ -9,7 +9,7 @@ root.innerHTML=`<div class="audio-head"><div><h1>音频</h1></div><label class="
 <div class="audio-options"><label>倍速 <select data-rate aria-label="音频倍速"><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option><option value="2">2×</option></select></label><label>播放方式 <select data-loop aria-label="循环方式"><option value="single">单条循环</option><option value="all">整套循环</option><option value="ab">A–B 片段循环</option><option value="off">播完暂停</option></select></label></div>
 <div class="audio-ab"><button type="button" data-a>设 A 起点</button><button type="button" data-b>设 B 终点</button><span class="audio-help" data-ab>尚未设置片段</span></div><p class="audio-status" role="status" aria-live="polite">正在准备音频库…</p></section>
 <details class="audio-card audio-edit"><summary>备注与标题</summary><label>音频标题<input type="text" maxlength="200" data-title aria-label="音频标题" disabled></label><label>所属整套<input type="text" maxlength="100" data-collection aria-label="所属整套" value="摩登家庭"></label><label>我的备注<textarea data-note maxlength="20000" placeholder="没听懂的原句、发音、自己的理解…" aria-label="我的备注" disabled></textarea></label><button type="button" class="audio-save" disabled>保存标题和备注</button></details>
-<section class="audio-card"><div class="audio-library-heading"><h2>我的音频 <span data-count>0 / 200</span></h2><select class="audio-library-filter" aria-label="筛选整套"><option value="">全部整套</option></select></div><div data-library></div></section><div class="audio-subtitle-tools"><label class="audio-subtitle-import">导入字幕<input type="file" accept=".srt,.vtt,.lrc" aria-label="导入英文字幕"></label><span data-subtitle-info></span></div>`;
+<section class="audio-card"><div class="audio-library-heading"><h2>我的音频 <span data-count>0 / 200</span></h2><select class="audio-library-filter" aria-label="筛选整套"><option value="">全部整套</option></select></div><div data-library></div></section><div class="audio-subtitle-tools"><label class="audio-subtitle-import">导入字幕<input type="file" accept=".srt,.vtt,.lrc" aria-label="导入英文字幕"></label><details class="audio-subtitle-paste"><summary>粘贴字幕</summary><select aria-label="字幕格式"><option value="srt">SRT</option><option value="vtt">VTT</option><option value="lrc">LRC</option></select><textarea aria-label="字幕内容" placeholder="粘贴带时间戳的字幕内容"></textarea><button type="button" data-save-subtitle>保存字幕</button><p data-paste-status role="status"></p></details><span data-subtitle-info></span></div>`;
 document.body.append(root);
 const $=s=>root.querySelector(s);let audio=document.createElement('audio');audio.preload='metadata';audio.hidden=true;document.body.append(audio);
 let subtitleModule,subtitleRows=[],subtitleIndex=-1,subtitleLoad=0;
@@ -49,11 +49,23 @@ async function loadSubtitles(id){
  const load=++subtitleLoad;subtitleRows=[];renderSubtitles();$('[data-subtitle-info]').textContent='';
  try{subtitleModule=await import('../shared-sync/audio-subtitles.mjs');const row=await store.readTranscript(db,id);assertOwner();if(load!==subtitleLoad||current?.id!==id)return;subtitleRows=row?.cues||[];renderSubtitles();}catch{if(load===subtitleLoad)tell('字幕读取失败，音频可继续播放。');}
 }
+async function saveSubtitleText(text,name,id){
+ if(!id)throw Error('select_audio');if(text.length>2*1024*1024)throw Error('subtitle_size');
+ subtitleModule=await import('../shared-sync/audio-subtitles.mjs');const cues=subtitleModule.parseSubtitles(text,name);assertOwner();if(current?.id!==id)throw Error('track_changed');await store.writeTranscript(db,id,cues);assertOwner();if(current?.id===id){subtitleRows=cues;renderSubtitles();$('[data-subtitle-info]').textContent=cues.length+' 句';}return cues.length;
+}
+function subtitleError(error){return error.message==='select_audio'?'请先选择音频。':error.message==='track_changed'?'音频已切换，请重新导入对应字幕。':'字幕导入失败，请使用 2 MB 内有效的 SRT、VTT 或 LRC 字幕。';}
 $('.audio-subtitle-import input').onchange=async e=>{
  const file=e.target.files[0],id=current?.id;if(!file)return;
- try{if(!id)throw Error('select_audio');if(file.size>2*1024*1024)throw Error('subtitle_size');subtitleModule=await import('../shared-sync/audio-subtitles.mjs');const cues=subtitleModule.parseSubtitles(await file.text(),file.name);assertOwner();if(current?.id!==id)throw Error('track_changed');await store.writeTranscript(db,id,cues);if(current?.id===id){subtitleRows=cues;renderSubtitles();$('[data-subtitle-info]').textContent=cues.length+' 句';}}
- catch(error){tell(error.message==='select_audio'?'请先选择音频。':error.message==='track_changed'?'音频已切换，请重新导入对应字幕。':'字幕导入失败，请选择 2 MB 内有效的 SRT、VTT 或 LRC 文件。');}finally{e.target.value='';}
+ try{if(file.size>2*1024*1024)throw Error('subtitle_size');if(!/\.(srt|vtt|lrc)$/i.test(file.name))throw Error('subtitle_format');await saveSubtitleText(await file.text(),file.name,id);}catch(error){tell(subtitleError(error));}finally{e.target.value='';}
 };
+let pasteTrackId=null;$('.audio-subtitle-paste textarea').addEventListener('input',()=>{pasteTrackId=current?.id||null;});
+$('[data-save-subtitle]').onclick=async()=>{
+ const button=$('[data-save-subtitle]'),area=$('.audio-subtitle-paste textarea'),text=area.value,id=current?.id;button.disabled=true;
+ try{if(pasteTrackId!==id)throw Error('track_changed');const count=await saveSubtitleText(text,'subtitles.'+$('.audio-subtitle-paste select').value,id);$('[data-paste-status]').textContent='已保存 '+count+' 句';if(current?.id===id&&area.value===text)area.value='';}catch(error){$('[data-paste-status]').textContent=subtitleError(error);}finally{button.disabled=false;}
+};
+let filePickerReady=!native&&location.host!=='appassets.androidplatform.net';
+try{if(native?.supportsSubtitlePicker?.())filePickerReady=true;}catch{}
+if(!filePickerReady){$('.audio-subtitle-import').hidden=true;$('.audio-subtitle-paste summary').textContent='添加字幕';}
 function queue(){const group=current.collection||'未分组';return tracks.filter(t=>(t.collection||'未分组')===group&&t.source==='file'&&native.hasFile(owner,t.id)).map(t=>({id:t.id,title:t.title,position:t.position||0}));}
 async function startNative(){lock(true);try{const selected=current,rows=current.loop==='all'?tracks.filter(t=>t.source==='file'&&(t.collection||'未分组')===(current.collection||'未分组')):[current];let i=0;for(const t of rows){i++;if(!native.hasFile(owner,t.id)){tell('正在准备后台播放 '+i+' / '+rows.length+'…');await nativeCopy(t,await store.readBlob(db,t.id));}}assertOwner();if(selected!==current)return;command('play',{id:current.id,title:current.title,position:current.position||0,rate:Number($('[data-rate]').value),loop:current.loop||'single',a:current.a,b:current.b,queue:queue()});nativeFollowing=true;tell('正在后台播放，可锁屏或切换应用。');}finally{lock(false);}}
 async function play(){if(!current||busy)return;if(usingNative){const s=nativeState();if(s.id===current.id&&s.playing){command('pause');update(s.position,s.duration,false);return;}await startNative();}else if(audio.paused){await audio.play();}else audio.pause();}
