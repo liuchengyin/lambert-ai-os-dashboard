@@ -1,0 +1,44 @@
+name: App audio tab and background playback
+on:
+  push:
+    branches: [feat/android-audio-tab]
+    paths: ['mobile/**','shared-sync/audio-store.mjs','english-audio-store.mjs','android/**','tests/mobile-audio.mjs','.github/workflows/mobile-audio-check.yml']
+permissions:
+  contents: read
+jobs:
+  audio-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix shared-sync/tooling --no-audit --no-fund
+      - run: node shared-sync/tooling/node_modules/playwright/cli.js install --with-deps chromium --only-shell
+      - run: ln -s shared-sync/tooling/node_modules node_modules
+      - run: node tests/mobile-audio.mjs
+      - run: node --test tests/shared-sync/*.test.mjs
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - run: python3 scripts/bundle-android.py
+      - run: gradle -p android --no-daemon :app:compileDebugJavaWithJavac :app:lintDebug
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audio-compile-reports
+          path: android/app/build/reports/

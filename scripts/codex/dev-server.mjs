@@ -4,8 +4,8 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 export const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.ico':'image/x-icon','.woff':'font/woff','.woff2':'font/woff2','.mp3':'audio/mpeg','.m4a':'audio/mp4','.mp4':'video/mp4','.wav':'audio/wav','.webmanifest':'application/manifest+json'};
-// Only these two lib files are browser assets; the rest are server implementation.
-const PUBLIC_LIB=new Set(['lib/task-center-model.js','lib/link-sites.js']);
+// Only explicitly listed lib files are browser assets; the rest are server implementation.
+const PUBLIC_LIB=new Set(['lib/task-center-model.js','lib/link-sites.js','lib/link-recovery.js']);
 const allowed=parts=>!parts.some(p=>p.startsWith('.')||BLOCKED.has(p))||
  (PUBLIC_LIB.has(parts.join('/'))&&!parts.some(p=>p.startsWith('.')));
 const BLOCKED=new Set(['node_modules','android','scripts','tests','docs','review-output','supabase','lib']);

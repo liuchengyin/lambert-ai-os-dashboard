@@ -8,6 +8,8 @@ import java.io.ByteArrayInputStream;
 
 public final class MainActivity extends Activity {
  private WebView web;
+ private AudioBridge audioBridge;
+ private ValueCallback<android.net.Uri[]> audioChooser;
  private boolean backPending;
  private CloudUpdater updater;
  private int bootChecks;
@@ -39,7 +41,7 @@ public final class MainActivity extends Activity {
   getWindow().setStatusBarColor(0xff7357d7);getWindow().setNavigationBarColor(0xfff5f3ff);
   WebView.setWebContentsDebuggingEnabled(false);
   WebSettings s=web.getSettings();s.setJavaScriptEnabled(true);s.setDomStorageEnabled(true);
-  s.setCacheMode(WebSettings.LOAD_NO_CACHE);s.setAllowFileAccess(false);s.setAllowContentAccess(false);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+  s.setCacheMode(WebSettings.LOAD_NO_CACHE);s.setAllowFileAccess(false);s.setAllowContentAccess(true);s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
   s.setJavaScriptCanOpenWindowsAutomatically(false);s.setSupportMultipleWindows(false);s.setGeolocationEnabled(false);
   final WebViewAssetLoader loader=new WebViewAssetLoader.Builder().addPathHandler("/assets/",new WebViewAssetLoader.AssetsPathHandler(this)).build();
   web.setWebViewClient(new WebViewClient(){
@@ -55,7 +57,13 @@ public final class MainActivity extends Activity {
     return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",java.util.Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
    }
   });
+  audioBridge=new AudioBridge(this);web.addJavascriptInterface(audioBridge,"LambertAudioNative");
   web.setWebChromeClient(new WebChromeClient(){
+   @Override public boolean onShowFileChooser(WebView v,ValueCallback<android.net.Uri[]> callback,FileChooserParams params){
+    if(audioChooser!=null)audioChooser.onReceiveValue(null);audioChooser=callback;
+    android.content.Intent pick=new android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT).setType("audio/*").addCategory(android.content.Intent.CATEGORY_OPENABLE).putExtra(android.content.Intent.EXTRA_ALLOW_MULTIPLE,true);
+    try{startActivityForResult(pick,721);return true;}catch(android.content.ActivityNotFoundException e){audioChooser=null;callback.onReceiveValue(null);return true;}
+   }
    @Override public boolean onJsAlert(WebView v,String url,String msg,JsResult result){new AlertDialog.Builder(MainActivity.this).setMessage(msg).setPositiveButton("确定",(d,w)->result.confirm()).setOnCancelListener(d->result.cancel()).show();return true;}
    @Override public void onPermissionRequest(PermissionRequest request){request.deny();}
   });
@@ -67,5 +75,6 @@ public final class MainActivity extends Activity {
  private void checkBoot(){if(web==null||updater==null||!updater.probation())return;web.evaluateJavascript("Boolean(window.MobileBootReady&&window.LambertData&&document.querySelectorAll('#tabs button').length>=3)",ready->{if(isDestroyed()||isFinishing()||web==null)return;if("true".equals(ready)){updater.healthy();bootHandler.removeCallbacksAndMessages(null);}else if(++bootChecks>=30){failBoot();}else bootHandler.postDelayed(()->checkBoot(),500);});}
  private void handleBack(){if(backPending)return;backPending=true;web.evaluateJavascript("Boolean(window.MobileNavigation&&window.MobileNavigation.back())", handled->{backPending=false;if(!"true".equals(handled)){if(web.canGoBack())web.goBack();else finish();}});}
  @Override public void onBackPressed(){handleBack();}
- @Override protected void onDestroy(){bootHandler.removeCallbacksAndMessages(null);if(web!=null){web.destroy();web=null;}super.onDestroy();}
+ @Override protected void onActivityResult(int request,int result,android.content.Intent data){super.onActivityResult(request,result,data);if(request!=721||audioChooser==null)return;ValueCallback<android.net.Uri[]> callback=audioChooser;audioChooser=null;java.util.ArrayList<android.net.Uri> uris=new java.util.ArrayList<>();if(result==RESULT_OK&&data!=null){if(data.getClipData()!=null){if(data.getClipData().getItemCount()>200){android.widget.Toast.makeText(this,"一次最多选择200条音频",android.widget.Toast.LENGTH_LONG).show();callback.onReceiveValue(null);return;}for(int i=0;i<Math.min(200,data.getClipData().getItemCount());i++)uris.add(data.getClipData().getItemAt(i).getUri());}else if(data.getData()!=null)uris.add(data.getData());}callback.onReceiveValue(uris.isEmpty()?null:uris.toArray(new android.net.Uri[0]));}
+ @Override protected void onDestroy(){bootHandler.removeCallbacksAndMessages(null);if(audioChooser!=null){audioChooser.onReceiveValue(null);audioChooser=null;}if(audioBridge!=null)audioBridge.close();if(web!=null){web.removeJavascriptInterface("LambertAudioNative");web.destroy();web=null;}super.onDestroy();}
 }

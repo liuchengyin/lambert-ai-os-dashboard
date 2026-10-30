@@ -20,7 +20,7 @@ try{
  const read=id=>page.evaluate(id=>JSON.parse(localStorage.tasks).find(t=>t.id===id),id);
  const row=id=>page.locator('[data-task-id="'+id+'"]');
  async function drag(id,dx,dy=0,cancel=false){let b=await row(id).boundingBox();let x=b.x+b.width*.45,y=b.y+b.height*.5;await page.mouse.move(x,y);await page.mouse.down();await page.mouse.move(x+dx,y+dy,{steps:10});if(cancel)await row(id).dispatchEvent('pointercancel',{pointerId:1});await page.mouse.up();await page.waitForTimeout(260);}
- assert.equal(await page.locator('#tabs button').count(),3);assert.equal(await page.locator('#tabs #accountButton').count(),0);assert.equal(await page.locator('#accountButton').isVisible(),false);
+ assert.equal(await page.locator('#tabs button').count(),4);assert.equal(await page.locator('#tabs #accountButton').count(),0);assert.equal(await page.locator('#accountButton').isVisible(),false);
  // A full right drag still requires the separate completion click and opens exactly a quarter.
  const width=(await row('a').boundingBox()).width;await drag('a',width*.7);
  assert.equal((await read('a')).status,'进行中');assert.equal(await page.locator('.filter-swipe-frame').count(),0);
