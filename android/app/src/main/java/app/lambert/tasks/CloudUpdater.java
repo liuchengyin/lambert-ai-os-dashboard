@@ -14,10 +14,13 @@ public final class CloudUpdater {
  public static synchronized CloudUpdater get(Context context) throws Exception {if(instance==null)instance=new CloudUpdater(context.getApplicationContext());return instance;}
  private final BundleStore store;
  private final int shell;
+ private long bundledRelease;
  private final ExecutorService worker=Executors.newSingleThreadExecutor();
  private volatile String status="正在检查页面更新";
  private volatile boolean checking;
- private CloudUpdater(Context context) throws Exception {shell=context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionCode;store=new BundleStore(new File(context.getFilesDir(),"web-updates"));store.shell(shell);status=store.pending()?"页面更新已就绪，下次打开自动生效":"当前页面可离线使用";}
+ private CloudUpdater(Context context) throws Exception {try(InputStream in=context.getAssets().open("mobile/release.json")){bundledRelease=new JSONObject(new String(readAsset(in),StandardCharsets.UTF_8)).optLong("release",0);}
+  shell=context.getPackageManager().getPackageInfo(context.getPackageName(),0).versionCode;store=new BundleStore(new File(context.getFilesDir(),"web-updates"));store.shell(shell);status=store.pending()?"页面更新已就绪，下次打开自动生效":"当前页面可离线使用";}
+ private static byte[] readAsset(InputStream in)throws IOException{ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] b=new byte[1024];int n;while((n=in.read(b))!=-1)out.write(b,0,n);return out.toByteArray();}
  public void start() throws IOException {store.begin();}
  public boolean probation(){return store.probation();}
  public void healthy(){try{store.healthy();}catch(IOException ignored){}}
@@ -34,7 +37,7 @@ public final class CloudUpdater {
   if(manifest.getInt("protocol")!=1||manifest.getInt("minNativeVersion")>shell){status="此更新需要升级安装包，现有页面可继续使用";return;}
   String sha=manifest.getString("sha256"),path=manifest.getString("url");long release=manifest.getLong("release");
   if(!sha.matches("[a-f0-9]{64}")||!path.equals("/mobile/updates/"+sha+".zip")||release<=0)throw new IOException("invalid_manifest");
-  if(!store.wants(sha,release)){status=store.pending()?"页面更新已就绪，下次打开自动生效":"当前页面已是最新";return;}
+  if(release<=bundledRelease||!store.wants(sha,release)){status=store.pending()?"页面更新已就绪，下次打开自动生效":"当前页面已是最新";return;}
   status="正在后台下载页面更新";store.install(download(path,BundleStore.MAX_ZIP),sha,release);status="页面更新已就绪，下次打开自动生效";
  }catch(Exception ignored){status=store.pending()?"页面更新已就绪，下次打开自动生效":"暂未获取到更新，继续使用本地页面";}finally{checking=false;}});}
  public WebResourceResponse control(String path){

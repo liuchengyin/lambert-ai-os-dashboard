@@ -1,0 +1,82 @@
+name: App audio tab and background playback
+on:
+  push:
+    branches: [feat/android-audio-tab]
+    paths: ['mobile/**','shared-sync/audio-store.mjs','english-audio-store.mjs','android/**','tests/mobile-audio.mjs','.github/workflows/mobile-audio-check.yml']
+permissions:
+  contents: read
+jobs:
+  audio-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix shared-sync/tooling --no-audit --no-fund
+      - run: node shared-sync/tooling/node_modules/playwright/cli.js install --with-deps chromium --only-shell
+      - run: ln -s shared-sync/tooling/node_modules node_modules
+      - run: node tests/mobile-audio.mjs
+      - run: node --test tests/shared-sync/*.test.mjs
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/lambert-trial.keystore
+          key: lambert-trial-signing-v1
+      - name: Verify existing signing key (never silently rotate)
+        run: |
+          test -f "$HOME/.android/lambert-trial.keystore"
+          keytool -list -v -keystore "$HOME/.android/lambert-trial.keystore" -storepass android | tr -d ':' | grep -qi '828cc500f34c957427f42f14209f98d1069042cc0d68d6ee22f5ebdb3ee4653c'
+      - run: python3 scripts/bundle-android.py
+      - run: gradle -p android --no-daemon :app:assembleDebug :app:lintDebug :app:assembleDebugAndroidTest
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: gradle -p android --no-daemon :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=app.lambert.tasks.AudioPlaybackTest
+      - name: Verify and package same-signature APK
+        run: |
+          mkdir -p apk-output
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-0.2.7.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs apk-output/*.apk > apk-output/signature.txt
+          grep -q '828cc500f34c957427f42f14209f98d1069042cc0d68d6ee22f5ebdb3ee4653c' apk-output/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions apk-output/*.apk > apk-output/permissions.txt
+          if grep -E 'android.permission.(CAMERA|READ_CONTACTS|READ_EXTERNAL_STORAGE|RECORD_AUDIO|ACCESS_FINE_LOCATION)' apk-output/permissions.txt; then exit 1; fi
+          cd apk-output
+          sha256sum Lambert-0.2.7.apk > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lambert-0.2.7-audio
+          path: apk-output/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audio-native-test-results
+          path: |
+            android/app/build/reports/
+            android/app/build/outputs/androidTest-results/
