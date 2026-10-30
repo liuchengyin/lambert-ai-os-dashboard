@@ -15,18 +15,9 @@ try{
  await page.locator('#lkTabMaster').waitFor({timeout:30000});
  check('legacy process tab remains visible',await page.locator('#lkTabProcess').isVisible());
  await page.locator('#lkTabMaster').click();
- await page.waitForTimeout(1200);
- console.log('MASTER_DIAG',JSON.stringify(await page.evaluate(()=>({
-   status:document.getElementById('lmStatus')?.textContent,
-   hasLibrary:Boolean(window.X6?.Graph),
-   hasController:Boolean(window.LambertLogisticsMaster),
-   canvas:document.getElementById('lmCanvas')?.outerHTML.slice(0,700),
-   allCanvasSvg:document.querySelectorAll('#lmCanvas svg').length,
-   allGraphCells:document.querySelectorAll('#lmCanvas .x6-node').length,
-   script:document.querySelector('script[src^="vendor/x6"]')?.getAttribute('src')
- }))),JSON.stringify(errors));
- await page.waitForFunction(()=>Boolean(window.X6?.Graph&&document.querySelector('#lmCanvas svg')),{timeout:10000});
- check('native X6 library loaded locally',await page.locator('#lmCanvas .x6-graph').count()===1);
+ await page.waitForFunction(()=>Boolean(window.X6?.Graph&&document.querySelector('#lmCanvas svg')));
+
+ check('native X6 library loaded locally',await page.locator('#lmCanvas.x6-graph').count()===1);
  check('original process panel preserved and hidden while master shown',
   await page.locator('#lkProcess').isHidden()&&await page.locator('#lkMaster').isVisible());
  check('data nodes and relationships rendered',await page.locator('#lmCanvas .x6-node').count()>=3&&await page.locator('#lmCanvas .x6-edge').count()>=1);
