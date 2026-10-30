@@ -2,7 +2,7 @@ name: Logistics Master bounded DeepSeek Flash safety review
 on:
   push:
     branches: [feat/logistics-master-x6-v1-20261030]
-    paths: ['.github/workflows/logistics-master-deepseek.yml']
+    paths: ['.github/workflows/logistics-master-deepseek.yml','docs/logistics-master-deepseek-prompt.md']
 permissions:
   contents: read
 jobs:
