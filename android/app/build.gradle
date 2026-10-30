@@ -3,7 +3,7 @@ android {
  namespace 'app.lambert.tasks'
  compileSdk 35
  def audioPreview=project.hasProperty('audioPreview')
- defaultConfig { applicationId 'app.lambert.tasks.trial'; minSdk 26; targetSdk 35; versionCode 18; versionName '0.2.7'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'; if(audioPreview){applicationIdSuffix '.audiopreview'; resValue 'string','app_name','Lambert 音频预览'} }
+ defaultConfig { applicationId 'app.lambert.tasks.trial'; minSdk 26; targetSdk 35; versionCode 18; versionName '0.2.7'; testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'; manifestPlaceholders=[appLabel:audioPreview?'Lambert 音频预览':'Lambert']; if(audioPreview){applicationIdSuffix '.audiopreview'} }
  signingConfigs { debug { storeFile file(audioPreview?'/tmp/lambert-audio-preview.keystore':System.getProperty('user.home')+'/.android/lambert-trial.keystore'); storePassword 'android'; keyAlias 'androiddebugkey'; keyPassword 'android' } }
  buildTypes { debug { debuggable false } }
  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
