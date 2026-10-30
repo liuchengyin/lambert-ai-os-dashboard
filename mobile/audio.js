@@ -3,7 +3,7 @@
 const native=window.LambertAudioNative,owner=window.LambertPrivateStorage?.owner||'guest';
 try{native?.setOwner(owner);}catch{}
 const root=document.createElement('section');root.className='audio-page';root.hidden=true;
-root.innerHTML=`<header class="audio-head"><div><h1>音频</h1><small>听懂一句，再听下一句。</small></div><label class="audio-import">＋ 导入音频<input type="file" multiple accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav" aria-label="导入音频" disabled></label></header>
+root.innerHTML=`<div class="audio-head"><div><h1>音频</h1><small>听懂一句，再听下一句。</small></div><label class="audio-import">＋ 导入音频<input type="file" multiple accept=".mp3,.m4a,.wav,audio/mpeg,audio/mp4,audio/wav" aria-label="导入音频" disabled></label></div>
 <p class="audio-help">MP3 / M4A / WAV · 最多 200 条 · 每条不超过 200 MB<br>整套分组、标题和备注保存在当前账号的本机音频库。后台文件每账号最多 4 GB，请保留原文件。</p>
 <section class="audio-card"><span class="audio-now">NOW LISTENING</span><h2 class="audio-title">导入《摩登家庭》，开始今天的精听</h2><div class="audio-times"><span data-current>00:00</span><span data-duration>00:00</span></div><input type="range" min="0" max="0" value="0" step="0.1" aria-label="音频播放进度" disabled>
 <div class="audio-controls"><button type="button" data-back="7" aria-label="回退7秒" disabled>↶ 7s</button><button type="button" data-back="3" aria-label="回退3秒" disabled>↶ 3s</button><button type="button" class="audio-play" aria-label="播放音频" disabled>▶</button><button type="button" data-forward="3" aria-label="前进3秒" disabled>3s ↷</button><button type="button" data-next aria-label="下一条音频" disabled>下一条</button></div>
