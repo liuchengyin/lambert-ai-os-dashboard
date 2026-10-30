@@ -46,6 +46,8 @@
  function build(source,layout,scope='all'){
    if(!object(source)||source.schema!==1||!Array.isArray(source.modules)||!isValid(layout))throw Error('invalid_master_source');
    const nodes=[],edges=[],all=new Set();
+   const allSourceIds=new Set(source.modules.flatMap(m=>(m?.nodes||[]).map(n=>nodeId(m.id,n.id))));
+   layout.notes.forEach(n=>allSourceIds.add(noteId(n.id)));
    let y=96,stageIndex=0,validBranches=0;
    const moduleSelected=m=>scope==='all'||m.id===scope;
    for(const module of source.modules){
@@ -91,10 +93,15 @@
    for(const note of layout.notes)nodes.push({id:noteId(note.id),kind:'note',title:note.title,body:note.body,
      position:{x:note.x,y:note.y},noteId:note.id});
    const available=new Set(nodes.map(n=>n.id));
-   for(const link of layout.links)if(available.has(link.from)&&available.has(link.to))
-     edges.push({id:'research:'+encodeURIComponent(link.id),from:link.from,to:link.to,
-       label:link.label||'待核实',kind:'hypothesis',fixed:false,linkId:link.id});
-   return {nodes,edges,sourceCount:all.size,branchCount:validBranches,sourceModules:source.modules.length};
+   let scopeHiddenLinks=0,orphanLinks=0;
+   for(const link of layout.links){
+     if(available.has(link.from)&&available.has(link.to))
+       edges.push({id:'research:'+encodeURIComponent(link.id),from:link.from,to:link.to,
+         label:link.label||'待核实',kind:'hypothesis',fixed:false,linkId:link.id});
+     else if(allSourceIds.has(link.from)&&allSourceIds.has(link.to))scopeHiddenLinks++;
+     else orphanLinks++;
+   }
+   return {nodes,edges,sourceCount:all.size,branchCount:validBranches,sourceModules:source.modules.length,scopeHiddenLinks,orphanLinks};
  }
  function addLink(layout,from,to,label='研究关联（待核实）',id){
    if(!isValid(layout)||!from||!to||from===to||layout.links.some(l=>l.from===from&&l.to===to))return false;

@@ -126,7 +126,7 @@
      currentVisible=new Set(projection.nodes.map(n=>n.id));
      for(const n of projection.nodes)graph.addNode(nodeView(n));
      for(const edge of projection.edges)if(currentVisible.has(edge.from)&&currentVisible.has(edge.to))graph.addEdge(edgeView(edge));
-     byId('lmMeta').textContent='源版本 V'+version+' · '+projection.sourceCount+' 个操作 · '+projection.branchCount+' 条原业务分支';
+     byId('lmMeta').textContent='源版本 V'+version+' · '+projection.sourceCount+' 个操作 · '+projection.branchCount+' 条原业务分支'+(projection.orphanLinks?' · ⚠ '+projection.orphanLinks+' 条研究连线找不到原节点':'')+(projection.scopeHiddenLinks?' · '+projection.scopeHiddenLinks+' 条因筛选暂时隐藏':'');
      if(refit)graph.zoomToFit({padding:38,maxScale:1}); 
      inspect(selected&&currentVisible.has(selected)?selected:null);
    }finally{loadingGraph=false;}

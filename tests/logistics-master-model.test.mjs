@@ -55,6 +55,15 @@ check('scoping modules does not alter underlying data and hides disconnected res
  const v=m.build(source,l,'domestic');
  assert.equal(v.sourceCount,3);
  assert.equal(v.edges.filter(e=>e.kind==='hypothesis').length,0);
+ assert.equal(v.scopeHiddenLinks,1);
+ assert.equal(v.orphanLinks,0);
+});
+check('orphaned research edge is reported without deleting stored notes or links',()=>{
+ const l=m.fresh(),a=m.nodeId('domestic','scan');
+ m.addLink(l,a,'op:missing/no-longer-present','待核实','orphan');
+ const view=m.build(source,l);
+ assert.equal(view.orphanLinks,1);
+ assert.equal(l.links.length,1);
 });
 check('malformed legacy master storage blocks writes, never silently reset',()=>{
  const bad='{"schema":1,"positions":{"x":{"x":"oops"}},"notes":[],"links":[],"collapsed":{}}';
