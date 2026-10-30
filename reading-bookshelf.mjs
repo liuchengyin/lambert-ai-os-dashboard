@@ -22,7 +22,7 @@ export async function mountBookshelf(){
    const b=rows.find(r=>r.slot===i);if(!b)return `<button type="button" class="book-slot-empty" data-add aria-label="导入第 ${i+1} 本书"><span>＋</span></button>`;
    shown.add(b.id);return `<article class="shelf-book" style="--book-hue:${[224,158,28,280,350,191,51][i]}"><button type="button" class="book-cover" data-open="${b.id}"><span class="book-cover-rule"></span><strong>${escape(b.title)}</strong><span class="book-cover-footer">第 ${b.page||1} 页</span></button><div class="book-meta"><span>${b.sync==='cloud'?'已存云端':b.sync==='remote'?'云端书籍':'仅本机'}</span><button type="button" data-remove="${b.id}" aria-label="移除《${escape(b.title)}》">移除</button></div>${b.sync==='local'?`<button class="book-retry" type="button" data-upload="${b.id}">上传云端</button>`:''}</article>`;
   }).join('');$('bookPending').replaceChildren();
-  for(const b of rows.filter(r=>!shown.has(r.id))){const line=document.createElement('div');line.className='book-pending-item';const button=document.createElement('button');button.type='button';button.textContent=b.title+' · 本机待上传';button.onclick=()=>open(b.id);line.append(button);$('bookPending').append(line);}
+  for(const b of rows.filter(r=>!shown.has(r.id))){const line=document.createElement('div');line.className='book-pending-item';line.innerHTML=`<button type="button" data-open="${b.id}">${escape(b.title)} · 本机待上传</button> <button type="button" data-upload="${b.id}">重试上传</button> <button type="button" data-remove="${b.id}">移除</button>`;$('bookPending').append(line);}
   $('bookImport').disabled=busy||rows.length>=LIMIT;
  }
  async function upload(id){status('正在上传云端…');try{await store.upload(id);status('已保存到云端');}catch(e){status(`云端保存未完成：${errorMessage(e)}。本机文件已保留，可点击上传云端重试。`);}await renderShelf();}
@@ -55,6 +55,7 @@ export async function mountBookshelf(){
   else if(b.dataset.upload){busy=true;await upload(b.dataset.upload);}
   else if(b.dataset.remove&&confirm('从书架移除这本书？读书笔记会保留。')){busy=true;await store.remove(b.dataset.remove);const old=cache.get(b.dataset.remove);old?.destroy();cache.delete(b.dataset.remove);await renderShelf();status('已移除书籍，笔记已保留');}
  }catch(e){status(errorMessage(e));}finally{busy=false;await renderShelf();}};
+ $('bookPending').onclick=$('bookShelfSlots').onclick;
  $('bookShelfFile').onchange=async e=>{const file=e.target.files?.[0];e.target.value='';if(!file||busy)return;busy=true;status('正在保存书籍…');try{const b=await store.add(file);await renderShelf();status('已保存到本机');if(store.ownerId)await upload(b.id);else status('已保存到本机，刷新后仍保留；登录后可使用云端书架');}catch(e){status(`导入失败：${errorMessage(e)}`);}finally{busy=false;await renderShelf();}};
  await renderShelf();
  if(store.ownerId){try{await store.refresh();await renderShelf();status('云端书架已同步');}catch(e){status(`暂未连接云端，显示本机书架：${errorMessage(e)}`);}}
