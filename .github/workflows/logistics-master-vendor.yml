@@ -1,0 +1,42 @@
+name: Logistics master vendor pinned X6 asset
+on:
+  push:
+    branches: [feat/logistics-master-x6-v1-20261030]
+    paths: ['.github/workflows/logistics-master-vendor.yml']
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Download exact upstream npm archive and vendor UMD
+        run: |
+          set -euo pipefail
+          mkdir -p vendor /tmp/x6-package
+          cd /tmp/x6-package
+          tgz="$(npm pack @antv/x6@2.18.1 --silent --pack-destination .)"
+          tar -xzf "$tgz"
+          test -s package/dist/index.js
+          test -f package/LICENSE
+          test "$(wc -c < package/dist/index.js)" -lt 2500000
+          cp package/dist/index.js "$GITHUB_WORKSPACE/vendor/x6-2.18.1.min.js"
+          cp package/LICENSE "$GITHUB_WORKSPACE/vendor/X6-LICENSE"
+          cd "$GITHUB_WORKSPACE"
+          sha256sum vendor/x6-2.18.1.min.js
+      - name: Commit generated vendor file back to feature branch
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vendor/x6-2.18.1.min.js vendor/X6-LICENSE
+          if ! git diff --cached --quiet; then
+            git commit -m "build(master): vendor pinned X6 2.18.1 runtime"
+            git push origin HEAD:feat/logistics-master-x6-v1-20261030
+          fi

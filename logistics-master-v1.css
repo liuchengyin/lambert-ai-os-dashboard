@@ -1,0 +1,41 @@
+/* 画master V1: scoped extension; never changes old #lkProcess rules. */
+#logistics #lkMaster{padding-bottom:14px}
+#logistics .lm-head{display:flex;justify-content:space-between;gap:18px;align-items:center;padding:19px 22px;border:1px solid #e6e2f0;border-radius:16px;background:linear-gradient(112deg,#f7f5fd,#fff);margin-bottom:13px}
+#logistics .lm-head small{display:block;color:#7461a3;letter-spacing:.09em;font-size:11px;font-weight:760}
+#logistics .lm-head h2{margin:5px 0;font-size:24px;color:#302544}
+#logistics .lm-head p{color:#797289;font-size:12px;line-height:1.7;margin:3px 0}
+#logistics .lm-actions,#logistics .lm-toolbar{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+#logistics .lm-actions button,#logistics .lm-toolbar button,#logistics .lm-inspector button{padding:9px 11px;border:1px solid #d9d0ea;border-radius:9px;background:#fff;color:#5d4a84;font-size:12px;cursor:pointer}
+#logistics .lm-actions #lmSave,#logistics .lm-inspector .lm-primary{background:#7554b8;color:#fff;border-color:#7554b8}
+#logistics .lm-toolbar{padding:10px 13px;border:1px solid #eae7f1;border-radius:12px;margin-bottom:12px;background:#fff}
+#logistics .lm-toolbar label{display:flex;align-items:center;gap:7px;font-size:12px;color:#645d78}
+#logistics .lm-toolbar select{max-width:180px;padding:7px 8px;border:1px solid #ddd6eb;border-radius:7px;background:#fff;color:#44375a}
+#logistics #lmMeta{margin-left:auto;font-size:11px;color:#968aa5}
+#logistics .lm-board{display:grid;grid-template-columns:minmax(0,1fr) 286px;gap:12px;min-height:580px;align-items:stretch}
+#logistics .lm-canvas-wrap{position:relative;min-width:0;overflow:hidden;background:#f8faff;border:1px solid #e3e5ef;border-radius:15px}
+#logistics #lmCanvas{height:min(72vh,760px);min-height:540px;width:100%;touch-action:none}
+#logistics .lm-canvas-help{pointer-events:none;position:absolute;bottom:10px;left:12px;right:12px;font-size:11px;color:#7f7993;background:rgba(255,255,255,.87);padding:7px 10px;border-radius:8px}
+#logistics .lm-inspector{background:#fff;border:1px solid #e8e3f0;border-radius:14px;padding:18px 16px;min-width:0;max-height:min(72vh,760px);overflow-y:auto}
+#logistics .lm-inspector h3{color:#382b53;font-size:17px;line-height:1.4;margin:7px 0 13px;overflow-wrap:anywhere}
+#logistics .lm-inspector small{color:#957bab}
+#logistics .lm-inspector>p{font-size:12px;color:#716982;line-height:1.7}
+#logistics .lm-field{border-top:1px solid #f0ebf6;padding:10px 0}
+#logistics .lm-field strong{display:block;color:#6a508f;font-size:12px}
+#logistics .lm-field p{margin:5px 0 0;color:#575267;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.65}
+#logistics .lm-inspector button{margin:12px 7px 0 0}
+#logistics .lm-inspector .lm-danger{border-color:#efd3d1;background:#fff7f6;color:#bc5353}
+#logistics .lm-readonly{background:#f9f7fc;padding:10px;border-radius:8px}
+#logistics .lm-status{min-height:21px;font-size:12px;margin:12px 4px;color:#8062a9;line-height:1.7}
+#logistics #lkMaster[hidden]{display:none!important}
+@media(max-width:900px){
+ #logistics .lm-board{grid-template-columns:1fr}
+ #logistics #lmCanvas{height:58vh;min-height:440px}
+ #logistics .lm-inspector{max-height:440px}
+ #logistics .lm-head{align-items:flex-start;flex-direction:column;padding:16px}
+ #logistics #lmMeta{margin-left:0}
+}
+@media(max-width:600px){
+ #logistics .lm-toolbar{gap:6px}
+ #logistics .lm-toolbar button{font-size:11px;padding:8px}
+ #logistics .lm-canvas-help{font-size:10px;line-height:1.4}
+}

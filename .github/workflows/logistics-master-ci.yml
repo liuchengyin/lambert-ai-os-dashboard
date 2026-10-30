@@ -1,0 +1,50 @@
+name: Logistics Master X6 isolated canvas CI
+on:
+  push:
+    branches: [feat/logistics-master-x6-v1-20261030]
+    paths:
+      - 'vendor/x6-2.18.1.min.js'
+      - 'logistics-master-v1.js'
+      - 'logistics-master-model.js'
+      - 'logistics-master-v1.css'
+      - 'logistics-knowledge-v1.js'
+      - 'index.html'
+      - 'tests/logistics-master-*.mjs'
+      - '.github/workflows/logistics-master-ci.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Source validation and immutable projection regression
+        run: |
+          node --check logistics-master-model.js
+          node --check logistics-master-v1.js
+          node --check logistics-knowledge-v1.js
+          node tests/logistics-master-model.test.mjs
+          node tests/logistics-v35-model.test.mjs
+          node tests/logistics-wiring-v36-model.test.mjs
+      - name: Pinned X6 engine must be committed locally
+        run: |
+          test -s vendor/x6-2.18.1.min.js
+          test -s vendor/X6-LICENSE
+          grep -q 'logistics-master-v1.js' index.html
+          sha256sum vendor/x6-2.18.1.min.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: New and old canvas browser regressions
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/lambert-master-server.log 2>&1 &
+          sleep 2
+          TEST_BASE_URL=http://127.0.0.1:8765/ node tests/logistics-master-ui.mjs
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-v35-ui.mjs
