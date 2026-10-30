@@ -91,3 +91,10 @@ export function updateTrack(db,id,patch){
     };
   });
 }
+
+export function readTranscript(db,id){return transaction(db,['transcripts'],'readonly',(tx,done)=>{
+ tx.objectStore('transcripts').get(id).onsuccess=e=>done(e.target.result||null);
+});}
+export function writeTranscript(db,id,cues){return transaction(db,['tracks','transcripts'],'readwrite',tx=>{
+ tx.objectStore('tracks').get(id).onsuccess=e=>{if(!e.target.result){tx.abort();return;}tx.objectStore('transcripts').put({trackId:id,cues,source:'import',updatedAt:new Date().toISOString()});};
+});}
