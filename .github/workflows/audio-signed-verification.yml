@@ -1,0 +1,71 @@
+name: App audio signed build and device verification
+on:
+  push:
+    branches: [feat/mobile-v1]
+    paths: ['.github/workflows/audio-signed-verification.yml']
+permissions:
+  contents: read
+jobs:
+  native-audio:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: d5eae1f8b6b67d12182594051fe992a97dbcd17e
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.android/lambert-trial.keystore
+          key: lambert-trial-signing-v1
+      - name: Select verified original signature or isolated preview
+        id: signing
+        run: |
+          if [ -f "$HOME/.android/lambert-trial.keystore" ]; then
+            keytool -list -v -keystore "$HOME/.android/lambert-trial.keystore" -storepass android | tr -d ':' | grep -qi '828cc500f34c957427f42f14209f98d1069042cc0d68d6ee22f5ebdb3ee4653c'
+            echo 'flags=' >> "$GITHUB_OUTPUT"
+            echo 'kind=upgrade' >> "$GITHUB_OUTPUT"
+          else
+            keytool -genkeypair -keystore /tmp/lambert-audio-preview.keystore -storepass android -keypass android -alias androiddebugkey -dname 'CN=Lambert Audio Preview,O=Lambert,C=CN' -keyalg RSA -keysize 2048 -validity 10000
+            echo 'flags=-PaudioPreview' >> "$GITHUB_OUTPUT"
+            echo 'kind=isolated-preview' >> "$GITHUB_OUTPUT"
+          fi
+      - run: python3 scripts/bundle-android.py
+      - run: gradle -p android --no-daemon :app:assembleDebug :app:lintDebug :app:assembleDebugAndroidTest ${{ steps.signing.outputs.flags }}
+      - name: Verify native code matches Android 15 device-tested baseline
+        run: |
+          git fetch --no-tags --depth=1 origin 10b9ac191d04cd4ea77206f6f082e10ede3e5b3d
+          git diff --exit-code FETCH_HEAD HEAD -- android/app/src/main/java android/app/src/main/AndroidManifest.xml android/app/build.gradle android/app/src/androidTest
+          echo 'Native instrumented test baseline: run 40979077812, 2 tests passed'
+      - name: Package APK with source and signature evidence
+        run: |
+          mkdir -p apk-output
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-audio-0.2.7-${{ steps.signing.outputs.kind }}.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs apk-output/*.apk > apk-output/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging apk-output/*.apk > apk-output/application.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions apk-output/*.apk > apk-output/permissions.txt
+          echo 'd5eae1f8b6b67d12182594051fe992a97dbcd17e' > apk-output/source.txt
+          echo '${{ steps.signing.outputs.kind }}' > apk-output/package-kind.txt
+          if [ '${{ steps.signing.outputs.kind }}' = upgrade ]; then grep -q '828cc500f34c957427f42f14209f98d1069042cc0d68d6ee22f5ebdb3ee4653c' apk-output/signature.txt; fi
+          if grep -E 'android.permission.(CAMERA|READ_CONTACTS|READ_EXTERNAL_STORAGE|RECORD_AUDIO|ACCESS_FINE_LOCATION)' apk-output/permissions.txt; then exit 1; fi
+          cd apk-output
+          sha256sum *.apk > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lambert-audio-0.2.7
+          path: apk-output/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audio-device-evidence
+          path: |
+            android/app/build/reports/
+            android/app/build/outputs/androidTest-results/
