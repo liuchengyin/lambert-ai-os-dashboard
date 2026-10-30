@@ -1,0 +1,79 @@
+name: App audio signed build and device verification
+on:
+  push:
+    branches: [feat/mobile-v1]
+    paths: ['.github/workflows/audio-signed-verification.yml']
+permissions:
+  contents: read
+jobs:
+  native-audio:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: 9ddea97a561430f0473711b15ecd251b1764fcb2
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/cache/restore@v4
+        with:
+          path: ~/.android/lambert-trial.keystore
+          key: lambert-trial-signing-v1
+      - name: Select verified original signature or isolated preview
+        id: signing
+        run: |
+          if [ -f "$HOME/.android/lambert-trial.keystore" ]; then
+            keytool -list -v -keystore "$HOME/.android/lambert-trial.keystore" -storepass android | tr -d ':' | grep -qi '828cc500f34c957427f42f14209f98d1069042cc0d68d6ee22f5ebdb3ee4653c'
+            echo 'flags=' >> "$GITHUB_OUTPUT"
+            echo 'kind=upgrade' >> "$GITHUB_OUTPUT"
+          else
+            keytool -genkeypair -keystore /tmp/lambert-audio-preview.keystore -storepass android -keypass android -alias androiddebugkey -dname 'CN=Lambert Audio Preview,O=Lambert,C=CN' -keyalg RSA -keysize 2048 -validity 10000
+            echo 'flags=-PaudioPreview' >> "$GITHUB_OUTPUT"
+            echo 'kind=isolated-preview' >> "$GITHUB_OUTPUT"
+          fi
+      - run: python3 scripts/bundle-android.py
+      - run: gradle -p android --no-daemon :app:assembleDebug :app:lintDebug :app:assembleDebugAndroidTest ${{ steps.signing.outputs.flags }}
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          script: gradle -p android --no-daemon :app:connectedDebugAndroidTest ${{ steps.signing.outputs.flags }} -Pandroid.testInstrumentationRunnerArguments.class=app.lambert.tasks.AudioPlaybackTest
+      - name: Package APK with source and signature evidence
+        run: |
+          mkdir -p apk-output
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-audio-0.2.7-${{ steps.signing.outputs.kind }}.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs apk-output/*.apk > apk-output/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging apk-output/*.apk > apk-output/application.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions apk-output/*.apk > apk-output/permissions.txt
+          echo '9ddea97a561430f0473711b15ecd251b1764fcb2' > apk-output/source.txt
+          echo '${{ steps.signing.outputs.kind }}' > apk-output/package-kind.txt
+          if [ '${{ steps.signing.outputs.kind }}' = upgrade ]; then grep -q '828cc500f34c957427f42f14209f98d1069042cc0d68d6ee22f5ebdb3ee4653c' apk-output/signature.txt; fi
+          if grep -E 'android.permission.(CAMERA|READ_CONTACTS|READ_EXTERNAL_STORAGE|RECORD_AUDIO|ACCESS_FINE_LOCATION)' apk-output/permissions.txt; then exit 1; fi
+          cd apk-output
+          sha256sum *.apk > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lambert-audio-0.2.7
+          path: apk-output/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audio-device-evidence
+          path: |
+            android/app/build/reports/
+            android/app/build/outputs/androidTest-results/
