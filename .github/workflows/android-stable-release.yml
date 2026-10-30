@@ -1,0 +1,56 @@
+name: Android stable signed package
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - run: python3 scripts/bundle-android.py
+      - name: Build using persisted signing secret only
+        env:
+          SIGNING_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+        shell: bash
+        run: |
+          set -eu
+          set +x
+          : "${SIGNING_BASE64:?Configure fixed signing first}"
+          : "${ANDROID_SIGNING_STORE_PASSWORD:?Configure fixed signing first}"
+          : "${ANDROID_SIGNING_KEY_ALIAS:?Configure fixed signing first}"
+          umask 077
+          export ANDROID_SIGNING_KEYSTORE="$RUNNER_TEMP/ache-release.p12"
+          trap 'rm -f "$ANDROID_SIGNING_KEYSTORE"' EXIT
+          printf '%s' "$SIGNING_BASE64" | base64 --decode > "$ANDROID_SIGNING_KEYSTORE"
+          unset SIGNING_BASE64
+          gradle -p android --no-daemon :app:assembleDebug :app:lintDebug -PstableSigning
+      - name: Verify package evidence
+        run: |
+          mkdir -p apk-output
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-0.2.8.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs apk-output/*.apk > apk-output/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging apk-output/*.apk > apk-output/application.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions apk-output/*.apk > apk-output/permissions.txt
+          grep -q "name='app.lambert.tasks'" apk-output/application.txt
+          git rev-parse HEAD > apk-output/source.txt
+          cd apk-output
+          sha256sum *.apk > SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Lambert-stable-0.2.8
+          path: apk-output/
+          retention-days: 30
