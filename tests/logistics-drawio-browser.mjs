@@ -56,6 +56,7 @@ try{
  check('saved diagram shown as existing independently on refresh',await page.locator('#lmdInfo').textContent().then(s=>s.includes('已有独立画布')));
  await page.locator('#lkTabProcess').click();
  check('original process still works',await page.locator('#lkProcess').isVisible()&&await page.locator('#lkModules .lk-module').count()>0);
+ if(errors.length)console.log('DRAWIO_BROWSER_ERRORS',JSON.stringify(errors));
  check('no browser errors',errors.length===0);
  console.log('Draw.io browser regression passed.');
 }finally{await browser.close();}
