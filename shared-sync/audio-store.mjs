@@ -76,7 +76,7 @@ export function addTracks(db,entries){
       try{
       if(e.target.result+entries.length>200){tx.abort();return;}
       for(const {track,blob} of entries){tracks.add(track);if(blob)tx.objectStore('blobs').add({trackId:track.id,blob});}
-      tx.objectStore('settings').put({id:'workspace',activeTrackId:entries[0].track.id});
+      const settings=tx.objectStore('settings');settings.get('workspace').onsuccess=e=>settings.put({...e.target.result,id:'workspace',activeTrackId:entries[0].track.id});
       }catch{tx.abort();}
     };
   });
