@@ -61,7 +61,7 @@ public final class MainActivity extends Activity {
   web.setWebChromeClient(new WebChromeClient(){
    @Override public boolean onShowFileChooser(WebView v,ValueCallback<android.net.Uri[]> callback,FileChooserParams params){
     if(audioChooser!=null)audioChooser.onReceiveValue(null);audioChooser=callback;
-    android.content.Intent pick=new android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT).setType("audio/*").addCategory(android.content.Intent.CATEGORY_OPENABLE).putExtra(android.content.Intent.EXTRA_ALLOW_MULTIPLE,true);
+    android.content.Intent pick=FilePicker.create(params.getAcceptTypes(),params.getMode());
     try{startActivityForResult(pick,721);return true;}catch(android.content.ActivityNotFoundException e){audioChooser=null;callback.onReceiveValue(null);return true;}
    }
    @Override public boolean onJsAlert(WebView v,String url,String msg,JsResult result){new AlertDialog.Builder(MainActivity.this).setMessage(msg).setPositiveButton("确定",(d,w)->result.confirm()).setOnCancelListener(d->result.cancel()).show();return true;}
