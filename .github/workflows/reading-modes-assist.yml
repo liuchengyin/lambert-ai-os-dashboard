@@ -20,12 +20,12 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          Path('reading-modes-request.txt').write_text('为附带PDF书架代码提供主要实现草稿：新增连续滚动和单页翻页两种模式，页码旁select切换，默认保留单页，偏好按账号本机保存。设计独立createPdfViewer({shell,onPage,onError})模块，接口open(pdf,page,mode),goTo(page),setMode(mode),resize(),close()。连续模式建空页占位并按需渲染附近页面，最多保留5张canvas，串行渲染避免PDF.js同画布并发，scroll以视口中心确定当前页，防止程序跳页后位置回跳，进度防抖，模式切换/resize保留当前页，close取消渲染与回调，旧异步不可写新文档。请给核心调度、滚动定位和取消的JS草稿，不超过80行。仅源码无用户资料；不声称执行测试。')
+          Path('reading-modes-request.txt').write_text('复核附带最终PDF阅读器源码：连续滚动/单页切换，检查330页按需渲染是否最多5张canvas，串行队列、close/open快速切换、旧异步回调、resize及goTo连续跳页的竞态，是否有真正的P0/P1问题及最小修正。调用端onPage更新页码并防抖400ms保存进度，open/back/modechange会flush，模式按账号本机保存。仅返回有证据的问题，最多400字，不声称运行测试。')
           PY
-      - name: One DeepSeek draft request
+      - name: One GLM review request
         env:
-          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
-        run: node scripts/codex/model-assist.mjs --provider deepseek --task draft --prompt-file reading-modes-request.txt --file reading-bookshelf.mjs --run
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+        run: node scripts/codex/model-assist.mjs --provider glm --task review --prompt-file reading-modes-request.txt --file reading-pdf-viewer.mjs --run
       - name: Report actual usage and suggestion
         run: |
           node --input-type=module <<'JS'

@@ -81,10 +81,10 @@
     const s=document.createElement('script');s.async=false;s.src='daily-modules.js';document.body.appendChild(s)
   }
   if(!document.querySelector('link[data-reading-v2]')){
-    const r=document.createElement('link');r.rel='stylesheet';r.href='reading-v2.css?v=20261031-footer2';r.dataset.readingV2='';document.head.appendChild(r)
+    const r=document.createElement('link');r.rel='stylesheet';r.href='reading-v2.css?v=20261031-modes1';r.dataset.readingV2='';document.head.appendChild(r)
   }
   if(!document.querySelector('script[data-reading-v2]')){
-    const s=document.createElement('script');s.async=false;s.src='reading-v2.js?v=20261031-footer2';s.dataset.readingV2='';document.body.appendChild(s)
+    const s=document.createElement('script');s.async=false;s.src='reading-v2.js?v=20261031-modes1';s.dataset.readingV2='';document.body.appendChild(s)
   }
   if(!document.querySelector('script[src="reading-extension-import.js"]')){
     const s=document.createElement('script');s.async=false;s.src='reading-extension-import.js';document.body.appendChild(s)

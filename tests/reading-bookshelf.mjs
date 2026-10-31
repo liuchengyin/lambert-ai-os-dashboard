@@ -21,6 +21,26 @@ try{
  await page.locator('#bookNext').click();await page.waitForFunction(()=>document.querySelector('#bookPage').value==='2');
  await page.reload();await page.locator('nav button[data-v=reading]').click();await page.locator('#bookShelfSlots [data-open]').first().click();
  await page.waitForFunction(()=>document.querySelector('#bookPage').value==='2'&&document.querySelector('#bookPages').textContent==='2');
+ // Mode switching preserves the current page; continuous pages are real scroll slots.
+ assert.equal(await page.locator('#bookReadingMode').inputValue(),'single');
+ await page.locator('#bookReadingMode').selectOption('continuous');
+ await page.waitForFunction(()=>document.querySelector('#bookCanvasShell').dataset.mode==='continuous'&&document.querySelectorAll('.book-pdf-page').length===2);
+ assert.equal(await page.locator('#bookPage').inputValue(),'2');
+ await page.locator('#bookCanvasShell').evaluate(el=>{el.scrollTop=0;});
+ await page.waitForFunction(()=>document.querySelector('#bookPage').value==='1');
+ // Wait for the debounced checkpoint to commit before simulating a reload.
+ await page.waitForFunction(async()=>{const {createBookStore}=await import('/shared-sync/book-store.mjs');return (await createBookStore().list())[0].page===1;});
+ await page.locator('#bookReadingMode').selectOption('single');
+ await page.waitForFunction(()=>document.querySelector('#bookCanvasShell').dataset.mode==='single'&&document.querySelectorAll('.book-pdf-page').length===1);
+ assert.equal(await page.locator('#bookPage').inputValue(),'1');
+ await page.locator('#bookReadingMode').selectOption('continuous');
+ await page.reload();await page.locator('nav button[data-v=reading]').click();await page.locator('#bookShelfSlots [data-open]').first().click();
+ await page.waitForFunction(()=>document.querySelector('#bookReadingMode').value==='continuous'&&document.querySelectorAll('.book-pdf-page').length===2);
+ assert.equal(await page.locator('#bookPage').inputValue(),'1');
+ await page.locator('#bookPage').fill('999');await page.locator('#bookPage').dispatchEvent('change');
+ await page.waitForFunction(()=>document.querySelector('#bookPage').value==='2');
+ assert(await page.locator('#bookCanvasShell canvas').count()<=5);
+ console.log('PASS: continuous scroll, single-page switching, saved mode, progress and clamped page jump');
  await page.locator('#bookBack').click();
  for(let i=2;i<=7;i++){await page.locator('#bookShelfFile').setInputFiles({name:`Book ${i}.pdf`,mimeType:'application/pdf',buffer:pdf()});await page.waitForFunction(n=>document.querySelector('#bookCount').textContent===`${n} / 7`,i);}
  assert.equal(await page.locator('.book-cover').count(),7);assert.equal(await page.locator('#bookImport').isDisabled(),true);
