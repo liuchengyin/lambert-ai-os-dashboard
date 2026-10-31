@@ -1,0 +1,10 @@
+{
+  "version": "0.2.8",
+  "versionCode": 19,
+  "applicationId": "app.lambert.tasks",
+  "sourceCommit": "e7527daf76ffb3b34ed7fbc2a403f89b92575d2e",
+  "buildRun": 41167740176,
+  "bytes": 3808721,
+  "sha256": "9e57bd5bab020032480c2509f494261cc21e8cb392b5d9f76f4f1b49cae4dc45",
+  "certificateSha256": "3ccdfb85321f921a08a18ab54f3b0c9ca760a300a53a034afceab9e2bc88a87b"
+}
