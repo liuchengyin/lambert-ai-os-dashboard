@@ -54,7 +54,8 @@
       seedNode('signed','签收','确认妥投或签收结果','回传签收轨迹及其用于 SLA 的时间字段需核实','签收时间、签收证明、运单号','外部事件')
     ]}
   ]});
-  let state=null,blocked=false,locked=true,dirty=false,releaseRecord=null,tab='process',overviewMode='macro',moduleId='',selectedId='',editorMode='',dragPayload=null,activeStageId='',editingStageId='';
+  const directMaster=(()=>{try{const url=new URL(window.location.href);return url.searchParams.get('view')==='logistics'&&url.searchParams.get('tab')==='master';}catch{return false;}})();
+  let state=null,blocked=false,locked=true,dirty=false,releaseRecord=null,tab=directMaster?'master':'process',overviewMode='macro',moduleId='',selectedId='',editorMode='',dragPayload=null,activeStageId='',editingStageId='';
   const moves=window.LambertLogisticsMoves;
   const stages=window.LambertLogisticsStages;
   const flow=window.LambertLogisticsFlow;
@@ -104,10 +105,10 @@
   }
   root.innerHTML='<div class="lk-page">'+
     '<header class="lk-head"><div><small>LOGISTICS KNOWLEDGE · P0 CANVAS</small><h2>物流知识库</h2><p>以操作为底座，把业务动作、信息传递和数据记录串起来。</p></div>'+
-    '<button type="button" id="lkExport">导出知识库</button></header>'+
+    '<div class="lk-head-actions"><button type="button" id="lkOpenMaster" class="lk-open-master">进入画master · draw.io</button><button type="button" id="lkExport">导出知识库</button></div></header>'+
     '<div class="lk-toolbar"><span class="lk-route">中国 → 哈萨克斯坦 · 陆运示例</span><span class="lk-warning">示意链路 · 实际系统规则待核实</span></div>'+
     '<div class="lk-version-bar"><span id="lkEditStatus">已锁定 · 只读</span><div class="lk-version-actions"><button type="button" id="lkUnlock">解锁编辑</button><button type="button" id="lkSaveDraft" disabled>保存草稿</button><button type="button" id="lkPublish" disabled>确认发布</button><button type="button" id="lkCancelEdit" disabled>取消并锁定</button></div><div class="lk-version-history"><label>历史版本 <select id="lkHistorySelect"><option value="">选择历史版本</option></select></label><button type="button" id="lkRollback" disabled>回滚为新版本</button></div></div>'+
-    '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabOverview" aria-selected="false">全链路总览</button><button type="button" role="tab" id="lkTabProcess" aria-selected="true">模块编辑 · 操作＋信息</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button><button type="button" role="tab" id="lkTabSetup" aria-selected="false">基础资料配置</button><button type="button" role="tab" id="lkTabMaster" aria-selected="false">画master</button></div>'+
+    '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabOverview" aria-selected="false">全链路总览</button><button type="button" role="tab" id="lkTabProcess" aria-selected="true">模块编辑 · 操作＋信息</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button><button type="button" role="tab" id="lkTabSetup" aria-selected="false">基础资料配置</button><button type="button" role="tab" id="lkTabMaster" aria-selected="false">画master · draw.io</button></div>'+
     '<div id="lkOverview" role="tabpanel" aria-labelledby="lkTabOverview" hidden><div class="lk-ov-switch"><span>查看已发布版本</span><div role="group" aria-label="全链路展示模式"><button type="button" id="lkModeMacro" aria-pressed="true">A · 宏观模块</button><button type="button" id="lkModeDetail" aria-pressed="false">B · 完整流程</button></div></div><div id="lkOverviewContent"></div></div>'+
     '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-search-bar"><label>搜索操作、标签、操作码 <input id="lkSearch" type="search" placeholder="例如：安检 / 上车 / DDS"></label><div id="lkSearchResults" aria-live="polite"></div></div><div class="lk-canvas-categories" aria-label="物流模块底座"><span class="lk-canvas-category">仓</span><span class="lk-canvas-category">干</span><span class="lk-canvas-category">关</span><span class="lk-canvas-category">配</span></div><div class="lk-section-title"><div><strong>模块化操作画布</strong><small>大模块内包含可调整的子环节，例如：国内中心仓 → 到车／收入／分拣／发出。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div class="lk-mode-toolbar"><strong>干线类型</strong><span>按运输方式分类，也可为每个环节填写前置配置</span><button type="button" data-action="add-linehaul-mode" data-mode="road">＋ 陆运</button><button type="button" data-action="add-linehaul-mode" data-mode="sea">＋ 海运</button><button type="button" data-action="add-linehaul-mode" data-mode="air">＋ 空运</button></div><details class="lk-infra-base" id="lkInfrastructureBase"><summary>信息与数据基础设施 · 所有操作节点可复用（展开查看）</summary><p>这不是业务分支，也不是已经连接系统的实时数据。操作的内部事件、日志、推送决策、数据表、指标和任务，逐节点配置；无证据时保持待配置。</p><div class="lk-infra-chain"><div><strong>① 操作</strong><small>谁执行 / 操作动作</small></div><div><strong>② 事件与留痕</strong><small>内部事件 / 日志 / 记录表</small></div><div><strong>③ 推送判断</strong><small>仅内部 / 条件推送 / 对外</small></div><div><strong>④ 数据来源</strong><small>OMS / EDI / TMS 等表及关联键</small></div><div><strong>⑤ 指标与 SLA</strong><small>业务规则 / 时间口径 / 目标</small></div><div><strong>⑥ 看板与任务</strong><small>数据看板 / 预警与任务入口</small></div></div><p>不对外推送的事件仍可有内部日志与持久化记录；是否真的产生轨迹、是否入库，都待真实系统证据核实。</p></details><div id="lkModules" class="lk-modules lk-canvas"></div>'+
     '<div class="lk-section-title lk-selection-head"><div><strong id="lkNodeTitle">操作节点详情</strong><small>选择上方的小块；系统关系放在详情内按需展开</small></div><button type="button" id="lkAddNode">＋ 为选中模块添加操作</button></div>'+
@@ -1037,7 +1038,19 @@
   $('lkTabProcess').onclick=()=>{tab='process';render();};
   $('lkTabData').onclick=()=>{tab='data';render();};
   $('lkTabSetup').onclick=()=>{tab='setup';render();};
-  $('lkTabMaster').onclick=()=>{tab='master';render();};
+  const selectMaster=()=>{
+    tab='master';
+    try{
+      const url=new URL(window.location.href);
+      url.searchParams.set('view','logistics');url.searchParams.set('tab','master');
+      window.history.replaceState(window.history.state,'',url);
+    }catch{/* Navigation remains functional without URL history. */}
+    if(typeof window.openView==='function')window.openView('logistics');
+    render();
+  };
+  $('lkTabMaster').onclick=selectMaster;
+  $('lkOpenMaster').onclick=selectMaster;
+  window.addEventListener('lambert-master-ready',()=>{if(tab==='master')render();});
   $('lkAddNode').onclick=()=>{if(current()?.enabled)openEditor(false);};
   $('lkQuickClose').onclick=closeQuickDetail;
   $('lkQuickUnlock').onclick=()=>{if(!blocked&&locked){$('lkUnlock').click();syncQuickDetail();}};

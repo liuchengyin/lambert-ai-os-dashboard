@@ -33,3 +33,11 @@
  #logistics .lmd-workarea,#logistics .lmd-start{min-height:480px}
  #logistics .lmd-start{padding:25px 18px}
 }
+
+/* Entrypoint is deliberately visible even while the legacy process tab is active. */
+#logistics .lk-head-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+#logistics .lk-head .lk-open-master{background:#7151b6;color:#fff;border-color:#7151b6;font-size:13px;font-weight:750;box-shadow:0 6px 14px rgba(96,63,166,.16)}
+#logistics .lk-head .lk-open-master:hover{background:#5c3c9b;color:#fff}
+#logistics .lk-tabs #lkTabMaster{color:#674ba0;border-color:#e5d9f8;background:#f8f4ff;font-weight:760}
+#logistics .lk-tabs #lkTabMaster[aria-selected="true"]{background:#7653ba;color:#fff;border-color:#7653ba}
+@media(max-width:700px){#logistics .lk-head-actions{justify-content:flex-start}}

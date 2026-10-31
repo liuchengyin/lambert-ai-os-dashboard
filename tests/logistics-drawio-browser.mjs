@@ -58,5 +58,15 @@ try{
  check('original process still works',await page.locator('#lkProcess').isVisible()&&await page.locator('#lkModules .lk-module').count()>0);
  if(errors.length)console.log('DRAWIO_BROWSER_ERRORS',JSON.stringify(errors));
  check('no browser errors',errors.length===0);
+ // Test direct-entry URL: the old preview URL showed only the process tab.
+ await page.goto(origin+'/?view=logistics&tab=master&editor=drawio');
+ await page.waitForFunction(()=>document.querySelector('#lkTabMaster')?.getAttribute('aria-selected')==='true',{timeout:20000});
+ check('direct link selects master rather than process',await page.locator('#lkTabMaster').getAttribute('aria-selected')==='true'&&await page.locator('#lkProcess').isHidden());
+ check('direct link mounts actual editor iframe',await page.locator('#lmdFrame').getAttribute('src').then(x=>x?.startsWith('https://embed.diagrams.net/')));
+ check('prominent top button persists',await page.locator('#lkOpenMaster').count()===1);
+ await page.locator('#lkTabProcess').click();
+ await page.locator('#lkOpenMaster').click();
+ check('prominent button opens master in one click',await page.locator('#lkMaster').isVisible()&&await page.locator('#lkTabMaster').getAttribute('aria-selected')==='true');
+ check('no new browser errors after direct-link check',errors.length===0);
  console.log('Draw.io browser regression passed.');
 }finally{await browser.close();}

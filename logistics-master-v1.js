@@ -11,7 +11,7 @@
  '<div class="lmd-workarea"><div class="lmd-start" id="lmdStart"><h3>真正的 draw.io 编辑器</h3><p>左侧图形库、自由绘图、连线、文字、泳道、分组、图层、缩放等功能均由开源 draw.io 提供。</p><p>首次打开会只读取原画板的模块名、操作名称和已记录的条件／异常关系，形成独立副本。不会向第三方发送业务字段、接口地址或指标内容。</p><button id="lmdStartOpen" type="button">打开完整画布</button><small>编辑器由 embed.diagrams.net 提供，需能够访问该站点。图纸保存在当前浏览器的独立账户空间，不会覆盖原画板。</small></div><iframe id="lmdFrame" title="画master draw.io 全功能编辑器" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-forms allow-downloads allow-modals" allow="clipboard-read; clipboard-write" hidden></iframe></div>'+
  '<p id="lmdStatus" class="lmd-status" role="status">准备就绪。点击「进入完整编辑器」，即可畅游 draw.io。</p>'+
  '<div class="lmd-footer">原画板是业务权威资料；在这里新画的连线仅属于研究草图，不自动成为真实业务、EDI、数据库或 SLA 规则。<a href="https://app.diagrams.net/" target="_blank" rel="noopener noreferrer">单独打开 draw.io 官方网页版</a></div>';
- let opened=false,blocked=false,stored=false,sourceVersion=0,workingXml='',bridge=null,savedFile=null,source=null,loaded=false,pending=false,pendingDownload=false;
+ let opened=false,blocked=false,stored=false,sourceVersion=0,workingXml='',bridge=null,savedFile=null,source=null,loaded=false,pending=false,pendingDownload=false,editorHandshake=false;
  const status=s=>{$('lmdStatus').textContent=s;};
  function validate(xml){
    if(!model.validXml(xml))return false;
@@ -37,13 +37,16 @@
    }
    $('lmdInfo').textContent=stored?'已有独立画布 · 记录源版本 V'+savedFile.sourceVersion:'新画布 · 导入源版本 V'+sourceVersion;
    $('lmdSave').disabled=blocked||!opened;
+   const u=new URL(window.location.href);
+   if(u.searchParams.get('view')==='logistics'&&u.searchParams.get('tab')==='master'&&u.searchParams.get('editor')==='drawio')open();
  }
  function refreshFrame(){
    if(!opened)return;
    bridge?.close();
+   editorHandshake=false;
    const frame=$('lmdFrame');
    bridge=Bridge.create({frame,initialXml:workingXml,onStatus:ev=>{
-     if(ev==='loaded'){status('draw.io 编辑器已经加载。自由绘图后，点击上方「保存画master」保存到当前浏览器。');$('lmdSave').disabled=blocked;}
+     if(ev==='loaded'){editorHandshake=true;status('draw.io 编辑器已经加载。自由绘图后，点击上方「保存画master」保存到当前浏览器。');$('lmdSave').disabled=blocked;}
      if(ev==='closed')status('编辑器已关闭；画布记录仍保留。');
    },onXml:xml=>{
      if(!validate(xml)){pending=false;status('未保存：draw.io 返回的 XML 无效或过大。旧记录保持不变。');return;}
@@ -58,6 +61,11 @@
    }});
    $('lmdFrame').hidden=false;$('lmdStart').hidden=true;
    bridge.open();
+   status('正在连接 draw.io 完整编辑器。如果网络无法加载，可先点击下方官方网页版测试连通性。');
+   setTimeout(()=>{
+     if(opened&&!editorHandshake&&$('lmdFrame').contentWindow===frame.contentWindow)
+       status('draw.io 嵌入服务尚未响应。可能是国内网络或浏览器阻止了 embed.diagrams.net；下方可打开官方网页版单独验证。原始数据没有改动。');
+   },12000);
    $('lmdSave').disabled=false;
  }
  function open(){
@@ -127,4 +135,5 @@
    }
  });
  root.LambertLogisticsMaster=Object.freeze({activate:setSource});
+ root.dispatchEvent(new Event('lambert-master-ready'));
 })(window);
