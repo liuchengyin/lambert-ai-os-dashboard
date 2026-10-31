@@ -1038,19 +1038,9 @@
   $('lkTabProcess').onclick=()=>{tab='process';render();};
   $('lkTabData').onclick=()=>{tab='data';render();};
   $('lkTabSetup').onclick=()=>{tab='setup';render();};
-  const selectMaster=()=>{
-    tab='master';
-    try{
-      const url=new URL(window.location.href);
-      url.searchParams.set('view','logistics');url.searchParams.set('tab','master');
-      window.history.replaceState(window.history.state,'',url);
-    }catch{/* Navigation remains functional without URL history. */}
-    if(typeof window.openView==='function')window.openView('logistics');
-    render();
-  };
+  const selectMaster=()=>{if(typeof window.openView==='function')window.openView('master');};
   $('lkTabMaster').onclick=selectMaster;
   $('lkOpenMaster').onclick=selectMaster;
-  window.addEventListener('lambert-master-ready',()=>{if(tab==='master')render();});
   $('lkAddNode').onclick=()=>{if(current()?.enabled)openEditor(false);};
   $('lkQuickClose').onclick=closeQuickDetail;
   $('lkQuickUnlock').onclick=()=>{if(!blocked&&locked){$('lkUnlock').click();syncQuickDetail();}};
@@ -1235,6 +1225,8 @@
   moduleId=state.modules[0]?.id||'';
   activeStageId=stages.stages(current())[0]?.id||'';
   render();
+  // Compatibility for former preview deep links. Standalone editor owns its view.
+  if(directMaster&&typeof window.openView==='function')window.openView('master');
   if(blocked)setMessage(opened.error||'知识库记录无法读取，已开启只读保护，原数据未被覆盖。');
   else setMessage('默认锁定。解锁后修改草稿；只有确认发布才更新全链路总览。');
   window.addEventListener('beforeunload',event=>{

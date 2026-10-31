@@ -7,10 +7,10 @@
   const groups=[
     {id:'work',title:'执行区',pages:['home','projects','tasks','review']},
     {id:'growth',title:'成长区',pages:['writing','reading','english']},
-    {id:'tools',title:'工具区',pages:['knowledge','logistics','settings']}
+    {id:'tools',title:'工具区',pages:['knowledge','logistics','master','settings']}
   ];
-  const names={home:'今日总览',projects:'项目看板',tasks:'任务中心',review:'每日复盘',writing:'每日记录',reading:'每日阅读',english:'英语学习',knowledge:'常用链接',logistics:'物流知识库',settings:'设置'};
-  const icons={home:'⌂',projects:'▦',tasks:'☑',review:'◷',writing:'✎',reading:'▤',english:'◎',knowledge:'↗',logistics:'◇',settings:'⚙'};
+  const names={home:'今日总览',projects:'项目看板',tasks:'任务中心',review:'每日复盘',writing:'每日记录',reading:'每日阅读',english:'英语学习',knowledge:'常用链接',logistics:'物流知识库',master:'画master',settings:'设置'};
+  const icons={home:'⌂',projects:'▦',tasks:'☑',review:'◷',writing:'✎',reading:'▤',english:'◎',knowledge:'↗',logistics:'◇',master:'▧',settings:'⚙'};
   const stored=(()=>{try{return JSON.parse((window.LambertPrivateStorage||localStorage).getItem('s1_nav_groups_v1'))||{}}catch{return {}}})();
   // Desktop compact rail: persist only presentation state, never alter module data.
   const COLLAPSE_KEY='s1_sidebar_collapsed_v1';
@@ -73,7 +73,7 @@
 
 // GLM Flash navigation draft, corrected to use the existing view router and URL.
 (function(){
-  const original=window.openView,allowed=new Set(['home','projects','tasks','review','writing','reading','english','knowledge','logistics']);
+  const original=window.openView,allowed=new Set(['home','projects','tasks','review','writing','reading','english','knowledge','logistics','master']);
   if(typeof original!=='function')return;
   const KEY='s1_last_view_v1';
   const read=()=>{try{return (window.LambertPrivateStorage||localStorage).getItem(KEY)}catch{return null}};
