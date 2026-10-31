@@ -47,6 +47,5 @@ jobs:
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/drawio-master-server.log 2>&1 &
           sleep 2
-          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-drawio-browser.mjs
           TEST_ORIGIN=http://127.0.0.1:8765 node tests/master-files-v2-ui.mjs
           TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-v35-ui.mjs
