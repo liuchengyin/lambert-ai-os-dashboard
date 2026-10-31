@@ -10,7 +10,7 @@ const check=(label,test)=>{assert.ok(test,label);console.log('PASS:',label)};
 try{
  await page.goto(origin+'/?view=reading');
  await page.locator('#rv2SplitView').waitFor();
- await page.waitForFunction(()=>!!document.querySelector('#rv2ArchiveControls .archive-target-control'),{timeout:20000});
+ await page.waitForFunction(()=>!!document.querySelector('#archive-target-reading')?.closest('#rv2ArchiveControls'),{timeout:20000});
  check('template prompt card removed',await page.locator('.reading-template-hint').count()===0&&await page.locator('#rv2Prompts').count()===0);
  check('archive settings default collapsed',await page.locator('#rv2ArchiveSettings').evaluate(x=>!x.open));
  check('save and archive action buttons are visible',await page.locator('#rv2Save').isVisible()&&await page.locator('#rv2Archive').isVisible());
@@ -22,6 +22,8 @@ try{
  check('save/archive buttons stay horizontal without overflow',geometry.buttons.every(b=>b.w>=65&&b.h<=54&&b.right<=geometry.noteRight+1)&&Math.abs(geometry.buttons[0].y-geometry.buttons[1].y)<4);
  await page.locator('#rv2ArchiveSettings summary').click();
  check('archive choices expand on demand',await page.locator('#rv2ArchiveSettings').evaluate(x=>x.open)&&await page.locator('#rv2ArchiveControls .archive-target-control').isVisible());
+ check('reading archive controls are unique',await page.locator('#rv2ArchiveControls .archive-target-control').count()===1);
+ check('writing archive controls were not moved',await page.locator('#archive-target-writing').evaluate(e=>!!e.closest('#writing')));
  check('archive destination controls stay inside details',await page.evaluate(()=>document.querySelector('.archive-target-control')?.parentElement?.id==='rv2ArchiveControls'));
  const bounds=await page.evaluate(()=>{
   const a=document.querySelector('#rv2ArchiveSettings').getBoundingClientRect(),c=document.querySelector('#rv2ArchiveControls .archive-target-control').getBoundingClientRect();

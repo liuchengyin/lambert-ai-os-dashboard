@@ -196,7 +196,7 @@
     if(currentNote()?.feishuUrl)return;
     try{const target=await ArchiveTargets.getDestination('reading');$('rv2FeishuLink').href=target.url;$('rv2FeishuLink').textContent='打开归档位置：'+target.name;}catch{$('rv2FeishuLink').removeAttribute('href');$('rv2FeishuLink').textContent='请先配置归档位置';}
   }
-  if(window.ArchiveTargets){ArchiveTargets.mount('reading',$('rv2ArchiveControls')).then(()=>{refreshArchiveLink();const target=$('rv2StandaloneView').hidden?$('rv2ArchiveControls'):$('rv2StandaloneArchiveTools');const controls=document.querySelector('.archive-target-control');if(controls&&target)target.appendChild(controls);if(new URLSearchParams(location.search).get('archiveSettings')==='1')ArchiveTargets.openSettings()});document.addEventListener('archive-target-changed',()=>refreshArchiveLink());}
+  if(window.ArchiveTargets){ArchiveTargets.mount('reading',$('rv2ArchiveControls')).then(()=>{refreshArchiveLink();const target=$('rv2StandaloneView').hidden?$('rv2ArchiveControls'):$('rv2StandaloneArchiveTools');const controls=document.querySelector('#archive-target-reading')?.closest('.archive-target-control');if(controls&&target)target.appendChild(controls);if(new URLSearchParams(location.search).get('archiveSettings')==='1')ArchiveTargets.openSettings()});document.addEventListener('archive-target-changed',()=>refreshArchiveLink());}
   $('rv2Type').onchange=e=>{renderPrompts(e.target.value);const n=currentNote();if(n){n.type=e.target.value;persist()}};
   $('rv2Save').onclick=()=>saveNote(true);$('rv2Archive').onclick=archiveNote;$('rv2New').onclick=newNote;$('rv2Clipboard').onclick=importClipboard;
   $('rv2PdfMode').onclick=()=>setMode('pdf');$('rv2WebMode').onclick=()=>setMode('web');
@@ -295,7 +295,7 @@
     $('rv2NotesTab').setAttribute('aria-selected',String(solo));
     $('rv2SplitTab').setAttribute('aria-selected',String(!solo));
     $('rv2Progress').closest('.reading-progress-field').hidden=solo;
-    const destinationUI=document.querySelector('.archive-target-control');
+    const destinationUI=document.querySelector('#archive-target-reading')?.closest('.archive-target-control');
     if(destinationUI){const target=solo?$('rv2StandaloneArchiveTools'):$('rv2ArchiveControls');if(destinationUI.parentNode!==target)target.appendChild(destinationUI)}
     try{(window.LambertPrivateStorage||localStorage).setItem(TAB_PREF,solo?'standalone':'split')}catch{}
   }
