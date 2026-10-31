@@ -16,6 +16,12 @@ try{
   if(url.pathname==='/auth/v1/user')return route.fulfill({json:user,headers});
   if(url.pathname==='/auth/v1/logout')return route.fulfill({status:204,headers});
   if(['/auth/v1/signup','/auth/v1/recover','/auth/v1/resend'].includes(url.pathname))return route.fulfill({json:{},headers});
+  // The desktop bookshelf loads alongside the workspace; this fixture has no books.
+  if(url.pathname==='/rest/v1/lambert_books'&&r.method()==='GET'){
+   assert.equal(r.headers().authorization,'Bearer '+token);
+   assert.equal(url.searchParams.get('user_id'),'eq.'+uid);
+   return route.fulfill({json:[],headers});
+  }
   if(url.pathname==='/rest/v1/lambert_items')return route.fulfill({json:[...rows.values()],headers});
   if(url.pathname==='/rest/v1/rpc/lambert_apply_mutation'){const p=r.postDataJSON();let data=receipts.get(p.p_mutation_id);if(!data){const old=rows.get(p.p_item_id);if((old?.version||0)!==p.p_expected_version)data={status:'conflict',record:old};else{const record={user_id:uid,kind:p.p_kind,item_id:p.p_item_id,payload:p.p_payload,version:(old?.version||0)+1,deleted_at:p.p_deleted?'2026-10-19':null};rows.set(p.p_item_id,record);data={status:'applied',record};}receipts.set(p.p_mutation_id,data);}return route.fulfill({json:data,headers});}
   throw Error('unexpected API '+url.pathname);
@@ -87,3 +93,4 @@ try{
  await page.goto(origin+'/account.html#access_token='+token+'&refresh_token=fake-refresh-token&expires_in=3600&token_type=bearer&type=recovery');await page.getByLabel('新密码',{exact:true}).fill('new-test-password');await page.getByRole('button',{name:'保存新密码',exact:true}).click();await page.getByText('密码已更新。手机端可使用新密码登录。',{exact:true}).waitFor();assert.equal(await page.evaluate(()=>location.hash),'');
  console.log(JSON.stringify({ok:true,checks:['unconfigured-local-mode','email-login-real-sdk-mocked-service','no-auto-import','mobile-create-upload','desktop-read-complete','mobile-read-completion','logout-guest-restored','legacy-review-isolation','invalid-password','password-not-retained','reset-email','signup-confirmation','password-recovery-callback','review-sync-before-feishu-archive','mobile-cloud-sync-before-feishu-archive','import-preview-remote-race-blocked','import-after-activation','repeat-import-no-duplicates','offline-project-review-reconnect','desktop-reads-offline-project-review','personal-notes-bookmarks-desktop-to-mobile'],apiCalls:requests.length,hostedService:false}));
 }catch(e){for(const p of context?.pages()||[]){console.error('PAGE_DIAGNOSTIC',JSON.stringify(await p.evaluate(()=>({url:location.pathname,status:window.LambertAccount?.status(),active:localStorage.getItem('lambert_active_account_v1'),hidden:document.hidden,dialog:document.querySelector('.lambert-account')?.innerText,pending:Object.keys(localStorage).filter(k=>k.includes('batch:')).map(k=>JSON.parse(localStorage[k])),data:window.LambertData?.read('tasks',[])})).catch(()=>({navigationInProgress:true}))));}throw e;}finally{await context?.close();await desktopContext?.close();await browser.close();}
+
