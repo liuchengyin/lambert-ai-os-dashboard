@@ -1,0 +1,39 @@
+name: Reading modes model assist
+on:
+  push:
+    branches: [feat/web-reading-modes-20261031]
+    paths: ['.github/workflows/reading-modes-assist.yml']
+permissions:
+  contents: read
+jobs:
+  assist:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare scoped implementation request
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          Path('reading-modes-request.txt').write_text('复核附带最终PDF阅读器源码：连续滚动/单页切换，检查330页按需渲染是否最多5张canvas，串行队列、close/open快速切换、旧异步回调、resize及goTo连续跳页的竞态，是否有真正的P0/P1问题及最小修正。调用端onPage更新页码并防抖400ms保存进度，open/back/modechange会flush，模式按账号本机保存。仅返回有证据的问题，最多400字，不声称运行测试。')
+          PY
+      - name: One GLM review request
+        env:
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+        run: node scripts/codex/model-assist.mjs --provider glm --task review --prompt-file reading-modes-request.txt --file reading-pdf-viewer.mjs --run
+      - name: Report actual usage and suggestion
+        run: |
+          node --input-type=module <<'JS'
+          import {readdir,readFile} from 'node:fs/promises';
+          const dir='.codex-local/assist/';
+          for(const name of await readdir(dir)){
+            if(name==='ledger.json'||!name.endsWith('.json'))continue;
+            const r=JSON.parse(await readFile(dir+name,'utf8'));
+            if(r.task==='draft'||r.task==='review')console.log(JSON.stringify(r));
+          }
+          JS
