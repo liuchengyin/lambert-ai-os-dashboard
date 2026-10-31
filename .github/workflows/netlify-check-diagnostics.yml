@@ -1,0 +1,26 @@
+name: Netlify existing check diagnostics
+on:
+  push:
+    branches: [fix/netlify-mirror-resource-audit]
+    paths: ['.github/workflows/netlify-check-diagnostics.yml']
+permissions:
+  actions: read
+  contents: read
+jobs:
+  read:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Read existing failed check only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: liuchengyin/lambert-ai-os-dashboard
+        run: |
+          gh run view 41184727951 --log-failed > /tmp/netlify-check.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          lines=Path('/tmp/netlify-check.log').read_text().splitlines()
+          text='\n'.join(x for x in lines if re.search(r'Error|Cannot|failed|node:|at file|assert|Module|ERR|error:',x))[-6500:]
+          print('::notice title=Check failure evidence::'+text.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
+          PY
