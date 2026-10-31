@@ -134,4 +134,7 @@ PR 自动创建被 GitHub 明确拒绝：`GitHub Actions is not permitted to cre
 
 对 `https://lambert-ai-os-cn-test.netlify.app/lib/link-recovery.js` 的云端只读检查返回 HTTP401，现网可能存在访问保护，具体来源需由站点管理员确认。没有绕过或关闭保护，也没有把401误报为缺文件404。现网白屏修复是否已经生效、实际国内网络访问、完整 Markdown CDN 联通均尚未验证。代码及静态产物可审查，但不能宣称 Netlify 已生产发布。
 
-同提交存在 Vercel 非生产 Preview：`https://lambert-ai-os-dashboard-hzbcdodoy-liuchengyin8030-8582.vercel.app`。它是 Vercel 的分支预览，不是 Netlify 修复上线的证据；原正式版未变。
+同提交存在 Vercel 非生产 Preview：`https://lambert-ai-os-dashboard-nlwk5tmta-liuchengyin8030-8582.vercel.app`。它是 Vercel 的分支预览，不是 Netlify 修复上线的证据；原正式版未变。
+
+
+最终代码验证：`261c2a8` 的 [Actions 41180423417](https://github.com/liuchengyin/lambert-ai-os-dashboard/actions/runs/41180423417) 全部测试通过（56秒）。含首次构建保护、故障复现/恢复、localStorage 与 IndexedDB 保留；18项账号/同步单元和两个 origin 的浏览器回归通过。`netlify-static-mirror` artifact 约12.5 MB，平台摘要 `sha256:919ce0ae94d4f56a53b5abd3155c1ca814d99a284176f5504fcbb62178fdacf0`。PR 权限拒绝和 Netlify HTTP401 仍存在；未发布生产。此后仅补充本文验证记录，复用同代码已通过的测试，不无故重跑。
