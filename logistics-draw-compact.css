@@ -53,3 +53,7 @@
  #logistics .lk-compact-actions #lkMoreButton{padding:8px 10px}
  #logistics #lkMoreDrawer{width:min(380px,97vw)}
 }
+
+/* Duplicate module-title row is removed; add-operation stays in More drawer. */
+#logistics .lk-selection-head[hidden]{display:none!important}
+#logistics #lkMoreDrawer #lkAddNode{display:inline-flex;align-items:center;margin-top:8px;max-width:100%;white-space:normal}

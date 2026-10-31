@@ -9,7 +9,7 @@
     {id:'growth',title:'成长区',pages:['writing','reading','english']},
     {id:'tools',title:'工具区',pages:['knowledge','logistics','master','settings']}
   ];
-  const names={home:'今日总览',projects:'项目看板',tasks:'任务中心',review:'每日复盘',writing:'每日记录',reading:'每日阅读',english:'英语学习',knowledge:'常用链接',logistics:'物流Draw',master:'画master',settings:'设置'};
+  const names={home:'今日总览',projects:'项目看板',tasks:'任务中心',review:'每日复盘',writing:'每日记录',reading:'每日阅读',english:'英语学习',knowledge:'常用链接',logistics:'物流Draw',master:'画Master',settings:'设置'};
   const icons={home:'⌂',projects:'▦',tasks:'☑',review:'◷',writing:'✎',reading:'▤',english:'◎',knowledge:'↗',logistics:'◇',master:'▧',settings:'⚙'};
   const stored=(()=>{try{return JSON.parse((window.LambertPrivateStorage||localStorage).getItem('s1_nav_groups_v1'))||{}}catch{return {}}})();
   // Desktop compact rail: persist only presentation state, never alter module data.

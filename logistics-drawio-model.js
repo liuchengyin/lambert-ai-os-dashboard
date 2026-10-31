@@ -1,4 +1,4 @@
-/* 画master full draw.io canvas: separate account-scoped document, read-only source projection. */
+/* 画Master full draw.io canvas: separate account-scoped document, read-only source projection. */
 (function(root){
  'use strict';
  const KEY='lambert_logistics_master_drawio_v1';
@@ -15,9 +15,9 @@
      const raw=store.getItem(KEY);
      if(raw===null)return {exists:false};
      const data=JSON.parse(raw);
-     if(!valid(data))return {error:'已有画master文件格式异常；为防止覆盖，已禁止写入'};
+     if(!valid(data))return {error:'已有画Master文件格式异常；为防止覆盖，已禁止写入'};
      return {exists:true,data:clone(data)};
-   }catch{return {error:'读取画master失败；为防止覆盖，已禁止写入'};}
+   }catch{return {error:'读取画Master失败；为防止覆盖，已禁止写入'};}
  }
  function save(store,xml,sourceVersion){
    if(!validXml(xml)||!Number.isSafeInteger(sourceVersion)||sourceVersion<0)return false;

@@ -75,14 +75,18 @@
           <div class="reading-clip-row"><span>从阅读内容中摘录原文</span><button id="rv2Clipboard" class="reading-secondary">从剪贴板导入</button></div>
           <label class="reading-editor-field reading-source-field"><textarea id="rv2Excerpt" placeholder="原文 / 摘录"></textarea></label><div id="rv2ExcerptRich" class="reading-rich-slot" hidden></div>
 
-          <div class="reading-template-hint"><strong>模板提示</strong><div id="rv2Prompts"></div></div>
-
-          <div class="reading-note-actions">
-            <button id="rv2Save" class="task-primary-btn">保存笔记</button>
-            <button id="rv2Archive" class="reading-archive">归档飞书</button>
-            <span id="rv2Status"></span>
+          <div class="reading-note-footer">
+            <div class="reading-note-actions">
+              <button id="rv2Save" class="task-primary-btn" type="button">保存笔记</button>
+              <button id="rv2Archive" class="reading-archive" type="button">归档飞书</button>
+              <span id="rv2Status" role="status" aria-live="polite"></span>
+            </div>
+            <details class="reading-archive-settings" id="rv2ArchiveSettings">
+              <summary>归档位置设置</summary>
+              <div class="reading-archive-settings-body" id="rv2ArchiveControls"></div>
+              <a id="rv2FeishuLink" class="reading-feishu-link" href="${FEISHU_DAILY}" target="_blank" rel="noopener noreferrer">打开飞书归档位置</a>
+            </details>
           </div>
-          <a id="rv2FeishuLink" class="reading-feishu-link" href="${FEISHU_DAILY}" target="_blank">打开飞书归档位置</a>
         </section>
       </div>
 
@@ -115,7 +119,7 @@
     document.querySelectorAll('.reading-source-tabs button').forEach(b=>b.classList.toggle('active',b.dataset.mode===safe));
     state.reader.mode=safe;persist();
   }
-  function renderPrompts(type){$('rv2Prompts').innerHTML=(templatePrompts[type]||[]).map((p,i)=>`<span>${i+1}. ${esc(p)}</span>`).join('');$('rv2CardPrefix').textContent=`${type}：`}
+  function renderPrompts(type){$('rv2CardPrefix').textContent=`${type}：`}
 
   function legacyRows(){
     const legacy=get(LEGACY,{});
@@ -192,7 +196,7 @@
     if(currentNote()?.feishuUrl)return;
     try{const target=await ArchiveTargets.getDestination('reading');$('rv2FeishuLink').href=target.url;$('rv2FeishuLink').textContent='打开归档位置：'+target.name;}catch{$('rv2FeishuLink').removeAttribute('href');$('rv2FeishuLink').textContent='请先配置归档位置';}
   }
-  if(window.ArchiveTargets){ArchiveTargets.mount('reading',$('rv2Archive').parentElement).then(()=>{refreshArchiveLink();const target=$('rv2StandaloneView').hidden?$('rv2Archive').parentElement:$('rv2StandaloneArchiveTools');const controls=document.querySelector('.archive-target-control');if(controls&&target)target.appendChild(controls);if(new URLSearchParams(location.search).get('archiveSettings')==='1')ArchiveTargets.openSettings()});document.addEventListener('archive-target-changed',()=>refreshArchiveLink());}
+  if(window.ArchiveTargets){ArchiveTargets.mount('reading',$('rv2ArchiveControls')).then(()=>{refreshArchiveLink();const target=$('rv2StandaloneView').hidden?$('rv2ArchiveControls'):$('rv2StandaloneArchiveTools');const controls=document.querySelector('.archive-target-control');if(controls&&target)target.appendChild(controls);if(new URLSearchParams(location.search).get('archiveSettings')==='1')ArchiveTargets.openSettings()});document.addEventListener('archive-target-changed',()=>refreshArchiveLink());}
   $('rv2Type').onchange=e=>{renderPrompts(e.target.value);const n=currentNote();if(n){n.type=e.target.value;persist()}};
   $('rv2Save').onclick=()=>saveNote(true);$('rv2Archive').onclick=archiveNote;$('rv2New').onclick=newNote;$('rv2Clipboard').onclick=importClipboard;
   $('rv2PdfMode').onclick=()=>setMode('pdf');$('rv2WebMode').onclick=()=>setMode('web');
@@ -292,7 +296,7 @@
     $('rv2SplitTab').setAttribute('aria-selected',String(!solo));
     $('rv2Progress').closest('.reading-progress-field').hidden=solo;
     const destinationUI=document.querySelector('.archive-target-control');
-    if(destinationUI){const target=solo?$('rv2StandaloneArchiveTools'):$('rv2Archive').parentElement;if(destinationUI.parentNode!==target)target.appendChild(destinationUI)}
+    if(destinationUI){const target=solo?$('rv2StandaloneArchiveTools'):$('rv2ArchiveControls');if(destinationUI.parentNode!==target)target.appendChild(destinationUI)}
     try{(window.LambertPrivateStorage||localStorage).setItem(TAB_PREF,solo?'standalone':'split')}catch{}
   }
   $('rv2SplitTab').onclick=()=>switchReadingTab('split');
