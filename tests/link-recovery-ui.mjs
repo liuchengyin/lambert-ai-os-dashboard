@@ -25,6 +25,7 @@ const read=()=>page.evaluate(()=>({
 }));
 try{
  await page.goto((process.env.TEST_BASE_URL||'http://127.0.0.1:8765/')+'?view=knowledge',{waitUntil:'domcontentloaded'});
+ await page.locator('#knowledgeRecoveryOpen').click();
  await page.locator('#knowledgeRecoverLocal').waitFor({timeout:30000});
  check('restore control exists without auto-importing data',
   (await read()).common[0].links.length===1&&await page.locator('#knowledgeRecoverLocal').isVisible());
@@ -41,7 +42,7 @@ try{
   after.common[0].links.find(l=>l.id==='lost').extra==='备注保留');
  check('backup written before merge',
   await page.evaluate(()=>Object.keys(localStorage).some(k=>k.startsWith('lambert_link_recovery_backup_v1:'))));
- await page.reload();await page.locator('#knowledgeRecoverLocal').waitFor();
+ await page.reload();await page.locator('#knowledgeRecoveryOpen').click();await page.locator('#knowledgeRecoverLocal').waitFor();
  const reload=await read();
  check('restored links persist after reload',reload.common[0].links.length===2&&reload.personal[0].links.length===1);
  await page.locator('#knowledgeRecoverLocal').click();

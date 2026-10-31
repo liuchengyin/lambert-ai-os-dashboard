@@ -1,7 +1,7 @@
 // Common links dashboard: iTab-style launcher + editable groups + wallpaper
 (function(){
   const section=document.getElementById('knowledge');if(!section)return;
-  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261029-restore1';document.head.appendChild(l)}
+  if(!document.querySelector('link[href^="knowledge-itab-v2.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='knowledge-itab-v2.css?v=20261031-wallpaper1';document.head.appendChild(l)}
   const navBtn=document.querySelector('nav button[data-v="knowledge"]');if(navBtn)navBtn.textContent='常用链接';
   const STORAGE='knowledge_link_library_v1',PERSONAL='knowledge_link_personal_v1',ACTIVE_TAB='knowledge_active_tab_v1',LOCK='knowledge_link_locked_v1',WALL='knowledge_wallpaper_v1';
   let libraryReadFailed=false;
@@ -34,8 +34,7 @@
   let groups=loadGroups(),locked=get(LOCK,true),query='',draggingGroupId=null,editing=null;
 
   section.innerHTML=`<div class="knowledge-page">
-    <div class="knowledge-head"><div><h2>常用链接</h2><p>个人快捷启动台</p></div><div class="knowledge-head-actions"><button id="knowledgeTabSwitch" class="knowledge-tab-switch" type="button" aria-label="切换链接分类">切换</button><button id="knowledgeWallpaper" class="knowledge-wallpaper-btn" type="button">壁纸</button><button id="knowledgeLock" class="knowledge-lock"></button></div></div>
-    <div class="knowledge-recovery"><button type="button" id="knowledgeRecoverLocal">检查并恢复旧链接</button><span id="knowledgeRecoveryStatus" role="status" aria-live="polite"></span></div>
+    <div class="knowledge-head"><div class="knowledge-head-actions"><button id="knowledgeRecoveryOpen" type="button" title="检查并恢复旧链接">恢复</button><button id="knowledgeTabSwitch" class="knowledge-tab-switch" type="button" aria-label="切换链接分类">切换</button><button id="knowledgeWallpaper" class="knowledge-wallpaper-btn" type="button">壁纸</button><button id="knowledgeLock" class="knowledge-lock"></button></div></div>
     <div class="knowledge-searchbar"><input id="knowledgeSearch" placeholder="搜索 / 粘贴网址，回车快速添加"><button id="knowledgeQuickAdd" type="button">添加链接</button><button id="knowledgeManualCreate" type="button" hidden>手动创建</button><span id="knowledgeSearchSpinner" class="knowledge-spinner" aria-label="识别中" hidden></span></div>
     <div id="knowledgeEditBar" class="knowledge-editbar"><button id="knowledgeAddGroup" type="button">+ 添加分组</button><span>编辑模式：可改名、拖动分组、编辑链接</span></div>
     <div class="knowledge-library-indicator"><span id="knowledgeLibraryTag" class="knowledge-library-tag" data-library="common">常用</span></div>
@@ -44,6 +43,10 @@
   </div>`;
 
   const tabBtn=document.getElementById('knowledgeTabSwitch'),libraryTag=document.getElementById('knowledgeLibraryTag'),lockBtn=document.getElementById('knowledgeLock'),wallBtn=document.getElementById('knowledgeWallpaper'),search=document.getElementById('knowledgeSearch'),root=document.getElementById('knowledgeGroups'),editBar=document.getElementById('knowledgeEditBar'),quickBtn=document.getElementById('knowledgeQuickAdd'),manualBtn=document.getElementById('knowledgeManualCreate'),searchSpinner=document.getElementById('knowledgeSearchSpinner');
+  const recoveryDlg=document.createElement('dialog');
+  recoveryDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>恢复旧链接</h3><p>检查当前浏览器中的旧链接，确认后合并，保留已有内容。</p><button type="button" id="knowledgeRecoverLocal">检查并恢复旧链接</button><p id="knowledgeRecoveryStatus" role="status" aria-live="polite"></p><div class="dlgActions"><button>关闭</button></div></form>`;
+  document.body.append(recoveryDlg);
+  document.getElementById('knowledgeRecoveryOpen').onclick=()=>recoveryDlg.showModal();
   const recoveryStatus=document.getElementById('knowledgeRecoveryStatus');
   if(libraryReadFailed){
     recoveryStatus.textContent='当前账号链接库读取失败；为保护旧数据，已禁止修改。请检查账号登录及同步状态。';
@@ -88,7 +91,7 @@
 
   const dlg=document.createElement('dialog');dlg.id='knowledgeLinkDlg';dlg.innerHTML=`<form class="knowledge-dialog"><h3 id="kDlgTitle">添加链接</h3><label id="kUrlLabel">链接地址<input id="kUrl" type="url" placeholder="粘贴网址，自动识别网站信息" required></label><div class="knowledge-icon-row"><div class="knowledge-icon-preview" id="kPreviewBox"></div><div class="knowledge-recognition-info"><strong id="kRecognizedName">等待粘贴网址</strong><p id="kPreviewDesc"></p><p id="kRecognitionStatus" role="status" aria-live="polite">自动获取网站名称和图标</p></div><span id="kDlgSpinner" class="knowledge-spinner" aria-label="识别中" hidden></span><button id="kAutoIcon" type="button">重新识别</button><button id="kManualCreate" type="button" hidden>手动创建</button></div><label id="kTitleLabel">网站名称<input id="kTitle" placeholder="识别后自动填写" readonly></label><details id="kManual" hidden><summary>手动填写</summary><p class="knowledge-manual-note">可修改名称和图标地址。</p><label>图标链接（可选）<input id="kIcon" type="text" placeholder="https://… / 留空使用备用图标"></label><label>上传图标（可选，PNG/JPEG/WebP，≤2MB）<input id="kIconFile" type="file" accept="image/png,image/jpeg,image/webp"></label><p id="kIconFileError" class="knowledge-icon-file-error" role="alert" hidden></p></details><label id="kDescLabel">说明（可选）<textarea id="kDesc" rows="2" placeholder="一句话说明用途"></textarea></label><label id="kGroupLabel">分组<select id="kGroup"></select></label><div class="dlgActions"><button id="kCancel" type="button">取消</button><button id="kSave" type="submit" class="task-primary-btn" disabled>保存</button></div></form>`;document.body.appendChild(dlg);
   const groupDlg=document.createElement('dialog');groupDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>添加分组</h3><label>分组名称<input id="kgName" placeholder="例如：工具 / 工作 / 学习"></label><div class="dlgActions"><button value="cancel">取消</button><button id="kgSave" type="button" class="task-primary-btn">保存</button></div></form>`;document.body.appendChild(groupDlg);
-  const wallDlg=document.createElement('dialog');wallDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>设置壁纸</h3><label>图片链接<input id="kwUrl" type="url" placeholder="https://.../wallpaper.jpg"></label><div class="dlgActions"><button id="kwClear" type="button">恢复默认</button><button value="cancel">取消</button><button id="kwSave" type="button" class="task-primary-btn">应用</button></div></form>`;document.body.appendChild(wallDlg);
+  const wallDlg=document.createElement('dialog');wallDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>设置壁纸</h3><label class="knowledge-wallpaper-upload">本地图片<input id="kwFile" type="file" accept="image/png,image/jpeg,image/webp"></label><p>支持 JPG、PNG、WebP，最大 10 MB；自动压缩保存。</p><p id="kwStatus" role="status" aria-live="polite"></p><label>图片链接（可选）<input id="kwUrl" type="url" placeholder="https://.../wallpaper.jpg"></label><div class="dlgActions"><button id="kwClear" type="button">恢复默认</button><button value="cancel">取消</button><button id="kwSave" type="button" class="task-primary-btn">应用</button></div></form>`;document.body.appendChild(wallDlg);
 
   const $=id=>document.getElementById(id);
   function safeUrl(raw){let v=(raw||'').trim();if(!v||v.length>2048)return '';if(!/^https?:\/\//i.test(v))v='https://'+v;try{const u=new URL(v);if(!['http:','https:'].includes(u.protocol)||u.username||u.password||!u.hostname.includes('.'))return '';return u.href}catch{return ''}}
@@ -193,9 +196,45 @@
     clearTimeout(searchRenderTimer);query='';search.value='';updateTab();render();
   };
   lockBtn.onclick=()=>{locked=!locked;set(LOCK,locked);updateLock();render()};
-  wallBtn.onclick=()=>{document.getElementById('kwUrl').value=get(WALL,'');wallDlg.showModal()};
-  document.getElementById('kwSave').onclick=()=>{const url=safeUrl(document.getElementById('kwUrl').value);if(!url){document.getElementById('kwUrl').focus();return}set(WALL,url);applyWallpaper(url);wallDlg.close()};
-  document.getElementById('kwClear').onclick=()=>{(window.LambertPrivateStorage||localStorage).removeItem(WALL);applyWallpaper('');wallDlg.close()};
+  let wallpaperDraft='',wallpaperJob=0;
+  const wallStatus=$('kwStatus'),wallSave=$('kwSave');
+  wallBtn.onclick=()=>{
+    wallpaperJob++;wallpaperDraft=get(WALL,'');
+    $('kwUrl').value=wallpaperDraft.startsWith('data:')?'':wallpaperDraft;
+    $('kwFile').value='';wallStatus.textContent=wallpaperDraft.startsWith('data:')?'当前使用本地图片':'';
+    wallSave.disabled=false;wallDlg.showModal();
+  };
+  wallDlg.addEventListener('close',()=>{wallpaperJob++});
+  $('kwUrl').oninput=()=>{wallpaperJob++;wallpaperDraft='';$('kwFile').value='';wallStatus.textContent='';wallSave.disabled=false};
+  $('kwFile').onchange=async()=>{
+    const file=$('kwFile').files[0];if(!file)return;
+    const job=++wallpaperJob,owner=window.LambertPrivateStorage?.owner;
+    wallSave.disabled=true;wallStatus.textContent='正在处理图片…';
+    let bitmap;
+    try{
+      if(!['image/png','image/jpeg','image/webp'].includes(file.type)||!file.size||file.size>10*1024*1024)throw Error('请选择 10 MB 以内的 JPG、PNG 或 WebP 图片');
+      bitmap=await createImageBitmap(file);
+      const canvas=document.createElement('canvas');let scale=Math.min(1,1920/Math.max(bitmap.width,bitmap.height)),data='';
+      for(let i=0;i<6;i++){
+        canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+        const ctx=canvas.getContext('2d');ctx.fillStyle='#edf2f7';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(bitmap,0,0,canvas.width,canvas.height);
+        data=canvas.toDataURL('image/jpeg',0.78-i*0.06);
+        if(data.length<=150000)break;scale*=0.75;
+      }
+      if(data.length>150000)throw Error('图片过于复杂，请选择更小的图片');
+      if(job!==wallpaperJob||owner!==window.LambertPrivateStorage?.owner)return;
+      wallpaperDraft=data;$('kwUrl').value='';wallStatus.textContent='图片已准备好，点击应用保存';
+    }catch(error){if(job===wallpaperJob){wallpaperDraft='';wallStatus.textContent=error.message||'图片无法读取，请换一张图片'}}
+    finally{bitmap?.close();if(job===wallpaperJob)wallSave.disabled=false}
+  };
+  wallSave.onclick=()=>{
+    const value=$('kwUrl').value.trim()?safeUrl($('kwUrl').value):wallpaperDraft;
+    if(!value){wallStatus.textContent='请选择本地图片，或填写有效图片链接';return}
+    try{set(WALL,value);applyWallpaper(value);wallDlg.close()}catch{wallStatus.textContent='壁纸未保存，请检查存储空间或账号同步状态后重试'}
+  };
+  $('kwClear').onclick=()=>{
+    try{(window.LambertPrivateStorage||localStorage).removeItem(WALL);applyWallpaper('');wallDlg.close()}catch{wallStatus.textContent='恢复默认失败，请重试'}
+  };
   function searchUrl(){const value=search.value.trim();return /^(https?:\/\/|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:[/:?#]|$))/i.test(value)?safeUrl(value):''}
   let searchAutoTimer=null,searchAutoUrl='';
   function clearSearchAuto(){clearTimeout(searchAutoTimer);searchAutoTimer=null;searchAutoUrl='';searchSpinner.hidden=true;manualBtn.hidden=true}
