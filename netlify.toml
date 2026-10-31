@@ -2,7 +2,7 @@
 [build]
   command = "python3 scripts/build-reading-assets.py && python3 scripts/build-netlify-static.py"
   publish = "netlify-dist"
-  ignore = "test -n \"$CACHED_COMMIT_REF\" && git diff --quiet \"$CACHED_COMMIT_REF\" \"$COMMIT_REF\" -- '*.html' '*.css' '*.js' '*.mjs' 'brand/**' 'mobile/**' 'shared-sync/**' 'lib/link-recovery.js' 'lib/link-sites.js' 'lib/task-center-model.js' 'downloads/**' 'scripts/build-reading-assets.py' 'scripts/build-netlify-static.py' 'scripts/audit-netlify-assets.py' 'scripts/netlify-public-root.json' 'netlify/functions/**' 'api/account-config.js' 'netlify.toml'"
+  ignore = "test -n \"$CACHED_COMMIT_REF\" && git diff --quiet \"$CACHED_COMMIT_REF\" \"$COMMIT_REF\" -- '*.html' '*.css' '*.js' '*.mjs' 'brand/**' 'mobile/**' 'shared-sync/**' 'lib/link-recovery.js' 'lib/link-sites.js' 'lib/task-center-model.js' 'downloads/**' 'scripts/build-reading-assets.py' 'scripts/build-netlify-static.py' 'scripts/audit-netlify-assets.py' 'scripts/netlify-public-root.json' 'netlify/**' 'api/account-config.js' 'netlify.toml'"
 
 [functions]
   directory = "netlify/functions"

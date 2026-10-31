@@ -2,9 +2,9 @@ name: Netlify mirror validation
 on:
   push:
     branches: [fix/netlify-mirror-resource-audit]
-    paths: ['netlify.toml','scripts/*netlify*','scripts/netlify-public-root.json','tests/netlify-*','netlify/functions/**','tests/shared-sync/browser.mjs','.github/workflows/netlify-mirror.yml']
+    paths: ['netlify.toml','scripts/*netlify*','scripts/netlify-public-root.json','tests/netlify-*','netlify/**','tests/shared-sync/browser.mjs','.github/workflows/netlify-mirror.yml']
   pull_request:
-    paths: ['netlify.toml','scripts/*netlify*','scripts/netlify-public-root.json','tests/netlify-*','netlify/functions/**','.github/workflows/netlify-mirror.yml','*.html','*.js','*.css','*.mjs','lib/link-recovery.js','lib/link-sites.js','lib/task-center-model.js','shared-sync/**','mobile/**','brand/**']
+    paths: ['netlify.toml','scripts/*netlify*','scripts/netlify-public-root.json','tests/netlify-*','netlify/**','.github/workflows/netlify-mirror.yml','*.html','*.js','*.css','*.mjs','lib/link-recovery.js','lib/link-sites.js','lib/task-center-model.js','shared-sync/**','mobile/**','brand/**']
 permissions:
   contents: read
   pull-requests: write

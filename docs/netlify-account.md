@@ -46,3 +46,8 @@
 代码提交 `c7849e0`：[Actions 41184942382](https://github.com/liuchengyin/lambert-ai-os-dashboard/actions/runs/41184942382) 通过，包含函数单元、独立打包、静态隔离、双 origin 浏览器与18项同步/账号检查。生产公开配置探测为 HTTP200、`configured=True`，未输出实际配置值。
 
 Netlify bot 在 PR #100 确认同提交 Deploy Preview ready：[部署记录](https://app.netlify.com/projects/lambert-ai-os-cn-test/deploys/6ae5a7565e75bb087f9af353)，[预览](https://deploy-preview-100--lambert-ai-os-cn-test.netlify.app)。这证明预览已部署，不等同于真实账号登录/真实数据库双向同步已验收；匿名访问保护仍在。PR 保持草稿，未合并、未发布生产。此后只补充文档记录，复用以上代码检查。
+
+
+## 账号未连通的后续定位
+
+用户在受保护的预览里仍看到“暂未连接账号服务”。这不等于密码错误，也不能仅凭截图区分旧页面、API路由、Function执行或上游失败。新增仅Netlify发布的 `/account-diagnostics.html`，在用户自身浏览器会话中检查精确API路径、Function直达路径和公开上游，输出固定字段的状态码、configured布尔值、格式校验布尔值和白名单错误码。不会展示原始响应、项目URL、publishable key、JWT、Cookie或本机记录；不上传检查结果。复制按钮只复制这一份脱敏报告。源码仍不修改Vercel业务页面。浏览器测试已验证路由404与Function200的区分及报告不包含配置值。

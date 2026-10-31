@@ -71,6 +71,7 @@ def main():
     assert not (DEST / "api").exists(), "API code exposed"
     (DEST / "_redirects").write_text("/api/account-config /.netlify/functions/account-config 200\n/api/* /api-unavailable.json 404\n")
     (DEST / "api-unavailable.json").write_text(json.dumps({"error":"mirror_backend_unavailable","configured":False})+"\n")
+    shutil.copy2(ROOT / "netlify/account-diagnostics.html", DEST / "account-diagnostics.html")
     spec = importlib.util.spec_from_file_location("netlify_audit", ROOT / "scripts/audit-netlify-assets.py")
     audit = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(audit)

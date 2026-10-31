@@ -22,6 +22,9 @@ try{
  await page.route('**/lib/link-recovery.js*',r=>r.abort());await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'重新加载',exact:true}).waitFor();assert.equal(await page.evaluate(()=>localStorage.mirror_sentinel),'keep');await page.unroute('**/lib/link-recovery.js*');await page.reload();await page.waitForFunction(()=>!!window.TaskCenter&&!document.documentElement.hasAttribute('data-lambert-boot'));
  await page.setViewportSize({width:390,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
  await page.goto(base+'/mobile/');await page.locator('#tabs button').first().waitFor();
+ await page.route(url=>url.origin===base&&url.pathname==='/api/account-config',r=>r.fulfill({status:404,json:{configured:false,error:'mirror_backend_unavailable'}}));
+ await page.route('**/.netlify/functions/account-config',r=>r.fulfill({json:{configured:true,url:'https://diagnostic-fixture.supabase.co',publishableKey:'sb_publishable_diagnostic_marker',siteUrl:'https://lambert-ai-os-cn-test.netlify.app'}}));
+ await page.goto(base+'/account-diagnostics.html');await page.locator('#copy:enabled').waitFor();const diagnostic=await page.locator('#result').textContent();const rows=JSON.parse(diagnostic).results;assert.equal(rows[0].status,404);assert.equal(rows[1].configured,true);assert.equal(rows[1].validPublicKey,true);assert.ok(!diagnostic.includes('sb_publishable_diagnostic_marker'));assert.ok(!diagnostic.includes('diagnostic-fixture.supabase.co'));
  assert.deepEqual(missing,[]);assert.deepEqual(errors,[]);
  console.log(JSON.stringify({ok:true,checks:['no-white-screen','missing-link-recovery-reproduced-and-restored','local-assets','missing-assets-404','server-code-not-public','saved-data-preserved','mobile-startup','CDN-failure-does-not-block-workspace'],externalBlocked:[...external],hostedAPIsTested:false}));
 }finally{await browser.close();}
