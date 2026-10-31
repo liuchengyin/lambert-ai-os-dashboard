@@ -20,7 +20,7 @@ PUBLIC_FOLDERS = {
     "assets", "images", "icons", "fonts",
 }
 PUBLIC_LIB = {
-    "task-center-model.js", "link-sites.js",
+    "task-center-model.js", "link-sites.js", "link-recovery.js",
 }
 BLOCKED_PARTS = {
     ".git", ".github", "node_modules", "tests", "scripts", "tooling",
