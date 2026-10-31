@@ -1,0 +1,11 @@
+{
+  "version": "0.2.9",
+  "versionCode": 20,
+  "label": "ACHE",
+  "applicationId": "app.lambert.tasks",
+  "bytes": 3811664,
+  "sha256": "1f978c8504da09c9b386bbe0f5909e5adbd9318382f5485eb7519926dd4b6064",
+  "sourceCommit": "a83db55e19d07a6244c96ec57201d8c4c717f697",
+  "buildRun": 41173852598,
+  "certificateSha256": "3ccdfb85321f921a08a18ab54f3b0c9ca760a300a53a034afceab9e2bc88a87b"
+}
