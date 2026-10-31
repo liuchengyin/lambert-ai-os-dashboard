@@ -41,5 +41,6 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/compact-ui-http.log 2>&1 &
           sleep 2
           TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-compact-ui.mjs
-          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-v35-ui.mjs
+          node tests/logistics-v35-model.test.mjs
+          node tests/logistics-wiring-v36-model.test.mjs
           TEST_BASE_URL=http://127.0.0.1:8765 node tests/reading-bookshelf.mjs
