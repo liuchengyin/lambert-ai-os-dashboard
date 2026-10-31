@@ -12,7 +12,7 @@ const sentinel={id:'netlify-preserved',title:'测试任务',status:'进行中',u
 try{
  await page.addInitScript(value=>{if(!localStorage.getItem('netlify_seed')){localStorage.setItem('netlify_seed','1');localStorage.setItem('tasks',JSON.stringify([value]));localStorage.setItem('mirror_sentinel','keep');}},sentinel);
  await page.goto(base);await page.waitForFunction(()=>!!window.TaskCenter&&!document.documentElement.hasAttribute('data-lambert-boot'));
- assert.ok(await page.locator('.shell').isVisible());assert.ok(await page.locator('#s1PrimaryNav').isVisible());
+ await page.locator('.shell').waitFor({state:'visible'});assert.ok(await page.locator('.shell').isVisible());assert.ok(await page.locator('#s1PrimaryNav').isVisible());
  const saved=await page.evaluate(()=>({task:JSON.parse(localStorage.tasks).find(t=>t.id==='netlify-preserved'),sentinel:localStorage.mirror_sentinel}));for(const [key,value] of Object.entries(sentinel))assert.deepEqual(saved.task[key],value);assert.equal(saved.sentinel,'keep');
  await page.evaluate(()=>new Promise((resolve,reject)=>{const r=indexedDB.open('mirror_preservation_probe',1);r.onupgradeneeded=()=>r.result.createObjectStore('records');r.onsuccess=()=>{const db=r.result,t=db.transaction('records','readwrite');t.objectStore('records').put({keep:true},'original');t.oncomplete=()=>{db.close();resolve();};t.onabort=()=>reject(t.error);};r.onerror=()=>reject(r.error);}));
  for(const view of ['tasks','reading','writing','english','knowledge']){const nav=page.locator(`nav button[data-v="${view}"]`).first();if(await nav.count()){await nav.click();await page.waitForTimeout(150);}}
