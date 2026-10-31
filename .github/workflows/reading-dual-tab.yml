@@ -7,6 +7,10 @@ on:
       - 'reading-v2.css'
       - 'project-v4.js'
       - 'tests/reading-dual-tab.mjs'
+      - 'tests/reading-bookshelf.mjs'
+      - 'reading-bookshelf.mjs'
+      - 'shared-sync/book-store.mjs'
+      - 'scripts/build-reading-assets.py'
       - 'scripts/reading-dual-flash-review.mjs'
       - '.github/workflows/reading-dual-tab.yml'
   pull_request:
@@ -15,6 +19,10 @@ on:
       - 'reading-v2.css'
       - 'project-v4.js'
       - 'tests/reading-dual-tab.mjs'
+      - 'tests/reading-bookshelf.mjs'
+      - 'reading-bookshelf.mjs'
+      - 'shared-sync/book-store.mjs'
+      - 'scripts/build-reading-assets.py'
 permissions:
   contents: read
 jobs:
@@ -36,7 +44,9 @@ jobs:
           node --check project-v4.js
           python3 -m http.server 8000 --bind 127.0.0.1 &
           sleep 2
+          python3 scripts/build-reading-assets.py
           node tests/reading-dual-tab.mjs
+          TEST_BASE_URL=http://127.0.0.1:8000 node tests/reading-bookshelf.mjs
   flash-review:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest

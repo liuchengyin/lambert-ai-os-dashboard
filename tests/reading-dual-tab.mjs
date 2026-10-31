@@ -5,7 +5,7 @@ const page=await browser.newPage({viewport:{width:1400,height:900}});
 const errors=[];page.on('pageerror',e=>errors.push(e.message));
 await page.route('**/api/account-config',route=>route.fulfill({json:{configured:false}}));
 // Verify safe textarea fallback when external Markdown editor CDN is unavailable.
-await page.route('https://cdn.jsdelivr.net/npm/vditor@3.10.4/**',route=>route.abort());
+await page.route(url=>url.hostname==='cdn.jsdelivr.net'&&url.pathname.includes('/vditor'),route=>route.abort());
 try{
   await page.addInitScript(()=>{
     localStorage.setItem('reading_workspace_v2',JSON.stringify({reader:{title:'Existing Book',progress:'P12',mode:'pdf',url:''},notes:[{id:'old-card',date:'2026-10-20',type:'案例卡',title:'旧卡片',thought:'已有内容',excerpt:''}],currentId:'old-card'}));

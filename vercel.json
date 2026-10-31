@@ -1,5 +1,5 @@
 {
-  "buildCommand": "python3 scripts/build-web-update.py",
+  "buildCommand": "python3 scripts/build-reading-assets.py && python3 scripts/build-web-update.py",
   "outputDirectory": ".",
   "headers": [
     {

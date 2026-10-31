@@ -12,3 +12,7 @@ review-output/
 .DS_Store
 
 mobile/release.json
+
+# Generated from pinned, SHA256-verified pdfjs-dist archive.
+vendor/pdfjs/
+supabase/.temp/
