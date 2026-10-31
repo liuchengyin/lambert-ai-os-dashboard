@@ -39,11 +39,21 @@ function renderSubtitles(){
  for(const [i,cue] of subtitleRows.entries()){const b=document.createElement('button');b.type='button';b.className='audio-lyric-line';b.textContent=cue.text;b.dataset.cue=String(i);b.onclick=()=>{if(current?.loop==='ab'&&(cue.start<current.a||cue.start>=current.b)){$('[data-loop]').value='off';applyLoop();}seek(cue.start);};area.append(b);}
  highlightSubtitle(position());
 }
+function centerSubtitle(line,behavior='auto'){
+ const area=$('.audio-lyrics');if(!line||root.hidden||area.hidden||!area.clientHeight)return;
+ const first=area.querySelector('.audio-lyric-line'),last=area.querySelector('.audio-lyric-line:last-child');
+ if(first&&last){area.style.paddingTop=Math.max(0,(area.clientHeight-first.offsetHeight)/2)+'px';area.style.paddingBottom=Math.max(0,(area.clientHeight-last.offsetHeight)/2)+'px';}
+ const bounds=area.getBoundingClientRect(),row=line.getBoundingClientRect();
+ const top=area.scrollTop+row.top-bounds.top-area.clientTop-(area.clientHeight-row.height)/2;
+ area.scrollTo({top:Math.max(0,top),behavior});
+}
+window.addEventListener('resize',()=>centerSubtitle($('.audio-lyric-line[aria-current]')));
+document.fonts?.ready.then(()=>centerSubtitle($('.audio-lyric-line[aria-current]')));
 function highlightSubtitle(seconds){
  if(!subtitleModule||!subtitleRows.length)return;const index=subtitleModule.activeCue(subtitleRows,seconds);if(index===subtitleIndex)return;
  const area=$('.audio-lyrics');area.querySelector('[aria-current]')?.removeAttribute('aria-current');subtitleIndex=index;
  if(index<0)return;const line=area.querySelector('[data-cue="'+index+'"]');line.setAttribute('aria-current','true');
- if(!root.hidden&&!area.hidden)area.scrollTo({top:Math.max(0,line.offsetTop-area.offsetTop-area.clientHeight/2+line.clientHeight/2),behavior:'smooth'});
+ centerSubtitle(line,'smooth');
 }
 async function loadSubtitles(id){
  const load=++subtitleLoad;subtitleRows=[];renderSubtitles();subtitleVisibility();$('[data-subtitle-info]').textContent='';
@@ -63,8 +73,8 @@ function subtitleVisibility(){
  if(visible){subtitleIndex=-2;highlightSubtitle(position());}
 }
 $('[data-toggle-subtitles]').onclick=async()=>{
- if(!current){tell('请先选择音频。');return;}const row=current,previous=row.subtitlesVisible;row.subtitlesVisible=row.subtitlesVisible===false;subtitleVisibility();
- try{await store.updateTrack(db,row.id,{subtitlesVisible:row.subtitlesVisible});}catch{row.subtitlesVisible=previous;if(current===row)subtitleVisibility();tell('字幕显示设置未能保存。');}
+ if(!current){tell('请先选择音频。');return;}const button=$('[data-toggle-subtitles]');button.disabled=true;const row=current,previous=row.subtitlesVisible;row.subtitlesVisible=row.subtitlesVisible===false;subtitleVisibility();
+ try{await store.updateTrack(db,row.id,{subtitlesVisible:row.subtitlesVisible});}catch{row.subtitlesVisible=previous;if(current===row)subtitleVisibility();tell('字幕显示设置未能保存。');}finally{button.disabled=false;}
 };
 let filePickerReady=!native&&location.host!=='appassets.androidplatform.net';
 try{if(native?.supportsSubtitlePicker?.())filePickerReady=true;}catch{}

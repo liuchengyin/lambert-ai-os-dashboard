@@ -13,3 +13,5 @@
 .audio-subtitle-tools{flex-wrap:wrap}.audio-subtitle-import[hidden]{display:none}.audio-subtitle-paste{width:100%}.audio-subtitle-paste summary{cursor:pointer;padding:10px 0}.audio-subtitle-paste textarea{display:block;width:100%;min-height:150px;margin:10px 0;box-sizing:border-box}.audio-subtitle-paste select,.audio-subtitle-paste button{font:inherit;padding:9px 14px;border:1px solid #dfd4ee;border-radius:14px;background:#fff;color:#654b91}
 
 .audio-lyrics[hidden]{display:none}.audio-subtitle-tools [data-toggle-subtitles]{font:inherit;color:#654b91;background:#fff;border:1px solid #dfd4ee;border-radius:18px;padding:9px 14px}
+
+.audio-lyrics{overflow-anchor:none}
