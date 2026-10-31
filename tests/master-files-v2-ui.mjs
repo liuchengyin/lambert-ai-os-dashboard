@@ -71,8 +71,10 @@ try{
  await page.locator('.mp-file-card').filter({hasText:'物流研究总图（副本）'}).getByRole('button',{name:'删除'}).click();
  await page.waitForFunction(()=>document.querySelectorAll('.mp-file-card').length===2);
  await page.locator('#mpTrashToggle').click();
+ await page.waitForFunction(()=>document.getElementById('mpCount')?.textContent.includes('已删除文件')&&document.querySelectorAll('.mp-file-card').length===1);
  check('deleted file recoverable in trash',await page.locator('.mp-file-name').filter({hasText:'物流研究总图（副本）'}).count()===1);
  await page.getByRole('button',{name:'恢复'}).click();
+ await page.waitForFunction(()=>document.querySelectorAll('.mp-file-card').length===0);
  await page.locator('#mpTrashToggle').click();
  await page.waitForFunction(()=>document.querySelectorAll('.mp-file-card').length===3);
  check('restored file visible in library',await page.locator('.mp-file-card').count()===3);
