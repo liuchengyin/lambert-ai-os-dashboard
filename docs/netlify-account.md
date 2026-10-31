@@ -39,3 +39,10 @@
 公开配置自动发现会依赖 Vercel 的公开端点可达；若以后需要 Netlify 完全独立运行，管理员在 Netlify 后台填写经过验证的三项**公开**配置即可解除依赖，仍不需要 service-role key。此步骤不能把 Supabase 本身或 Markdown CDN 的中国网络可达性变成保证。
 
 所有配置、RLS、既有迁移是否已经生效，以真实项目为准。本轮不应用 SQL，不复制本机数据、不清缓存、不调用收费 AI。原 Mac 的未上传 localStorage/IndexedDB 内容仍须保留并单独备份。
+
+
+## 最终检查记录
+
+代码提交 `c7849e0`：[Actions 41184942382](https://github.com/liuchengyin/lambert-ai-os-dashboard/actions/runs/41184942382) 通过，包含函数单元、独立打包、静态隔离、双 origin 浏览器与18项同步/账号检查。生产公开配置探测为 HTTP200、`configured=True`，未输出实际配置值。
+
+Netlify bot 在 PR #100 确认同提交 Deploy Preview ready：[部署记录](https://app.netlify.com/projects/lambert-ai-os-cn-test/deploys/6ae5a7565e75bb087f9af353)，[预览](https://deploy-preview-100--lambert-ai-os-cn-test.netlify.app)。这证明预览已部署，不等同于真实账号登录/真实数据库双向同步已验收；匿名访问保护仍在。PR 保持草稿，未合并、未发布生产。此后只补充文档记录，复用以上代码检查。
