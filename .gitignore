@@ -16,3 +16,7 @@ mobile/release.json
 # Generated from pinned, SHA256-verified pdfjs-dist archive.
 vendor/pdfjs/
 supabase/.temp/
+
+# Netlify public-only generated output.
+netlify-dist/
+scripts/__pycache__/

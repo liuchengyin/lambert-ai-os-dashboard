@@ -1,0 +1,22 @@
+# Netlify only. Vercel continues using its existing vercel.json unchanged.
+[build]
+  command = "python3 scripts/build-reading-assets.py && python3 scripts/build-netlify-static.py"
+  publish = "netlify-dist"
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- '*.html' '*.css' '*.js' '*.mjs' 'brand/**' 'mobile/**' 'shared-sync/**' 'lib/link-recovery.js' 'lib/link-sites.js' 'lib/task-center-model.js' 'downloads/**' 'scripts/build-reading-assets.py' 'scripts/build-netlify-static.py' 'scripts/audit-netlify-assets.py' 'scripts/netlify-public-root.json' 'netlify.toml'"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+    X-Content-Type-Options = "nosniff"
+
+[[headers]]
+  for = "/mirror-assets.json"
+  [headers.values]
+    Cache-Control = "no-store"
+
+# No SPA fallback: missing JS/CSS must return 404, never index.html.
+# /api is deliberately unavailable in this static-only first stage.
