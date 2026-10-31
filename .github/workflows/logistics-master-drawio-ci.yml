@@ -1,0 +1,51 @@
+name: Draw.io master full editor CI
+on:
+  push:
+    branches: [feat/logistics-drawio-native-v1-20261030]
+    paths:
+      - 'logistics-master-v1.js'
+      - 'logistics-drawio-bridge.js'
+      - 'logistics-drawio-model.js'
+      - 'logistics-master-v1.css'
+      - 'index.html'
+      - 'sprint1-navigation.js'
+      - 'master-page-v2.js'
+      - 'master-page-v2.css'
+      - 'master-library-v2.js'
+      - 'tests/master-files-v2-ui.mjs'
+      - 'logistics-knowledge-v1.js'
+      - 'tests/logistics-drawio-*.mjs'
+      - '.github/workflows/logistics-master-drawio-ci.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax and model guards
+        run: |
+          node --check logistics-drawio-bridge.js
+          node --check logistics-drawio-model.js
+          node --check master-library-v2.js
+          node --check master-page-v2.js
+          node --check logistics-master-v1.js
+          node --check logistics-knowledge-v1.js
+          node tests/logistics-drawio-model.test.mjs
+          node tests/logistics-v35-model.test.mjs
+      - name: Install Playwright Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Browser regression
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/drawio-master-server.log 2>&1 &
+          sleep 2
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/master-files-v2-ui.mjs
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-v35-ui.mjs
