@@ -1,3 +1,4 @@
+import {createHandler as createNetlifyConfig} from '../../netlify/functions/account-config.mjs';
 import {chromium} from 'playwright';import assert from 'node:assert/strict';import {mkdir} from 'node:fs/promises';
 const origin=process.env.TEST_ORIGIN||'http://127.0.0.1:8765';
 const desktopOrigin=process.env.TEST_DESKTOP_ORIGIN||origin;
@@ -9,7 +10,7 @@ const browser=await chromium.launch({headless:true,args:['--no-sandbox']});let c
 try{
  context=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block'});
  const errors=[],requests=[],rows=new Map(),receipts=new Map();let configured=false,failLogin=false;
- async function routes(ctx,siteOrigin=origin){await ctx.route('**/api/account-config',route=>route.fulfill({json:configured?{configured:true,url:'https://testproject.supabase.co',publishableKey:'sb_publishable_test',siteUrl:siteOrigin.replace('http:','https:')}:{configured:false}}));
+ async function routes(ctx,siteOrigin=origin){const netlifyConfig=createNetlifyConfig({env:{},fetcher:async()=>Response.json(configured?{configured:true,url:'https://testproject.supabase.co',publishableKey:'sb_publishable_test'}:{configured:false})});await ctx.route('**/api/account-config',async route=>{if(process.env.NETLIFY_CONFIG_ADAPTER==='1'){const r=await netlifyConfig(new Request(route.request().url()));return route.fulfill({status:r.status,headers:Object.fromEntries(r.headers),body:await r.text()});}return route.fulfill({json:configured?{configured:true,url:'https://testproject.supabase.co',publishableKey:'sb_publishable_test',siteUrl:siteOrigin.replace('http:','https:')}:{configured:false}});});
  await ctx.route('**/api/feishu-review',async route=>{const request=route.request(),body=request.postDataJSON();assert.equal(request.headers().authorization,'Bearer '+token);const review=rows.get(body.date);assert.equal(review.payload.goal,'手机与网页复盘归档');requests.push({path:'/api/feishu-review',body});return route.fulfill({json:{ok:true,url:'https://my.feishu.cn/wiki/ReviewSnapshot1234',archivedAt:'2026-10-20T00:00:00Z',reviewVersion:review.version,locationName:'每日记录'}});});
  await ctx.route('https://testproject.supabase.co/**',async route=>{const r=route.request(),url=new URL(r.url());requests.push({path:url.pathname,body:r.postDataJSON()});const headers={'access-control-allow-origin':'*','access-control-allow-headers':'*'};if(r.method()==='OPTIONS')return route.fulfill({status:200,headers});
   if(url.pathname==='/auth/v1/token')return route.fulfill(failLogin?{status:400,json:{code:'invalid_credentials',error_code:'invalid_credentials',msg:'Invalid login credentials'},headers}:{json:session,headers});

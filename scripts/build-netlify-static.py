@@ -69,7 +69,7 @@ def main():
     assert (DEST / "index.html").is_file(), "Missing entry point"
     assert (DEST / "app.js").is_file(), "Missing web app"
     assert not (DEST / "api").exists(), "API code exposed"
-    (DEST / "_redirects").write_text("/api/* /api-unavailable.json 404\n")
+    (DEST / "_redirects").write_text("/api/account-config /.netlify/functions/account-config 200\n/api/* /api-unavailable.json 404\n")
     (DEST / "api-unavailable.json").write_text(json.dumps({"error":"mirror_backend_unavailable","configured":False})+"\n")
     spec = importlib.util.spec_from_file_location("netlify_audit", ROOT / "scripts/audit-netlify-assets.py")
     audit = importlib.util.module_from_spec(spec)

@@ -2,15 +2,15 @@ name: Netlify mirror validation
 on:
   push:
     branches: [fix/netlify-mirror-resource-audit]
-    paths: ['netlify.toml','scripts/*netlify*','scripts/netlify-public-root.json','tests/netlify-*','tests/shared-sync/browser.mjs','.github/workflows/netlify-mirror.yml']
+    paths: ['netlify.toml','scripts/*netlify*','scripts/netlify-public-root.json','tests/netlify-*','netlify/functions/**','tests/shared-sync/browser.mjs','.github/workflows/netlify-mirror.yml']
   pull_request:
-    paths: ['netlify.toml','scripts/*netlify*','scripts/netlify-public-root.json','tests/netlify-*','.github/workflows/netlify-mirror.yml','*.html','*.js','*.css','*.mjs','lib/link-recovery.js','lib/link-sites.js','lib/task-center-model.js','shared-sync/**','mobile/**','brand/**']
+    paths: ['netlify.toml','scripts/*netlify*','scripts/netlify-public-root.json','tests/netlify-*','netlify/functions/**','.github/workflows/netlify-mirror.yml','*.html','*.js','*.css','*.mjs','lib/link-recovery.js','lib/link-sites.js','lib/task-center-model.js','shared-sync/**','mobile/**','brand/**']
 permissions:
   contents: read
   pull-requests: write
   deployments: read
 concurrency:
-  group: netlify-mirror-${{ github.ref }}
+  group: netlify-mirror-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 jobs:
   validate:
@@ -33,15 +33,19 @@ jobs:
           npm ci --prefix shared-sync/tooling --no-audit --no-fund
           ln -s shared-sync/tooling/node_modules node_modules
           shared-sync/tooling/node_modules/.bin/playwright install --with-deps chromium
+      - name: Verify server function bundle (not published as static files)
+        run: node tests/netlify-function-bundle.mjs
       - name: Browser and two-origin synchronization (mock backend)
         env:
           TEST_ORIGIN: http://127.0.0.1:8793
           TEST_DESKTOP_ORIGIN: http://127.0.0.1:8794
+          NETLIFY_CONFIG_ADAPTER: "1"
         run: |
           set -o pipefail
           python3 -m http.server 8793 --bind 127.0.0.1 --directory netlify-dist >/tmp/mirror-1.log 2>&1 &
           python3 -m http.server 8794 --bind 127.0.0.1 --directory netlify-dist >/tmp/mirror-2.log 2>&1 &
           {
+          node --test tests/netlify-account.test.mjs
           node tests/netlify-browser.mjs
           node tests/shared-sync/browser.mjs
           node --test tests/shared-sync/journal.test.mjs tests/shared-sync/private-storage.test.mjs tests/shared-sync/documents.test.mjs tests/shared-sync/auth.test.mjs
@@ -65,7 +69,7 @@ jobs:
           PY
   review:
     needs: validate
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 3
     steps:
@@ -81,7 +85,10 @@ jobs:
               python3 -c 'from pathlib import Path;print("::warning title=PR creation blocked::"+Path("/tmp/mirror-pr-error").read_text().replace("%","%25").replace("\n","%0A"))'
             fi
           fi
-          if [ -s /tmp/mirror-pr ]; then echo "::notice title=Mirror PR::$(cat /tmp/mirror-pr)"; fi
+          if [ -s /tmp/mirror-pr ]; then
+            echo "::notice title=Mirror PR::$(cat /tmp/mirror-pr)"
+            gh pr edit fix/netlify-mirror-resource-audit --body-file docs/netlify-mirror.md
+          fi
       - name: Read preview deployment metadata only
         env:
           GH_TOKEN: ${{ github.token }}
@@ -95,6 +102,11 @@ jobs:
               if d.get('production_environment'):continue
               for s in api('deployments/'+str(d['id'])+'/statuses')[:1]:
                   if s.get('environment_url'):print('::notice title=Non-production preview::'+s['environment_url'])
+          try:
+              r=urllib.request.urlopen('https://lambert-ai-os-dashboard.vercel.app/api/account-config',timeout=10)
+              c=json.load(r)
+              print('::notice title=Existing public config::HTTP '+str(r.status)+' configured='+str(c.get('configured') is True))
+          except Exception as e:print('::notice title=Existing public config::Unavailable: '+type(e).__name__)
           try:
               r=urllib.request.urlopen('https://lambert-ai-os-cn-test.netlify.app/lib/link-recovery.js',timeout=15)
               print('::notice title=Existing Netlify public asset::HTTP '+str(r.status))

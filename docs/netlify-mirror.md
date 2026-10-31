@@ -1,5 +1,7 @@
 # Netlify 静态镜像与双平台部署审查
 
+**后续更新：PR #100 已由用户建立，Netlify Deploy Preview 已在用户浏览器打开。现增加只读 `/api/account-config` Function，详见 [账号接入说明](netlify-account.md)。以下“API 全关闭/尚无 PR”是首轮历史记录；当前仅账号配置开放，飞书/AI仍关闭，真实登录同步尚待验收。**
+
 基线：main `9a51968`（PR #99），独立分支 `fix/netlify-mirror-resource-audit`。本次仅修改构建、Netlify 配置、测试及本文档；不修改 Vercel 配置、业务 UI、登录逻辑、数据库或用户数据。未经验收不合并、不执行生产部署。
 
 ## 结论和交付边界

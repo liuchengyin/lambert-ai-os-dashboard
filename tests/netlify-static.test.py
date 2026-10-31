@@ -18,13 +18,14 @@ class MirrorTests(unittest.TestCase):
         self.assertEqual(auditor.audit(output)["missing"], [])
         for path in ["lib/link-recovery.js", "vendor/pdfjs/pdf.mjs", "vendor/pdfjs/pdf.worker.mjs", "mobile/update-notes.json", "brand/logo-mark.svg"]:
             self.assertTrue((output/path).is_file(), path)
-        for path in ["api", "supabase", "tests", "scripts", ".git", ".env.example", "package.json", "shared-sync/tooling", "lib/feishu-review.js"]:
+        for path in ["api", "netlify", "supabase", "tests", "scripts", ".git", ".env.example", "package.json", "shared-sync/tooling", "lib/feishu-review.js"]:
             self.assertFalse((output/path).exists(), path)
         for file in output.rglob("*"):
             self.assertFalse(file.is_symlink())
             if file.is_file():
                 self.assertNotIn(file.suffix, {".pem", ".key", ".map"})
         self.assertIn("/api/* /api-unavailable.json 404", (output/"_redirects").read_text())
+        self.assertLess((output/"_redirects").read_text().index("/api/account-config "), (output/"_redirects").read_text().index("/api/* "))
         self.assertNotIn("/* /index.html", (output/"_redirects").read_text())
 
     def test_failure_on_missing_script_css_font_image(self):
