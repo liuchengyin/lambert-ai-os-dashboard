@@ -1,0 +1,43 @@
+name: GLM bookshelf import review
+on:
+  push:
+    branches: [chore/glm-bookshelf-assist-20261031]
+    paths: ['.github/workflows/glm-bookshelf-assist.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: glm-bookshelf-assist
+  cancel-in-progress: false
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare bounded review request without user data
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          Path('glm-bookshelf-request.txt').write_text('请仅审查所附书架模块源码，给出将一份有效PDF导入既有账号云端书架的最短安全步骤。说明七本容量、先预约槽位、上传文件和file_ready更新的顺序、重复导入及失败恢复。只提出建议，不执行任何操作，不声称已经上架。不需要用户资料、书籍正文或密钥。中文回答，最多300字。')
+          PY
+      - name: One actual GLM review via the existing controlled entry point
+        env:
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+        run: node scripts/codex/model-assist.mjs --provider glm --task review --prompt-file glm-bookshelf-request.txt --file shared-sync/book-store.mjs --run
+      - name: Report actual model, usage and review
+        run: |
+          node --input-type=module <<'JS'
+          import {readdir,readFile} from 'node:fs/promises';
+          const dir='.codex-local/assist/';
+          for(const name of await readdir(dir)){
+            if(name==='ledger.json'||!name.endsWith('.json'))continue;
+            const report=JSON.parse(await readFile(dir+name,'utf8'));
+            if(report.provider==='glm'&&report.task==='review')console.log(JSON.stringify(report));
+          }
+          JS
