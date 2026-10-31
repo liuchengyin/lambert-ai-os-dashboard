@@ -124,3 +124,14 @@ Vercel 采用 Node req/res；Netlify 新式 Functions 使用 Request→Response�
 - 双来源：通过扩展原账号回归的 `TEST_DESKTOP_ORIGIN`，用两个端口模拟不同网站，共用 mock Supabase；最终结果由 CI 注释记录。未在生产录入任何测试用户数据。
 - GitHub CI 产物、PR 创建结果和部署预览元数据见 `Netlify mirror validation` 工作流；不以本地测试代替真实 Netlify 域名测试。本地对 Netlify/定价站点的请求受当前网络限制，线上状态尚待只读探测。
 - 本轮不调用外部 AI 模型，不新增模型成本；构建与业务改动由 Codex 完成。未修改 Vercel、Android、业务 UI 或数据库。
+
+
+## 首轮云端验证及外部阻塞
+
+GitHub Actions [41180185537](https://github.com/liuchengyin/lambert-ai-os-dashboard/actions/runs/41180185537) 在提交 `9bcab47` 通过：公开构建、4项 Python 检查、浏览器和两个 origin 共用 mock 后端回归、18项同步与安全单元检查。生成约12.5 MB的 `netlify-static-mirror` artifact（含原有安装包）。后续提交补测首次构建的 ignore 判定、IndexedDB 保留和缺失恢复脚本的故障复现。
+
+PR 自动创建被 GitHub 明确拒绝：`GitHub Actions is not permitted to create or approve pull requests`。尚无实际 PR 编号；[从已推送分支创建 PR](https://github.com/liuchengyin/lambert-ai-os-dashboard/compare/main...fix/netlify-mirror-resource-audit?expand=1)。管理员可在 Settings → Actions → General → Workflow permissions 核对该权限，或直接从比较页建立审查 PR；不需要向聊天提供 Token。
+
+对 `https://lambert-ai-os-cn-test.netlify.app/lib/link-recovery.js` 的云端只读检查返回 HTTP401，现网可能存在访问保护，具体来源需由站点管理员确认。没有绕过或关闭保护，也没有把401误报为缺文件404。现网白屏修复是否已经生效、实际国内网络访问、完整 Markdown CDN 联通均尚未验证。代码及静态产物可审查，但不能宣称 Netlify 已生产发布。
+
+同提交存在 Vercel 非生产 Preview：`https://lambert-ai-os-dashboard-hzbcdodoy-liuchengyin8030-8582.vercel.app`。它是 Vercel 的分支预览，不是 Netlify 修复上线的证据；原正式版未变。

@@ -52,6 +52,9 @@ class MirrorTests(unittest.TestCase):
     def test_production_contracts_untouched(self):
         config = (ROOT/"netlify.toml").read_text()
         self.assertIn('publish = "netlify-dist"', config)
+        self.assertIn('test -n', config)
+        import tomllib
+        tomllib.loads(config)
         self.assertNotIn("vercel.app/api", config)
         self.assertEqual(json.loads((ROOT/"vercel.json").read_text())["outputDirectory"], ".")
         # Mirror byte-copies shared login/sync code; no rewrite or storage migration.
