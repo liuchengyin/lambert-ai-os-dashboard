@@ -29,6 +29,7 @@ try{
   const a=document.querySelector('#rv2ArchiveSettings').getBoundingClientRect(),c=document.querySelector('#rv2ArchiveControls .archive-target-control').getBoundingClientRect();
   return {max:a.right,min:a.left,x:c.left,right:c.right};
  });
+ console.log('ARCHIVE_LAYOUT_BOUNDS',JSON.stringify(bounds));
  check('archive controls do not exceed right pane',bounds.x>=bounds.min-2&&bounds.right<=bounds.max+2);
  await page.locator('#rv2NotesTab').click();
  check('archive controls move to independent notes',await page.evaluate(()=>document.querySelector('.archive-target-control')?.parentElement?.id==='rv2StandaloneArchiveTools'));
