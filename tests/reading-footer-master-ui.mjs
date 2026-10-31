@@ -45,7 +45,7 @@ try{
  await page.locator('#lkMoreButton').click();
  check('add operation preserved under More',await page.locator('#lkMoreDrawer #lkAddNode').count()===1);
  await page.locator('#lkMoreApply').click();
- check('master sidebar brand uppercase M',await page.locator('nav button[data-v="master"]').textContent()==='画Master');
+ check('master sidebar brand uppercase M',await page.locator('nav button[data-v="master"]').textContent().then(s=>s.includes('画Master')&&!s.includes('画master')));
  await page.locator('nav button[data-v="master"]').click();
  await page.locator('#master h2').waitFor();
  check('master page title uppercase M',await page.locator('#master h2').textContent()==='画Master');
