@@ -24,7 +24,7 @@ try{
  check('archive choices expand on demand',await page.locator('#rv2ArchiveSettings').evaluate(x=>x.open)&&await page.locator('#rv2ArchiveControls .archive-target-control').isVisible());
  check('reading archive controls are unique',await page.locator('#rv2ArchiveControls .archive-target-control').count()===1);
  check('writing archive controls were not moved',await page.locator('#archive-target-writing').evaluate(e=>!!e.closest('#writing')));
- check('archive destination controls stay inside details',await page.evaluate(()=>document.querySelector('.archive-target-control')?.parentElement?.id==='rv2ArchiveControls'));
+ check('archive destination controls stay inside details',await page.evaluate(()=>document.querySelector('#archive-target-reading')?.closest('.archive-target-control')?.parentElement?.id==='rv2ArchiveControls'));
  const bounds=await page.evaluate(()=>{
   const a=document.querySelector('#rv2ArchiveSettings').getBoundingClientRect(),c=document.querySelector('#rv2ArchiveControls .archive-target-control').getBoundingClientRect();
   return {max:a.right,min:a.left,x:c.left,right:c.right};
@@ -32,9 +32,9 @@ try{
  console.log('ARCHIVE_LAYOUT_BOUNDS',JSON.stringify(bounds));
  check('archive controls do not exceed right pane',bounds.x>=bounds.min-2&&bounds.right<=bounds.max+2);
  await page.locator('#rv2NotesTab').click();
- check('archive controls move to independent notes',await page.evaluate(()=>document.querySelector('.archive-target-control')?.parentElement?.id==='rv2StandaloneArchiveTools'));
+ check('archive controls move to independent notes',await page.evaluate(()=>document.querySelector('#archive-target-reading')?.closest('.archive-target-control')?.parentElement?.id==='rv2StandaloneArchiveTools'));
  await page.locator('#rv2SplitTab').click();
- check('archive controls move back to split notes',await page.evaluate(()=>document.querySelector('.archive-target-control')?.parentElement?.id==='rv2ArchiveControls'));
+ check('archive controls move back to split notes',await page.evaluate(()=>document.querySelector('#archive-target-reading')?.closest('.archive-target-control')?.parentElement?.id==='rv2ArchiveControls'));
  await page.locator('#rv2Type').selectOption('方法卡');
  check('card title prefix still updates without prompt card',await page.locator('#rv2CardPrefix').textContent()==='方法卡：');
  check('no reading script exceptions',errors.length===0);
