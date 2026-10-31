@@ -199,7 +199,8 @@
   ['rv2BookTitle','rv2Progress','rv2Url'].forEach(id=>$(id).addEventListener('change',saveReader));
   $('rv2Load').onclick=()=>loadReader();$('rv2Open').onclick=()=>{const u=readerUrl();if(u)window.open(u,'_blank','noopener')};
   $('rv2Pdf').onclick=()=>$('rv2PdfInput').click();
-  $('rv2PdfInput').onchange=e=>{const file=e.target.files?.[0];if(!file)return;if(localPdfUrl)URL.revokeObjectURL(localPdfUrl);localPdfUrl=URL.createObjectURL(file);setMode('pdf');$('rv2Url').value='';if(!$('rv2BookTitle').value)$('rv2BookTitle').value=file.name.replace(/\.pdf$/i,'');loadReader(localPdfUrl)};
+  $('rv2PdfInput').onchange=()=>{}; // Imports are owned by the durable bookshelf below.
+  import('./reading-bookshelf.mjs').then(m=>m.mountBookshelf()).catch(()=>{$('rv2Status').textContent='书架加载失败，请刷新重试；现有笔记已保留'});
 
   $('rv2BookTitle').value=state.reader.title||'';$('rv2Progress').value=state.reader.progress||'';$('rv2Url').value=state.reader.url||'';setMode(state.reader.mode||'pdf');
   if(currentId&&state.notes.some(n=>n.id===currentId))loadNote(currentId);else if(state.notes.length)loadNote(state.notes[0].id);else{const n=blankNote();state.notes.unshift(n);currentId=n.id;persist();loadNote(n.id)}
