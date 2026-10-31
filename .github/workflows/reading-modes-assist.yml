@@ -1,0 +1,39 @@
+name: Reading modes model assist
+on:
+  push:
+    branches: [feat/web-reading-modes-20261031]
+    paths: ['.github/workflows/reading-modes-assist.yml']
+permissions:
+  contents: read
+jobs:
+  assist:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare scoped implementation request
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          Path('reading-modes-request.txt').write_text('为附带PDF书架代码提供主要实现草稿：新增连续滚动和单页翻页两种模式，页码旁select切换，默认保留单页，偏好按账号本机保存。设计独立createPdfViewer({shell,onPage,onError})模块，接口open(pdf,page,mode),goTo(page),setMode(mode),resize(),close()。连续模式建空页占位并按需渲染附近页面，最多保留5张canvas，串行渲染避免PDF.js同画布并发，scroll以视口中心确定当前页，防止程序跳页后位置回跳，进度防抖，模式切换/resize保留当前页，close取消渲染与回调，旧异步不可写新文档。请给核心调度、滚动定位和取消的JS草稿，不超过80行。仅源码无用户资料；不声称执行测试。')
+          PY
+      - name: One DeepSeek draft request
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: node scripts/codex/model-assist.mjs --provider deepseek --task draft --prompt-file reading-modes-request.txt --file reading-bookshelf.mjs --run
+      - name: Report actual usage and suggestion
+        run: |
+          node --input-type=module <<'JS'
+          import {readdir,readFile} from 'node:fs/promises';
+          const dir='.codex-local/assist/';
+          for(const name of await readdir(dir)){
+            if(name==='ledger.json'||!name.endsWith('.json'))continue;
+            const r=JSON.parse(await readFile(dir+name,'utf8'));
+            if(r.task==='draft'||r.task==='review')console.log(JSON.stringify(r));
+          }
+          JS
