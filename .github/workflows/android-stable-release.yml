@@ -1,6 +1,9 @@
 name: Android stable signed package
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['android/**','.github/workflows/android-stable-release.yml']
 permissions:
   contents: read
 jobs:
@@ -41,16 +44,18 @@ jobs:
       - name: Verify package evidence
         run: |
           mkdir -p apk-output
-          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/Lambert-0.2.8.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/ACHE-0.2.9.apk
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs apk-output/*.apk > apk-output/signature.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging apk-output/*.apk > apk-output/application.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions apk-output/*.apk > apk-output/permissions.txt
           grep -q "name='app.lambert.tasks'" apk-output/application.txt
+          grep -q "application-label:'ACHE'" apk-output/application.txt
+          grep -q 'Signer #1 certificate SHA-256 digest: 3ccdfb85321f921a08a18ab54f3b0c9ca760a300a53a034afceab9e2bc88a87b' apk-output/signature.txt
           git rev-parse HEAD > apk-output/source.txt
           cd apk-output
           sha256sum *.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: Lambert-stable-0.2.8
+          name: ACHE-stable-0.2.9
           path: apk-output/
           retention-days: 30
