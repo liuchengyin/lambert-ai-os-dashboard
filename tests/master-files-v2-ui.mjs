@@ -58,6 +58,7 @@ try{
  await page.waitForFunction(()=>document.querySelectorAll('.mp-file-card').length===2,{timeout:30000});
  check('file list survives full page reload',await page.locator('.mp-file-card').count()===2);
  await page.locator('.mp-file-card').filter({hasText:'未命名图纸'}).locator('.mp-file-name').click();
+ await page.waitForFunction(()=>document.body.classList.contains('master-editing')&&document.getElementById('mpDrawFrame')?.src.includes('embed.diagrams.net/'));
  check('saved file reopens in native drawio iframe',await page.locator('#mpDrawFrame').getAttribute('src').then(u=>u?.includes('embed.diagrams.net/')));
  await page.locator('#mpBack').click();
  const card=page.locator('.mp-file-card').filter({hasText:'未命名图纸'});
