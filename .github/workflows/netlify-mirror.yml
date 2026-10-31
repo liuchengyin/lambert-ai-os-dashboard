@@ -1,0 +1,115 @@
+name: Netlify mirror validation
+on:
+  push:
+    branches: [fix/netlify-mirror-resource-audit]
+    paths: ['netlify.toml','scripts/*netlify*','scripts/netlify-public-root.json','tests/netlify-*','netlify/**','tests/shared-sync/browser.mjs','.github/workflows/netlify-mirror.yml']
+  pull_request:
+    paths: ['netlify.toml','scripts/*netlify*','scripts/netlify-public-root.json','tests/netlify-*','netlify/**','.github/workflows/netlify-mirror.yml','*.html','*.js','*.css','*.mjs','lib/link-recovery.js','lib/link-sites.js','lib/task-center-model.js','shared-sync/**','mobile/**','brand/**']
+permissions:
+  contents: read
+  pull-requests: write
+  deployments: read
+concurrency:
+  group: netlify-mirror-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build public-only mirror
+        run: |
+          python3 scripts/build-reading-assets.py
+          python3 scripts/build-netlify-static.py
+          python3 tests/netlify-static.test.py
+      - name: Install pinned test tools
+        run: |
+          npm ci --prefix shared-sync/tooling --no-audit --no-fund
+          ln -s shared-sync/tooling/node_modules node_modules
+          shared-sync/tooling/node_modules/.bin/playwright install --with-deps chromium
+      - name: Verify server function bundle (not published as static files)
+        run: node tests/netlify-function-bundle.mjs
+      - name: Browser and two-origin synchronization (mock backend)
+        env:
+          TEST_ORIGIN: http://127.0.0.1:8793
+          TEST_DESKTOP_ORIGIN: http://127.0.0.1:8794
+          NETLIFY_CONFIG_ADAPTER: "1"
+        run: |
+          set -o pipefail
+          python3 -m http.server 8793 --bind 127.0.0.1 --directory netlify-dist >/tmp/mirror-1.log 2>&1 &
+          python3 -m http.server 8794 --bind 127.0.0.1 --directory netlify-dist >/tmp/mirror-2.log 2>&1 &
+          {
+          node --test tests/netlify-account.test.mjs
+          node tests/netlify-browser.mjs
+          node tests/netlify-protected-login.mjs
+          node tests/shared-sync/browser.mjs
+          node --test tests/shared-sync/journal.test.mjs tests/shared-sync/private-storage.test.mjs tests/shared-sync/documents.test.mjs tests/shared-sync/auth.test.mjs
+          } 2>&1 | tee /tmp/mirror-tests.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: netlify-static-mirror
+          path: |
+            netlify-dist/
+          retention-days: 7
+      - name: Test result summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/mirror-tests.log')
+          if p.exists():
+              text=p.read_text()[-6500:]
+              print('::notice title=Mirror tests::'+text.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
+          PY
+  review:
+    needs: validate
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Create review PR only (never deploy or merge)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh pr view fix/netlify-mirror-resource-audit --json url --jq .url > /tmp/mirror-pr; then
+            if ! gh pr create --draft --base main --head fix/netlify-mirror-resource-audit --title 'fix(netlify): 修复静态镜像资源并补齐双平台验证' --body-file docs/netlify-mirror.md > /tmp/mirror-pr 2>/tmp/mirror-pr-error; then
+              python3 -c 'from pathlib import Path;print("::warning title=PR creation blocked::"+Path("/tmp/mirror-pr-error").read_text().replace("%","%25").replace("\n","%0A"))'
+            fi
+          fi
+          if [ -s /tmp/mirror-pr ]; then
+            echo "::notice title=Mirror PR::$(cat /tmp/mirror-pr)"
+            gh pr edit fix/netlify-mirror-resource-audit --body-file docs/netlify-mirror.md
+          fi
+      - name: Read preview deployment metadata only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: liuchengyin/lambert-ai-os-dashboard
+        run: |
+          python3 - <<'PY'
+          import json,os,subprocess,urllib.request
+          repo=os.environ['GH_REPO'];sha=os.environ['GITHUB_SHA']
+          def api(path):return json.loads(subprocess.check_output(['gh','api','repos/'+repo+'/'+path],text=True))
+          for d in api('deployments?sha='+sha):
+              if d.get('production_environment'):continue
+              for s in api('deployments/'+str(d['id'])+'/statuses')[:1]:
+                  if s.get('environment_url'):print('::notice title=Non-production preview::'+s['environment_url'])
+          try:
+              r=urllib.request.urlopen('https://lambert-ai-os-dashboard.vercel.app/api/account-config',timeout=10)
+              c=json.load(r)
+              print('::notice title=Existing public config::HTTP '+str(r.status)+' configured='+str(c.get('configured') is True))
+          except Exception as e:print('::notice title=Existing public config::Unavailable: '+type(e).__name__)
+          try:
+              r=urllib.request.urlopen('https://lambert-ai-os-cn-test.netlify.app/lib/link-recovery.js',timeout=15)
+              print('::notice title=Existing Netlify public asset::HTTP '+str(r.status))
+          except Exception as e:print('::notice title=Existing Netlify public asset::Not verified: '+type(e).__name__+' '+str(getattr(e,'code','')))
+          PY
