@@ -89,3 +89,77 @@
  #reading .reading-standalone-list{max-height:170px}
  #reading .reading-standalone-archive-bottom{align-items:flex-start}
 }
+
+/* Seven-book shelf and compact mode controls. */
+#reading .reading-stable-head{justify-content:flex-end;min-height:32px;margin-bottom:8px}
+#reading .reading-view-tabs{gap:6px;margin:0}
+#reading .reading-view-tabs button{padding:5px 10px!important;font-size:11px!important;min-height:26px;border-radius:7px}
+#reading .has-bookshelf>.reading-reader-toolbar,#reading .has-bookshelf>.reading-url-row,#reading .has-bookshelf>.reading-frame-shell,#reading .book-legacy-progress{display:none!important}
+#reading .bookshelf-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:4px 0 8px}
+#reading .bookshelf-heading h3{font-size:19px;margin:0;color:#413b35}
+#reading .bookshelf-heading small{font-size:12px;font-weight:400;color:#8b8177;margin-left:8px}
+#reading .bookshelf-heading button,#reading #bookViewer button{padding:7px 11px;border:1px solid #ddd5ca;border-radius:8px;background:#fff;color:#5b4e41;font-size:12px}
+#reading #bookShelfStatus{min-height:34px;font-size:12px;line-height:1.6;color:#746759;padding:5px 0}
+#reading .book-shelf-slots{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:14px;padding:35px 24px 42px;background:linear-gradient(180deg,#f6f1e8,#e9dfcf);border-radius:14px;border-bottom:14px solid #b89873;box-shadow:0 13px 12px -10px #69503888,inset 0 -5px 5px #c5ad91;align-items:start;min-height:340px}
+#reading .shelf-book{min-width:0;position:relative}
+#reading .book-cover{width:100%;height:210px;display:flex;flex-direction:column;align-items:stretch;text-align:left;padding:18px 12px 14px 18px!important;border:0;border-radius:3px 8px 8px 3px;background:linear-gradient(90deg,hsl(var(--book-hue) 25% 24%) 0 6%,hsl(var(--book-hue) 28% 38%) 8%,hsl(var(--book-hue) 25% 43%) 90%,#e9e0d3 92%,#fff9ed 96%,hsl(var(--book-hue) 25% 31%) 98%)!important;color:#fff9e9!important;box-shadow:5px 7px 8px #33231b40,inset 3px 0 2px #fff3;transition:transform .18s}
+#reading .book-cover:hover{transform:translateY(-7px) rotate(-1deg)}
+#reading .book-cover-rule{height:3px;width:24px;background:#dec792;margin-bottom:18px}
+#reading .book-cover strong{font-family:Georgia,'Noto Serif SC',serif;font-size:15px;line-height:1.65;overflow:hidden;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;word-break:break-word}
+#reading .book-cover-footer{margin-top:auto;font-size:10px;opacity:.7;padding-top:8px}
+#reading .book-slot-empty{height:210px;width:100%;border:1px dashed #bda98f;border-radius:5px;background:#fff3;color:#b29c80;font-size:24px}
+#reading .book-meta{display:flex;justify-content:space-between;gap:2px;margin-top:12px;font-size:10px;color:#766753}
+#reading .book-meta button,#reading .book-retry{padding:0;border:0;background:transparent;font-size:10px;color:#74608e}
+#reading .book-retry{margin-top:5px}
+#reading #bookViewer header{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid #e9e4de}
+#reading #bookViewerTitle{flex:1;min-width:90px;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#reading #bookViewer label{font-size:12px;color:#736d65;white-space:nowrap}
+#reading #bookPage{width:60px;padding:5px;font-size:13px}
+#reading #bookCanvasShell{overflow:auto;max-height:78vh;background:#eae8e4;padding:16px;text-align:center;margin-top:12px}
+#reading #bookCanvas{max-width:100%;height:auto;background:#fff;box-shadow:0 2px 10px #0002}
+#reading .has-bookshelf:not(.book-is-open){min-height:540px}
+@media(max-width:1200px){#reading .book-shelf-slots{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}#reading .book-cover,#reading .book-slot-empty{height:190px}}
+@media(max-width:620px){#reading .book-shelf-slots{grid-template-columns:repeat(3,minmax(0,1fr));padding:20px 14px 28px;gap:12px}#reading .book-cover,#reading .book-slot-empty{height:165px}#reading .book-cover strong{font-size:12px}#reading .book-cover{padding:14px 10px 12px 15px!important}}
+#reading .book-link-reader{margin-top:28px;font-size:12px;color:#877d70}
+#reading .book-link-reader summary{cursor:pointer;width:max-content;margin-bottom:14px}
+#reading .book-link-reader .reading-frame-shell{margin-top:12px}
+#reading .book-is-open>.book-link-reader{display:none}
+#reading .reading-stable-workspace>*{min-width:0;box-sizing:border-box}
+#reading #readingShelf,#reading #bookViewer{min-width:0;max-width:100%;box-sizing:border-box}
+#reading .reading-view-tabs button{flex:0 0 auto;width:auto!important}
+@media(max-width:620px){#reading .reading-stable-workspace{grid-template-columns:minmax(0,1fr)}#reading .reading-clip-row{flex-wrap:wrap}}
+#reading .book-pending-item{font-size:12px;margin-top:12px}
+#reading .book-pending-item button{padding:6px 10px;background:#fff6e7;border:1px solid #e8d9bf;border-radius:6px;color:#7d6543}
+#reading .has-bookshelf:fullscreen,#reading .has-bookshelf.is-reader-maximized{padding:20px;background:#f9f8f6}
+#reading .has-bookshelf:fullscreen #bookCanvasShell,#reading .has-bookshelf.is-reader-maximized #bookCanvasShell{max-height:calc(100vh - 110px)}
+
+
+/* Reading shelf compact V2.6: ~1/4 initial shelf footprint; seven slots and cloud book data intact. */
+#reading .has-bookshelf:not(.book-is-open){min-height:0!important}
+#reading .bookshelf-heading{margin:0 0 5px!important}
+#reading .bookshelf-heading h3{font-size:16px!important}
+#reading .bookshelf-heading small{font-size:10px!important}
+#reading .bookshelf-heading button{padding:5px 9px!important;font-size:11px!important}
+#reading #bookShelfStatus{min-height:18px!important;padding:1px 0 3px!important;font-size:10px!important}
+#reading .book-shelf-slots{
+  grid-template-columns:repeat(7,minmax(0,1fr))!important;
+  min-height:98px!important;
+  gap:8px!important;
+  padding:8px 12px 9px!important;
+  border-radius:10px!important;
+  border-bottom:6px solid #b89873!important;
+  box-shadow:0 5px 8px -5px #69503866,inset 0 -2px 3px #c5ad91!important;
+}
+#reading .book-cover,#reading .book-slot-empty{height:66px!important;min-height:66px!important}
+#reading .book-cover{padding:7px 5px 6px 10px!important;box-shadow:2px 3px 4px #33231b35!important;border-radius:2px 5px 5px 2px!important}
+#reading .book-cover:hover{transform:translateY(-3px)!important}
+#reading .book-cover-rule{height:2px;width:17px;margin-bottom:5px}
+#reading .book-cover strong{font-size:10px!important;line-height:1.25!important;-webkit-line-clamp:2!important}
+#reading .book-cover-footer{font-size:9px!important;padding-top:3px}
+#reading .book-slot-empty{font-size:20px!important}
+#reading .book-meta{margin-top:4px!important;font-size:9px!important;gap:1px}
+#reading .book-meta button,#reading .book-retry{font-size:9px!important}
+#reading .book-retry{margin-top:2px!important}
+#reading .book-link-reader{margin-top:10px!important}
+@media(max-width:900px){#reading .book-shelf-slots{grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:5px!important;padding:8px 9px!important}}
+@media(max-width:620px){#reading .book-shelf-slots{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:7px!important;padding:10px!important}#reading .book-cover,#reading .book-slot-empty{height:72px!important}}

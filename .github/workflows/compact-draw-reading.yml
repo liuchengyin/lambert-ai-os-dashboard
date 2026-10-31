@@ -1,0 +1,45 @@
+name: Compact Reading Shelf and Logistics Draw UI
+on:
+  push:
+    branches: [feat/compact-logistics-draw-reading-shelf-20261031]
+    paths:
+      - 'reading-v2.css'
+      - 'reading-v2.js'
+      - 'reading-bookshelf.mjs'
+      - 'shared-sync/book-store.mjs'
+      - 'project-v4.js'
+      - 'index.html'
+      - 'logistics-knowledge-v1.js'
+      - 'logistics-draw-compact.css'
+      - 'sprint1-navigation.js'
+      - 'tests/logistics-compact-ui.mjs'
+      - '.github/workflows/compact-draw-reading.yml'
+permissions:
+  contents: read
+jobs:
+  ui:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript
+        run: |
+          node --check logistics-knowledge-v1.js
+          node --check reading-v2.js
+          node --check reading-bookshelf.mjs
+          node --check shared-sync/book-store.mjs
+          node --check project-v4.js
+      - name: Install Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+      - name: Compact UI plus original logistics and reading regression
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/compact-ui-http.log 2>&1 &
+          sleep 2
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-compact-ui.mjs
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-v35-ui.mjs
+          TEST_BASE_URL=http://127.0.0.1:8765 node tests/reading-bookshelf.mjs
