@@ -36,6 +36,8 @@ jobs:
         run: |
           npm install --no-save --no-package-lock playwright@1.56.0
           npx playwright install --with-deps chromium
+      - name: Build pinned local PDF.js for reading regression
+        run: python3 scripts/build-reading-assets.py
       - name: Compact UI plus original logistics and reading regression
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/compact-ui-http.log 2>&1 &
