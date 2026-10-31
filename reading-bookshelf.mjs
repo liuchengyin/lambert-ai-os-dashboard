@@ -31,13 +31,20 @@ export async function mountBookshelf(){
  async function upload(id){status('正在上传云端…');try{await store.upload(id);status('已保存到云端');}catch(e){status(`云端保存未完成：${errorMessage(e)}。本机文件已保留，可点击上传云端重试。`);}await renderShelf();}
  async function flushProgress(){
   clearTimeout(progressTimer);const item=pendingProgress;pendingProgress=null;if(!item)return;
-  try{await store.checkpoint(item.id,item.page);}catch{status('阅读位置已保存在本机，云端进度等待联网重试');}
+  try{
+   await store.checkpoint(item.id,item.page);
+   const hint=JSON.parse(prefs.getItem('reading_pdf_position_v1')||'null');
+   if(hint?.id===item.id&&hint.page===item.page&&hint.at===item.at)prefs.removeItem('reading_pdf_position_v1');
+  }catch{status('阅读位置已保存在本机，云端进度等待联网重试');}
  }
  const pdfViewer=createPdfViewer({shell:$('bookCanvasShell'),onPage(n){
   if(!pdf||!active)return;
   $('bookPage').value=n;$('bookPages').textContent=pdf.numPages;
   $('bookPrev').disabled=n===1;$('bookNext').disabled=n===pdf.numPages;
-  pendingProgress={id:active,page:n};clearTimeout(progressTimer);progressTimer=setTimeout(flushProgress,400);
+  pendingProgress={id:active,page:n,at:Date.now()};
+  // Persist the pending position synchronously; an immediate reload can interrupt IndexedDB/network work.
+  try{prefs.setItem('reading_pdf_position_v1',JSON.stringify(pendingProgress));}catch{status('阅读位置暂未保存，请稍后再关闭页面');}
+  clearTimeout(progressTimer);progressTimer=setTimeout(flushProgress,400);
  },onError(e){status(`阅读加载失败：${errorMessage(e)}`);}});
  $('bookReadingMode').value=mode;
  async function pageTo(value){await pdfViewer.goTo(value);await flushProgress();}
@@ -54,7 +61,9 @@ export async function mountBookshelf(){
    const row=await store.get(id),file=await store.blob(id);if(mine!==generation)return;
    if(!cache.has(id)){const pdfjs=await import('./vendor/pdfjs/pdf.mjs');pdfjs.GlobalWorkerOptions.workerSrc=new URL('./vendor/pdfjs/pdf.worker.mjs',import.meta.url).href;const document=await pdfjs.getDocument({data:new Uint8Array(await file.arrayBuffer()),useSystemFonts:true,isEvalSupported:false}).promise;cache.set(id,document);}
    if(mine!==generation)return;pdf=cache.get(id);active=id;$('rv2BookTitle').value=row.title;$('bookViewerTitle').textContent=row.title;$('bookViewer').hidden=false;shelf.hidden=true;reader.classList.add('book-is-open');
-   await pdfViewer.open(pdf,row.page||1,mode);await flushProgress();status('');
+   let resume=row.page||1;
+   try{const hint=JSON.parse(prefs.getItem('reading_pdf_position_v1')||'null');if(hint?.id===id)resume=hint.page;}catch{}
+   await pdfViewer.open(pdf,resume,mode);await flushProgress();status('');
   }catch(e){status(`打开失败：${errorMessage(e)}`);}
  }
  $('bookFullscreen').onclick=async()=>{if(document.fullscreenElement){await document.exitFullscreen();}else{try{await reader.requestFullscreen();}catch{reader.classList.toggle('is-reader-maximized');}}};
