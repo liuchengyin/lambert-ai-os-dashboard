@@ -54,7 +54,8 @@
       seedNode('signed','签收','确认妥投或签收结果','回传签收轨迹及其用于 SLA 的时间字段需核实','签收时间、签收证明、运单号','外部事件')
     ]}
   ]});
-  let state=null,blocked=false,locked=true,dirty=false,releaseRecord=null,tab='process',overviewMode='macro',moduleId='',selectedId='',editorMode='',dragPayload=null,activeStageId='',editingStageId='';
+  const directMaster=(()=>{try{const url=new URL(window.location.href);return url.searchParams.get('view')==='logistics'&&url.searchParams.get('tab')==='master';}catch{return false;}})();
+  let state=null,blocked=false,locked=true,dirty=false,releaseRecord=null,tab=directMaster?'master':'process',overviewMode='macro',moduleId='',selectedId='',editorMode='',dragPayload=null,activeStageId='',editingStageId='';
   const moves=window.LambertLogisticsMoves;
   const stages=window.LambertLogisticsStages;
   const flow=window.LambertLogisticsFlow;
@@ -103,17 +104,18 @@
     const b=node('button',label,cls);b.type='button';b.dataset.action=action;b.disabled=!!disabled;return b;
   }
   root.innerHTML='<div class="lk-page">'+
-    '<header class="lk-head"><div><small>LOGISTICS KNOWLEDGE · P0 CANVAS</small><h2>物流知识库</h2><p>以操作为底座，把业务动作、信息传递和数据记录串起来。</p></div>'+
-    '<button type="button" id="lkExport">导出知识库</button></header>'+
+    '<header class="lk-head"><div><small>LOGISTICS DRAW</small><h2>物流Draw</h2></div>'+
+    '<div class="lk-head-actions"><button type="button" id="lkOpenMaster" class="lk-open-master">进入画Master · draw.io</button><button type="button" id="lkExport">导出知识库</button></div></header>'+
     '<div class="lk-toolbar"><span class="lk-route">中国 → 哈萨克斯坦 · 陆运示例</span><span class="lk-warning">示意链路 · 实际系统规则待核实</span></div>'+
     '<div class="lk-version-bar"><span id="lkEditStatus">已锁定 · 只读</span><div class="lk-version-actions"><button type="button" id="lkUnlock">解锁编辑</button><button type="button" id="lkSaveDraft" disabled>保存草稿</button><button type="button" id="lkPublish" disabled>确认发布</button><button type="button" id="lkCancelEdit" disabled>取消并锁定</button></div><div class="lk-version-history"><label>历史版本 <select id="lkHistorySelect"><option value="">选择历史版本</option></select></label><button type="button" id="lkRollback" disabled>回滚为新版本</button></div></div>'+
-    '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabOverview" aria-selected="false">全链路总览</button><button type="button" role="tab" id="lkTabProcess" aria-selected="true">模块编辑 · 操作＋信息</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button><button type="button" role="tab" id="lkTabSetup" aria-selected="false">基础资料配置</button></div>'+
+    '<div class="lk-tabs" role="tablist" aria-label="知识库视图"><button type="button" role="tab" id="lkTabOverview" aria-selected="false">总览</button><button type="button" role="tab" id="lkTabProcess" aria-selected="true">画板</button><button type="button" role="tab" id="lkTabData" aria-selected="false">数据关系</button><button type="button" role="tab" id="lkTabSetup" aria-selected="false">基础资料配置</button><button type="button" role="tab" id="lkTabMaster" aria-selected="false">画Master · draw.io</button></div><div class="lk-compact-actions"><strong id="lkCurrentMode">画板</strong><button type="button" id="lkMoreButton" aria-controls="lkMoreDrawer" aria-expanded="false">☷ 更多</button></div>'+
     '<div id="lkOverview" role="tabpanel" aria-labelledby="lkTabOverview" hidden><div class="lk-ov-switch"><span>查看已发布版本</span><div role="group" aria-label="全链路展示模式"><button type="button" id="lkModeMacro" aria-pressed="true">A · 宏观模块</button><button type="button" id="lkModeDetail" aria-pressed="false">B · 完整流程</button></div></div><div id="lkOverviewContent"></div></div>'+
-    '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-search-bar"><label>搜索操作、标签、操作码 <input id="lkSearch" type="search" placeholder="例如：安检 / 上车 / DDS"></label><div id="lkSearchResults" aria-live="polite"></div></div><div class="lk-canvas-categories" aria-label="物流模块底座"><span class="lk-canvas-category">仓</span><span class="lk-canvas-category">干</span><span class="lk-canvas-category">关</span><span class="lk-canvas-category">配</span></div><div class="lk-section-title"><div><strong>模块化操作画布</strong><small>大模块内包含可调整的子环节，例如：国内中心仓 → 到车／收入／分拣／发出。</small></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div class="lk-mode-toolbar"><strong>干线类型</strong><span>按运输方式分类，也可为每个环节填写前置配置</span><button type="button" data-action="add-linehaul-mode" data-mode="road">＋ 陆运</button><button type="button" data-action="add-linehaul-mode" data-mode="sea">＋ 海运</button><button type="button" data-action="add-linehaul-mode" data-mode="air">＋ 空运</button></div><details class="lk-infra-base" id="lkInfrastructureBase"><summary>信息与数据基础设施 · 所有操作节点可复用（展开查看）</summary><p>这不是业务分支，也不是已经连接系统的实时数据。操作的内部事件、日志、推送决策、数据表、指标和任务，逐节点配置；无证据时保持待配置。</p><div class="lk-infra-chain"><div><strong>① 操作</strong><small>谁执行 / 操作动作</small></div><div><strong>② 事件与留痕</strong><small>内部事件 / 日志 / 记录表</small></div><div><strong>③ 推送判断</strong><small>仅内部 / 条件推送 / 对外</small></div><div><strong>④ 数据来源</strong><small>OMS / EDI / TMS 等表及关联键</small></div><div><strong>⑤ 指标与 SLA</strong><small>业务规则 / 时间口径 / 目标</small></div><div><strong>⑥ 看板与任务</strong><small>数据看板 / 预警与任务入口</small></div></div><p>不对外推送的事件仍可有内部日志与持久化记录；是否真的产生轨迹、是否入库，都待真实系统证据核实。</p></details><div id="lkModules" class="lk-modules lk-canvas"></div>'+
-    '<div class="lk-section-title lk-selection-head"><div><strong id="lkNodeTitle">操作节点详情</strong><small>选择上方的小块；系统关系放在详情内按需展开</small></div><button type="button" id="lkAddNode">＋ 为选中模块添加操作</button></div>'+
+    '<div id="lkProcess" role="tabpanel" aria-labelledby="lkTabProcess"><div class="lk-search-bar"><label>搜索操作、标签、操作码 <input id="lkSearch" type="search" placeholder="例如：安检 / 上车 / DDS"></label><div id="lkSearchResults" aria-live="polite"></div></div><div class="lk-canvas-categories" aria-label="物流模块底座"><span class="lk-canvas-category">仓</span><span class="lk-canvas-category">干</span><span class="lk-canvas-category">关</span><span class="lk-canvas-category">配</span></div><div class="lk-section-title"><div><strong>操作流程</strong></div><button id="lkAddModule" type="button">＋ 添加模块</button></div><div class="lk-mode-toolbar"><strong>干线类型</strong><span>按运输方式分类，也可为每个环节填写前置配置</span><button type="button" data-action="add-linehaul-mode" data-mode="road">＋ 陆运</button><button type="button" data-action="add-linehaul-mode" data-mode="sea">＋ 海运</button><button type="button" data-action="add-linehaul-mode" data-mode="air">＋ 空运</button></div><details class="lk-infra-base" id="lkInfrastructureBase"><summary>信息与数据基础设施 · 所有操作节点可复用（展开查看）</summary><p>这不是业务分支，也不是已经连接系统的实时数据。操作的内部事件、日志、推送决策、数据表、指标和任务，逐节点配置；无证据时保持待配置。</p><div class="lk-infra-chain"><div><strong>① 操作</strong><small>谁执行 / 操作动作</small></div><div><strong>② 事件与留痕</strong><small>内部事件 / 日志 / 记录表</small></div><div><strong>③ 推送判断</strong><small>仅内部 / 条件推送 / 对外</small></div><div><strong>④ 数据来源</strong><small>OMS / EDI / TMS 等表及关联键</small></div><div><strong>⑤ 指标与 SLA</strong><small>业务规则 / 时间口径 / 目标</small></div><div><strong>⑥ 看板与任务</strong><small>数据看板 / 预警与任务入口</small></div></div><p>不对外推送的事件仍可有内部日志与持久化记录；是否真的产生轨迹、是否入库，都待真实系统证据核实。</p></details><div id="lkModules" class="lk-modules lk-canvas"></div>'+
+    '<div class="lk-section-title lk-selection-head" hidden><strong id="lkNodeTitle">操作详情</strong><button type="button" id="lkAddNode">＋ 为选中模块添加操作</button></div>'+
     '<details class="lk-trash-panel"><summary>回收站 · 可恢复的删除记录 <span id="lkTrashCount">0</span></summary><div id="lkTrashList"></div></details>'+
     '<div class="lk-workspace lk-canvas-workspace"><div id="lkNodes" class="lk-nodes" hidden aria-hidden="true"></div><article id="lkDetail" class="lk-detail"></article></div></div>'+
     '<div id="lkSetupTool" role="tabpanel" aria-labelledby="lkTabSetup" hidden><div class="lk-setup-tool-intro"><strong>基础资料配置工具</strong><p>机场、航线、航班、板型、车队等是配置资料，不属于物流操作流程。按模块 / 子环节拼装配置；业务画布只保留配置入口，待后续按 ID 关联操作事件。</p></div><div id="lkSetupLibrary"></div></div>'+
+    '<div id="lkMaster" role="tabpanel" aria-labelledby="lkTabMaster" hidden></div>'+ 
     '<div id="lkData" role="tabpanel" aria-labelledby="lkTabData" hidden><div class="lk-data-guide"><strong>从业务动作追到数据</strong><p>操作／事件 → 信息变化 → 记录字段 → 后续指标。这里只列研究关系，不假装已接入真实数据表或驾驶舱。</p></div><div id="lkDataRows" class="lk-data-rows"></div></div>'+
     '<p class="lk-footnote">提示：预配不等于发运，系统生成轨迹也不必然等于实物动作完成。每条事件／接口关系应以系统截图、接口响应或数据库记录确认。</p><p id="lkMessage" class="lk-message" role="status"></p></div>'+
     '<dialog id="lkNodeDialog" class="lk-dialog"><form id="lkNodeForm"><h3 id="lkEditorTitle">操作节点</h3><label>操作名称<input id="lkTitleInput" required maxlength="70"></label>'+
@@ -152,6 +154,50 @@
 '<section class="lk-wiring-form-group"><h4>⑤ 任务 / 异常处理看板</h4><label>任务看板或工单入口<input name="task.board" maxlength="180"></label><label>任务触发条件<textarea name="task.condition" rows="2" maxlength="500"></textarea></label><label>责任人 / 角色<input name="task.owner" maxlength="180"></label><label>触发后的动作<textarea name="task.action" rows="2" maxlength="360"></textarea></label></section>'+
 '<div class="lk-dialog-actions"><button type="button" id="lkWiringCancel">取消</button><button type="submit" class="lk-primary">保存此节点配置</button></div></form></dialog>'+'<dialog id="lkQuickDetailDialog" class="lk-dialog lk-quick-detail-dialog" aria-label="操作模块详情"><div class="lk-quick-bar"><strong>操作模块详情</strong><button type="button" id="lkQuickClose" aria-label="关闭详情">关闭 ×</button></div><div id="lkQuickReadOnly" class="lk-quick-lock-note" hidden>当前已锁定，解锁后可以修改名称、内容或删除。<button type="button" id="lkQuickUnlock">解锁编辑</button></div><article id="lkQuickDetailBody" class="lk-detail"></article></dialog>'+
     '<dialog id="lkRenameNodeDialog" class="lk-dialog lk-rename-dialog" aria-label="修改操作模块名称"><form id="lkRenameNodeForm"><h3>编辑小模块名称</h3><label>操作名称<input id="lkRenameNodeName" type="text" maxlength="70" required placeholder="例如：安检扫描"></label><p class="lk-footnote">只修改名称，保留操作 ID、备注、轨迹事件码及所有流程连线。</p><div class="lk-dialog-actions"><button type="button" id="lkRenameNodeCancel">取消</button><button type="submit" class="lk-primary">保存名称</button></div></form></dialog>';
+  // Low-frequency controls are moved, not duplicated: existing save/rollback/search handlers remain intact.
+  root.insertAdjacentHTML('beforeend','<div id="lkMoreBackdrop" class="lk-more-backdrop" hidden></div><aside id="lkMoreDrawer" role="dialog" aria-label="物流Draw 更多设置" aria-modal="true" hidden><header><strong>更多 · 筛选与管理</strong><button type="button" id="lkMoreClose" aria-label="关闭更多">×</button></header><div class="lk-more-scroll"><section><h3>筛选</h3><label>业务阶段<select id="lkCategoryFilter"><option value="all">全部 · 仓干关配</option><option value="仓">仓</option><option value="干">干</option><option value="关">关</option><option value="配">配</option></select></label><label>业务模块<select id="lkModuleFilter"><option value="all">全部模块</option></select></label><div id="lkMoreSearch"></div></section><section><h3>草稿与版本</h3><div id="lkMoreVersion"></div></section><section><h3>绘图管理</h3><div id="lkMoreTools"></div><div id="lkMoreInfra"></div><div id="lkMoreTrash"></div><div id="lkMoreExport"></div></section><section><h3>其他视图</h3><button type="button" id="lkMoreData">数据关系</button><button type="button" id="lkMoreSetup">基础资料配置</button></section></div><footer><button type="button" id="lkMoreClear">清除筛选</button><button type="button" id="lkMoreApply">确定并关闭</button></footer></aside>');
+  const moreMove=(selector,id)=>{const el=root.querySelector(selector),dest=$(id);if(el&&dest)dest.append(el);};
+  moreMove('.lk-search-bar','lkMoreSearch');
+  moreMove('.lk-version-bar','lkMoreVersion');
+  moreMove('.lk-mode-toolbar','lkMoreTools');
+  moreMove('#lkAddNode','lkMoreTools');
+  moreMove('#lkInfrastructureBase','lkMoreInfra');
+  moreMove('.lk-trash-panel','lkMoreTrash');
+  moreMove('#lkExport','lkMoreExport');
+  let filterCategory='all',filterModule='all',moreOpen=false;
+  const closeMore=()=>{moreOpen=false;$('lkMoreBackdrop').hidden=true;$('lkMoreDrawer').hidden=true;$('lkMoreButton').setAttribute('aria-expanded','false');document.body.classList.remove('lk-more-active');};
+  const openMore=()=>{
+    const moduleSelect=$('lkModuleFilter'),old=filterModule;moduleSelect.replaceChildren(new Option('全部模块','all'));
+    state.modules.forEach(m=>moduleSelect.add(new Option((m.category||'业务')+' · '+m.name,m.id)));
+    moduleSelect.value=state.modules.some(m=>m.id===old)?old:'all';
+    $('lkCategoryFilter').value=filterCategory;
+    moreOpen=true;$('lkMoreBackdrop').hidden=false;$('lkMoreDrawer').hidden=false;
+    $('lkMoreButton').setAttribute('aria-expanded','true');document.body.classList.add('lk-more-active');
+    $('lkCategoryFilter').focus();
+  };
+  function applyCanvasFilter(){
+    if(tab!=='process')return;
+    const visible=new Set(state.modules.filter(m=>(filterCategory==='all'||m.category===filterCategory)&&(filterModule==='all'||m.id===filterModule)).map(m=>m.id));
+    $('lkModules').querySelectorAll('.lk-canvas-block[data-module]').forEach(card=>{card.hidden=!visible.has(card.dataset.module);});
+    const family=$('lkModules').querySelector('.lk-trunk-family');
+    if(family)family.hidden=!state.modules.some(m=>visible.has(m.id)&&m.category==='干');
+    $('lkCurrentMode').textContent='画板'+((filterCategory!=='all'||filterModule!=='all')?' · 已筛选':'');
+  }
+  $('lkMoreButton').onclick=openMore;
+  $('lkMoreClose').onclick=closeMore;
+  $('lkMoreBackdrop').onclick=closeMore;
+  $('lkMoreApply').onclick=()=>{
+    filterCategory=$('lkCategoryFilter').value;filterModule=$('lkModuleFilter').value;
+    if(filterModule!=='all'&&!state.modules.some(m=>m.id===filterModule&&(filterCategory==='all'||m.category===filterCategory)))filterModule='all';
+    const target=state.modules.find(m=>(filterCategory==='all'||m.category===filterCategory)&&(filterModule==='all'||m.id===filterModule));
+    if(target&&current()&&!state.modules.some(m=>m.id===moduleId&&(filterCategory==='all'||m.category===filterCategory)&&(filterModule==='all'||m.id===filterModule)))moduleId=target.id;
+    closeMore();render();
+  };
+  $('lkMoreClear').onclick=()=>{filterCategory='all';filterModule='all';$('lkCategoryFilter').value='all';$('lkModuleFilter').value='all';closeMore();render();};
+  $('lkMoreData').onclick=()=>{closeMore();tab='data';render();};
+  $('lkMoreSetup').onclick=()=>{closeMore();tab='setup';render();};
+  root.addEventListener('click',event=>{if(event.target.closest('#lkSearchResults button[data-action="search-open"]')){filterCategory='all';filterModule='all';closeMore();}});
+  root.addEventListener('keydown',event=>{if(event.key==='Escape'&&moreOpen){event.preventDefault();closeMore();}});
   const makeId=prefix=>prefix+'_'+(globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'_'+Math.random().toString(36).slice(2));
   function renderModules(){
     const host=$('lkModules');
@@ -531,13 +577,15 @@
   function render(){
     if(!moduleId||!current())moduleId=state.modules[0]?.id||'';
     findSelected();
-    $('lkOverview').hidden=tab!=='overview';$('lkProcess').hidden=tab!=='process';$('lkData').hidden=tab!=='data';$('lkSetupTool').hidden=tab!=='setup';
+    $('lkOverview').hidden=tab!=='overview';$('lkProcess').hidden=tab!=='process';$('lkData').hidden=tab!=='data';$('lkSetupTool').hidden=tab!=='setup';$('lkMaster').hidden=tab!=='master';
+    root.querySelector('.lk-version-bar').hidden=tab==='master';
+    if(tab!=='process')$('lkCurrentMode').textContent=({overview:'总览',data:'数据关系',setup:'基础配置',master:'画Master'})[tab]||'画板';
     $('lkTabOverview').setAttribute('aria-selected',String(tab==='overview'));
-    $('lkTabProcess').setAttribute('aria-selected',String(tab==='process'));$('lkTabData').setAttribute('aria-selected',String(tab==='data'));$('lkTabSetup').setAttribute('aria-selected',String(tab==='setup'));
+    $('lkTabProcess').setAttribute('aria-selected',String(tab==='process'));$('lkTabData').setAttribute('aria-selected',String(tab==='data'));$('lkTabSetup').setAttribute('aria-selected',String(tab==='setup'));$('lkTabMaster').setAttribute('aria-selected',String(tab==='master'));
     $('lkAddModule').disabled=blocked||locked;$('lkAddNode').disabled=blocked||locked;$('lkExport').disabled=blocked;
     root.querySelectorAll('[data-action="add-linehaul-mode"]').forEach(control=>{control.disabled=blocked||locked;});
     renderVersionControls();
-    if(tab==='process'){renderModules();renderNodes();renderDetail();renderSearch();renderTrash();syncQuickDetail();}
+    if(tab==='process'){renderModules();renderNodes();renderDetail();renderSearch();renderTrash();syncQuickDetail();applyCanvasFilter();}
     else if(tab==='overview'){
       $('lkModeMacro').setAttribute('aria-pressed',String(overviewMode==='macro'));
       $('lkModeDetail').setAttribute('aria-pressed',String(overviewMode==='detail'));
@@ -546,6 +594,7 @@
         if(nId)showQuickDetail();
       });
     }else if(tab==='setup')renderSetupTool();
+    else if(tab==='master')window.LambertLogisticsMaster?.activate({source:copy(releaseRecord.published.data),version:releaseRecord.published.number,blocked});
     else renderData();
   }
   function syncQuickDetail(){
@@ -1034,6 +1083,9 @@
   $('lkTabProcess').onclick=()=>{tab='process';render();};
   $('lkTabData').onclick=()=>{tab='data';render();};
   $('lkTabSetup').onclick=()=>{tab='setup';render();};
+  const selectMaster=()=>{if(typeof window.openView==='function')window.openView('master');};
+  $('lkTabMaster').onclick=selectMaster;
+  $('lkOpenMaster').onclick=selectMaster;
   $('lkAddNode').onclick=()=>{if(current()?.enabled)openEditor(false);};
   $('lkQuickClose').onclick=closeQuickDetail;
   $('lkQuickUnlock').onclick=()=>{if(!blocked&&locked){$('lkUnlock').click();syncQuickDetail();}};
@@ -1218,6 +1270,8 @@
   moduleId=state.modules[0]?.id||'';
   activeStageId=stages.stages(current())[0]?.id||'';
   render();
+  // Compatibility for former preview deep links. Standalone editor owns its view.
+  if(directMaster&&typeof window.openView==='function')window.openView('master');
   if(blocked)setMessage(opened.error||'知识库记录无法读取，已开启只读保护，原数据未被覆盖。');
   else setMessage('默认锁定。解锁后修改草稿；只有确认发布才更新全链路总览。');
   window.addEventListener('beforeunload',event=>{

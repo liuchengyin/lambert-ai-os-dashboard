@@ -1,0 +1,43 @@
+/* Lambert 画master: real embedded draw.io editor (isolated from legacy tabs). */
+#logistics #lkMaster{min-width:0}
+#logistics .lmd-top{display:flex;justify-content:space-between;align-items:center;gap:18px;margin:4px 0 12px;padding:15px 19px;background:#fbfaff;border:1px solid #e8e3ef;border-radius:14px}
+#logistics .lmd-top small{font-size:10px;letter-spacing:.13em;font-weight:750;color:#7760ae}
+#logistics .lmd-top h2{font-size:24px;margin:6px 0;color:#302544}
+#logistics .lmd-top p{font-size:12px;line-height:1.7;color:#736e83;margin:0}
+#logistics .lmd-top-actions,#logistics .lmd-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#logistics .lmd-top button,#logistics .lmd-toolbar button,#logistics .lmd-start button{border:1px solid #dcd4eb;background:#fff;color:#594584;border-radius:8px;padding:10px 13px;font-size:12px;font-weight:650;cursor:pointer}
+#logistics .lmd-top #lmdSave,#logistics .lmd-toolbar #lmdOpen,#logistics #lmdStartOpen{background:#7151b6;color:#fff;border-color:#7151b6}
+#logistics .lmd-top button:disabled{opacity:.4;cursor:default}
+#logistics .lmd-toolbar{margin:0 0 11px;padding:10px 12px;background:#fff;border:1px solid #ebe7f2;border-radius:12px}
+#logistics .lmd-toolbar #lmdInfo{margin-left:auto;font-size:11px;color:#7e7194}
+#logistics .lmd-workarea{position:relative;width:100%;min-height:640px;border:1px solid #e6dff1;border-radius:13px;overflow:hidden;background:#faf8fe}
+#logistics #lmdFrame{width:100%;height:min(78vh,900px);min-height:640px;border:0;display:block;background:#fff}
+#logistics #lmdFrame[hidden]{display:none}
+#logistics .lmd-start{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;min-height:640px;text-align:center;padding:36px;max-width:680px;margin:auto}
+#logistics .lmd-start[hidden]{display:none}
+#logistics .lmd-start h3{font-size:25px;margin:0;color:#382855}
+#logistics .lmd-start p{font-size:14px;line-height:1.8;color:#6a607c;margin:0}
+#logistics .lmd-start small{font-size:11px;color:#837b90;line-height:1.7}
+#logistics .lmd-start button{font-size:15px;padding:14px 30px}
+#logistics .lmd-status{margin:13px 4px 7px;min-height:22px;color:#805cae;font-size:12px;line-height:1.7}
+#logistics .lmd-footer{font-size:11px;color:#8a8197;line-height:1.8;padding:5px 3px 26px}
+#logistics .lmd-footer a{margin-left:8px;color:#7151b6}
+#logistics #lkMaster.lmd-immersive{position:fixed!important;z-index:9999;inset:0;padding:12px 20px;background:#f8f6fc;overflow:auto}
+#logistics #lkMaster.lmd-immersive #lmdFrame{height:calc(100vh - 190px);min-height:400px}
+#logistics #lkMaster.lmd-immersive .lmd-workarea{min-height:400px}
+@media(max-width:780px){
+ #logistics .lmd-top{flex-direction:column;align-items:flex-start}
+ #logistics .lmd-top-actions{flex-wrap:wrap}
+ #logistics .lmd-toolbar #lmdInfo{margin-left:0}
+ #logistics #lmdFrame{height:70vh;min-height:480px}
+ #logistics .lmd-workarea,#logistics .lmd-start{min-height:480px}
+ #logistics .lmd-start{padding:25px 18px}
+}
+
+/* Entrypoint is deliberately visible even while the legacy process tab is active. */
+#logistics .lk-head-actions{display:flex;gap:9px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+#logistics .lk-head .lk-open-master{background:#7151b6;color:#fff;border-color:#7151b6;font-size:13px;font-weight:750;box-shadow:0 6px 14px rgba(96,63,166,.16)}
+#logistics .lk-head .lk-open-master:hover{background:#5c3c9b;color:#fff}
+#logistics .lk-tabs #lkTabMaster{color:#674ba0;border-color:#e5d9f8;background:#f8f4ff;font-weight:760}
+#logistics .lk-tabs #lkTabMaster[aria-selected="true"]{background:#7653ba;color:#fff;border-color:#7653ba}
+@media(max-width:700px){#logistics .lk-head-actions{justify-content:flex-start}}

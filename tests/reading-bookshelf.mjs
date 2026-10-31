@@ -10,6 +10,9 @@ await page.route('**/api/account-config',r=>r.fulfill({json:{configured:false}})
 await page.route('https://cdn.jsdelivr.net/**',r=>r.abort());
 try{
  await page.goto(base);await page.locator('nav button[data-v=reading]').click();await page.locator('#readingShelf').waitFor();
+ const shelfSize=await page.locator('#bookShelfSlots').boundingBox();
+ assert(shelfSize&&shelfSize.height<=145,'compact shelf should occupy no more than 145px vertically, got '+shelfSize?.height);
+ console.log('PASS: seven-slot bookshelf height compacted to '+Math.round(shelfSize.height)+'px');
  await page.locator('#bookShelfFile').setInputFiles({name:'我的第一本书.pdf',mimeType:'application/pdf',buffer:pdf()});
  await page.getByRole('button',{name:'我的第一本书 第 1 页'}).waitFor();
  await page.reload();await page.locator('nav button[data-v=reading]').click();await page.locator('#readingShelf').waitFor();

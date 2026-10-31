@@ -1,0 +1,54 @@
+import {chromium} from 'playwright';
+import assert from 'node:assert/strict';
+const origin=process.env.TEST_ORIGIN||'http://127.0.0.1:8765';
+const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+const page=await browser.newPage({viewport:{width:1460,height:940}});
+const errors=[];page.on('pageerror',err=>errors.push(err.message));
+await page.route('**/api/account-config',route=>route.fulfill({json:{configured:false}}));
+await page.route('https://cdn.jsdelivr.net/**',route=>route.abort());
+const check=(label,test)=>{assert.ok(test,label);console.log('PASS:',label)};
+try{
+ await page.goto(origin+'/?view=reading');
+ await page.locator('#rv2SplitView').waitFor();
+ await page.waitForFunction(()=>!!document.querySelector('#archive-target-reading')?.closest('#rv2ArchiveControls'),{timeout:20000});
+ check('template prompt card removed',await page.locator('.reading-template-hint').count()===0&&await page.locator('#rv2Prompts').count()===0);
+ check('archive settings default collapsed',await page.locator('#rv2ArchiveSettings').evaluate(x=>!x.open));
+ check('save and archive action buttons are visible',await page.locator('#rv2Save').isVisible()&&await page.locator('#rv2Archive').isVisible());
+ const geometry=await page.evaluate(()=>{
+  const note=document.querySelector('#reading .reading-stable-note').getBoundingClientRect();
+  const buttons=[document.querySelector('#rv2Save'),document.querySelector('#rv2Archive')].map(x=>x.getBoundingClientRect());
+  return {noteWidth:note.width,buttons:buttons.map(b=>({w:b.width,h:b.height,x:b.x,y:b.y,right:b.right})),noteRight:note.right};
+ });
+ check('save/archive buttons stay horizontal without overflow',geometry.buttons.every(b=>b.w>=65&&b.h<=54&&b.right<=geometry.noteRight+1)&&Math.abs(geometry.buttons[0].y-geometry.buttons[1].y)<4);
+ await page.locator('#rv2ArchiveSettings summary').click();
+ check('archive choices expand on demand',await page.locator('#rv2ArchiveSettings').evaluate(x=>x.open)&&await page.locator('#rv2ArchiveControls .archive-target-control').isVisible());
+ check('reading archive controls are unique',await page.locator('#rv2ArchiveControls .archive-target-control').count()===1);
+ check('writing archive controls were not moved',await page.locator('#archive-target-writing').evaluate(e=>!!e.closest('#writing')));
+ check('archive destination controls stay inside details',await page.evaluate(()=>document.querySelector('#archive-target-reading')?.closest('.archive-target-control')?.parentElement?.id==='rv2ArchiveControls'));
+ const bounds=await page.evaluate(()=>{
+  const a=document.querySelector('#rv2ArchiveSettings').getBoundingClientRect(),c=document.querySelector('#rv2ArchiveControls .archive-target-control').getBoundingClientRect();
+  return {max:a.right,min:a.left,x:c.left,right:c.right};
+ });
+ console.log('ARCHIVE_LAYOUT_BOUNDS',JSON.stringify(bounds));
+ check('archive controls do not exceed right pane',bounds.x>=bounds.min-2&&bounds.right<=bounds.max+2);
+ await page.locator('#rv2NotesTab').click();
+ check('archive controls move to independent notes',await page.evaluate(()=>document.querySelector('#archive-target-reading')?.closest('.archive-target-control')?.parentElement?.id==='rv2StandaloneArchiveTools'));
+ await page.locator('#rv2SplitTab').click();
+ check('archive controls move back to split notes',await page.evaluate(()=>document.querySelector('#archive-target-reading')?.closest('.archive-target-control')?.parentElement?.id==='rv2ArchiveControls'));
+ await page.locator('#rv2Type').selectOption('方法卡');
+ check('card title prefix still updates without prompt card',await page.locator('#rv2CardPrefix').textContent()==='方法卡：');
+ check('no reading script exceptions',errors.length===0);
+ await page.locator('nav button[data-v="logistics"]').click();
+ await page.locator('#lkMoreButton').waitFor();
+ check('redundant detail section header hidden',await page.locator('.lk-selection-head').isHidden());
+ check('operation detail itself retained',await page.locator('#lkDetail').count()===1);
+ await page.locator('#lkMoreButton').click();
+ check('add operation preserved under More',await page.locator('#lkMoreDrawer #lkAddNode').count()===1);
+ await page.locator('#lkMoreApply').click();
+ check('master sidebar brand uppercase M',await page.locator('nav button[data-v="master"]').textContent().then(s=>s.includes('画Master')&&!s.includes('画master')));
+ await page.locator('nav button[data-v="master"]').click();
+ await page.locator('#master h2').waitFor();
+ check('master page title uppercase M',await page.locator('#master h2').textContent()==='画Master');
+ check('no browser errors',errors.length===0);
+ console.log('Reading footer + logistics detail + Master naming checks passed.');
+}finally{await browser.close();}

@@ -1,0 +1,59 @@
+/* 物流Draw V4: drawing-first workspace; low-frequency controls remain accessible in the left drawer. */
+#logistics .lk-page{max-width:none;padding:0 0 28px}
+#logistics .lk-head{min-height:48px!important;padding:7px 2px!important;margin:0 0 8px!important;background:transparent!important;border:0!important}
+#logistics .lk-head small,#logistics .lk-head p{display:none!important}
+#logistics .lk-head h2{margin:0!important;font-size:22px!important;line-height:1.2}
+#logistics #lkOpenMaster{display:none!important}
+#logistics .lk-toolbar{display:none!important}
+#logistics .lk-canvas-categories{display:none!important}
+#logistics .lk-tabs{margin:0!important;padding:0!important;gap:3px;border:0!important;flex:1;align-items:center}
+#logistics .lk-tabs button{padding:8px 13px!important;border-radius:8px!important;font-size:13px!important;min-height:36px}
+#logistics .lk-tabs button[aria-selected="true"]{background:#f0e9fa!important;border:1px solid #e1d4f3!important;color:#6543a3!important}
+#logistics .lk-tabs #lkTabData,#logistics .lk-tabs #lkTabSetup,#logistics .lk-tabs #lkTabMaster{display:none!important}
+#logistics .lk-compact-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;margin:0 0 10px;padding:0}
+#logistics .lk-compact-actions #lkCurrentMode{margin-right:auto;color:#7a7187;font-size:12px;font-weight:550}
+#logistics .lk-compact-actions #lkMoreButton{border:1px solid #dcd5e9;background:#fff;color:#5d4980;border-radius:9px;font-size:12px;font-weight:750;padding:8px 16px}
+#logistics .lk-compact-actions #lkMoreButton:hover{background:#f5f0fb}
+#logistics .lk-section-title{margin:0 0 8px}
+#logistics .lk-section-title strong{font-size:14px!important}
+#logistics .lk-section-title small{display:none!important}
+#logistics #lkProcess>.lk-section-title:first-of-type{min-height:40px}
+#logistics .lk-more-backdrop{position:fixed;inset:0;background:rgba(15,18,27,.38);z-index:14000}
+#logistics .lk-more-backdrop[hidden],#logistics #lkMoreDrawer[hidden]{display:none!important}
+#logistics #lkMoreDrawer{position:fixed;z-index:14001;left:0;top:0;bottom:0;width:min(420px,93vw);max-width:100%;display:flex;flex-direction:column;background:#fff;box-shadow:12px 0 45px #18203533;color:#322c3c}
+#logistics #lkMoreDrawer>header{display:flex;justify-content:space-between;align-items:center;gap:12px;border-bottom:1px solid #ece8f1;padding:16px 20px;flex-shrink:0}
+#logistics #lkMoreDrawer>header strong{font-size:17px}
+#logistics #lkMoreDrawer>header button{font-size:22px;border:0;background:#f5f2fa;color:#695a7e;width:34px;height:34px;border-radius:9px}
+#logistics #lkMoreDrawer .lk-more-scroll{overflow:auto;flex:1;min-height:0;padding:3px 19px 20px}
+#logistics #lkMoreDrawer .lk-more-scroll>section{padding:15px 0;border-bottom:1px solid #f0ecf4}
+#logistics #lkMoreDrawer h3{font-size:13px;margin:0 0 10px;color:#605077}
+#logistics #lkMoreDrawer label{display:grid;gap:6px;margin:0 0 10px;font-size:12px;font-weight:650;color:#645c6f}
+#logistics #lkMoreDrawer select,#logistics #lkMoreDrawer input{width:100%;min-width:0;border:1px solid #ddd6eb;border-radius:9px;background:#fff;color:#3d334e;padding:9px 10px;font-size:13px}
+#logistics #lkMoreDrawer button{border:1px solid #e6e0ef;border-radius:8px;background:#f9f7fc;color:#604d82;padding:8px 10px;font-size:12px;cursor:pointer}
+#logistics #lkMoreDrawer button:disabled{opacity:.43;cursor:default}
+#logistics #lkMoreDrawer .lk-search-bar{padding:0!important;margin:10px 0 0!important;background:transparent!important;border:0!important}
+#logistics #lkMoreDrawer .lk-search-bar>label{display:grid!important}
+#logistics #lkMoreDrawer .lk-version-bar{display:flex!important;flex-direction:column;gap:8px;padding:0!important;margin:0!important;border:0!important;background:transparent!important;align-items:stretch}
+#logistics #lkMoreDrawer .lk-version-bar .lk-version-actions,#logistics #lkMoreDrawer .lk-version-bar .lk-version-history{display:flex!important;flex-wrap:wrap;align-items:center;gap:6px}
+#logistics #lkMoreDrawer .lk-version-bar .lk-version-history label{display:flex;gap:5px;align-items:center;margin:0}
+#logistics #lkMoreDrawer .lk-version-bar .lk-version-history select{max-width:220px}
+#logistics #lkMoreDrawer .lk-mode-toolbar{display:flex!important;flex-wrap:wrap;gap:7px;margin:0 0 10px;padding:0;border:0;background:transparent}
+#logistics #lkMoreDrawer .lk-mode-toolbar strong,#logistics #lkMoreDrawer .lk-mode-toolbar span{font-size:11px}
+#logistics #lkMoreDrawer .lk-infra-base{font-size:11px;margin:6px 0}
+#logistics #lkMoreDrawer .lk-trash-panel{margin:12px 0}
+#logistics #lkMoreDrawer #lkExport{margin-top:9px}
+#logistics #lkMoreDrawer>footer{display:flex;gap:10px;align-items:center;justify-content:flex-end;border-top:1px solid #e9e4ef;padding:13px 18px;background:#fff;flex-shrink:0}
+#logistics #lkMoreDrawer>footer #lkMoreApply{background:#7252bc;color:#fff;border-color:#7252bc}
+#logistics #lkModules .lk-canvas-block[hidden],#logistics #lkModules .lk-trunk-family[hidden]{display:none!important}
+#logistics .lk-footnote:not(.lk-dialog .lk-footnote){font-size:11px}
+@media(max-width:670px){
+ #logistics .lk-head h2{font-size:19px!important}
+ #logistics .lk-tabs button{padding:7px 10px!important}
+ #logistics .lk-compact-actions{gap:6px}
+ #logistics .lk-compact-actions #lkMoreButton{padding:8px 10px}
+ #logistics #lkMoreDrawer{width:min(380px,97vw)}
+}
+
+/* Duplicate module-title row is removed; add-operation stays in More drawer. */
+#logistics .lk-selection-head[hidden]{display:none!important}
+#logistics #lkMoreDrawer #lkAddNode{display:inline-flex;align-items:center;margin-top:8px;max-width:100%;white-space:normal}
