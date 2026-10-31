@@ -1,7 +1,7 @@
-name: Compact Reading Shelf and Logistics Draw UI
+name: Reading footer, Logistics Draw detail and 画Master case CI
 on:
   push:
-    branches: [feat/compact-logistics-draw-reading-shelf-20261031]
+    branches: [feat/reading-footer-master-case-20261031]
     paths:
       - 'reading-v2.css'
       - 'reading-v2.js'
@@ -13,6 +13,12 @@ on:
       - 'logistics-draw-compact.css'
       - 'sprint1-navigation.js'
       - 'tests/logistics-compact-ui.mjs'
+      - 'tests/reading-footer-master-ui.mjs'
+      - 'master-page-v2.js'
+      - 'master-library-v2.js'
+      - 'logistics-drawio-model.js'
+      - 'sprint1-navigation.js'
+      - 'logistics-master-v1.js'
       - '.github/workflows/compact-draw-reading.yml'
 permissions:
   contents: read
@@ -28,6 +34,7 @@ jobs:
       - name: Validate JavaScript
         run: |
           node --check logistics-knowledge-v1.js
+          node --check master-page-v2.js
           node --check reading-v2.js
           node --check reading-bookshelf.mjs
           node --check shared-sync/book-store.mjs
@@ -43,6 +50,8 @@ jobs:
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/compact-ui-http.log 2>&1 &
           sleep 2
           TEST_ORIGIN=http://127.0.0.1:8765 node tests/logistics-compact-ui.mjs
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/reading-footer-master-ui.mjs
           node tests/logistics-v35-model.test.mjs
           node tests/logistics-wiring-v36-model.test.mjs
           TEST_BASE_URL=http://127.0.0.1:8765 node tests/reading-bookshelf.mjs
+          TEST_BASE_URL=http://127.0.0.1:8765 node tests/reading-dual-tab.mjs

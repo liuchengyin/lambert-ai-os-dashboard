@@ -1,4 +1,4 @@
-/* 画master V2 file library. Account-scoped IndexedDB; legacy single-file import is non-destructive. */
+/* 画Master V2 file library. Account-scoped IndexedDB; legacy single-file import is non-destructive. */
 (function(root){
 'use strict';
 const DRAW=root.LambertDrawioModel;
@@ -113,7 +113,7 @@ async function migrateOld(){
  const prior=await get(LEGACY_ID);
  if(prior)return {migrated:false,exists:true};
  const r=result.data,now=r.updatedAt||new Date().toISOString();
- const file={id:LEGACY_ID,title:'旧版画master（已导入）',xml:r.xml,sourceVersion:r.sourceVersion,createdAt:now,updatedAt:now};
+ const file={id:LEGACY_ID,title:'旧版画Master（已导入）',xml:r.xml,sourceVersion:r.sourceVersion,createdAt:now,updatedAt:now};
  if(!validateRecord(file))throw Error('legacy_master_invalid');
  await transaction(['files'],'readwrite',tx=>{
   const files=tx.objectStore('files'),req=files.get(LEGACY_ID);

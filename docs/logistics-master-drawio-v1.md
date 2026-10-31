@@ -1,6 +1,6 @@
-# 画master V1 · 完整 draw.io 编辑器
+# 画Master V1 · 完整 draw.io 编辑器
 
-目标：保留旧物流画布，在独立「画master」Tab 中嵌入 diagrams.net / draw.io 原生完整编辑器，不继续复刻 X6。
+目标：保留旧物流画布，在独立「画Master」Tab 中嵌入 diagrams.net / draw.io 原生完整编辑器，不继续复刻 X6。
 
 ## 交付结构
 - DeepSeek Flash 实际生成 `logistics-drawio-bridge.js` 初稿，经集成补充 XML export 回传兼容；产出调用准确用量：输入 345 + 输出 610 = 955 tokens。
