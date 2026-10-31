@@ -47,6 +47,7 @@ jobs:
           {
           node --test tests/netlify-account.test.mjs
           node tests/netlify-browser.mjs
+          node tests/netlify-protected-login.mjs
           node tests/shared-sync/browser.mjs
           node --test tests/shared-sync/journal.test.mjs tests/shared-sync/private-storage.test.mjs tests/shared-sync/documents.test.mjs tests/shared-sync/auth.test.mjs
           } 2>&1 | tee /tmp/mirror-tests.log

@@ -59,7 +59,11 @@ class MirrorTests(unittest.TestCase):
         self.assertNotIn("vercel.app/api", config)
         self.assertEqual(json.loads((ROOT/"vercel.json").read_text())["outputDirectory"], ".")
         # Mirror byte-copies shared login/sync code; no rewrite or storage migration.
-        for path in ["index.html", "shared-sync/account-ui.mjs", "shared-sync/private-storage.js", "shared-sync/engine.mjs", "shared-sync/journal.mjs"]:
+        for path in ["index.html", "shared-sync/private-storage.js", "shared-sync/engine.mjs", "shared-sync/journal.mjs"]:
             self.assertEqual((ROOT/path).read_bytes(), (ROOT/"netlify-dist"/path).read_bytes())
+        source = (ROOT/"shared-sync/account-ui.mjs").read_text()
+        emitted = (ROOT/"netlify-dist/shared-sync/account-ui.mjs").read_text()
+        self.assertEqual(source.count("fetch(configUrl,{cache:'no-store',credentials:'omit',signal:"), 1)
+        self.assertEqual(emitted, source.replace("fetch(configUrl,{cache:'no-store',credentials:'omit',signal:", "fetch(configUrl,{cache:'no-store',credentials:'same-origin',signal:", 1))
 
 if __name__ == "__main__": unittest.main()

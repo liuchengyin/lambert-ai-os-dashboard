@@ -66,6 +66,15 @@ def main():
         out.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(f, out)
         count += 1
+    # Only the Netlify artifact needs its preview access cookie on same-origin config.
+    # Leave Vercel source, session storage, authentication and upstream fetch untouched.
+    account_ui = DEST / "shared-sync/account-ui.mjs"
+    original = "fetch(configUrl,{cache:'no-store',credentials:'omit',signal:"
+    replacement = "fetch(configUrl,{cache:'no-store',credentials:'same-origin',signal:"
+    text = account_ui.read_text()
+    if text.count(original) != 1:
+        raise RuntimeError("Account config transport changed; review Netlify-only adaptation")
+    account_ui.write_text(text.replace(original, replacement, 1))
     assert (DEST / "index.html").is_file(), "Missing entry point"
     assert (DEST / "app.js").is_file(), "Missing web app"
     assert not (DEST / "api").exists(), "API code exposed"
