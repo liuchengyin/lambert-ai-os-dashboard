@@ -58,6 +58,15 @@ export async function mountBookshelf(){
  $('bookPending').onclick=$('bookShelfSlots').onclick;
  $('bookShelfFile').onchange=async e=>{const file=e.target.files?.[0];e.target.value='';if(!file||busy)return;busy=true;status('正在保存书籍…');try{const b=await store.add(file);await renderShelf();status('已保存到本机');if(store.ownerId)await upload(b.id);else status('已保存到本机，刷新后仍保留；登录后可使用云端书架');}catch(e){status(`导入失败：${errorMessage(e)}`);}finally{busy=false;await renderShelf();}};
  await renderShelf();
- if(store.ownerId){try{await store.refresh();await renderShelf();status('云端书架已同步');}catch(e){status(`暂未连接云端，显示本机书架：${errorMessage(e)}`);}}
+ if(store.ownerId){
+  // Account UI is loaded asynchronously. Do not call mediaContext until its provider exists.
+  let ready=typeof window.LambertAccount?.mediaContext==='function';
+  for(let i=0;i<30&&!ready;i++){
+    await new Promise(resolve=>setTimeout(resolve,100));
+    ready=typeof window.LambertAccount?.mediaContext==='function';
+  }
+  if(ready){try{await store.refresh();await renderShelf();status('云端书架已同步');}catch(e){status(`暂未连接云端，显示本机书架：${errorMessage(e)}`);}}
+  else status('账户服务暂未就绪；本机书架已保留，稍后可重试云端同步。');
+ }
  window.addEventListener('online',async()=>{try{for(const b of await store.list()){if(b.sync==='local')await upload(b.id);else if(b.progressPending)await store.checkpoint(b.id,b.page);}await store.refresh();await renderShelf();}catch(e){status(errorMessage(e));}});
 }
