@@ -1,0 +1,60 @@
+name: Netlify primary site validation
+on:
+  push:
+    branches: [fix/netlify-primary-20261101, main]
+    paths: ['netlify.toml','netlify/**','scripts/*netlify*','tests/netlify-*','tests/shared-sync/browser.mjs','*.html','*.js','*.mjs','*.css','shared-sync/**','lib/link-recovery.js','.github/workflows/netlify-primary.yml']
+  pull_request:
+    paths: ['netlify.toml','netlify/**','scripts/*netlify*','tests/netlify-*','*.html','*.js','*.mjs','*.css','shared-sync/**','lib/link-recovery.js','.github/workflows/netlify-primary.yml']
+permissions:
+  contents: read
+concurrency:
+  group: netlify-primary-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  netlify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Build and audit the deployable mirror
+        run: |
+          python3 scripts/build-reading-assets.py
+          python3 scripts/build-netlify-static.py
+          python3 tests/netlify-static.test.py
+      - name: Prepare pinned browser tooling
+        run: |
+          npm ci --prefix shared-sync/tooling --no-audit --no-fund
+          ln -s shared-sync/tooling/node_modules node_modules
+          node node_modules/playwright/cli.js install --with-deps chromium
+      - name: Validate public config function
+        run: |
+          node --test tests/netlify-account.test.mjs
+          node tests/netlify-function-bundle.mjs
+      - name: Verify startup, protected config and two-origin data preservation
+        env:
+          TEST_ORIGIN: http://127.0.0.1:8793
+          TEST_DESKTOP_ORIGIN: http://127.0.0.1:8794
+          NETLIFY_CONFIG_ADAPTER: '1'
+        run: |
+          python3 -m http.server 8793 --bind 127.0.0.1 --directory netlify-dist >/tmp/netlify-one.log 2>&1 &
+          python3 -m http.server 8794 --bind 127.0.0.1 --directory netlify-dist >/tmp/netlify-two.log 2>&1 &
+          node tests/netlify-browser.mjs
+          node tests/netlify-protected-login.mjs
+          node tests/shared-sync/browser.mjs
+      - name: Verify PDF reading modes in actual Netlify output
+        env:
+          TEST_BASE_URL: http://127.0.0.1:8793
+        run: |
+          node tests/reading-pdf-modes.mjs
+          node tests/reading-bookshelf.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: netlify-primary-output
+          path: netlify-dist/
+          retention-days: 7
+
