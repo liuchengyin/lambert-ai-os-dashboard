@@ -1,0 +1,36 @@
+name: Netlify primary DeepSeek review
+on:
+  push:
+    branches: [fix/netlify-primary-20261101]
+    paths: ['.github/workflows/netlify-primary-review.yml']
+permissions:
+  contents: read
+jobs:
+  review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare a bounded build review
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          Path('netlify-builder-source.txt').write_text(Path('scripts/build-netlify-static.py').read_text())
+          Path('netlify-primary-request.txt').write_text('复核所附Netlify静态构建和根文件清单。目标：复用已有PR100修复，让Netlify作为主入口之一；启动必需lib/link-recovery.js和新增reading-pdf-viewer.mjs须入包；缺失浏览器依赖须构建失败；不得公开服务端api、netlify/functions、密钥、测试或工具。仅Netlify产物改公开账户配置请求为same-origin以携带站点保护cookie，其余原账户代码保持。固定的公开配置Function单独打包，AI与飞书API仍关闭。审计器在另一文件，本次只复核提供源码，不假装查看未提供文件。仅报告明确P0/P1问题或结论，不执行命令、不声称测试，中文最多300字。')
+          PY
+      - name: One actual DeepSeek review
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: node scripts/codex/model-assist.mjs --provider deepseek --task review --prompt-file netlify-primary-request.txt --file netlify-builder-source.txt --file scripts/netlify-public-root.json --run
+      - name: Report usage and static review
+        run: |
+          node --input-type=module <<'JS'
+          import {readdir,readFile} from 'node:fs/promises';
+          for(const n of await readdir('.codex-local/assist'))if(n!=='ledger.json'&&n.endsWith('.json'))console.log(await readFile('.codex-local/assist/'+n,'utf8'));
+          JS
+

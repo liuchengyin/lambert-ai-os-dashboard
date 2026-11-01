@@ -1,0 +1,18 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>账号连接检查</title>
+<style>body{font:16px system-ui;max-width:850px;margin:40px auto;padding:16px;color:#25362d}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f3f5f3;padding:20px;border-radius:12px}button{font:inherit;padding:12px 18px;cursor:pointer}</style>
+<h1>账号连接检查</h1><p>只检查公开配置，不读取密码、登录会话或本机任务，不修改数据。结果不包含密钥或项目地址。</p><pre id="result" role="status">检查中…</pre><button id="copy" disabled>复制检查结果</button>
+<script type="module">
+const checks=[['api-route','/api/account-config'],['direct-function','/.netlify/functions/account-config'],['public-source','https://lambert-ai-os-dashboard.vercel.app/api/account-config']];
+const safeErrors=new Set(['invalid_public_config','public_config_unavailable','mirror_backend_unavailable','method_not_allowed']);
+const report={check:'lambert-netlify-account-v1',results:[]};
+for(const [name,url] of checks){
+ const row={name};
+ try{
+  const r=await fetch(url,{cache:'no-store',credentials:name==='public-source'?'omit':'same-origin',redirect:'error',signal:AbortSignal.timeout(15000)});row.status=r.status;
+  let value;try{value=await r.json();}catch{row.response='not-json';}
+  if(value){row.configured=typeof value.configured==='boolean'?value.configured:null;row.error=safeErrors.has(value.error)?value.error:null;row.validUrl=/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(value.url||'');row.validPublicKey=/^sb_publishable_[A-Za-z0-9_-]+$/.test(value.publishableKey||'');row.validCallback=value.siteUrl==='https://lambert-ai-os-cn-test.netlify.app';}
+ }catch(e){row.error=e.name==='TimeoutError'?'timeout':'network-or-access-failed';}
+ report.results.push(row);document.getElementById('result').textContent=JSON.stringify(report,null,2);
+}
+document.getElementById('copy').disabled=false;document.getElementById('copy').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(report));document.getElementById('copy').textContent='已复制';}catch{document.getElementById('copy').textContent='请手动复制上方检查结果';}};
+</script></html>
