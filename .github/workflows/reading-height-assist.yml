@@ -1,0 +1,34 @@
+name: Reading height DeepSeek draft
+on:
+  push:
+    branches: [fix/web-reading-fill-height-20261101]
+    paths: ['.github/workflows/reading-height-assist.yml']
+permissions:
+  contents: read
+jobs:
+  assist:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare layout-only request
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          Path('reading-height-request.txt').write_text('请给CSS最小修复草稿：阅读工作台是两列grid align-items:stretch；左侧.reader是flex-direction:column,padding16,min-height720；右侧笔记常高1100；左侧#bookViewer是普通section，内含header和#bookCanvasShell，后者overflow:auto,max-height:78vh,padding16,margin-top12，因此PDF下方出现数百像素空白。连续模式含330个等高页占位，不能让全部内容撑高grid。目标阅读打开时PDF滚动容器填满左侧剩余高度，两列保持齐底，返回书架不受影响；860px以下堆叠时不跟随笔记高度，阅读区保留70vh；全屏父级固定100vh且overflow:hidden，阅读区须填满。考虑height:0/flex:1/min-height、hidden属性。只给推荐CSS和一句原因，最多250字。')
+          PY
+      - name: One bounded DeepSeek draft
+        env:
+          DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
+        run: node scripts/codex/model-assist.mjs --provider deepseek --task draft --prompt-file reading-height-request.txt --run
+      - name: Print actual report
+        run: |
+          node --input-type=module <<'JS'
+          import {readdir,readFile} from 'node:fs/promises';
+          for(const n of await readdir('.codex-local/assist'))if(n!=='ledger.json'&&n.endsWith('.json'))console.log(await readFile('.codex-local/assist/'+n,'utf8'));
+          JS

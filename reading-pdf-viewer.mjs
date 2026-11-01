@@ -1,7 +1,7 @@
 // Adapted from DeepSeek's scheduler draft; fixed placeholders, cancellation and scroll tracking.
 export function createPdfViewer({shell,onPage=()=>{},onError=()=>{}}){
  let pdf=null,mode='single',current=1,epoch=0,task=null,work=null,queue=[],wanted=new Set(),frame=0;
- let slotHeight=0,slotWidth=0,slots=new Map(),canvases=new Map(),width=0,layoutPending=false;
+ let slotHeight=0,slotWidth=0,slots=new Map(),canvases=new Map(),width=0,height=0,layoutPending=false;
  const clamp=n=>Math.min(pdf.numPages,Math.max(1,Math.floor(Number(n))||1));
  const alive=(stamp,doc)=>stamp===epoch&&pdf===doc;
  const cancel=()=>{epoch++;task?.cancel();queue=[];wanted.clear();cancelAnimationFrame(frame);};
@@ -53,7 +53,7 @@ export function createPdfViewer({shell,onPage=()=>{},onError=()=>{}}){
   clear();
   const first=await doc.getPage(page);if(!alive(stamp,doc))return;
   const base=first.getViewport({scale:1});
-  width=shell.clientWidth;slotWidth=Math.max(1,width-32);slotHeight=Math.round(slotWidth*base.height/base.width);
+  width=shell.clientWidth;height=shell.clientHeight;slotWidth=Math.max(1,width-32);slotHeight=Math.round(slotWidth*base.height/base.width);
   shell.dataset.mode=mode;
   const numbers=mode==='single'?[page]:Array.from({length:doc.numPages},(_,i)=>i+1);
   const fragment=document.createDocumentFragment();
@@ -67,18 +67,19 @@ export function createPdfViewer({shell,onPage=()=>{},onError=()=>{}}){
   onPage(page);schedule();await work;
  }
  function scroll(){
-  if(!pdf||mode!=='continuous'||layoutPending)return;
+  if(!pdf||mode!=='continuous'||layoutPending||Math.abs(shell.clientWidth-width)>=2||Math.abs(shell.clientHeight-height)>=2)return;
   cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{
-   if(!pdf||mode!=='continuous'||layoutPending)return;
+   if(!pdf||mode!=='continuous'||layoutPending||Math.abs(shell.clientWidth-width)>=2||Math.abs(shell.clientHeight-height)>=2)return;
    // All page slots remain in the document; only nearby canvas pixels are retained.
    const target=shell.scrollTop+Math.min(shell.clientHeight*.4,slotHeight*.4);
-   const page=clamp(Math.floor(Math.max(0,target-16)/(slotHeight+16))+1);
+   const atEnd=shell.scrollTop>0&&shell.scrollTop+shell.clientHeight>=shell.scrollHeight-2;
+   const page=atEnd?pdf.numPages:clamp(Math.floor(Math.max(0,target-16)/(slotHeight+16))+1);
    announce(page);schedule();
   });
  }
  shell.addEventListener('scroll',scroll,{passive:true});
  async function resize(){
-  if(!pdf||layoutPending||shell.hidden||!shell.clientWidth||Math.abs(shell.clientWidth-width)<2)return;
+  if(!pdf||layoutPending||shell.hidden||!shell.clientWidth||(Math.abs(shell.clientWidth-width)<2&&Math.abs(shell.clientHeight-height)<2))return;
   try{await layout(current);}catch(e){onError(e);}
  }
  const observer=new ResizeObserver(()=>{void resize();});observer.observe(shell);

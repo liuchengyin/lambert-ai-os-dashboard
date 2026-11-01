@@ -21,6 +21,29 @@ try{
  await page.locator('#bookNext').click();await page.waitForFunction(()=>document.querySelector('#bookPage').value==='2');
  await page.reload();await page.locator('nav button[data-v=reading]').click();await page.locator('#bookShelfSlots [data-open]').first().click();
  await page.waitForFunction(()=>document.querySelector('#bookPage').value==='2'&&document.querySelector('#bookPages').textContent==='2');
+ // A tall note must expand the PDF viewport rather than leave a blank card footer.
+ const oldNoteStyle=await page.locator('.reading-stable-note').getAttribute('style');
+ await page.locator('.reading-stable-note').evaluate(el=>el.style.setProperty('min-height','1350px','important'));
+ for(const mode of ['single','continuous']){
+  await page.locator('#bookReadingMode').selectOption(mode);
+  await page.waitForFunction(m=>document.querySelector('#bookCanvasShell').dataset.mode===m,mode);
+  const layout=await page.evaluate(()=>{
+   const reader=document.querySelector('.reading-stable-reader').getBoundingClientRect();
+   const note=document.querySelector('.reading-stable-note').getBoundingClientRect();
+   const canvas=document.querySelector('#bookCanvasShell').getBoundingClientRect();
+   return {gap:reader.bottom-canvas.bottom,aligned:Math.abs(reader.bottom-note.bottom),height:canvas.height,total:reader.height};
+  });
+  assert(layout.gap>=0&&layout.gap<=24,mode+' must fill reader bottom: '+JSON.stringify(layout));
+  assert(layout.aligned<2&&layout.height>1000&&layout.total<1600,mode+' must remain bounded and follow note height');
+ }
+ await page.setViewportSize({width:390,height:844});
+ const mobileReader=await page.locator('#bookCanvasShell').boundingBox();
+ assert(mobileReader.height<=844*.7+2,'stacked mobile reader must not inherit tall note height');
+ await page.setViewportSize({width:1440,height:1000});
+ await page.locator('.reading-stable-note').evaluate((el,style)=>{if(style===null)el.removeAttribute('style');else el.setAttribute('style',style);},oldNoteStyle);
+ await page.locator('#bookReadingMode').selectOption('single');
+ await page.waitForFunction(()=>document.querySelector('#bookCanvasShell').dataset.mode==='single');
+ console.log('PASS: no reader footer gap with tall notes in both modes; bounded mobile height');
  // Mode switching preserves the current page; continuous pages are real scroll slots.
  assert.equal(await page.locator('#bookReadingMode').inputValue(),'single');
  await page.locator('#bookReadingMode').selectOption('continuous');

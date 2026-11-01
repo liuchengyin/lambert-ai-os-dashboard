@@ -1,10 +1,10 @@
 name: PDF reading modes regression
 on:
   push:
-    branches: [feat/web-reading-modes-20261031]
-    paths: ['reading-pdf-viewer.mjs','reading-bookshelf.mjs','tests/reading-pdf-modes.mjs','tests/reading-bookshelf.mjs','.github/workflows/reading-modes-ci.yml']
+    branches: [feat/web-reading-modes-20261031, fix/web-reading-fill-height-20261101]
+    paths: ['reading-v2.css','project-v4.js','reading-pdf-viewer.mjs','reading-bookshelf.mjs','tests/reading-pdf-modes.mjs','tests/reading-bookshelf.mjs','.github/workflows/reading-modes-ci.yml']
   pull_request:
-    paths: ['reading-pdf-viewer.mjs','reading-bookshelf.mjs','tests/reading-pdf-modes.mjs','tests/reading-bookshelf.mjs','.github/workflows/reading-modes-ci.yml']
+    paths: ['reading-v2.css','project-v4.js','reading-pdf-viewer.mjs','reading-bookshelf.mjs','tests/reading-pdf-modes.mjs','tests/reading-bookshelf.mjs','.github/workflows/reading-modes-ci.yml']
 permissions:
   contents: read
 jobs:
