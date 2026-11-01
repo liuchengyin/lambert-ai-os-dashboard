@@ -193,3 +193,11 @@
 #reading #bookCanvas{box-shadow:none}
 #reading #bookCanvasShell:focus-visible{outline:2px solid #9b7ec3;outline-offset:3px}
 @media(max-width:620px){#reading #bookViewerTitle{flex-basis:calc(100% - 110px)}#reading #bookReadingMode{margin-left:auto}#reading #bookCanvasShell{max-height:70vh}}
+
+/* DeepSeek layout draft, constrained so continuous PDF pages cannot grow the grid row. */
+#reading .book-is-open #bookViewer:not([hidden]){display:flex;flex-direction:column;flex:1 1 0;min-height:0}
+#reading .book-is-open #bookViewer>header{flex-shrink:0}
+#reading .book-is-open #bookCanvasShell{flex:1 1 0;height:0;min-height:400px;max-height:none}
+@media(max-width:860px){#reading .book-is-open #bookCanvasShell{flex:none;height:70vh;min-height:0;max-height:70vh}}
+#reading .has-bookshelf.book-is-open:fullscreen #bookCanvasShell,
+#reading .has-bookshelf.book-is-open.is-reader-maximized #bookCanvasShell{flex:1 1 0;height:0;min-height:0;max-height:none}

@@ -72,7 +72,8 @@ export function createPdfViewer({shell,onPage=()=>{},onError=()=>{}}){
    if(!pdf||mode!=='continuous'||layoutPending)return;
    // All page slots remain in the document; only nearby canvas pixels are retained.
    const target=shell.scrollTop+Math.min(shell.clientHeight*.4,slotHeight*.4);
-   const page=clamp(Math.floor(Math.max(0,target-16)/(slotHeight+16))+1);
+   const atEnd=shell.scrollTop>0&&shell.scrollTop+shell.clientHeight>=shell.scrollHeight-2;
+   const page=atEnd?pdf.numPages:clamp(Math.floor(Math.max(0,target-16)/(slotHeight+16))+1);
    announce(page);schedule();
   });
  }
