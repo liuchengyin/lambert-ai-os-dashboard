@@ -26,14 +26,16 @@
       if (!data || typeof data !== 'object') return;
       var event = data.event;
       if (event === 'init') {
-        post({ action: 'load', xml: initialXml, autosave: 0, saveAndExit: 0, title: '画master' });
+        post({ action: 'load', xml: initialXml, autosave: 1, saveAndExit: 0, title: '画Master' });
       } else if (event === 'save') {
-        if (typeof data.xml === 'string' && data.xml.length > 0) onXml(data.xml);
+        if (typeof data.xml === 'string' && data.xml.length > 0) onXml(data.xml, { trigger: 'editor-save' });
+      } else if (event === 'autosave') {
+        onStatus('modified');
       } else if (event === 'export') {
         if (pendingSave) {
           pendingSave = false;
           var xml = typeof data.xml === 'string' && data.xml ? data.xml : data.data;
-          if (typeof xml === 'string' && xml.length > 0) onXml(xml);
+          if (typeof xml === 'string' && xml.length > 0) onXml(xml, { trigger: 'requested-export' });
         }
       } else if (event === 'exit') {
         onStatus('closed');
