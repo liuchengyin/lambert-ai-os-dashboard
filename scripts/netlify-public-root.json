@@ -22,6 +22,8 @@
   "index.html",
   "knowledge-itab-v2.css",
   "knowledge-links.js",
+  "links-standalone.mjs",
+  "links.html",
   "logistics-canvas-model.js",
   "logistics-canvas-v2.css",
   "logistics-draw-compact.css",
