@@ -266,7 +266,7 @@ function board(rows){
       const row=document.createElement('div');row.className='tc-gantt-row';row.dataset.tcGantt=task.id;
       const label=document.createElement('button');label.type='button';label.className='tc-gantt-name';label.textContent=task.title;label.onclick=()=>editTask(task.id);
       const track=document.createElement('div');track.className='tc-gantt-track';const bar=bars.get(task.id);
-      if(bar){const b=document.createElement('button');b.type='button';b.className='tc-gantt-bar '+(task.status==='已完成'?'is-done':task.status==='进行中'?'is-doing':'');b.textContent=task.title;b.style.left=`calc(${bar.offset} * 42px)`;b.style.width=`calc(${bar.length} * 42px - 4px)`;b.title=`${task.title} · ${taskDates(task)}${bar.clippedStart||bar.clippedEnd?' · 已按窗口裁剪':''}`;b.onclick=()=>editTask(task.id);track.append(b);}else track.innerHTML='<small>排期在当前窗口外</small>';
+      if(bar){const b=document.createElement('button');b.type='button';b.className='tc-gantt-bar '+(task.status==='已完成'?'is-done':task.status==='进行中'?'is-doing':'');b.textContent=task.title;b.style.left=`calc(${bar.offset} * var(--tc-day-width))`;b.style.width=`calc(${bar.length} * var(--tc-day-width) - 4px)`;b.title=`${task.title} · ${taskDates(task)}${bar.clippedStart||bar.clippedEnd?' · 已按窗口裁剪':''}`;b.onclick=()=>editTask(task.id);track.append(b);}else track.innerHTML='<small>排期在当前窗口外</small>';
       row.append(label,track);chart.append(row);
     });
     if(!dated.length){const empty=document.createElement('p');empty.className='tc-empty';empty.textContent='尚无完整排期。到表格填写开始和截止时间，即可生成时间条。';chart.append(empty);}
