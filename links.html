@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Links · 常用链接</title>
+<link rel="icon" href="/brand/app-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/knowledge-itab-v2.css">
+<link rel="stylesheet" href="/shared-sync/account.css">
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;color:#33313b;background:#f7f7fa}
+*{box-sizing:border-box}body{margin:0;min-height:100vh}
+.links-top{height:62px;display:flex;justify-content:space-between;align-items:center;padding:0 max(24px,calc((100vw - 1280px)/2));background:#fff;border-bottom:1px solid #e9e9ee}
+.links-brand{font-weight:700;letter-spacing:.02em;font-size:18px}.links-brand span{color:#7d67ac}
+.links-account{border:1px solid #e5e2ec;background:#fff;border-radius:9px;padding:9px 14px;color:#504861;cursor:pointer}
+#linksStatus{font-size:12px;color:#70667d;margin-right:10px}
+#knowledge{margin:16px auto;max-width:1400px;min-height:calc(100vh - 90px)}
+#linksError{max-width:680px;margin:40px auto;padding:18px;border-radius:12px;background:#fff;color:#80414d}
+#linksError[hidden]{display:none}
+.knowledge-dialog{font-family:inherit}
+dialog{max-width:min(96vw,680px);border:1px solid #e4dfea;border-radius:14px;padding:20px;background:#fff;color:#33313b;box-shadow:0 20px 65px #27213a26}
+dialog::backdrop{background:#15101f77}
+button,input,textarea,select{font:inherit}
+@media(max-width:650px){.links-top{padding:0 15px}.links-brand{font-size:15px}#linksStatus{display:none}#knowledge{margin:0;min-height:calc(100vh - 62px)}}
+</style>
+</head>
+<body data-lambert-links-standalone="true">
+<header class="links-top"><div class="links-brand"><span>Lambert</span> Links</div><div><span id="linksStatus" role="status" aria-live="polite">正在准备链接库…</span><button id="lambertAccountButton" class="links-account" type="button">我的账户</button></div></header>
+<main><section id="knowledge" aria-label="常用链接"></section></main>
+<p id="linksError" role="alert" hidden></p>
+<script src="/shared-sync/storage-bridge.js"></script>
+<script src="/shared-sync/private-storage.js"></script>
+<script type="module" src="/links-standalone.mjs"></script>
+</body></html>
