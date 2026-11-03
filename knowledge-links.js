@@ -43,7 +43,6 @@
     <div id="knowledgeLinks" style="display:none"></div>
   </div>`;
 
-  if(standaloneLinks)document.getElementById('knowledgeTabSwitch').hidden=true;
   const tabBtn=document.getElementById('knowledgeTabSwitch'),libraryTag=document.getElementById('knowledgeLibraryTag'),lockBtn=document.getElementById('knowledgeLock'),wallBtn=document.getElementById('knowledgeWallpaper'),search=document.getElementById('knowledgeSearch'),root=document.getElementById('knowledgeGroups'),editBar=document.getElementById('knowledgeEditBar'),quickBtn=document.getElementById('knowledgeQuickAdd'),manualBtn=document.getElementById('knowledgeManualCreate'),searchSpinner=document.getElementById('knowledgeSearchSpinner');
   const recoveryDlg=document.createElement('dialog');
   recoveryDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>恢复旧链接</h3><p>检查当前浏览器中的旧链接，确认后合并，保留已有内容。</p><button type="button" id="knowledgeRecoverLocal">检查并恢复旧链接</button><p id="knowledgeRecoveryStatus" role="status" aria-live="polite"></p><div class="dlgActions"><button>关闭</button></div></form>`;
