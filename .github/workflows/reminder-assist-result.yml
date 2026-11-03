@@ -1,0 +1,27 @@
+name: Read existing reminder model result
+on:
+  push:
+    branches: [feat/web-feishu-reminders-v1]
+    paths: ['.github/workflows/reminder-assist-result.yml']
+permissions:
+  contents: read
+  actions: read
+jobs:
+  result:
+    runs-on: ubuntu-24.04
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: liuchengyin/lambert-ai-os-dashboard
+        run: |
+          gh run view 41562673065 --log-failed > /tmp/reminder-assist.log
+          gh run download 41562673065 --name reminder-flash-draft --dir /tmp/reminder-draft
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,re
+          for p in Path('/tmp/reminder-draft').rglob('ledger.json'):
+              d=json.loads(p.read_text())
+              for row in d.get('records',[]):print('::notice title=Actual model attempt::'+json.dumps(row))
+          lines=[s for s in Path('/tmp/reminder-assist.log').read_text().splitlines() if re.search(r'provider_|missing_|assist_|input_|output_',s)]
+          print('::notice title=Model failure::'+' '.join(lines[-5:]).replace('%','%25'))
+          PY
