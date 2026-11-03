@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'knowledge-links.js'
+      - 'links.html'
+      - 'links-standalone.mjs'
+      - 'tests/standalone-links-ui.mjs'
       - 'knowledge-itab-v2.css'
       - 'api/link-metadata.js'
       - 'lib/link-metadata.js'
@@ -99,6 +102,7 @@ jobs:
           node tests/project-ai-ui.mjs
           node tests/audit-cleanup-ui.mjs
           node tests/common-links-ui.mjs
+          node tests/standalone-links-ui.mjs
           node tests/bookmark-density-ui.mjs
           node tests/archive-targets-ui.mjs
           node tests/workspace-ui-smoke.mjs
