@@ -1,7 +1,7 @@
-name: 画Master Save-and-Return + Inline Rename
+name: 画Master Autosave + Undo/Redo Regression
 on:
   push:
-    branches: [fix/master-save-return-inline-rename-20261103]
+    branches: [feat/master-autosave-back-undo-20261103]
   pull_request:
     branches: [main]
 permissions:
@@ -29,5 +29,5 @@ jobs:
           npx playwright install --with-deps chromium
           python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/master-save-test.log 2>&1 &
           sleep 2
-          TEST_ORIGIN=http://127.0.0.1:8765 node tests/master-save-regression.mjs
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/master-autosave-ui.mjs
           TEST_ORIGIN=http://127.0.0.1:8765 node tests/master-files-v2-ui.mjs

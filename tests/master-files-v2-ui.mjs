@@ -34,23 +34,27 @@ try{
  check('Lambert toolbar collapses and restores',await page.locator('#masterEditor.mp-toolbar-hidden').count()===1&&await page.locator('#mpRestoreToolbar').isVisible());
  await page.locator('#mpRestoreToolbar').click();
  check('toolbar restored',await page.locator('#masterEditor.mp-toolbar-hidden').count()===0);
- await page.locator('#mpSave').click();
  const savedXml=await page.evaluate(()=>window.LambertDrawioModel.blank().replace('自由画布','自定义流程'));
  await page.evaluate(xml=>{
    const frame=document.getElementById('mpDrawFrame');
-   window.dispatchEvent(new MessageEvent('message',{origin:'https://evil.example',source:frame.contentWindow,data:JSON.stringify({event:'export',xml})}));
+   window.dispatchEvent(new MessageEvent('message',{origin:'https://evil.example',source:frame.contentWindow,data:JSON.stringify({event:'autosave',xml})}));
  },savedXml);
- check('cross-origin postMessage cannot save',await page.evaluate(async()=>{
+ check('cross-origin autosave cannot save',await page.evaluate(async()=>{
   const files=await window.LambertMasterLibrary.list();return !files.some(x=>x.xml.includes('自定义流程'));
  }));
  await page.evaluate(xml=>{
    const frame=document.getElementById('mpDrawFrame');
-   window.dispatchEvent(new MessageEvent('message',{origin:'https://embed.diagrams.net',source:frame.contentWindow,data:JSON.stringify({event:'export',xml})}));
+   window.dispatchEvent(new MessageEvent('message',{origin:'https://embed.diagrams.net',source:frame.contentWindow,data:JSON.stringify({event:'autosave',xml})}));
  },savedXml);
  await page.waitForFunction(async()=>{const rows=await window.LambertMasterLibrary.list();return rows.some(x=>x.xml.includes('自定义流程'));});
- check('trusted explicit export persists current diagram',await page.evaluate(async()=> (await window.LambertMasterLibrary.list()).some(x=>x.xml.includes('自定义流程'))));
+ check('autosave persists without button click',await page.evaluate(async()=> (await window.LambertMasterLibrary.list()).some(x=>x.xml.includes('自定义流程'))));
+ await page.locator('#mpBack').click();
+ await page.evaluate(xml=>{
+   const frame=document.getElementById('mpDrawFrame');
+   window.dispatchEvent(new MessageEvent('message',{origin:'https://embed.diagrams.net',source:frame.contentWindow,data:JSON.stringify({event:'export',xml})}));
+ },savedXml);
  await page.waitForFunction(()=>document.getElementById('masterLibrary')?.hidden===false);
- check('Save writes then automatically returns to files',await page.locator('#masterLibrary').isVisible());
+ check('return verifies current XML and closes',await page.locator('#masterLibrary').isVisible());
  check('file grid shows multiple saved files',await page.locator('.mp-file-card').count()===2);
  check('legacy source document never changed',await page.evaluate(v=>localStorage.getItem('lambert_logistics_knowledge_v1')===v,original));
  check('legacy version envelope not overwritten',await page.evaluate(()=>!localStorage.getItem('lambert_logistics_versions_v1')));

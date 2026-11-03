@@ -63,3 +63,11 @@ body.master-editing #master>.mp-notice{position:fixed;bottom:12px;left:12px;max-
 /* Inline card title rename; no browser prompt. */
 #master .mp-file-rename-input{display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;padding:5px 7px;border:1px solid #8d6bc9;border-radius:7px;background:#fff;color:#342d45;font:inherit;font-size:13px;font-weight:700;outline:2px solid #e6dcf7;outline-offset:0}
 #master .mp-file-rename-input:disabled{opacity:.6;cursor:progress}
+
+
+/* ProcessOn-style autosave status and safe back, with extra editor history shortcuts. */
+#master .mp-editor-toolbar #mpBack{display:inline-flex;align-items:center;gap:5px;font-weight:700;color:#4f3f70;background:#f7f4fd;border-color:#e3d9f4}
+#master .mp-editor-toolbar .mp-save-status{display:inline-flex;align-items:center;gap:4px;color:#2e7653;background:#eefaf3;border-radius:8px;padding:6px 9px;font-size:11px;max-width:290px}
+#master .mp-editor-actions #mpUndo,#master .mp-editor-actions #mpRedo{font-size:12px;font-weight:600;background:#faf9fc;color:#5c4b74;border-color:#e6e0ed;min-width:62px}
+#master .mp-editor-actions #mpUndo:hover,#master .mp-editor-actions #mpRedo:hover{background:#efe9f8}
+@media(max-width:720px){#master .mp-editor-actions #mpUndo,#master .mp-editor-actions #mpRedo{min-width:40px;padding:7px 5px;font-size:10px}#master .mp-editor-toolbar .mp-save-status{max-width:116px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#master .mp-editor-title{max-width:18vw}}
