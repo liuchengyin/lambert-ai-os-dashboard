@@ -1,0 +1,4 @@
+# Only this function uses its own 256-bit server-to-server Bearer credential.
+# No browser endpoint or user JWT is accepted for reminder execution.
+[functions.feishu-reminders]
+verify_jwt = false

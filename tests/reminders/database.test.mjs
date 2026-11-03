@@ -1,0 +1,40 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {createRequire} from 'node:module';
+const require=createRequire(new URL('../../shared-sync/tooling/package.json',import.meta.url));
+const {PGlite}=require('@electric-sql/pglite');
+const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222',day='2026-11-03';
+test('restricted DB role, scoped fresh reads, atomic persistent dedupe, safe retries and no business mutations',async()=>{
+ const db=new PGlite();await db.waitReady;
+ try{
+  await db.exec(`create role anon;create role authenticated;create schema auth;create table auth.users(id uuid primary key);insert into auth.users values('${A}'),('${B}');create table public.lambert_items(user_id uuid,kind text,item_id text,payload jsonb,deleted_at timestamptz,primary key(user_id,kind,item_id));`);
+  await db.exec(await readFile(new URL('../../supabase/migrations/202611030001_feishu_reminders.sql',import.meta.url),'utf8'));
+  await db.query('insert into reminder_private.recipients values($1,$2,true)',[A,'ou_fixture']);
+  const put=(u,k,id,p,tomb=null)=>db.query('insert into public.lambert_items values($1,$2,$3,$4,$5)',[u,k,id,JSON.stringify(p),tomb]);
+  await put(A,'reviews',day,{taskIds:['same','done','archived','deleted','absent'],taskSnapshots:[{id:'same',status:'已完成'}],goal:'private-review-text'});
+  await put(A,'tasks','same',{id:'same',title:'模拟目标',status:'待开始',note:'must-not-leak'});
+  await put(A,'tasks','done',{id:'done',status:'已完成'});await put(A,'tasks','archived',{archived:true});await put(A,'tasks','deleted',{},'2026-11-03');await put(A,'tasks','future',{status:'待开始'});
+  await put(B,'tasks','same',{title:'OTHER_ACCOUNT_MUST_NOT_LEAK',status:'已完成'});
+  const original=(await db.query('select * from public.lambert_items order by user_id,kind,item_id')).rows;
+  await db.exec('set role lambert_reminder_worker');
+  const rpc=async(name,args)=>(await db.query(`select reminder_private.${name}(${args.map((_,i)=>'$'+(i+1)).join(',')}) as value`,args)).rows[0].value;
+  assert.equal((await rpc('bindings',[])).length,1);
+  const snapshot=await rpc('snapshot',[A,day]);assert.ok(!JSON.stringify(snapshot).includes('OTHER_ACCOUNT'));assert.ok(!JSON.stringify(snapshot).includes('must-not-leak'));assert.ok(!snapshot.records.some(r=>r.item_id==='future'));assert.equal(snapshot.records.find(r=>r.item_id==='same').payload.status,'待开始');
+  await assert.rejects(rpc('snapshot',[B,day]),/binding_unavailable/);
+  await assert.rejects(db.query('select * from public.lambert_items'),/permission denied/);
+  await assert.rejects(db.query('select * from reminder_private.recipients'),/permission denied/);
+  const claim=(slot='11:45',kind='tasks',retry=false)=>rpc('claim',[A,day,slot,kind,crypto.randomUUID(),crypto.randomUUID(),retry]);
+  const pair=await Promise.all([claim(),claim()]);assert.equal(pair.filter(Boolean).length,1);const first=pair.find(Boolean);
+  await assert.rejects(rpc('finish',[A,day,'11:45','tasks',crypto.randomUUID(),'sent',false,'0','om_test']),/claim_changed/);
+  await rpc('finish',[A,day,'11:45','tasks',first.claim_uuid,'unknown',false,'timeout',null]);assert.equal(await claim('11:45','tasks',true),null);
+  const second=await claim('19:00');await rpc('finish',[A,day,'19:00','tasks',second.claim_uuid,'rejected',true,'provider_999',null]);
+  assert.equal(await claim('19:00'),null);const retry=await claim('19:00','tasks',true);assert.equal(retry.message_uuid,second.message_uuid);assert.notEqual(retry.claim_uuid,second.claim_uuid);assert.equal(retry.attempts,2);
+  await rpc('finish',[A,day,'19:00','tasks',retry.claim_uuid,'sent',false,'0','om_test']);assert.equal(await claim('19:00','tasks',true),null);
+  await rpc('log_check',[A,day,'19:00','checked',2,1]);
+  await db.exec('reset role');assert.deepEqual((await db.query('select * from public.lambert_items order by user_id,kind,item_id')).rows,original);
+  assert.equal((await db.query('select count(*)::int as n from reminder_private.deliveries')).rows[0].n,2);
+  assert.equal((await db.query('select count(*)::int as n from reminder_private.checks')).rows[0].n,1);
+  await db.exec('set role authenticated');await assert.rejects(db.query('select reminder_private.bindings()'),/permission denied/);
+ }finally{await db.close();}
+});

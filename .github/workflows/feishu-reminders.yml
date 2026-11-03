@@ -1,0 +1,57 @@
+name: Feishu reminders V1 safe checks
+on:
+  push:
+    branches: [feat/web-feishu-reminders-v1]
+    paths: ['supabase/functions/feishu-reminders/**','supabase/migrations/202611030001_feishu_reminders.sql','supabase/manual/**','supabase/config.toml','scripts/reminders/**','tests/reminders/**','.github/workflows/feishu-reminders.yml']
+  pull_request:
+    paths: ['supabase/functions/feishu-reminders/**','supabase/migrations/202611030001_feishu_reminders.sql','supabase/manual/**','supabase/config.toml','scripts/reminders/**','tests/reminders/**','.github/workflows/feishu-reminders.yml']
+permissions:
+  contents: read
+concurrency:
+  group: reminders-${{ github.event.pull_request.head.ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --prefix shared-sync/tooling --no-audit --no-fund
+      - name: Mock-only reminder, database and archive regression tests
+        run: |
+          set -o pipefail
+          node --test tests/reminders/*.test.mjs tests/shared-sync/feishu-review.test.mjs 2>&1 | tee /tmp/reminder-tests.log
+          node --check scripts/reminders/invoke.mjs
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Check real Edge runtime entry (no serve/deploy)
+        run: |
+          set -o pipefail
+          deno check supabase/functions/feishu-reminders/index.ts 2>&1 | tee /tmp/reminder-deno.log
+      - name: Safe result summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          for name in ['reminder-tests.log','reminder-deno.log']:
+              p=Path('/tmp/'+name)
+              if p.exists():
+                  text=p.read_text()[-7000:]
+                  print('::notice title='+name+'::'+text.replace('%','%25').replace('\r','%0D').replace('\n','%0A'))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reminder-safe-checks
+          path: |
+            /tmp/reminder-tests.log
+            /tmp/reminder-deno.log
+          retention-days: 7
+      # Deliberately no deploy, SQL apply, cron activation or real send step.
+      # User requires one-message delivery acceptance BEFORE creating the PR.
