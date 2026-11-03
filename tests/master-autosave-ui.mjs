@@ -52,7 +52,15 @@ try{
  check('rapid edits persist newest XML',(await savedFile()).xml.includes('最后一次自动保存'));
  await page.locator('#mpUndo').click();
  await page.locator('#mpRedo').click();
- const actions=await page.frameLocator('#mpDrawFrame').locator('body').evaluate(()=>window.received.filter(m=>m.action==='invokeAction').map(m=>m.actionName));
+ const actions=await page.frameLocator('#mpDrawFrame').locator('body').evaluate(async()=>{
+  const deadline=Date.now()+3000;
+  while(Date.now()<deadline){
+   const list=window.received.filter(m=>m.action==='invokeAction').map(m=>m.actionName);
+   if(list.includes('undo')&&list.includes('redo'))return list;
+   await new Promise(r=>setTimeout(r,25));
+  }
+  return window.received.filter(m=>m.action==='invokeAction').map(m=>m.actionName);
+ });
  check('Undo and Redo invoke native editor',actions.includes('undo')&&actions.includes('redo'));
  const savedBeforeInvalid=(await savedFile()).xml;
  await send('autosave','<script>bad</script>');
