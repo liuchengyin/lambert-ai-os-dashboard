@@ -16,6 +16,13 @@ async function send(event,xml,sourceOrigin='https://embed.diagrams.net'){
 }
 async function savedFile(){return page.evaluate(async()=> (await window.LambertMasterLibrary.list())[0]||null);}
 async function xml(label){return page.evaluate(s=>window.LambertDrawioModel.blank().replace('自由画布',s),label);}
+async function waitForSavedXml(label){
+ for(let i=0;i<100;i++){
+  if((await savedFile())?.xml?.includes(label))return;
+  await page.waitForTimeout(100);
+ }
+ throw Error('Timed out waiting for actual IndexedDB XML containing '+label+'; status: '+await page.locator('#mpSaveStatus').textContent());
+}
 async function enter(){
  await page.locator('#mpNew').waitFor({timeout:30000});
  await page.locator('#mpNew').click();
@@ -36,12 +43,12 @@ try{
  check('spoofed autosave ignored',(await savedFile()).xml===original);
  await send('autosave',first);
  check('pending state shows actual saving',await page.locator('#mpSaveStatus').textContent().then(s=>s.includes('保存中')));
- await page.waitForFunction(async()=>{const x=(await window.LambertMasterLibrary.list())[0];return x?.xml.includes('仓库收入自动保存');});
+ await waitForSavedXml('仓库收入自动保存');
  check('autosave persists without click',(await savedFile()).xml.includes('仓库收入自动保存'));
  check('status reports saved after IndexedDB confirmation',await page.locator('#mpSaveStatus').textContent().then(s=>s.includes('已保存')));
  await send('autosave',await xml('旧版本即将被覆盖'));
  await send('autosave',await xml('最后一次自动保存'));
- await page.waitForFunction(async()=>{const x=(await window.LambertMasterLibrary.list())[0];return x?.xml.includes('最后一次自动保存');});
+ await waitForSavedXml('最后一次自动保存');
  check('rapid edits persist newest XML',(await savedFile()).xml.includes('最后一次自动保存'));
  await page.locator('#mpUndo').click();
  await page.locator('#mpRedo').click();
@@ -53,7 +60,7 @@ try{
   (await page.locator('#mpSaveStatus').textContent()).includes('失败') && (await savedFile()).xml===savedBeforeInvalid);
  const repaired=await xml('恢复后的正确自动保存');
  await send('autosave',repaired);
- await page.waitForFunction(async()=>{const x=(await window.LambertMasterLibrary.list())[0];return x?.xml.includes('恢复后的正确自动保存');});
+ await waitForSavedXml('恢复后的正确自动保存');
  check('valid autosave recovers after failure',(await savedFile()).xml.includes('恢复后的正确自动保存'));
  await page.locator('#mpBack').click();
  check('back waits for final export',await page.locator('#masterEditor').isVisible());
