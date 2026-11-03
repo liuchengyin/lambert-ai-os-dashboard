@@ -8,10 +8,10 @@ const $=id=>document.getElementById(id);
 const el=(tag,className,text)=>{const n=document.createElement(tag);if(className)n.className=className;if(text!==undefined)n.textContent=String(text);return n;};
 const store=()=>root.LambertPrivateStorage||localStorage;
 host.innerHTML='<div id="masterLibrary" class="mp-library"><div class="mp-heading"><div><small>LAMBERT OS · VISUAL STUDIO</small><h2>画Master</h2><p>我的图纸 · 使用 draw.io 绘图引擎。图纸保存在当前浏览器，随时重新打开。</p></div><div class="mp-heading-actions"><button id="mpNew" type="button" class="mp-primary">＋ 新建图纸</button><button id="mpImport" type="button">导入 .drawio</button><button id="mpFromLogistics" type="button">从物流知识库创建</button></div></div><div class="mp-filters"><label class="mp-search">⌕ <input id="mpSearch" placeholder="搜索我的图纸" type="search"></label><span id="mpCount"></span><button id="mpTrashToggle" type="button">回收站</button></div><div id="mpCards" class="mp-cards"></div><p class="mp-footnote">当前是本机文件库（IndexedDB），不是云同步。跨浏览器或更换电脑前请导出 .drawio 备份。旧版画Master文件会安全导入，原件保留。</p></div>'+
-'<div id="masterEditor" class="mp-editor" hidden><div class="mp-editor-toolbar"><button id="mpBack" type="button">← 我的文件</button><span class="mp-editor-title" id="mpFileTitle"></span><span class="mp-save-status" id="mpSaveStatus">未保存</span><div class="mp-editor-actions"><button id="mpSave" type="button" class="mp-primary">保存</button><button id="mpDownload" type="button">导出 .drawio</button><button id="mpToggleToolbar" type="button">隐藏工具栏</button></div></div><button id="mpRestoreToolbar" class="mp-restore-toolbar" type="button" hidden>☰ 显示工具栏</button><iframe id="mpDrawFrame" title="画Master draw.io完整编辑器" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals" allow="clipboard-read;clipboard-write"></iframe></div>'+
+'<div id="masterEditor" class="mp-editor" hidden><div class="mp-editor-toolbar"><button id="mpBack" type="button">← 我的文件</button><span class="mp-editor-title" id="mpFileTitle"></span><span class="mp-save-status" id="mpSaveStatus">未保存</span><div class="mp-editor-actions"><button id="mpSave" type="button" class="mp-primary">保存并返回</button><button id="mpDownload" type="button">导出 .drawio</button><button id="mpToggleToolbar" type="button">隐藏工具栏</button></div></div><button id="mpRestoreToolbar" class="mp-restore-toolbar" type="button" hidden>☰ 显示工具栏</button><iframe id="mpDrawFrame" title="画Master draw.io完整编辑器" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals" allow="clipboard-read;clipboard-write"></iframe></div>'+
 '<p id="mpNotice" role="status" class="mp-notice" aria-live="polite"></p><input type="file" id="mpFileInput" hidden accept=".drawio,.xml,application/xml,text/xml">';
 const notice=s=>{$('mpNotice').textContent=s;};
-let loaded=false,loading=false,showTrash=false,all=[],current=null,bridge=null,pending=false,pendingExport=false,editorReady=false,dirty=false,pendingTimer=null;
+let loaded=false,loading=false,showTrash=false,all=[],current=null,bridge=null,pending=false,pendingAction='',editorReady=false,dirty=false,pendingTimer=null;
 function safeXml(s){
  if(!draw.validXml(s))return false;
  try{const d=new DOMParser().parseFromString(s,'text/xml');return !d.querySelector('parsererror')&&['mxfile','mxGraphModel'].includes(d.documentElement?.localName);}
@@ -52,9 +52,39 @@ function tile(file){
  info.append(title,el('small','',when(file.updatedAt)));
  const actions=el('div','mp-file-actions');
  const add=(label,fn)=>{const b=el('button','',label);b.type='button';b.onclick=fn;actions.append(b);};
+ const editName=()=>{
+  if(info.querySelector('.mp-file-rename-input'))return;
+  const input=el('input','mp-file-rename-input');input.type='text';input.value=file.title;input.maxLength=96;
+  input.setAttribute('aria-label','修改图纸名称');input.autocomplete='off';
+  info.replaceChild(input,title);
+  let finished=false,saving=false;
+  const cancel=()=>{if(finished)return;finished=true;if(input.isConnected)info.replaceChild(title,input);};
+  const commit=async()=>{
+   if(finished||saving)return;
+   const name=input.value.trim();
+   if(name===file.title){cancel();return;}
+   if(!lib.validTitle(name)){notice('名称不能为空，且不能超过96个字符。');input.focus();return;}
+   saving=true;input.disabled=true;
+   try{
+    await lib.rename(file.id,name);
+    finished=true;await refresh();
+    notice('图纸已重命名为「'+name+'」。');
+   }catch(error){
+    saving=false;input.disabled=false;
+    notice('重命名失败：'+(error?.message||'浏览器存储不可用')+'；旧名称仍保留。');
+    input.focus();
+   }
+  };
+  input.addEventListener('keydown',event=>{
+   if(event.key==='Enter'){event.preventDefault();void commit();}
+   else if(event.key==='Escape'){event.preventDefault();cancel();}
+  });
+  input.addEventListener('blur',()=>{if(!finished&&!saving)void commit();});
+  input.focus();input.select();
+ };
  if(showTrash)add('恢复',async()=>{if(!confirm('恢复「'+file.title+'」？'))return;await attempt(async()=>{await lib.restore(file.id);await refresh();});});
  else{
-  add('重命名',async()=>{const name=prompt('图纸名称',file.title);if(name===null)return;await attempt(async()=>{await lib.rename(file.id,name);await refresh();});});
+  add('重命名',editName);
   add('复制',async()=>attempt(async()=>{await lib.duplicate(file.id);await refresh();}));
   add('导出',()=>download(file.xml,file.title));
   add('删除',async()=>{if(!confirm('将「'+file.title+'」移入回收站？可以恢复。'))return;await attempt(async()=>{await lib.trash(file.id);await refresh();});});
@@ -113,7 +143,14 @@ async function create(kind='blank',xml=null,title=null){
 }
 function resetPending(){
  if(pendingTimer){clearTimeout(pendingTimer);pendingTimer=null;}
- pending=false;pendingExport=false;$('mpSave').disabled=false;
+ pending=false;pendingAction='';$('mpSave').disabled=false;$('mpBack').disabled=false;
+}
+async function finishBack(){
+ bridge?.close();bridge=null;current=null;editorReady=false;dirty=false;resetPending();
+ document.body.classList.remove('master-editing');
+ $('masterEditor').hidden=true;$('masterLibrary').hidden=false;
+ $('mpDrawFrame').src='about:blank';
+ await attempt(refresh);
 }
 function openEditor(file){
  current=file;dirty=false;editorReady=false;resetPending();
@@ -123,19 +160,37 @@ function openEditor(file){
  document.body.classList.add('master-editing');
  bridge?.close();
  bridge=bridgeApi.create({frame:$('mpDrawFrame'),initialXml:file.xml,onStatus:event=>{
-  if(event==='loaded'){editorReady=true;dirty=true;notice('');$('mpSaveStatus').textContent='编辑器已就绪';}
- },onXml:async xml=>{
-  if(!pending)return; // Only direct Save/Export clicks may persist.
-  if(!safeXml(xml)){resetPending();notice('draw.io 返回的图纸无效或超过大小限制，未覆盖旧文件。');return;}
-  const exporting=pendingExport;
-  await attempt(async()=>{
-   const updated={...current,xml};
-   await lib.save(updated);
-   current=await lib.get(current.id);dirty=false;
+  if(event==='loaded'){editorReady=true;notice('');$('mpSaveStatus').textContent='编辑器已就绪';}
+  if(event==='modified'&&!pending&&current?.id===file.id){
+   dirty=true;$('mpSaveStatus').textContent='有未保存的修改';
+  }
+ },onXml:async(xml,meta={})=>{
+  if(!current||current.id!==file.id)return;
+  const requested=meta.trigger==='requested-export';
+  if(requested&&!pending)return;
+  if(!requested&&meta.trigger!=='editor-save')return;
+  if(!requested&&pending)return; // An explicit export is already obtaining the newest XML.
+  if(!safeXml(xml)){
+   if(requested)resetPending();
+   notice('保存未完成：draw.io 返回的 XML 无效或过大，旧文件保持不变。');
+   return;
+  }
+  if(!requested){pending=true;pendingAction='save';$('mpSave').disabled=true;$('mpBack').disabled=true;}
+  const action=pendingAction,original=current;
+  try{
+   await lib.save({...original,xml});
+   if(current?.id!==original.id)return;
+   current=await lib.get(original.id);
+   dirty=false;
    $('mpSaveStatus').textContent='已保存 · '+when(current.updatedAt);
-   if(exporting)download(xml,current.title);
-  });
-  resetPending();
+   resetPending();
+   notice('图纸已保存到「我的文件」，可继续编辑或返回文件库。');
+   if(action==='download')download(xml,current.title);
+   else if(action==='back'||action==='save-and-return')await finishBack();
+  }catch(error){
+   resetPending();
+   notice('保存失败：'+(error?.message||'浏览器存储不可用')+'。请勿关闭画布，原图纸未被覆盖。');
+  }
  }});
  bridge.open();
  notice('连接 draw.io 完整编辑器中…');
@@ -149,24 +204,22 @@ async function openFile(id){
   openEditor(file);
  });
 }
-function requestSave(exporting=false){
+function requestSave(action='save'){
  if(!current||pending)return;
  if(!editorReady){notice('draw.io 尚未就绪，暂不能保存；请检查网络。');return;}
- pending=true;pendingExport=exporting;
- $('mpSave').disabled=true;$('mpSaveStatus').textContent='正在保存…';
+ pending=true;pendingAction=action;
+ $('mpSave').disabled=true;$('mpBack').disabled=true;$('mpSaveStatus').textContent='正在保存…';
  bridge.requestSave();
  pendingTimer=setTimeout(()=>{
-  if(pending){resetPending();notice('未收到 draw.io 的图纸回传，保存未完成。请检查网络，并重新点击保存。');}
+  if(pending){resetPending();notice('未收到 draw.io 当前图纸的回传，保存未完成；请保留画布并重试。');}
  },15000);
 }
 async function back(){
- if(pending){notice('正在保存，请勿关闭文件。');return;}
- if(current&&!confirm('返回我的文件？如有未保存的图形修改，将不会保存。'))return;
- bridge?.close();bridge=null;current=null;editorReady=false;dirty=false;resetPending();
- document.body.classList.remove('master-editing');
- $('masterEditor').hidden=true;$('masterLibrary').hidden=false;
- $('mpDrawFrame').src='about:blank';
- await attempt(refresh);
+ if(!current){await finishBack();return;}
+ if(pending){notice('图纸正在保存，请在完成后返回。');return;}
+ // Always export the latest diagram before leaving; never discard unknown unsaved edits.
+ if(!editorReady){if(!dirty)await finishBack();else notice('编辑器未就绪，不能安全返回；请先保存或导出图纸。');return;}
+ requestSave('back');
 }
 $('mpNew').onclick=()=>create();
 $('mpFromLogistics').onclick=()=>create('logistics');
@@ -181,8 +234,8 @@ $('mpFileInput').onchange=async event=>{
 $('mpSearch').oninput=render;
 $('mpTrashToggle').onclick=async()=>attempt(async()=>{showTrash=!showTrash;await refresh();});
 $('mpBack').onclick=back;
-$('mpSave').onclick=()=>requestSave(false);
-$('mpDownload').onclick=()=>requestSave(true);
+$('mpSave').onclick=()=>requestSave('save-and-return');
+$('mpDownload').onclick=()=>requestSave('download');
 $('mpToggleToolbar').onclick=()=>{$('masterEditor').classList.add('mp-toolbar-hidden');$('mpRestoreToolbar').hidden=false;};
 $('mpRestoreToolbar').onclick=()=>{$('masterEditor').classList.remove('mp-toolbar-hidden');$('mpRestoreToolbar').hidden=true;};
 root.addEventListener('beforeunload',event=>{if(current&&(pending||dirty)){event.preventDefault();event.returnValue='';}});

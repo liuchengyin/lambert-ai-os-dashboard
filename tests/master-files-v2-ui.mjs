@@ -10,9 +10,9 @@ await ctx.addInitScript(source=>{
  const xml='<mxfile host="LambertOS"><diagram id="legacy" name="旧画master"><mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/></root></mxGraphModel></diagram></mxfile>';
  localStorage.setItem('lambert_logistics_master_drawio_v1',JSON.stringify({schema:1,xml,sourceVersion:0,updatedAt:'2026-10-30T10:00:00.000Z'}));
 },sample);
-const page=await ctx.newPage(),errors=[];
+const page=await ctx.newPage(),errors=[],unexpectedPrompts=[];
 page.on('pageerror',err=>errors.push(err.message));
-page.on('dialog',async dialog=>dialog.type()==='prompt'?dialog.accept('物流研究总图'):dialog.accept());
+page.on('dialog',async dialog=>{if(dialog.type()==='prompt'){unexpectedPrompts.push(dialog.message());await dialog.dismiss();}else await dialog.accept();});
 const check=(label,ok)=>{assert.ok(ok,label);console.log('PASS:',label);};
 try{
  await page.goto(base+'/?view=master');
@@ -30,6 +30,10 @@ try{
    const frame=document.getElementById('mpDrawFrame');
    window.dispatchEvent(new MessageEvent('message',{origin:'https://embed.diagrams.net',source:frame.contentWindow,data:JSON.stringify({event:'load'})}));
  });
+ await page.locator('#mpToggleToolbar').click();
+ check('Lambert toolbar collapses and restores',await page.locator('#masterEditor.mp-toolbar-hidden').count()===1&&await page.locator('#mpRestoreToolbar').isVisible());
+ await page.locator('#mpRestoreToolbar').click();
+ check('toolbar restored',await page.locator('#masterEditor.mp-toolbar-hidden').count()===0);
  await page.locator('#mpSave').click();
  const savedXml=await page.evaluate(()=>window.LambertDrawioModel.blank().replace('自由画布','自定义流程'));
  await page.evaluate(xml=>{
@@ -45,12 +49,8 @@ try{
  },savedXml);
  await page.waitForFunction(async()=>{const rows=await window.LambertMasterLibrary.list();return rows.some(x=>x.xml.includes('自定义流程'));});
  check('trusted explicit export persists current diagram',await page.evaluate(async()=> (await window.LambertMasterLibrary.list()).some(x=>x.xml.includes('自定义流程'))));
- await page.locator('#mpToggleToolbar').click();
- check('Lambert toolbar collapses and restores',await page.locator('#masterEditor.mp-toolbar-hidden').count()===1&&await page.locator('#mpRestoreToolbar').isVisible());
- await page.locator('#mpRestoreToolbar').click();
- check('toolbar restored',await page.locator('#masterEditor.mp-toolbar-hidden').count()===0);
- await page.locator('#mpBack').click();
- await page.locator('.mp-file-card').first().waitFor();
+ await page.waitForFunction(()=>document.getElementById('masterLibrary')?.hidden===false);
+ check('Save writes then automatically returns to files',await page.locator('#masterLibrary').isVisible());
  check('file grid shows multiple saved files',await page.locator('.mp-file-card').count()===2);
  check('legacy source document never changed',await page.evaluate(v=>localStorage.getItem('lambert_logistics_knowledge_v1')===v,original));
  check('legacy version envelope not overwritten',await page.evaluate(()=>!localStorage.getItem('lambert_logistics_versions_v1')));
@@ -60,9 +60,25 @@ try{
  await page.locator('.mp-file-card').filter({hasText:'未命名图纸'}).locator('.mp-file-name').click();
  await page.waitForFunction(()=>document.body.classList.contains('master-editing')&&document.getElementById('mpDrawFrame')?.src.includes('embed.diagrams.net/'));
  check('saved file reopens in native drawio iframe',await page.locator('#mpDrawFrame').getAttribute('src').then(u=>u?.includes('embed.diagrams.net/')));
+ await page.evaluate(()=>{
+   const frame=document.getElementById('mpDrawFrame');
+   window.dispatchEvent(new MessageEvent('message',{origin:'https://embed.diagrams.net',source:frame.contentWindow,data:JSON.stringify({event:'load'})}));
+ });
  await page.locator('#mpBack').click();
+ await page.evaluate(xml=>{
+   const frame=document.getElementById('mpDrawFrame');
+   window.dispatchEvent(new MessageEvent('message',{origin:'https://embed.diagrams.net',source:frame.contentWindow,data:JSON.stringify({event:'export',xml})}));
+ },savedXml);
+ await page.waitForFunction(()=>document.getElementById('masterLibrary')?.hidden===false);
  const card=page.locator('.mp-file-card').filter({hasText:'未命名图纸'});
  await card.getByRole('button',{name:'重命名'}).click();
+ check('rename enters inline editing instead of native prompt',await card.getByRole('textbox',{name:'修改图纸名称'}).isVisible()&&unexpectedPrompts.length===0);
+ await card.getByRole('textbox',{name:'修改图纸名称'}).fill('不想保存的改名');
+ await card.getByRole('textbox',{name:'修改图纸名称'}).press('Escape');
+ check('Escape cancels rename without writes',await card.locator('.mp-file-name').textContent()==='未命名图纸');
+ await card.getByRole('button',{name:'重命名'}).click();
+ await card.getByRole('textbox',{name:'修改图纸名称'}).fill('物流研究总图');
+ await card.getByRole('textbox',{name:'修改图纸名称'}).press('Enter');
  await page.waitForFunction(()=>[...document.querySelectorAll('.mp-file-name')].some(e=>e.textContent==='物流研究总图'));
  check('rename preserved file',await page.locator('.mp-file-name').filter({hasText:'物流研究总图'}).count()===1);
  await page.locator('.mp-file-card').filter({hasText:'物流研究总图'}).getByRole('button',{name:'复制'}).click();
@@ -78,6 +94,7 @@ try{
  await page.locator('#mpTrashToggle').click();
  await page.waitForFunction(()=>document.querySelectorAll('.mp-file-card').length===3);
  check('restored file visible in library',await page.locator('.mp-file-card').count()===3);
+ check('no unexpected native rename prompts',unexpectedPrompts.length===0);
  check('no application script errors',errors.length===0);
  console.log('Master file-library end-to-end checks passed.');
 }finally{await browser.close();}
