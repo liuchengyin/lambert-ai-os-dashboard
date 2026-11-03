@@ -12,12 +12,12 @@ do $$begin
  if exists(select 1 from cron.job where jobname like 'lambert-reminders-%') then raise exception 'Review existing reminder jobs before enabling';end if;
 end$$;
 select cron.schedule('lambert-reminders-1145','45 3 * * *',$job$
- select net.http_post(url:=(select decrypted_secret from vault.decrypted_secrets where name='lambert_project_url')||'/functions/v1/feishu-reminders',headers:=jsonb_build_object('Content-Type','application/json','Authorization','Bearer '||(select decrypted_secret from vault.decrypted_secrets where name='lambert_reminder_cron_token')),body:='{"mode":"dispatch"}'::jsonb,timeout_milliseconds:=30000);
+ select net.http_post(url:=(select decrypted_secret from vault.decrypted_secrets where name='lambert_project_url')||'/functions/v1/feishu-reminders',headers:=jsonb_build_object('Content-Type','application/json','Authorization','Bearer '||(select decrypted_secret from vault.decrypted_secrets where name='lambert_reminder_cron_token')),body:='{"mode":"dispatch"}'::jsonb,timeout_milliseconds:=90000);
 $job$);
 select cron.schedule('lambert-reminders-1900','0 11 * * *',$job$
- select net.http_post(url:=(select decrypted_secret from vault.decrypted_secrets where name='lambert_project_url')||'/functions/v1/feishu-reminders',headers:=jsonb_build_object('Content-Type','application/json','Authorization','Bearer '||(select decrypted_secret from vault.decrypted_secrets where name='lambert_reminder_cron_token')),body:='{"mode":"dispatch"}'::jsonb,timeout_milliseconds:=30000);
+ select net.http_post(url:=(select decrypted_secret from vault.decrypted_secrets where name='lambert_project_url')||'/functions/v1/feishu-reminders',headers:=jsonb_build_object('Content-Type','application/json','Authorization','Bearer '||(select decrypted_secret from vault.decrypted_secrets where name='lambert_reminder_cron_token')),body:='{"mode":"dispatch"}'::jsonb,timeout_milliseconds:=90000);
 $job$);
 select cron.schedule('lambert-reminders-2130','30 13 * * *',$job$
- select net.http_post(url:=(select decrypted_secret from vault.decrypted_secrets where name='lambert_project_url')||'/functions/v1/feishu-reminders',headers:=jsonb_build_object('Content-Type','application/json','Authorization','Bearer '||(select decrypted_secret from vault.decrypted_secrets where name='lambert_reminder_cron_token')),body:='{"mode":"dispatch"}'::jsonb,timeout_milliseconds:=30000);
+ select net.http_post(url:=(select decrypted_secret from vault.decrypted_secrets where name='lambert_project_url')||'/functions/v1/feishu-reminders',headers:=jsonb_build_object('Content-Type','application/json','Authorization','Bearer '||(select decrypted_secret from vault.decrypted_secrets where name='lambert_reminder_cron_token')),body:='{"mode":"dispatch"}'::jsonb,timeout_milliseconds:=90000);
 $job$);
 commit;

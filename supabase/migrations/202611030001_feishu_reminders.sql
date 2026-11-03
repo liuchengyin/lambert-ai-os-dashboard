@@ -46,11 +46,11 @@ begin
  from public.lambert_items where user_id=p_user and kind='tasks' and item_id in(select jsonb_array_elements_text(ids));
  return jsonb_build_object('taskIds',ids,'records',rows);
 end$$;
-create function reminder_private.claim(p_user uuid,p_day date,p_slot text,p_kind text,p_message uuid,p_claim uuid,p_retry boolean default false)
+create function reminder_private.claim(p_user uuid,p_day date,p_slot text,p_kind text,p_message uuid,p_claim uuid,p_receive text,p_retry boolean default false)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare r reminder_private.deliveries%rowtype;
 begin
- if not exists(select 1 from reminder_private.recipients where user_id=p_user and enabled) then raise exception 'binding_unavailable';end if;
+ if not exists(select 1 from reminder_private.recipients where user_id=p_user and enabled and receive_id=p_receive) then raise exception 'binding_unavailable';end if;
  insert into reminder_private.deliveries(user_id,day,slot,kind,message_uuid,claim_uuid,state)
  values(p_user,p_day,p_slot,p_kind,p_message,p_claim,'sending') on conflict(user_id,day,slot,kind) do nothing returning * into r;
  if found then return to_jsonb(r);end if;

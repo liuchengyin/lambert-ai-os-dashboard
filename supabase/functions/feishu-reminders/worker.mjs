@@ -33,7 +33,7 @@ export async function runReminder({body={},env,store,submitted,send,now=new Date
  if(!['https://lambert-ai-os-dashboard.vercel.app','https://lambert-ai-os-cn-test.netlify.app'].includes(link))throw Error('invalid_workspace_url');
  let sent=0,duplicates=0,uncertain=0,rejected=0;
  for(const kind of types){
-  const claimId=newId(),claim=await store.claim(userId,date,slot,kind,newId(),claimId,mode==='retry'||test&&body.retry===true);
+  const claimId=newId(),claim=await store.claim(userId,date,slot,kind,newId(),claimId,binding.receiveId,mode==='retry'||test&&body.retry===true);
   if(!claim){duplicates++;continue;}
   const title=kind==='tasks'?'Lambert OS｜今日任务提醒':kind==='review'?'Lambert OS｜今日复盘提醒':'Lambert OS｜连接测试';
   const list=summary.pending.slice(0,50).map((t,i)=>`${i+1}. ${t.title}`).join('\n');

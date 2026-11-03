@@ -4,7 +4,7 @@ import {createFeishu} from '../../supabase/functions/feishu-reminders/feishu.mjs
 import {reviewSubmitted} from '../../supabase/functions/feishu-reminders/receipts.mjs';
 const user='11111111-1111-4111-8111-111111111111',date='2026-11-03',key=`feishu:review:v1:${user}:${date}:`+'a'.repeat(64);
 test('only authoritative done receipt counts; pending/malformed/error is unknown, not a draft decision',async()=>{
- const read=value=>async c=>c[0]==='SCAN'?['0',[key]]:JSON.stringify(value);
+ const read=value=>async c=>c[0]==='SCAN'?['0',[key]]:[JSON.stringify(value)];
  assert.equal(await reviewSubmitted(async()=>['0',[]],user,date),false);
  assert.equal(await reviewSubmitted(read({state:'done',url:'https://fixture.feishu.cn/docx/mock',archivedAt:'2026-11-03T13:00:00Z'}),user,date),true);
  await assert.rejects(reviewSubmitted(read({state:'pending'}),user,date),/unconfirmed/);

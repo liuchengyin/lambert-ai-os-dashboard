@@ -24,7 +24,7 @@ test('restricted DB role, scoped fresh reads, atomic persistent dedupe, safe ret
   await assert.rejects(rpc('snapshot',[B,day]),/binding_unavailable/);
   await assert.rejects(db.query('select * from public.lambert_items'),/permission denied/);
   await assert.rejects(db.query('select * from reminder_private.recipients'),/permission denied/);
-  const claim=(slot='11:45',kind='tasks',retry=false)=>rpc('claim',[A,day,slot,kind,crypto.randomUUID(),crypto.randomUUID(),retry]);
+  const claim=(slot='11:45',kind='tasks',retry=false)=>rpc('claim',[A,day,slot,kind,crypto.randomUUID(),crypto.randomUUID(),'ou_fixture',retry]);
   const pair=await Promise.all([claim(),claim()]);assert.equal(pair.filter(Boolean).length,1);const first=pair.find(Boolean);
   await assert.rejects(rpc('finish',[A,day,'11:45','tasks',crypto.randomUUID(),'sent',false,'0','om_test']),/claim_changed/);
   await rpc('finish',[A,day,'11:45','tasks',first.claim_uuid,'unknown',false,'timeout',null]);assert.equal(await claim('11:45','tasks',true),null);

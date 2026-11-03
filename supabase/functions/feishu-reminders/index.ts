@@ -15,7 +15,7 @@ Deno.serve(createHttpHandler({env,execute:async(body:Record<string,unknown>)=>{
   const store={
    bindings:async()=>(await db`select reminder_private.bindings() as value`)[0].value,
    snapshot:async(u:string,d:string)=>(await db`select reminder_private.snapshot(${u}::uuid,${d}::date) as value`)[0].value,
-   claim:async(u:string,d:string,s:string,k:string,m:string,c:string,retry:boolean)=>(await db`select reminder_private.claim(${u}::uuid,${d}::date,${s},${k},${m}::uuid,${c}::uuid,${retry}) as value`)[0].value,
+   claim:async(u:string,d:string,s:string,k:string,m:string,c:string,receive:string,retry:boolean)=>(await db`select reminder_private.claim(${u}::uuid,${d}::date,${s},${k},${m}::uuid,${c}::uuid,${receive},${retry}) as value`)[0].value,
    finish:async(u:string,d:string,s:string,k:string,c:string,r:{state:string,retryable:boolean,code:string,messageId:string|null})=>{await db`select reminder_private.finish(${u}::uuid,${d}::date,${s},${k},${c}::uuid,${r.state},${r.retryable},${r.code},${r.messageId})`;},
    log:async(u:string,d:string,s:string,o:string,n:number,p:number)=>{await db`select reminder_private.log_check(${u}::uuid,${d}::date,${s},${o},${n},${p})`;}
   };

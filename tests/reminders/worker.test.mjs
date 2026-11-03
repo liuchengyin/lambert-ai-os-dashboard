@@ -7,7 +7,7 @@ function fixture(){
  const deliveries=new Map(),sent=[],logs=[];
  const state={records:[task('待开始')],taskIds:['a'],submitted:false,queryError:false,receiptError:false};
  const store={bindings:async()=>[{userId,receiveId:'ou_fixture'}],snapshot:async()=>{if(state.queryError)throw Error('query_failed');return state;},
-  claim:async(u,d,s,k,m,c,retry)=>{const key=[u,d,s,k].join('|'),previous=deliveries.get(key);if(previous&&!(retry&&previous.state==='rejected'&&previous.retryable))return null;const row={message_uuid:previous?.message_uuid||m,claim_uuid:c,state:'sending'};deliveries.set(key,row);return row;},
+  claim:async(u,d,s,k,m,c,receive,retry)=>{const key=[u,d,s,k].join('|'),previous=deliveries.get(key);if(previous&&!(retry&&previous.state==='rejected'&&previous.retryable))return null;const row={message_uuid:previous?.message_uuid||m,claim_uuid:c,state:'sending'};deliveries.set(key,row);return row;},
   finish:async(u,d,s,k,c,result)=>{const row=deliveries.get([u,d,s,k].join('|'));assert.equal(row.claim_uuid,c);Object.assign(row,result);},
   log:async(...args)=>logs.push(args)};
  const options={store,env:{REMINDERS_ENABLED:'true',REMINDERS_TEST_ENABLED:'false'},submitted:async()=>{if(state.receiptError)throw Error('receipt_unconfirmed');return state.submitted;},send:async message=>{sent.push(message);return {state:'sent',retryable:false,code:'0',messageId:'om_fixture'};},now:new Date('2026-11-03T03:45:00Z'),body:{mode:'dispatch'}};
@@ -18,7 +18,7 @@ test('complete/no targets means no task message; partial uses current cloud data
  f.state.records=[task('待开始')];assert.equal((await runReminder(f.options)).sent,1);
  f.options.now=new Date('2026-11-03T11:00:00Z');assert.equal((await runReminder(f.options)).sent,1);
  assert.equal(f.sent.length,2);assert.match(f.sent[0].text,/共 1 项，已完成 0 项，未完成 1 项/);
- const empty=fixture();empty.state.taskIds=[];assert.equal((await runReminder(empty.options)).sent,0);
+ const empty=fixture();empty.state.taskIds=[];assert.equal((await runReminder(empty.options)).sent,0);empty.options.now=new Date('2026-11-03T13:30:00Z');assert.equal((await runReminder(empty.options)).sent,1);
 });
 test('concurrent same slot/type only claims once; repeat neither sends nor overwrites receipt',async()=>{
  const f=fixture();const r=await Promise.all([runReminder(f.options),runReminder(f.options)]);assert.equal(r.reduce((n,v)=>n+v.sent,0),1);assert.equal(f.sent.length,1);assert.equal((await runReminder(f.options)).sent,0);

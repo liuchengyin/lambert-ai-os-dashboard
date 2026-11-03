@@ -33,7 +33,7 @@ jobs:
       - name: Check real Edge runtime entry (no serve/deploy)
         run: |
           set -o pipefail
-          deno check supabase/functions/feishu-reminders/index.ts 2>&1 | tee /tmp/reminder-deno.log
+          deno check --config supabase/functions/feishu-reminders/deno.json supabase/functions/feishu-reminders/index.ts 2>&1 | tee /tmp/reminder-deno.log
       - name: Safe result summary
         if: always()
         run: |
