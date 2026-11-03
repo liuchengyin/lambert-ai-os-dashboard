@@ -116,7 +116,7 @@ function renderTasks(){
   app.appendChild(c);
 }
 
-function projectAPI(){return {projects:projects(),tasks:tasks(),projectId:pid,selectedId:filterProject,today:today(),onSelect:function(id){filterProject=id;render();},onEdit:openProjectDialog,onAddProject:function(){openProjectDialog(null);},onAddTask:function(id){filterProject=id;openTaskDialog(null);},taskRow:taskRow,compareTasks:window.MobileCompose.compareTasks};}
+function projectAPI(){return {projects:projects(),tasks:tasks(),projectId:pid,selectedId:filterProject,today:today(),onSelect:function(id){filterProject=id;render();},onEdit:openProjectDialog,onAddProject:function(){openProjectDialog(null);},onAddTask:function(id){filterProject=id;openTaskDialog(null,function(){window.MobileProjectBoard.showTasks('待开始');});},taskRow:taskRow,compareTasks:window.MobileCompose.compareTasks};}
 function renderProjects(){
  var board=window.MobileProjectBoard.render(projectAPI());app.appendChild(board);var add=board.querySelector('.project-fab');if(add)app.appendChild(add);
 }
@@ -180,9 +180,9 @@ function renderReviewFor(date){
  panel.appendChild(fc);if(fc.isConnected)resizeReviewFields(fc);refreshStatus();
 }
 
-function openTaskDialog(t){
+function openTaskDialog(t,onCreated){
  if(t){window.MobileTaskDetails.open(t.id,{readTasks:function(){return S.read('tasks',[]);},writeTasks:function(arr){S.write('tasks',arr);},projects:projects,projectId:pid,render:render,newId:uid,today:today});return;}
- window.MobileCompose.task({tasks:function(){return S.read('tasks',[]);},writeTasks:function(rows){S.write('tasks',rows);},projects:projects,projectId:filterProject||'',defaultDue:tab==='tasks'&&filterScope==='today'?today():'',newId:uid,render:render});
+ window.MobileCompose.task({tasks:function(){return S.read('tasks',[]);},writeTasks:function(rows){S.write('tasks',rows);},projects:projects,projectId:filterProject||'',defaultDue:tab==='tasks'&&filterScope==='today'?today():'',newId:uid,render:function(){if(onCreated)onCreated();render();}});
 }
 function openProjectDialog(p){
  window.MobileCompose.project({item:p,projects:projects,tasks:function(){return S.read('tasks',[]);},projectId:pid,newId:function(){return 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);},writeMany:function(values){window.LambertData.writeMany(values);window.dispatchEvent(new CustomEvent('mobile-change'));},render:render});

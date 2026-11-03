@@ -60,3 +60,5 @@
 .project-head .project-back{width:44px;min-width:44px;padding:0;border:0;background:transparent;font-size:32px;color:var(--p)}
 .project-head .project-actions button{min-width:44px;min-height:44px;padding:0 7px;font-size:14px;border-radius:9px}
 .project-head .project-add-task{background:var(--p);border-color:var(--p);color:white}
+
+.project-detail .project-head{flex-wrap:nowrap}.project-detail .project-title-edit{flex:1 1 0;min-width:0}.project-detail .project-add-task{flex:0 0 44px;width:44px;height:44px;min-width:44px;padding:0;border:0;border-radius:14px;background:#eee5fc;color:#8650d8;font-size:28px;line-height:1}.project-detail .project-add-task:focus-visible{outline:2px solid #8650d8;outline-offset:3px}

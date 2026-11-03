@@ -54,6 +54,7 @@
     var head=el('div','project-head');
     head.appendChild(btn('project-back','返回项目','‹',function(){api.onSelect&&api.onSelect(null);},['进行中','待开始']));
     head.appendChild(btn('project-title project-title-edit','编辑项目：'+p.name,p.name,function(){api.onEdit&&api.onEdit(p);}));
+    head.appendChild(btn('project-add-task','新增项目任务','＋',function(){api.onAddTask&&api.onAddTask(p.id);}));
     sec.appendChild(head);
     var rows=tasks.filter(function(t){return !t.archived&&!t.deletedAt&&api.projectId(t)===p.id;});
     var st=stats(rows,api.today);
@@ -79,5 +80,5 @@
     try{if(detail)taskFilter=next;else projectFilter=next;return render(api);}
     finally{projectFilter=old[0];taskFilter=old[1];lastSelected=old[2];}
   }
-  window.MobileProjectBoard={render:render,preview:preview,reset:function(){projectFilter='进行中';taskFilter='进行中';lastSelected=null;}};
+  window.MobileProjectBoard={render:render,preview:preview,showTasks:function(status){if(STATUS.indexOf(status)>=0)taskFilter=status;},reset:function(){projectFilter='进行中';taskFilter='进行中';lastSelected=null;}};
 })();
