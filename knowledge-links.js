@@ -23,7 +23,8 @@
     {id:'g_common',name:'常用',links:[]},{id:'g_learning',name:'学习',links:[]}
   ];
   const personalDefaults=[{id:'g_personal',name:'个人',links:[]}];
-  let activeTab=get(ACTIVE_TAB,'common')==='personal'?'personal':'common';
+  const standaloneLinks=document.body.dataset.lambertLinksStandalone==='true';
+  let activeTab=standaloneLinks?'common':get(ACTIVE_TAB,'common')==='personal'?'personal':'common';
   const tabStorage=()=>activeTab==='personal'?PERSONAL:STORAGE;
   const tabDefaults=()=>activeTab==='personal'?personalDefaults:defaults;
   function loadGroups(){
@@ -42,6 +43,7 @@
     <div id="knowledgeLinks" style="display:none"></div>
   </div>`;
 
+  if(standaloneLinks)document.getElementById('knowledgeTabSwitch').hidden=true;
   const tabBtn=document.getElementById('knowledgeTabSwitch'),libraryTag=document.getElementById('knowledgeLibraryTag'),lockBtn=document.getElementById('knowledgeLock'),wallBtn=document.getElementById('knowledgeWallpaper'),search=document.getElementById('knowledgeSearch'),root=document.getElementById('knowledgeGroups'),editBar=document.getElementById('knowledgeEditBar'),quickBtn=document.getElementById('knowledgeQuickAdd'),manualBtn=document.getElementById('knowledgeManualCreate'),searchSpinner=document.getElementById('knowledgeSearchSpinner');
   const recoveryDlg=document.createElement('dialog');
   recoveryDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>恢复旧链接</h3><p>检查当前浏览器中的旧链接，确认后合并，保留已有内容。</p><button type="button" id="knowledgeRecoverLocal">检查并恢复旧链接</button><p id="knowledgeRecoveryStatus" role="status" aria-live="polite"></p><div class="dlgActions"><button>关闭</button></div></form>`;
@@ -314,6 +316,7 @@
 
 // Load V5 overview/task enhancements last so they can safely override the MVP renderers.
 (function(){
+  if(document.body.dataset.lambertLinksStandalone==='true')return;
   if(!document.querySelector('link[href="dashboard-v5.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='dashboard-v5.css';document.head.appendChild(l)}
   if(!document.querySelector('script[src="dashboard-v5.js"]')){const s=document.createElement('script');s.src='dashboard-v5.js';s.defer=false;document.body.appendChild(s)}
 })();
