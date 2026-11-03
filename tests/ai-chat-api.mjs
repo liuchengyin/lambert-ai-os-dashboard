@@ -53,7 +53,7 @@ try{
   const cleaned=chatOutput({reply:'建议',projects:[null,{name:'已有项目'},{name:'第三个被截断'}],tasks:[null,{title:'测试',project:'未知项目',priority:'urgent',due:'2026-02-30'}]},[{name:'已有项目'}]);
   assert.equal(cleaned.projects.length,0);assert.equal(cleaned.tasks.length,1);assert.equal(cleaned.tasks[0].project,'');assert.equal(cleaned.tasks[0].due,'');assert.equal(cleaned.tasks[0].priority,'P2');
   assert.equal(chatOutput({reply:'文本但缺少结构'},[]),null);
-  assert.equal(chatOutput({reply:'x',projects:[],tasks:Array.from({length:20},(_,i)=>({title:'task'+i}))},[]).tasks.length,8);
+  assert.equal(chatOutput({reply:'x',projects:[],tasks:Array.from({length:20},(_,i)=>({title:'task'+i}))},[]).tasks.length,20);
   const times=chatOutput({reply:'x',projects:[],tasks:[{title:'a',due:'2026-10-17T20:30'},{title:'b',due:'2026-10-17T25:00'},{title:'c',due:'2026-02-30T20:00'}]},[]).tasks;
   assert.equal(times[0].due,'2026-10-17T20:30');assert.equal(times[1].due,'');assert.equal(times[2].due,'');
   console.log('PASS: invalid dates, foreign project links, malformed output and oversized drafts sanitized');

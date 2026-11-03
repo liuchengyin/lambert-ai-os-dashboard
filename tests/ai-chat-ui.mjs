@@ -16,7 +16,7 @@ const handleRequest=async route=>{
     if(mode==='network')return route.abort();
     await new Promise(resolve=>setTimeout(resolve,80));
     const project=mode==='reserved'?'Lambert AI OS':mode==='fresh'?'容量测试项目':'英语练习',title=mode==='reserved'?'看板 V2 上线':mode==='fresh'?'保存失败后重试':'听力练习';
-    return route.fulfill({json:{ok:true,requestId:'test-request-'+(++seq),result:mode==='answer'?{reply:'先完成保留旧任务，花五分钟写下第一步。',projects:[],tasks:[]}:{reply:'<img src=x onerror=alert(1)> 草稿已准备好',projects:[{name:project,due:'',standard:'每次十分钟'}],tasks:[{title,priority:'P2',project,due:'',note:'先听一遍'}]}}});
+    return route.fulfill({json:{ok:true,requestId:'test-request-'+(++seq),result:mode==='answer'?{reply:'先完成保留旧任务，花五分钟写下第一步。',projects:[],tasks:[]}:{reply:'<img src=x onerror=alert(1)> 草稿已准备好',projects:[{name:project,due:'',standard:'每次十分钟'}],tasks:mode==='batch'?Array.from({length:20},(_,i)=>({title:'批量验收任务'+i,priority:'P2',project,due:'2026-11-03',note:'隔离测试'})):[{title,priority:'P2',project,due:'',note:'先听一遍'}]}}});
   }
   return route.fulfill({json:{ok:true,result:{summary:'任务建议',focus:[],alerts:[]}}});
 };
@@ -64,6 +64,11 @@ try{
   check('New task persists on refresh',(await rows('tasks')).some(t=>t.title==='精听小猪佩奇十分钟'));
   const oldAfterRefresh=(await rows('tasks')).find(t=>t.id==='old-task');
   check('Existing matrix and custom fields survive refresh',oldAfterRefresh.matrix==='q3'&&oldAfterRefresh.sourceTag==='保留扩展字段');
+  mode='batch';await submit('创建20个测试任务');await page.locator('.ai-chat-draft h4').waitFor();
+  await page.getByRole('button',{name:'确认创建',exact:true}).click();
+  check('Batch reports 20 successes',(await page.locator('#aiChatPanel > .ai-chat-status').innerText()).includes('成功 20，失败 0'));
+  await page.reload();await page.locator('#aiChatInput').waitFor();
+  check('20 tasks persist with project association',(await rows('tasks')).filter(t=>t.title.startsWith('批量验收任务')&&t.project==='英语练习'&&t.status==='待开始').length===20);
   mode='answer';await submit('分析现在的任务');await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('回复已生成'));
   check('Analysis-only chat has no create action',await page.getByRole('button',{name:'确认创建',exact:true}).count()===0);
   mode='network';await submit('连接失败保留这段话');await page.waitForFunction(()=>document.querySelector('.ai-chat-status').textContent.includes('连接失败'));
@@ -96,7 +101,7 @@ try{
   await submit('创建一个新任务');await page.locator('.ai-chat-draft h4').waitFor();
   await page.evaluate(()=>{const t=JSON.parse(localStorage.getItem('tasks'));t.push({id:'other-tab',title:'其他页的新任务'});localStorage.setItem('tasks',JSON.stringify(t))});
   await page.getByRole('button',{name:'确认创建',exact:true}).click();
-  check('Cross-tab update is not overwritten',(await page.locator('.ai-chat-status').innerText()).includes('其他页面更新')&&(await rows('tasks')).some(t=>t.id==='other-tab'));
+  check('Cross-tab update is not overwritten',(await page.locator('#aiChatPanel > .ai-chat-status').innerText()).includes('其他页面更新')&&(await rows('tasks')).some(t=>t.id==='other-tab'));
   await page.getByRole('button',{name:'取消草稿'}).click();
   await page.setViewportSize({width:390,height:844});
   const dimensions=await page.locator('#aiChatPanel').evaluate(e=>({scroll:e.scrollWidth,client:e.clientWidth}));

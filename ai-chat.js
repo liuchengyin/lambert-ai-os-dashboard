@@ -5,7 +5,7 @@
   const button=(label,fn,cls='ai-secondary')=>{const b=el('button',cls,label);b.type='button';b.onclick=fn;return b};
   let sending=false,history=[],proposal=null,committing=false,committed=new Set();
   const api=()=>window.LambertAI;
-  let panel,log,input,send,status,draft,examples;
+  let panel,log,input,send,status,draft,examples,commitButton,commitStatus;
   function message(role,value){
     const item=el('div','ai-chat-message ai-chat-'+role);
     item.append(el('small','',role==='user'?'你':'DeepSeek'),el('p','',value));log.append(item);
@@ -13,7 +13,7 @@
     while(log.children.length>12)log.firstElementChild.remove();
     log.scrollTop=log.scrollHeight;
   }
-  function feedback(value){status.textContent=value}
+  function feedback(value){status.textContent=value;if(commitStatus)commitStatus.textContent=value}
   function field(label,value,onChange,type='text'){
     const wrap=el('label','ai-draft-field');wrap.append(el('span','',label));
     const control=el(type==='textarea'?'textarea':'input');if(type!=='textarea')control.type=type;
@@ -21,7 +21,7 @@
     control.value=value||'';control.addEventListener('input',()=>onChange(control.value));wrap.append(control);return wrap;
   }
   function showDraft(){
-    draft.replaceChildren();
+    draft.replaceChildren();commitStatus=null;
     if(!proposal||(!proposal.result.projects.length&&!proposal.result.tasks.length))return;
     const result=proposal.result;
     draft.append(el('h4','','待确认草稿 · '+result.projects.length+' 个项目 / '+result.tasks.length+' 个任务'));
@@ -45,8 +45,10 @@
       card.append(button('从草稿移除此任务',()=>{result.tasks.splice(index,1);if(!result.tasks.length&&!result.projects.length)proposal=null;showDraft();feedback('已从草稿移除，现有任务不受影响。')},'ai-draft-remove'));draft.append(card);
     });
     const actions=el('div','ai-chat-actions');
-    actions.append(button('确认创建',commit,'ai-primary'),button('取消草稿',()=>{proposal=null;showDraft();feedback('草稿已取消，没有创建任务。')}));
-    draft.append(actions);
+    commitButton=button('确认创建',commit,'ai-primary');
+    commitStatus=el('p','ai-chat-status');commitStatus.setAttribute('role','status');commitStatus.setAttribute('aria-live','polite');
+    actions.append(commitButton,button('取消草稿',()=>{proposal=null;showDraft();feedback('草稿已取消，没有创建任务。')}));
+    draft.append(actions,commitStatus);
   }
   function loadRows(key){
     const parsed=window.LambertData?window.LambertData.read(key,[]):JSON.parse((window.LambertPrivateStorage||localStorage).getItem(key)||'[]');
@@ -55,8 +57,8 @@
   function commit(){
     if(!proposal||committing)return;
     const {requestId,result}=proposal;if(committed.has(requestId))return;
-    if(result.tasks.some(t=>!t.title.trim())){feedback('请填写每个任务的名称。');return}
-    committing=true;
+    if(result.tasks.some(t=>!String(t?.title||'').trim())){feedback('创建失败：请填写每个任务的名称。未写入任何任务。');return}
+    committing=true;commitButton.disabled=true;commitButton.textContent='创建中…';feedback('正在保存任务，请稍候…');
     try{
       if(typeof state==='undefined')throw Error('missing_state');
       const projects=loadRows('projects'),tasks=loadRows('tasks');
@@ -66,14 +68,16 @@
         feedback('数据已在其他页面更新。请刷新页面后重新生成草稿，以免覆盖新内容。');return;
       }
       const createdAt=new Date().toISOString(),names=new Set(projects.map(p=>p.name));
-      const newProjects=result.projects.filter(p=>!names.has(p.name)).map(p=>({id:'project_'+crypto.randomUUID(),name:p.name,status:'待开始',due:p.due,standard:p.standard.slice(0,300),createdAt,aiRequestId:requestId}));
+      const newProjects=result.projects.filter(p=>!names.has(p.name)).map(p=>({id:'project_'+crypto.randomUUID(),name:p.name,status:'待开始',due:p.due,standard:String(p.standard||'').slice(0,300),createdAt,aiRequestId:requestId}));
       newProjects.forEach(p=>names.add(p.name));
       const existing=new Set(tasks.map(t=>JSON.stringify([t.title.trim(),t.project||''])));
-      const newTasks=[];
+      const newTasks=[],failures=[];let skipped=0;
       for(const t of result.tasks){
-        const title=t.title.trim().slice(0,140),project=names.has(t.project)?t.project:'';
-        const key=JSON.stringify([title,project]);if(existing.has(key))continue;existing.add(key);
-        newTasks.push({id:'task_'+crypto.randomUUID(),title,project,status:'待开始',priority:t.priority,matrix:t.matrix||'q2',due:t.due,note:t.note.slice(0,300),createdAt,aiRequestId:requestId});
+        const title=String(t.title||'').trim().slice(0,140),project=t.project||'';
+        if(project&&!names.has(project)){failures.push(title+'：关联项目不存在');continue}
+        if(t.due&&!/^\d{4}-\d{2}-\d{2}(T[0-2]\d:[0-5]\d)?$/.test(t.due)){failures.push(title+'：截止日期格式无效');continue}
+        const key=JSON.stringify([title,project]);if(existing.has(key)){skipped++;continue;}existing.add(key);
+        newTasks.push({id:'task_'+crypto.randomUUID(),title,project,status:'待开始',priority:['P1','P2','P3'].includes(t.priority)?t.priority:'P2',matrix:t.matrix||'q2',due:t.due,note:String(t.note||'').slice(0,300),createdAt,aiRequestId:requestId});
       }
       const nextProjects=[...newProjects,...projects],nextTasks=[...newTasks,...tasks];
       if(window.LambertData){window.LambertData.writeMany({projects:nextProjects,tasks:nextTasks});}else{
@@ -84,16 +88,16 @@
       catch(error){if(newProjects.length){if(originalProjects===null)(window.LambertPrivateStorage||localStorage).removeItem('projects');else (window.LambertPrivateStorage||localStorage).setItem('projects',originalProjects)}throw error}
       }
       state.projects=nextProjects;state.tasks=nextTasks;
-      committed.add(requestId);proposal=null;showDraft();
+      committed.add(requestId);proposal=null;showDraft();commitStatus=el('p','ai-chat-status');commitStatus.setAttribute('role','status');draft.append(commitStatus);
       // Use current renderers: refreshAll still targets inputs removed by Dashboard V5.
       renderTaskBoard();renderProjectBoard();renderHome();document.dispatchEvent(new Event('lambert:plan-created'));
       // Creating a reviewed plan should feed straight into the existing daily analysis.
-      if(newTasks.length||newProjects.length){api().markChanged();if(api().hasConsent())api().analyze(false)}
-      feedback('已创建 '+newProjects.length+' 个项目、'+newTasks.length+' 个任务。已有同名条目已跳过。');
+      if(newTasks.length||newProjects.length){try{api()?.markChanged();if(api()?.hasConsent())Promise.resolve(api().analyze(false)).catch(()=>{});}catch{/* Saving succeeded; analysis is optional. */}}
+      feedback('已创建 '+newProjects.length+' 个项目、'+newTasks.length+' 个任务。成功 '+newTasks.length+'，失败 '+failures.length+'，跳过重复 '+skipped+'。'+failures.join('；'));
       const actions=el('div','ai-chat-actions');
       actions.append(button('查看任务',()=>{const task=newTasks[0]&&state.tasks.find(t=>t.id===newTasks[0].id);if(task&&window.TaskCenter&&window.TaskCenterModel)TaskCenter.openProject(TaskCenterModel.resolveProject(task,state.projects));else openView('tasks')}),button('查看项目',()=>openView('projects')),button('分析更新后的任务',()=>{document.querySelector('#aiDailyCard .ai-secondary')?.click();document.getElementById('aiDailyCard')?.scrollIntoView({behavior:'smooth',block:'start'})}));draft.append(actions);
-    }catch{feedback(committed.has(requestId)?'数据已保存，但页面未能刷新。请刷新后查看任务和项目。':'保存失败，草稿已保留。请检查浏览器存储空间后重试。')}
-    finally{committing=false}
+    }catch(error){feedback(committed.has(requestId)?'数据已保存，但页面未能刷新。请刷新后查看任务和项目。':'保存失败，草稿已保留。原因：'+(error?.name==='QuotaExceededError'?'浏览器存储空间不足':error?.message||'未知存储错误'))}
+    finally{committing=false;if(commitButton){commitButton.disabled=false;commitButton.textContent='确认创建'}}
   }
   async function submit(){
     if(sending)return;
