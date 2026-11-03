@@ -51,13 +51,13 @@
 #tasks .tc-gantt-controls{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-bottom:14px;font-size:12px;color:var(--tc-muted)}
 #tasks .tc-gantt-controls label{display:flex;align-items:center;gap:7px}
 #tasks .tc-gantt-controls input,#tasks .tc-gantt-controls select{font:inherit;border:1px solid var(--tc-line);border-radius:7px;padding:8px;background:white;color:#655a74}
-#tasks .tc-gantt{min-width:calc(190px + var(--tc-days) * 42px)}
+#tasks .tc-gantt{--tc-day-width:126px;min-width:calc(190px + var(--tc-days) * var(--tc-day-width))}
 #tasks .tc-gantt-head,#tasks .tc-gantt-row{display:flex;min-height:49px;border-bottom:1px solid #ede9f4}
 #tasks .tc-gantt-name{position:sticky;left:0;z-index:2;flex:0 0 190px;width:190px;max-width:190px;background:white;padding:13px 14px;border:0;border-right:1px solid #e5dfef;border-radius:0;text-align:left;font:inherit;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#5d5370;box-shadow:none}
 #tasks .tc-gantt-head .tc-gantt-name{background:#f5f2fa;font-weight:600}
-#tasks .tc-gantt-dates{display:flex;background:#f5f2fa}#tasks .tc-gantt-dates span{width:42px;flex:0 0 42px;text-align:center;font-size:10px;color:#877c95;padding:14px 0;border-right:1px solid #e9e4ef}
+#tasks .tc-gantt-dates{display:flex;background:#f5f2fa}#tasks .tc-gantt-dates span{width:var(--tc-day-width);flex:0 0 var(--tc-day-width);text-align:center;font-size:10px;color:#877c95;padding:14px 0;border-right:1px solid #e9e4ef}
 #tasks .tc-gantt-dates .tc-today{background:#7561ce;color:white}
-#tasks .tc-gantt-track{position:relative;width:calc(var(--tc-days) * 42px);background:repeating-linear-gradient(to right,transparent 0,transparent 41px,#f0ecf5 41px,#f0ecf5 42px)}
+#tasks .tc-gantt-track{position:relative;width:calc(var(--tc-days) * var(--tc-day-width));background:repeating-linear-gradient(to right,transparent 0,transparent calc(var(--tc-day-width) - 1px),#f0ecf5 calc(var(--tc-day-width) - 1px),#f0ecf5 var(--tc-day-width))}
 #tasks .tc-gantt-track>small{display:block;padding:14px;color:#aea5b8;font-size:11px}
 #tasks .tc-gantt-bar{position:absolute;top:10px;height:29px;border:0;background:#c3b4ea;color:#4d367c;border-radius:5px;font:inherit;font-size:11px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:left;padding:3px 8px;cursor:pointer;box-shadow:none}
 #tasks .tc-gantt-bar.is-doing{background:#8f7cce;color:white}#tasks .tc-gantt-bar.is-done{background:#cbe5d6;color:#47735b}
