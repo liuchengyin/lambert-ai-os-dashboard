@@ -72,13 +72,15 @@ try{
  await page.waitForFunction(()=>document.getElementById('masterLibrary')?.hidden===false);
  const card=page.locator('.mp-file-card').filter({hasText:'未命名图纸'});
  await card.getByRole('button',{name:'重命名'}).click();
- check('rename enters inline editing instead of native prompt',await card.getByRole('textbox',{name:'修改图纸名称'}).isVisible()&&unexpectedPrompts.length===0);
- await card.getByRole('textbox',{name:'修改图纸名称'}).fill('不想保存的改名');
- await card.getByRole('textbox',{name:'修改图纸名称'}).press('Escape');
+ // The card's name is replaced by an input, so the original hasText selector stops matching.
+ const edit=page.getByRole('textbox',{name:'修改图纸名称'});
+ check('rename enters inline editing instead of native prompt',await edit.isVisible()&&unexpectedPrompts.length===0);
+ await edit.fill('不想保存的改名');
+ await edit.press('Escape');
  check('Escape cancels rename without writes',await card.locator('.mp-file-name').textContent()==='未命名图纸');
  await card.getByRole('button',{name:'重命名'}).click();
- await card.getByRole('textbox',{name:'修改图纸名称'}).fill('物流研究总图');
- await card.getByRole('textbox',{name:'修改图纸名称'}).press('Enter');
+ await edit.fill('物流研究总图');
+ await edit.press('Enter');
  await page.waitForFunction(()=>[...document.querySelectorAll('.mp-file-name')].some(e=>e.textContent==='物流研究总图'));
  check('rename preserved file',await page.locator('.mp-file-name').filter({hasText:'物流研究总图'}).count()===1);
  await page.locator('.mp-file-card').filter({hasText:'物流研究总图'}).getByRole('button',{name:'复制'}).click();
