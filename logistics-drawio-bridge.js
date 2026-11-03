@@ -1,7 +1,7 @@
 (function () {
   'use strict';
   var ORIGIN = 'https://embed.diagrams.net';
-  var SRC = ORIGIN + '/?embed=1&proto=json&spin=1&noExitBtn=1&lang=zh';
+  var SRC = ORIGIN + '/?embed=1&proto=json&spin=1&noExitBtn=1&noSaveBtn=1&lang=zh';
 
   function create(opts) {
     opts = opts || {};
@@ -26,11 +26,12 @@
       if (!data || typeof data !== 'object') return;
       var event = data.event;
       if (event === 'init') {
-        post({ action: 'load', xml: initialXml, autosave: 1, saveAndExit: 0, title: '画Master' });
+        post({ action: 'load', xml: initialXml, autosave: 1, saveAndExit: 0, noSaveBtn: 1, noExitBtn: 1, title: '画Master' });
       } else if (event === 'save') {
         if (typeof data.xml === 'string' && data.xml.length > 0) onXml(data.xml, { trigger: 'editor-save' });
       } else if (event === 'autosave') {
         onStatus('modified');
+        if (typeof data.xml === 'string' && data.xml.length > 0) onXml(data.xml, { trigger: 'autosave' });
       } else if (event === 'export') {
         if (pendingSave) {
           pendingSave = false;
@@ -68,7 +69,13 @@
       post({ action: 'export', format: 'xml' });
     }
 
-    return { open: open, close: close, requestSave: requestSave };
+    function invokeAction(name) {
+      if (!listening || (name !== 'undo' && name !== 'redo')) return false;
+      post({ action: 'invokeAction', actionName: name });
+      return true;
+    }
+
+    return { open: open, close: close, requestSave: requestSave, invokeAction: invokeAction };
   }
 
   window.LambertDrawioBridge = Object.freeze({ create: create });

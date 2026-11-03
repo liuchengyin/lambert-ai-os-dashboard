@@ -8,10 +8,10 @@ const $=id=>document.getElementById(id);
 const el=(tag,className,text)=>{const n=document.createElement(tag);if(className)n.className=className;if(text!==undefined)n.textContent=String(text);return n;};
 const store=()=>root.LambertPrivateStorage||localStorage;
 host.innerHTML='<div id="masterLibrary" class="mp-library"><div class="mp-heading"><div><small>LAMBERT OS · VISUAL STUDIO</small><h2>画Master</h2><p>我的图纸 · 使用 draw.io 绘图引擎。图纸保存在当前浏览器，随时重新打开。</p></div><div class="mp-heading-actions"><button id="mpNew" type="button" class="mp-primary">＋ 新建图纸</button><button id="mpImport" type="button">导入 .drawio</button><button id="mpFromLogistics" type="button">从物流知识库创建</button></div></div><div class="mp-filters"><label class="mp-search">⌕ <input id="mpSearch" placeholder="搜索我的图纸" type="search"></label><span id="mpCount"></span><button id="mpTrashToggle" type="button">回收站</button></div><div id="mpCards" class="mp-cards"></div><p class="mp-footnote">当前是本机文件库（IndexedDB），不是云同步。跨浏览器或更换电脑前请导出 .drawio 备份。旧版画Master文件会安全导入，原件保留。</p></div>'+
-'<div id="masterEditor" class="mp-editor" hidden><div class="mp-editor-toolbar"><button id="mpBack" type="button">← 我的文件</button><span class="mp-editor-title" id="mpFileTitle"></span><span class="mp-save-status" id="mpSaveStatus">未保存</span><div class="mp-editor-actions"><button id="mpSave" type="button" class="mp-primary">保存并返回</button><button id="mpDownload" type="button">导出 .drawio</button><button id="mpToggleToolbar" type="button">隐藏工具栏</button></div></div><button id="mpRestoreToolbar" class="mp-restore-toolbar" type="button" hidden>☰ 显示工具栏</button><iframe id="mpDrawFrame" title="画Master draw.io完整编辑器" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals" allow="clipboard-read;clipboard-write"></iframe></div>'+
+'<div id="masterEditor" class="mp-editor" hidden><div class="mp-editor-toolbar"><button id="mpBack" type="button">← 返回文件</button><span class="mp-editor-title" id="mpFileTitle"></span><span class="mp-save-status" id="mpSaveStatus" role="status" aria-live="polite">正在加载…</span><div class="mp-editor-actions"><button id="mpUndo" type="button" title="撤销上一步（Ctrl/⌘ + Z）">↶ 撤销</button><button id="mpRedo" type="button" title="重做上一步（Ctrl/⌘ + Shift + Z）">↷ 重做</button><button id="mpDownload" type="button">导出 .drawio</button><button id="mpToggleToolbar" type="button">隐藏工具栏</button></div></div><button id="mpRestoreToolbar" class="mp-restore-toolbar" type="button" hidden>☰ 显示工具栏</button><iframe id="mpDrawFrame" title="画Master draw.io完整编辑器" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals" allow="clipboard-read;clipboard-write"></iframe></div>'+
 '<p id="mpNotice" role="status" class="mp-notice" aria-live="polite"></p><input type="file" id="mpFileInput" hidden accept=".drawio,.xml,application/xml,text/xml">';
 const notice=s=>{$('mpNotice').textContent=s;};
-let loaded=false,loading=false,showTrash=false,all=[],current=null,bridge=null,pending=false,pendingAction='',editorReady=false,dirty=false,pendingTimer=null;
+let loaded=false,loading=false,showTrash=false,all=[],current=null,bridge=null,pending=false,pendingAction='',editorReady=false,dirty=false,pendingTimer=null,autosaveTimer=null,autosaveXml=null,editRevision=0,editorEpoch=0,persistChain=Promise.resolve();
 function safeXml(s){
  if(!draw.validXml(s))return false;
  try{const d=new DOMParser().parseFromString(s,'text/xml');return !d.querySelector('parsererror')&&['mxfile','mxGraphModel'].includes(d.documentElement?.localName);}
@@ -141,60 +141,129 @@ async function create(kind='blank',xml=null,title=null){
   await lib.save(file);await refresh();await openFile(file.id);
  });
 }
+const AUTOSAVE_DEBOUNCE_MS=550;
+function setSaveStatus(value){$('mpSaveStatus').textContent=value;}
+function stopAutosaveTimer(){
+ if(autosaveTimer!==null){clearTimeout(autosaveTimer);autosaveTimer=null;}
+}
 function resetPending(){
- if(pendingTimer){clearTimeout(pendingTimer);pendingTimer=null;}
- pending=false;pendingAction='';$('mpSave').disabled=false;$('mpBack').disabled=false;
+ if(pendingTimer!==null){clearTimeout(pendingTimer);pendingTimer=null;}
+ pending=false;pendingAction='';
+ $('mpBack').disabled=false;$('mpDownload').disabled=false;
 }
 async function finishBack(){
+ stopAutosaveTimer();
+ autosaveXml=null;
+ editorEpoch++;
  bridge?.close();bridge=null;current=null;editorReady=false;dirty=false;resetPending();
  document.body.classList.remove('master-editing');
  $('masterEditor').hidden=true;$('masterLibrary').hidden=false;
  $('mpDrawFrame').src='about:blank';
  await attempt(refresh);
 }
+function saveFailure(error){
+ dirty=true;
+ setSaveStatus('自动保存失败 · 修改未保存');
+ notice('图纸未保存：'+(error?.message||'本机存储不可用')+'。请勿关闭当前画布；稍后修改或点击「返回文件」重试。');
+}
+function persistSnapshot(xml,revision){
+ const file=current,epoch=editorEpoch;
+ if(!file||!safeXml(xml)){
+  const reason=Error('invalid_master_xml');
+  saveFailure(reason);return Promise.reject(reason);
+ }
+ const operation=persistChain.catch(()=>{}).then(async()=>{
+  // Writes from older editor sessions may not overwrite another open document.
+  if(epoch!==editorEpoch||current?.id!==file.id)return false;
+  await lib.save({...file,xml});
+  const updated=await lib.get(file.id);
+  if(epoch!==editorEpoch||current?.id!==file.id)return false;
+  current=updated;
+  if(revision===editRevision){
+   dirty=false;
+   setSaveStatus('已保存 · '+when(updated.updatedAt));
+   notice('');
+  }
+  return true;
+ });
+ persistChain=operation;
+ return operation;
+}
+function queueAutosave(xml,immediate=false){
+ if(!safeXml(xml)){
+  saveFailure(Error('draw.io 返回的 XML 无效'));return;
+ }
+ editRevision++;
+ const revision=editRevision;
+ autosaveXml=xml;
+ dirty=true;
+ setSaveStatus('保存中…');
+ stopAutosaveTimer();
+ if(pending)return; // A return/export request obtains the editor's final XML.
+ const flush=()=>{
+  autosaveTimer=null;
+  const snapshot=autosaveXml;
+  autosaveXml=null;
+  if(snapshot===null)return;
+  void persistSnapshot(snapshot,revision).catch(saveFailure);
+ };
+ if(immediate)flush();
+ else autosaveTimer=setTimeout(flush,AUTOSAVE_DEBOUNCE_MS);
+}
 function openEditor(file){
- current=file;dirty=false;editorReady=false;resetPending();
+ stopAutosaveTimer();
+ editorEpoch++;
+ current=file;dirty=false;editorReady=false;editRevision=0;autosaveXml=null;persistChain=Promise.resolve();resetPending();
  $('mpFileTitle').textContent=file.title;
- $('mpSaveStatus').textContent='已加载 · 未改动原物流知识库';
+ setSaveStatus('正在打开…');
  $('masterLibrary').hidden=true;$('masterEditor').hidden=false;
  document.body.classList.add('master-editing');
  bridge?.close();
+ const epoch=editorEpoch;
  bridge=bridgeApi.create({frame:$('mpDrawFrame'),initialXml:file.xml,onStatus:event=>{
-  if(event==='loaded'){editorReady=true;notice('');$('mpSaveStatus').textContent='编辑器已就绪';}
-  if(event==='modified'&&!pending&&current?.id===file.id){
-   dirty=true;$('mpSaveStatus').textContent='有未保存的修改';
+  if(epoch!==editorEpoch||current?.id!==file.id)return;
+  if(event==='loaded'){editorReady=true;notice('');setSaveStatus('已保存 · '+when(current.updatedAt));}
+  if(event==='modified'){
+   dirty=true;
+   setSaveStatus('保存中…');
   }
  },onXml:async(xml,meta={})=>{
-  if(!current||current.id!==file.id)return;
+  if(epoch!==editorEpoch||current?.id!==file.id)return;
   const requested=meta.trigger==='requested-export';
-  if(requested&&!pending)return;
-  if(!requested&&meta.trigger!=='editor-save')return;
-  if(!requested&&pending)return; // An explicit export is already obtaining the newest XML.
-  if(!safeXml(xml)){
-   if(requested)resetPending();
-   notice('保存未完成：draw.io 返回的 XML 无效或过大，旧文件保持不变。');
+  if(requested){
+   if(!pending)return;
+   if(!safeXml(xml)){
+    resetPending();saveFailure(Error('draw.io 导出内容无效'));
+    return;
+   }
+   const action=pendingAction;
+   if(pendingTimer!==null){clearTimeout(pendingTimer);pendingTimer=null;}
+   // The XML obtained on leaving/exporting is authoritative, even if autosave is still writing.
+   stopAutosaveTimer();autosaveXml=null;
+   const revision=++editRevision;
+   try{
+    const result=await persistSnapshot(xml,revision);
+    if(result!==true){resetPending();return;}
+    // A user edit may have arrived while IndexedDB was writing. Never leave with a stale snapshot.
+    if(revision!==editRevision){
+     bridge?.requestSave();
+     pendingTimer=setTimeout(()=>{
+      if(pending){resetPending();dirty=true;setSaveStatus('保存未确认');notice('最新修改尚未确认写入，请再次点击「返回文件」。');}
+     },15000);
+     return;
+    }
+    if(action==='download')download(xml,current.title);
+    resetPending();
+    if(action==='back')await finishBack();
+   }catch(error){resetPending();saveFailure(error);}
    return;
   }
-  if(!requested){pending=true;pendingAction='save';$('mpSave').disabled=true;$('mpBack').disabled=true;}
-  const action=pendingAction,original=current;
-  try{
-   await lib.save({...original,xml});
-   if(current?.id!==original.id)return;
-   current=await lib.get(original.id);
-   dirty=false;
-   $('mpSaveStatus').textContent='已保存 · '+when(current.updatedAt);
-   resetPending();
-   notice('图纸已保存到「我的文件」，可继续编辑或返回文件库。');
-   if(action==='download')download(xml,current.title);
-   else if(action==='back'||action==='save-and-return')await finishBack();
-  }catch(error){
-   resetPending();
-   notice('保存失败：'+(error?.message||'浏览器存储不可用')+'。请勿关闭画布，原图纸未被覆盖。');
-  }
+  if(meta.trigger==='autosave')queueAutosave(xml);
+  else if(meta.trigger==='editor-save')queueAutosave(xml,true);
  }});
  bridge.open();
  notice('连接 draw.io 完整编辑器中…');
- setTimeout(()=>{if(current?.id===file.id&&!editorReady)notice('尚未收到 draw.io 的就绪消息。若页面空白，请检查 embed.diagrams.net 网络连通性；文件未被修改。');},15000);
+ setTimeout(()=>{if(epoch===editorEpoch&&current?.id===file.id&&!editorReady)notice('尚未收到 draw.io 的就绪消息。若画面空白，请检查 embed.diagrams.net 连通性；已存图纸不会被覆盖。');},15000);
 }
 async function openFile(id){
  if(!loaded)return;
@@ -204,21 +273,29 @@ async function openFile(id){
   openEditor(file);
  });
 }
-function requestSave(action='save'){
+function requestSave(action='back'){
  if(!current||pending)return;
- if(!editorReady){notice('draw.io 尚未就绪，暂不能保存；请检查网络。');return;}
+ if(!editorReady){notice('画布尚未加载完毕，暂时无法保存或返回。');return;}
  pending=true;pendingAction=action;
- $('mpSave').disabled=true;$('mpBack').disabled=true;$('mpSaveStatus').textContent='正在保存…';
+ $('mpBack').disabled=true;$('mpDownload').disabled=true;
+ setSaveStatus('正在确认最新修改…');
  bridge.requestSave();
  pendingTimer=setTimeout(()=>{
-  if(pending){resetPending();notice('未收到 draw.io 当前图纸的回传，保存未完成；请保留画布并重试。');}
+  if(pending){
+   resetPending();
+   dirty=true;setSaveStatus('保存未确认');
+   notice('无法取得 draw.io 的最新内容，已保留当前画布。请检查网络后重新点击「返回文件」。');
+  }
  },15000);
 }
 async function back(){
  if(!current){await finishBack();return;}
- if(pending){notice('图纸正在保存，请在完成后返回。');return;}
- // Always export the latest diagram before leaving; never discard unknown unsaved edits.
- if(!editorReady){if(!dirty)await finishBack();else notice('编辑器未就绪，不能安全返回；请先保存或导出图纸。');return;}
+ if(pending){notice('正在核对最新图纸，请勿关闭文件。');return;}
+ // Even after the autosave badge shows 已保存, verify one final XML snapshot before leaving.
+ if(!editorReady){
+  if(!dirty){await finishBack();return;}
+  notice('仍有尚未保存的内容，画布还未就绪；请保留此页面。');return;
+ }
  requestSave('back');
 }
 $('mpNew').onclick=()=>create();
@@ -234,7 +311,8 @@ $('mpFileInput').onchange=async event=>{
 $('mpSearch').oninput=render;
 $('mpTrashToggle').onclick=async()=>attempt(async()=>{showTrash=!showTrash;await refresh();});
 $('mpBack').onclick=back;
-$('mpSave').onclick=()=>requestSave('save-and-return');
+$('mpUndo').onclick=()=>{if(editorReady)bridge?.invokeAction('undo');};
+$('mpRedo').onclick=()=>{if(editorReady)bridge?.invokeAction('redo');};
 $('mpDownload').onclick=()=>requestSave('download');
 $('mpToggleToolbar').onclick=()=>{$('masterEditor').classList.add('mp-toolbar-hidden');$('mpRestoreToolbar').hidden=false;};
 $('mpRestoreToolbar').onclick=()=>{$('masterEditor').classList.remove('mp-toolbar-hidden');$('mpRestoreToolbar').hidden=true;};
