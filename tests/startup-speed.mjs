@@ -8,6 +8,13 @@ const server=createServer(async(req,res)=>{
   if(url.pathname.startsWith('/api/')){res.setHeader('Content-Type','application/json');res.end('{"configured":false,"ok":false}');return;}
   const path=resolve(root,'.'+url.pathname+(url.pathname.endsWith('/')?'index.html':''));if(!path.startsWith(root+sep))throw Error('invalid_path');
   let bytes=await readFile(path);if(url.pathname==='/'&&url.searchParams.get('prefetch')==='off')bytes=Buffer.from(bytes.toString().replace(/<!-- startup-prefetch-start -->[\s\S]*?<!-- startup-prefetch-end -->/,''));
+  // The loader also preloads dynamically. Disable both preload paths for the
+  // no-prefetch baseline; otherwise this compares two parallel-loading variants.
+  if(url.pathname==='/shared-sync/bootstrap.mjs'&&new URL(req.headers.referer||origin).searchParams.get('prefetch')==='off'){
+    const preloadLoop=/for\(const src of scripts\)\{const preload=document\.createElement\('link'\);[^\n]+\}/;
+    assert.match(bytes.toString(),preloadLoop,'baseline must disable dynamic preloading');
+    bytes=Buffer.from(bytes.toString().replace(preloadLoop,''));
+  }
   res.setHeader('Content-Type',({'.html':'text/html; charset=utf-8','.js':'text/javascript','.mjs':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.json':'application/json'})[extname(path)]||'application/octet-stream');res.end(bytes);
  }catch{res.statusCode=404;res.end();}
 });
