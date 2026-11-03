@@ -20,15 +20,20 @@ try{
   await page.locator('#knowledgeGroups .knowledge-group').first().waitFor();
   assert.equal(await page.title(),'Links · 常用链接');
   assert.equal(await page.locator('#knowledgeLibraryTag').innerText(),'常用');
-  assert.equal(await page.locator('#knowledgeTabSwitch').isVisible(),false);
+  assert.equal(await page.locator('#knowledgeTabSwitch').isVisible(),true);
+  await page.locator('#knowledgeTabSwitch').click();
+  assert.equal(await page.locator('#knowledgeLibraryTag').innerText(),'个人');
+  assert.equal(await page.getByText('绝不公开').count(),1);
+  await page.locator('#knowledgeTabSwitch').click();
+  assert.equal(await page.locator('#knowledgeLibraryTag').innerText(),'常用');
   assert.equal(await page.getByText('已有链接').count(),1);
   assert.equal(await page.getByText('绝不公开').count(),0);
   assert.equal(await page.locator('nav, #tasks, #projects, #review').count(),0);
   assert.equal(await page.locator('#knowledgeQuickAdd').isVisible(),true);
   assert.equal(await page.evaluate(()=>localStorage.getItem('knowledge_link_library_v1')),JSON.stringify(original));
-  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('knowledge_active_tab_v1'))),'personal');
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('knowledge_active_tab_v1'))),'common');
   assert.ok(!fetched.includes('/dashboard-v5.js'),'must not load dashboard enhancements');
   assert.ok(!fetched.includes('/app.js'),'must not load main workspace');
   assert.equal(errors.length,0,'browser errors: '+errors.join('; '));
-  console.log('PASS: isolated standalone links use existing common data without exposing personal/workspace UI');
+  console.log('PASS: standalone links preserve common/personal switching without exposing workspace UI');
 }finally{await browser.close();}
