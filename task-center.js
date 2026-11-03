@@ -26,7 +26,8 @@
   function localInput(value, end=false) {return /^\d{4}-\d{2}-\d{2}$/.test(value||'') ? value+(end?'T23:59':'T00:00') : value||'';}
   const priorityCode = task => ({q1:'P0',q2:'P1',q3:'P2',q4:'P3'}[task?.matrix] || 'P1');
   const currentProject = () => state.projects.find(p=>String(p.id)===String(selected));
-  const projectRows = () => state.tasks.filter(t=>String(M.resolveProject(t,state.projects))===String(selected));
+  const activeProjects = () => state.projects.filter(p=>p.status!=='已完成'&&p.status!=='已归档'&&!p.archived&&!p.deletedAt);
+  const projectRows = () => selected==='all' ? state.tasks.filter(t=>{const id=M.resolveProject(t,state.projects);return id==='inbox'||activeProjects().some(p=>String(p.id)===String(id));}) : state.tasks.filter(t=>String(M.resolveProject(t,state.projects))===String(selected));
   const allLabels = () => [...new Set([...presets,...state.tasks.flatMap(t=>Array.isArray(t.labels)?t.labels:[])])];
   function migrate() {
     const result=M.migrate(state.projects,state.tasks);
@@ -37,7 +38,7 @@
         state.projects=result.projects;state.tasks=result.tasks;
       } catch {notice('浏览器无法保存升级数据，请先导出或释放存储后重试。');}
     }
-    if(selected!=='inbox'&&!currentProject()){selected='inbox';anchor='';remember();}
+    if(selected!=='all'&&selected!=='inbox'&&!activeProjects().some(p=>String(p.id)===String(selected))){selected='inbox';anchor='';remember();}
   }
   function notice(text) {const el=$('tcNotice');if(el)el.textContent=text;}
   function save() {
@@ -59,6 +60,7 @@
   }
   function options(items, value, first='') {return (first?`<option value="">${esc(first)}</option>`:'')+items.map(x=>`<option value="${esc(x.value??x)}" ${String(x.value??x)===String(value)?'selected':''}>${esc(x.label??x)}</option>`).join('');}
   function projectOptions(value) {return options([{value:'inbox',label:'收件箱'},...state.projects.map(p=>({value:p.id,label:p.name}))],value);}
+  function projectPickerOptions(value) {return options([{value:'all',label:'全部项目'},{value:'inbox',label:'收件箱'},...activeProjects().map(p=>({value:p.id,label:p.name}))],value);}
   function labelsHtml(labels) {return (Array.isArray(labels)?labels:[]).map(x=>`<span class="tc-tag tc-tag-${Math.max(0,presets.indexOf(x))}">${esc(x)}</span>`).join('');}
   // Presentation only: preserve stored project start/due values, including any time component.
   function projectDateLabel(value, fallback, includeYear=true) {
@@ -74,17 +76,17 @@
   }
   function summary() {
     const rows=projectRows(), p=currentProject(), done=rows.filter(t=>t.status==='已完成').length;
-    $('tcProjectSelect').innerHTML=projectOptions(selected);
-    $('tcProjectTitle').textContent=p?.name||'收件箱';
-    $('tcProjectCategory').textContent=p?.category|| (p?'未分类':'零散任务');
-    $('tcProjectStandard').textContent=p?.standard|| (p?'尚未填写完成交付标准':'先收集下一步行动，需要时再移入项目。');
+    $('tcProjectSelect').innerHTML=projectPickerOptions(selected);
+    $('tcProjectTitle').textContent=selected==='all'?'全部项目':p?.name||'收件箱';
+    $('tcProjectCategory').textContent=selected==='all'?'项目总览':p?.category|| (p?'未分类':'零散任务');
+    $('tcProjectStandard').textContent=selected==='all'?'汇总所有未完成、未归档项目及收件箱任务。':p?.standard|| (p?'尚未填写完成交付标准':'先收集下一步行动，需要时再移入项目。');
     const dates=$('tcProjectDates');
     dates.replaceChildren();
     if(p){
       const range=document.createElement('span');range.className='tc-project-date-range';range.textContent=projectDateRange(p);
       const status=document.createElement('span');status.className='tc-project-status';status.textContent=p.status;
       dates.append(range,status);
-    }else dates.textContent='这里的任务暂未归属项目';
+    }else dates.textContent=selected==='all'?'汇总进行中的项目和收件箱':'这里的任务暂未归属项目';
     $('tcProgressLabel').textContent=`任务完成 ${done}/${rows.length} · 进行中 ${rows.filter(t=>t.status==='进行中').length}`;
     $('tcProgress').value=rows.length?done/rows.length:0;
     const category=$('tcProjectCategory');category.className='tc-category tc-tag-'+Math.max(0,presets.indexOf(p?.category));
