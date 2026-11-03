@@ -30,6 +30,7 @@ jobs:
           node tests/mobile-task-interactions.mjs
           node tests/mobile-filter-swipe.mjs
           node tests/mobile-core-space.mjs
+          node tests/mobile-project-add-task.mjs
           node tests/mobile-ui-coherence.mjs
           node tests/mobile-compact-compose.mjs
       - uses: actions/upload-artifact@v4
