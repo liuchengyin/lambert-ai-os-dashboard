@@ -14,6 +14,14 @@ const page=await ctx.newPage(),errors=[],unexpectedPrompts=[];
 page.on('pageerror',err=>errors.push(err.message));
 page.on('dialog',async dialog=>{if(dialog.type()==='prompt'){unexpectedPrompts.push(dialog.message());await dialog.dismiss();}else await dialog.accept();});
 const check=(label,ok)=>{assert.ok(ok,label);console.log('PASS:',label);};
+async function waitForActualXml(label){
+ for(let i=0;i<100;i++){
+  const found=await page.evaluate(async text=> (await window.LambertMasterLibrary.list()).some(file=>file.xml.includes(text)),label);
+  if(found)return;
+  await page.waitForTimeout(100);
+ }
+ throw Error('Timed out waiting for persisted master XML: '+label);
+}
 try{
  await page.goto(base+'/?view=master');
  await page.locator('#mpNew').waitFor({timeout:30000});
@@ -46,7 +54,7 @@ try{
    const frame=document.getElementById('mpDrawFrame');
    window.dispatchEvent(new MessageEvent('message',{origin:'https://embed.diagrams.net',source:frame.contentWindow,data:JSON.stringify({event:'autosave',xml})}));
  },savedXml);
- await page.waitForFunction(async()=>{const rows=await window.LambertMasterLibrary.list();return rows.some(x=>x.xml.includes('自定义流程'));});
+ await waitForActualXml('自定义流程');
  check('autosave persists without button click',await page.evaluate(async()=> (await window.LambertMasterLibrary.list()).some(x=>x.xml.includes('自定义流程'))));
  await page.locator('#mpBack').click();
  await page.evaluate(xml=>{
