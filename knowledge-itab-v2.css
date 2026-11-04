@@ -150,3 +150,24 @@ body.knowledge-unlocked #knowledge .knowledge-card-actions{top:auto;right:auto;j
 #knowledge .knowledge-head-actions .knowledge-lock{min-width:38px;padding:0 10px}
 .knowledge-wallpaper-upload input{padding:12px;background:#f6f3fa;border:1px dashed #c7b7df;border-radius:10px}
 #kwStatus{font-size:13px;color:#685486;min-height:20px}
+
+#knowledge .knowledge-copy-link{
+  position:absolute;top:8px;right:8px;z-index:3;
+  display:grid;place-items:center;width:28px;height:28px;padding:0;
+  border:1px solid #e8e4ef;border-radius:6px;background:#fff;color:#5c5c64;
+  opacity:0;pointer-events:none;
+}
+#knowledge .knowledge-link-card:has(.knowledge-copy-link) strong{padding-right:28px}
+#knowledge .knowledge-link-card:hover .knowledge-copy-link,
+#knowledge .knowledge-link-card:focus-within .knowledge-copy-link{
+  opacity:1;pointer-events:auto;
+}
+#knowledge .knowledge-copy-status{
+  position:absolute;top:8px;right:40px;z-index:3;
+  background:#333;color:white;border-radius:5px;font-size:12px;
+  pointer-events:none;
+}
+#knowledge .knowledge-copy-status:not(:empty){padding:4px 7px}
+@media(hover:none){
+  #knowledge .knowledge-link-card .knowledge-copy-link{opacity:1;pointer-events:auto}
+}
