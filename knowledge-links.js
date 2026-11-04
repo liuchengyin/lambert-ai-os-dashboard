@@ -95,6 +95,29 @@
   const wallDlg=document.createElement('dialog');wallDlg.innerHTML=`<form method="dialog" class="knowledge-dialog"><h3>设置壁纸</h3><label class="knowledge-wallpaper-upload">本地图片<input id="kwFile" type="file" accept="image/png,image/jpeg,image/webp"></label><p>支持 JPG、PNG、WebP，最大 10 MB；自动压缩保存。</p><p id="kwStatus" role="status" aria-live="polite"></p><label>图片链接（可选）<input id="kwUrl" type="url" placeholder="https://.../wallpaper.jpg"></label><div class="dlgActions"><button id="kwClear" type="button">恢复默认</button><button value="cancel">取消</button><button id="kwSave" type="button" class="task-primary-btn">应用</button></div></form>`;document.body.appendChild(wallDlg);
 
   const $=id=>document.getElementById(id);
+  function addCopyButton(card,url){
+    const copy=document.createElement('button');
+    copy.type='button';
+    copy.className='knowledge-copy-link';
+    copy.title='复制链接';
+    copy.setAttribute('aria-label','复制链接');
+    copy.innerHTML='<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a4 4 0 0 0 6 0l4-4a4 4 0 0 0-6-6l-2 2M14 11a4 4 0 0 0-6 0l-4 4a4 4 0 0 0 6 6l2-2"/></svg>';
+    const status=document.createElement('span');
+    status.className='knowledge-copy-status';
+    status.setAttribute('role','status');
+    let timeout;
+    copy.onclick=async()=>{
+      clearTimeout(timeout);
+      try{
+        await navigator.clipboard.writeText(url);
+        status.textContent='已复制';
+      }catch{
+        status.textContent='复制失败';
+      }
+      timeout=setTimeout(()=>{status.textContent=''},2000);
+    };
+    card.append(copy,status);
+  }
   function safeUrl(raw){let v=(raw||'').trim();if(!v||v.length>2048)return '';if(!/^https?:\/\//i.test(v))v='https://'+v;try{const u=new URL(v);if(!['http:','https:'].includes(u.protocol)||u.username||u.password||!u.hostname.includes('.'))return '';return u.href}catch{return ''}}
   function host(url){try{return new URL(url).hostname.replace(/^www\./,'')}catch{return '网站'}}
   function brandFor(url){return globalThis.LambertLinkSites?.identify(url)||null}
@@ -185,7 +208,7 @@
       const head=document.createElement('div');head.className='knowledge-group-head';head.innerHTML=`<div class="knowledge-group-title-wrap">${!locked?'<span class="knowledge-drag-handle" title="拖动分组">⋮⋮</span>':''}<h3>${esc(g.name)}</h3><span>${links.length}</span></div><div class="knowledge-group-actions"></div>`;
       const actions=head.querySelector('.knowledge-group-actions');if(!locked){const r=document.createElement('button');r.textContent='改名';r.onclick=()=>renameGroup(g);const d=document.createElement('button');d.textContent='删除分组';d.className='danger-lite';d.onclick=()=>{if(g.links.length&&!confirm(`分组“${g.name}”还有 ${g.links.length} 个链接，仍要删除吗？`))return;if(confirm(`确认删除分组“${g.name}”吗？`)){groups=groups.filter(x=>x.id!==g.id);persist();render()}};actions.append(r,d)}
       sec.appendChild(head);const grid=document.createElement('div');grid.className='knowledge-grid';
-      links.forEach(l=>{const card=document.createElement('article');card.className='knowledge-link-card';card.innerHTML=`<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" data-tooltip="${esc(l.title||host(l.url))}" aria-label="${esc(l.title||host(l.url))}"><div class="knowledge-link-icon"></div><div><strong>${esc(l.title||host(l.url))}</strong><p>${esc(l.desc||host(l.url))}</p></div></a><div class="knowledge-card-actions"></div>`;if(safeUrl(l.url))mountIcon(card.querySelector('.knowledge-link-icon'),l.url,l.icon,l.title);if(!locked){const a=card.querySelector('.knowledge-card-actions'),e=document.createElement('button'),d=document.createElement('button');e.textContent='编辑';e.onclick=()=>openLinkDlg(g.id,l);d.textContent='删除';d.onclick=()=>{if(confirm(`删除“${l.title||host(l.url)}”？`)){g.links=g.links.filter(x=>x.id!==l.id);persist();render()}};a.append(e,d)}grid.appendChild(card)});
+      links.forEach(l=>{const card=document.createElement('article');card.className='knowledge-link-card';card.innerHTML=`<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" data-tooltip="${esc(l.title||host(l.url))}" aria-label="${esc(l.title||host(l.url))}"><div class="knowledge-link-icon"></div><div><strong>${esc(l.title||host(l.url))}</strong><p>${esc(l.desc||host(l.url))}</p></div></a><div class="knowledge-card-actions"></div>`;if(safeUrl(l.url)){mountIcon(card.querySelector('.knowledge-link-icon'),l.url,l.icon,l.title);addCopyButton(card,l.url);}if(!locked){const a=card.querySelector('.knowledge-card-actions'),e=document.createElement('button'),d=document.createElement('button');e.textContent='编辑';e.onclick=()=>openLinkDlg(g.id,l);d.textContent='删除';d.onclick=()=>{if(confirm(`删除“${l.title||host(l.url)}”？`)){g.links=g.links.filter(x=>x.id!==l.id);persist();render()}};a.append(e,d)}grid.appendChild(card)});
       addTile(grid,g);sec.appendChild(grid);root.appendChild(sec)
     });
     if(!root.children.length)root.innerHTML='<div class="knowledge-empty-large">没有匹配结果。</div>'
