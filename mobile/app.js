@@ -215,7 +215,7 @@ window.addEventListener('resize',function(){if(tab==='review')resizeReviewFields
 window.addEventListener('online',refreshStatus);
 window.addEventListener('offline',refreshStatus);
 var renderedDay=today();
-function refreshCalendarDay(){if(document.hidden||today()===renderedDay)return;if(document.querySelector('dialog[open]'))return;renderedDay=today();if(tab==='tasks'||tab==='projects')render();}
+function refreshCalendarDay(){if(document.hidden||today()===renderedDay)return;if(document.querySelector('dialog[open]')||document.activeElement?.matches('input,textarea,select,[contenteditable=true]'))return;if(tab==='tasks'||tab==='projects')render();renderedDay=today();}
 document.addEventListener('visibilitychange',refreshCalendarDay);
 window.addEventListener('focus',refreshCalendarDay);
 setInterval(refreshCalendarDay,30000);
