@@ -1,4 +1,4 @@
-name: Overdue task DeepSeek draft
+name: Overdue task DeepSeek review
 on:
   push:
     branches: [feat/android-overdue-tasks]
@@ -16,10 +16,22 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: One bounded DeepSeek draft
+      - name: Prepare minimal changed view scope
+        run: |
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          s=Path('mobile/app.js').read_text()
+          view=s[s.index('function renderTasks()'):s.index('function projectAPI()')]
+          calendar=s[s.index('var renderedDay='):]
+          details=Path('mobile/task-details.js').read_text()
+          actions=details[details.index('  var dateIn='):details.index('  var projSel=')]
+          Path('overdue-view-scope.txt').write_text(view+'\n'+calendar+'\n'+actions)
+          Path('overdue-review-request.txt').write_text('静态审查超期功能最终实现。今日页分超期未完成/今日任务/实际今日已完成。不得自动改期，不丢未知字段。检查日期时区、去重、已完成/删除/归档排除、项目筛选、跨日刷新不打断编辑或音频、手动改期保存链路。已有原有日期输入监听和dialog input自动保存，不在片段内。最多3条有代码依据的真实问题；没有则说明未发现。不要重复需求，不声称执行测试。')
+          PYCODE
+      - name: One bounded DeepSeek review
         env:
           DEEPSEEK_REVIEW_API_KEY: ${{ secrets.DEEPSEEK_REVIEW_API_KEY }}
-        run: node scripts/codex/model-assist.mjs --provider deepseek --task draft --prompt-file docs/assist/overdue-request.md --file mobile/task-model.js --file mobile/project-stats.js --run
+        run: node scripts/codex/model-assist.mjs --provider deepseek --task review --prompt-file overdue-review-request.txt --file mobile/task-model.js --file overdue-view-scope.txt --run
       - name: Print actual report
         run: |
           node --input-type=module <<'JS'

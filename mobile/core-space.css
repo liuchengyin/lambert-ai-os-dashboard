@@ -110,3 +110,11 @@
 .review-account>span:not(.ic){display:none}
 .review-account .ic{display:grid;place-items:center;width:24px;height:24px}
 .review-account .ic svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* Today keeps unfinished work visible across calendar days. */
+.task-group-title{font-size:15px;font-weight:600;line-height:1.5;margin:14px 2px 8px;color:#62576f}
+.overdue-group .task-group-title{color:#ad414b}
+.task-list .task-group>.task-swipe{margin:6px 0;border-radius:8px}
+.task-list .task-group>.task-swipe>.task{padding:2px 8px 2px 4px;gap:4px;border:1px solid var(--bd);border-radius:8px;min-height:50px;align-items:center}
+.mtd-date-actions{display:flex;gap:8px;margin:4px 0 12px;flex-wrap:wrap}
+.mtd-date-action{font:inherit;font-size:13px;padding:8px 12px;color:#7547be;background:#f2eafa;border:1px solid #e1d5f0;border-radius:9px}
