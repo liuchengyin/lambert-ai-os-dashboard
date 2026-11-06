@@ -44,7 +44,7 @@ jobs:
       - name: Verify package evidence
         run: |
           mkdir -p apk-output
-          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/ACHE-0.2.10.apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk apk-output/ACHE-0.2.11.apk
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs apk-output/*.apk > apk-output/signature.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging apk-output/*.apk > apk-output/application.txt
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions apk-output/*.apk > apk-output/permissions.txt
@@ -56,6 +56,6 @@ jobs:
           sha256sum *.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: ACHE-stable-0.2.9
+          name: ACHE-stable-0.2.11
           path: apk-output/
           retention-days: 30

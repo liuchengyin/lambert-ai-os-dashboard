@@ -15,6 +15,7 @@ public final class MainActivity extends Activity {
  private ValueCallback<android.net.Uri[]> audioChooser;
  private boolean backPending;
  private CloudUpdater updater;
+ private CalendarSyncManager calendarSync;
  private int bootChecks;
  private final android.os.Handler bootHandler=new android.os.Handler(android.os.Looper.getMainLooper());
  private static final String HOST="appassets.androidplatform.net";
@@ -60,6 +61,7 @@ public final class MainActivity extends Activity {
     return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",java.util.Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
    }
   });
+  calendarSync=new CalendarSyncManager(this);
   if(WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)){
    WebViewCompat.addWebMessageListener(web,"LambertCalendarNative",
     java.util.Collections.singleton("https://"+HOST),
@@ -67,6 +69,16 @@ public final class MainActivity extends Activity {
      if(mainFrame&&message.getType()==WebMessageCompat.TYPE_STRING&&"https".equals(origin.getScheme())&&HOST.equals(origin.getHost())
        && ("https://"+HOST+"/assets/mobile/index.html").equals(view.getUrl())){
       CalendarEventEditor.open(this,message.getData());
+     }
+    });
+  }
+  if(WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)){
+   WebViewCompat.addWebMessageListener(web,"LambertCalendarSync",
+    java.util.Collections.singleton("https://"+HOST),
+    (view,message,origin,mainFrame,reply)->{
+     if(mainFrame&&message.getType()==WebMessageCompat.TYPE_STRING&&"https".equals(origin.getScheme())&&HOST.equals(origin.getHost())
+       && ("https://"+HOST+"/assets/mobile/index.html").equals(view.getUrl())){
+      runOnUiThread(()->{if(calendarSync!=null)calendarSync.handle(message.getData());});
      }
     });
   }
@@ -88,6 +100,7 @@ public final class MainActivity extends Activity {
  private void checkBoot(){if(web==null||updater==null||!updater.probation())return;web.evaluateJavascript("Boolean(window.MobileBootReady&&window.LambertData&&document.querySelectorAll('#tabs button').length>=3)",ready->{if(isDestroyed()||isFinishing()||web==null)return;if("true".equals(ready)){updater.healthy();bootHandler.removeCallbacksAndMessages(null);}else if(++bootChecks>=30){failBoot();}else bootHandler.postDelayed(()->checkBoot(),500);});}
  private void handleBack(){if(backPending)return;backPending=true;web.evaluateJavascript("Boolean(window.MobileNavigation&&window.MobileNavigation.back())", handled->{backPending=false;if(!"true".equals(handled)){if(web.canGoBack())web.goBack();else finish();}});}
  @Override public void onBackPressed(){handleBack();}
+ @Override public void onRequestPermissionsResult(int request,String[] permissions,int[] grants){super.onRequestPermissionsResult(request,permissions,grants);if(calendarSync!=null)calendarSync.permissionResult(request,grants);}
  @Override protected void onActivityResult(int request,int result,android.content.Intent data){super.onActivityResult(request,result,data);if(request!=721||audioChooser==null)return;ValueCallback<android.net.Uri[]> callback=audioChooser;audioChooser=null;java.util.ArrayList<android.net.Uri> uris=new java.util.ArrayList<>();if(result==RESULT_OK&&data!=null){if(data.getClipData()!=null){if(data.getClipData().getItemCount()>200){android.widget.Toast.makeText(this,"一次最多选择200条音频",android.widget.Toast.LENGTH_LONG).show();callback.onReceiveValue(null);return;}for(int i=0;i<Math.min(200,data.getClipData().getItemCount());i++)uris.add(data.getClipData().getItemAt(i).getUri());}else if(data.getData()!=null)uris.add(data.getData());}callback.onReceiveValue(uris.isEmpty()?null:uris.toArray(new android.net.Uri[0]));}
  @Override protected void onDestroy(){bootHandler.removeCallbacksAndMessages(null);if(audioChooser!=null){audioChooser.onReceiveValue(null);audioChooser=null;}if(audioBridge!=null)audioBridge.close();if(web!=null){web.removeJavascriptInterface("LambertAudioNative");web.destroy();web=null;}super.onDestroy();}
 }
