@@ -82,6 +82,20 @@ function open(taskId,api){
     dateActions.append(moveToday,chooseDate);metaCard.appendChild(dateActions);
   }
 
+  if(typeof window.LambertCalendarNative?.postMessage==='function'){
+    var calendarActions=el('div','mtd-date-actions');
+    var calendarButton=el('button','mtd-date-action','加入手机日历');
+    calendarButton.type='button';
+    calendarButton.onclick=function(){
+      var title=titleIn.value.trim();
+      if(!title){showError(new Error('请先填写任务标题'));titleIn.focus();return;}
+      try{window.LambertCalendarNative.postMessage(JSON.stringify({title:title,date:dateIn.value}));}
+      catch(e){showError(new Error('无法打开手机日历，请重试'));}
+    };
+    calendarActions.appendChild(calendarButton);
+    metaCard.appendChild(calendarActions);
+  }
+
   var projSel=el('select','mtd-input');projSel.setAttribute('aria-label','关联项目');
   var op0=el('option',null,'未分类');op0.value='';projSel.appendChild(op0);
   var projects=api.projects()||[];
