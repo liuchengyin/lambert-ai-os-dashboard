@@ -7,9 +7,10 @@ const context=await browser.newContext({viewport:{width:1440,height:1000},timezo
 await context.addInitScript(()=>{
  if(localStorage.getItem('tc-fixture'))return;
  localStorage.setItem('tc-fixture','1');
- localStorage.setItem('projects',JSON.stringify([{id:'a',name:'网络阅读',category:'个人',status:'进行中',start:'2026-10-18',due:'2026-11-01',standard:'读完并输出流程图',extraField:'keep'},{id:'b',name:'求职准备',status:'待开始',due:'',standard:'完成两个案例'}]));
+ localStorage.setItem('projects',JSON.stringify([{id:'a',name:'网络阅读',category:'个人',status:'进行中',start:'2026-10-18',due:'2026-11-01',standard:'读完并输出流程图',extraField:'keep'},{id:'b',name:'求职准备',status:'待开始',due:'',standard:'完成两个案例'},{id:'closed',name:'已完成项目',status:'已完成'},{id:'archive',name:'已归档项目',status:'进行中',archived:true}]));
  localStorage.setItem('tasks',JSON.stringify([{id:'ta',title:'阅读第一章',project:'网络阅读',status:'待开始',priority:'P2',matrix:'q2',start:'2026-10-18T09:00',due:'2026-10-20T20:00',note:'保留笔记',labels:['个人'],custom:'keep'},{id:'tb',title:'准备案例',project:'求职准备',status:'进行中',priority:'P1',matrix:'q1',due:'',note:''},{id:'tu',title:'旧项目任务',project:'已不存在的项目',status:'待开始',priority:'P2',matrix:'q2'},{id:'tx',title:'未排期任务',project:'网络阅读',status:'待开始',priority:'P2',matrix:'q2'}]));
- const seeded=JSON.parse(localStorage.getItem('tasks'));for(let i=0;i<10;i++)seeded.push({id:'review_'+i,title:'复盘目标'+i,project:'求职准备',status:'待开始',due:i===0?'2026-10-18':i===1?'2026-10-17':i===2?'2026-10-19':'',priority:'P2'});localStorage.setItem('tasks',JSON.stringify(seeded));
+ const seeded=JSON.parse(localStorage.getItem('tasks'));
+ seeded.push({id:'closed-task',title:'已完成项目隐藏任务',projectId:'closed',status:'待开始',due:'2026-10-17'},{id:'archive-task',title:'归档项目隐藏任务',project:'已归档项目',status:'待开始',due:'2026-10-17'});for(let i=0;i<10;i++)seeded.push({id:'review_'+i,title:'复盘目标'+i,project:'求职准备',status:'待开始',due:i===0?'2026-10-18':i===1?'2026-10-17':i===2?'2026-10-19':'',priority:'P2'});localStorage.setItem('tasks',JSON.stringify(seeded));
  localStorage.setItem('daily_reviews_v2',JSON.stringify({'2026-10-18':{goal:'保留旧目标',deadline:'2026-10-18T18:00',reason:'保留旧原因',unknown:'keep'}}));
  localStorage.setItem('task_center_preferences_v1',JSON.stringify({projectId:'a',view:'board'}));
 });
@@ -20,7 +21,12 @@ const tab=name=>page.getByRole('tab',{name,exact:false}).click();
 try{
  // All review fixtures use this day, so pin it before modules capture today.
  await page.clock.install({time:new Date('2026-10-18T01:00:00Z')});
- await page.goto(base);await page.waitForFunction(()=>!!window.TaskCenter);await nav();
+ await page.goto(base);await page.waitForFunction(()=>!!window.TaskCenter&&!!document.querySelector('.s1-metrics'));
+ assert.doesNotMatch(await page.locator('#home').innerText(),/项目隐藏任务/);
+ await nav();
+ await page.locator('#tcProjectSelect').selectOption('all');
+ assert.doesNotMatch(await page.locator('#tcContent').innerText(),/项目隐藏任务/);
+ await page.locator('#tcProjectSelect').selectOption('a');
  assert.equal(await page.locator('#tcProjectTitle').innerText(),'网络阅读');
  assert.equal(await page.locator('.tc-task').count(),2);assert.ok(!(await page.locator('#tcContent').innerText()).includes('准备案例'));
  let saved=await tasks();assert.equal(saved.find(t=>t.id==='ta').projectId,'a');assert.equal(saved.find(t=>t.id==='ta').custom,'keep');

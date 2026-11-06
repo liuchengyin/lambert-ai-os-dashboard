@@ -26,8 +26,14 @@
   function localInput(value, end=false) {return /^\d{4}-\d{2}-\d{2}$/.test(value||'') ? value+(end?'T23:59':'T00:00') : value||'';}
   const priorityCode = task => ({q1:'P0',q2:'P1',q3:'P2',q4:'P3'}[task?.matrix] || 'P1');
   const currentProject = () => state.projects.find(p=>String(p.id)===String(selected));
-  const activeProjects = () => state.projects.filter(p=>p.status!=='已完成'&&p.status!=='已归档'&&!p.archived&&!p.deletedAt);
-  const projectRows = () => selected==='all' ? state.tasks.filter(t=>{const id=M.resolveProject(t,state.projects);return id==='inbox'||activeProjects().some(p=>String(p.id)===String(id));}) : state.tasks.filter(t=>String(M.resolveProject(t,state.projects))===String(selected));
+  const activeProjects = () => state.projects.filter(M.isActiveProject);
+  const projectRows = () => {
+    const activeIds=new Set(activeProjects().map(p=>String(p.id)));
+    return state.tasks.filter(task=>{
+      const id=String(M.resolveProject(task,state.projects));
+      return (id==='inbox'||activeIds.has(id))&&(selected==='all'||id===String(selected));
+    });
+  };
   const allLabels = () => [...new Set([...presets,...state.tasks.flatMap(t=>Array.isArray(t.labels)?t.labels:[])])];
   function migrate() {
     const result=M.migrate(state.projects,state.tasks);
