@@ -4,6 +4,9 @@ import android.app.AlertDialog;
 import android.os.Bundle;
 import android.webkit.*;
 import androidx.webkit.WebViewAssetLoader;
+import androidx.webkit.WebViewCompat;
+import androidx.webkit.WebViewFeature;
+import androidx.webkit.WebMessageCompat;
 import java.io.ByteArrayInputStream;
 
 public final class MainActivity extends Activity {
@@ -57,6 +60,16 @@ public final class MainActivity extends Activity {
     return new WebResourceResponse("text/plain","UTF-8",403,"Blocked",java.util.Collections.emptyMap(),new ByteArrayInputStream(new byte[0]));
    }
   });
+  if(WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)){
+   WebViewCompat.addWebMessageListener(web,"LambertCalendarNative",
+    java.util.Collections.singleton("https://"+HOST),
+    (view,message,origin,mainFrame,reply)->{
+     if(mainFrame&&message.getType()==WebMessageCompat.TYPE_STRING&&"https".equals(origin.getScheme())&&HOST.equals(origin.getHost())
+       && ("https://"+HOST+"/assets/mobile/index.html").equals(view.getUrl())){
+      CalendarEventEditor.open(this,message.getData());
+     }
+    });
+  }
   audioBridge=new AudioBridge(this);web.addJavascriptInterface(audioBridge,"LambertAudioNative");
   web.setWebChromeClient(new WebChromeClient(){
    @Override public boolean onShowFileChooser(WebView v,ValueCallback<android.net.Uri[]> callback,FileChooserParams params){
