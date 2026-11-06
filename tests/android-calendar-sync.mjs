@@ -18,7 +18,7 @@ LambertData:{active:owner,syncInfo:()=>({pending,conflicts})},
 MobileStore:{date:(d)=>d?d.toISOString().slice(0,10):'2026-11-07',read:(name)=>name==='tasks'?tasks:[]},
 addEventListener:(name,fn)=>(listeners[name]??=[]).push(fn)
 },
-document:{createElement:()=>button,querySelector:()=>({appendChild:()=>{}}),addEventListener:()=>{},body:{appendChild:()=>{}}},
+document:{getElementById:()=>null,createElement:()=>button,querySelector:()=>({appendChild:()=>{}}),addEventListener:()=>{},body:{appendChild:()=>{}}},
 localStorage:{getItem:key=>key==='lambert_active_account_v1'?owner:null},
 clearTimeout:()=>{},
 setTimeout:fn=>{fn();return 1;},
