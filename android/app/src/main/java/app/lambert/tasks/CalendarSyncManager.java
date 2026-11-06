@@ -253,8 +253,16 @@ final class CalendarSyncManager {
         return id;
     }
     private boolean updateEvent(long id,long calendarId,Task task) {
-        return activity.getContentResolver().update(ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI,id),
-            values(calendarId,task),CalendarContract.Events.CALENDAR_ID+"=?",
+        ContentValues desired=values(calendarId,task);
+        Uri uri=ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI,id);
+        try(Cursor current=activity.getContentResolver().query(uri,
+                new String[]{CalendarContract.Events.TITLE,CalendarContract.Events.DTSTART},
+                CalendarContract.Events.CALENDAR_ID+"=?",new String[]{String.valueOf(calendarId)},null)){
+            if(current!=null&&current.moveToFirst()
+                && desired.getAsString(CalendarContract.Events.TITLE).equals(current.getString(0))
+                && desired.getAsLong(CalendarContract.Events.DTSTART)==current.getLong(1))return false;
+        }
+        return activity.getContentResolver().update(uri,desired,CalendarContract.Events.CALENDAR_ID+"=?",
             new String[]{String.valueOf(calendarId)})>0;
     }
 }
