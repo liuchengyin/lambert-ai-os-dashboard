@@ -14,7 +14,7 @@ try{for(const mobile of [false,true]){
  await p.evaluate(()=>{const tasks=LambertData.read('tasks',[]);tasks[0].note='离线修改';LambertData.write('tasks',tasks);});
  assert.match(await p.locator('#workspaceSyncState').innerText(),/离线/);
  await ctx.setOffline(false);await p.evaluate(()=>window.dispatchEvent(new Event('online')));await p.waitForFunction(()=>LambertAccount.statusDetail().phase==='synced');
- await p.evaluate(user=>{const payload=LambertData.read('tasks',[])[0],record={user_id:user,kind:'tasks',item_id:'t',payload:{...payload,status:'已完成',note:'云端备注'},version:10,deleted_at:null};localStorage.setItem('lambert_workspace_v1:'+user+':batch:9999999999999999:fixture',JSON.stringify([{kind:'tasks',itemId:'t',payload,expectedVersion:1,deleted:false,mutationId:'fixture-conflict',conflict:record}]));},user);
+ await p.evaluate(user=>{const payload=LambertData.read('tasks',[])[0],record={user_id:user,kind:'tasks',item_id:'t',payload:{...payload,status:'已完成',completedAt:new Date().toISOString(),note:'云端备注'},version:10,deleted_at:null};localStorage.setItem('lambert_workspace_v1:'+user+':batch:9999999999999999:fixture',JSON.stringify([{kind:'tasks',itemId:'t',payload,expectedVersion:1,deleted:false,mutationId:'fixture-conflict',conflict:record}]));},user);
  if(mobile){p.once('dialog',d=>d.accept());await p.getByRole('button',{name:'完成：冲突定位测试',exact:true}).click();}
  else{await p.locator('nav button[data-v="tasks"]').click();await p.locator('.tc-advance').click();}
  await p.waitForFunction(()=>LambertAccount.statusDetail().phase==='error');await p.locator('#workspaceSyncState').click();

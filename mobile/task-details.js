@@ -75,6 +75,13 @@ function open(taskId,api){
   var dateIn=el('input','mtd-input');dateIn.type='date';dateIn.value=(draft.due||'').slice(0,10);dateIn.setAttribute('aria-label','任务日期');
   dateIn.addEventListener('input',function(){dirty=true;});
   metaCard.appendChild(field('截止日期',dateIn));
+  if(M.overdueDays(orig,api.today())>0){
+    var dateActions=el('div','mtd-date-actions');
+    var moveToday=el('button','mtd-date-action','改到今天');moveToday.type='button';moveToday.onclick=function(){dateIn.value=api.today();dateIn.dispatchEvent(new Event('input',{bubbles:true}));};
+    var chooseDate=el('button','mtd-date-action','另选日期');chooseDate.type='button';chooseDate.onclick=function(){dateIn.focus();if(dateIn.showPicker)try{dateIn.showPicker();}catch{}};
+    dateActions.append(moveToday,chooseDate);metaCard.appendChild(dateActions);
+  }
+
   var projSel=el('select','mtd-input');projSel.setAttribute('aria-label','关联项目');
   var op0=el('option',null,'未分类');op0.value='';projSel.appendChild(op0);
   var projects=api.projects()||[];

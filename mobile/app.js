@@ -65,7 +65,7 @@ function taskRow(t,opts){
   body.appendChild(el('div','tt',t.title));
   var meta=el('div','meta');
   if(pid(t))meta.appendChild(el('span','tag meta-project',projName(pid(t))));
-  var shownDate=t.status==='已完成'?t.completedAt:t.due;var dateMeta=null;if(shownDate){var day=t.status==='已完成'?S.date(new Date(shownDate)):shownDate.slice(0,10);var over=day<today()&&t.status!=='已完成';dateMeta=el('span','tag meta-date'+(over?' over':''),day.slice(5,10).replace('-','/'));dateMeta.setAttribute('aria-label',(t.status==='已完成'?'实际完成日期：':over?'已逾期，截止日期：':'截止日期：')+day);}
+  var shownDate=t.status==='已完成'?t.completedAt:t.due;var dateMeta=null;if(shownDate){var day=t.status==='已完成'?S.date(new Date(shownDate)):shownDate.slice(0,10);var overdue=window.MobileTaskModel.overdueDays(t,today()),over=overdue>0;dateMeta=el('span','tag meta-date'+(over?' over':''),day.slice(5,10).replace('-','/')+(over?' · 超期'+overdue+'天':''));dateMeta.setAttribute('aria-label',(t.status==='已完成'?'实际完成日期：':over?'已逾期，截止日期：':'截止日期：')+day);}
   if(t.matrix&&t.matrix!=='q2')meta.appendChild(el('span','tag',({q1:'P0',q3:'P2',q4:'P3'}[t.matrix]||t.priority||'')));
   (t.labels||[]).slice(0,2).forEach(function(label){meta.appendChild(el('span','tag',label));});
   if(t.steps&&t.steps.length)meta.appendChild(el('span','task-step-count',t.steps.filter(function(s){return s.done;}).length+'/'+t.steps.length+' 步骤'));
@@ -95,7 +95,8 @@ function softDeleteTask(id){
 
 function renderTasks(){
   var targetIds=(reviews()[today()]||{}).taskIds||[];
-  var all=tasks().filter(function(t){return (!filterProject||pid(t)===filterProject)&&(filterScope!=='today'||(t.due||'').slice(0,10)===today()||targetIds.includes(t.id));}).sort(window.MobileCompose.compareTasks);
+  var all=tasks().filter(function(t){return !filterProject||pid(t)===filterProject;}).sort(window.MobileCompose.compareTasks);
+  var groups=window.MobileTaskModel.todayGroups(all,today(),targetIds);
   var c=el('div','task-list');
   var scopes=el('div','task-scopes');scopes.setAttribute('role','group');scopes.setAttribute('aria-label','任务日期筛选');[['today','今日'],['all','全部']].forEach(function(item){var btn=el('button',filterScope===item[0]?'on':'',item[1]);btn.type='button';btn.setAttribute('aria-pressed',String(filterScope===item[0]));btn.onclick=function(){filterScope=item[0];render();};scopes.appendChild(btn);});c.appendChild(scopes);
   var panel=el('div','filter-panel');c.appendChild(panel);
@@ -104,11 +105,14 @@ function renderTasks(){
   add.onclick=function(){openTaskDialog(null);};
   app.appendChild(add);
   var open=all.filter(function(t){return t.status!=='已完成';});
-  var done=all.filter(function(t){return t.status==='已完成';}).sort(window.MobileTaskModel.compareCompleted);
-  if(!open.length)panel.appendChild(el('div','empty','无未完成任务'));
-  open.forEach(function(t){panel.appendChild(taskRow(t));});
+  var done=(filterScope==='today'?groups.done:all.filter(function(t){return t.status==='已完成';})).sort(window.MobileTaskModel.compareCompleted);
+  if(filterScope==='today'){
+    function group(name,rows,kind){var section=el('section','task-group '+kind);section.setAttribute('aria-label',name);section.appendChild(el('h2','task-group-title',name+' · '+rows.length));if(!rows.length)section.appendChild(el('div','empty',kind==='overdue-group'?'暂无超期任务':'今日暂无未完成任务'));rows.forEach(function(t){section.appendChild(taskRow(t));});panel.appendChild(section);}
+    groups.overdue.sort(function(a,b){return window.MobileTaskModel.dueDay(a).localeCompare(window.MobileTaskModel.dueDay(b))||window.MobileCompose.compareTasks(a,b);});
+    group('超期未完成',groups.overdue,'overdue-group');group('今日任务',groups.today,'today-group');
+  }else{if(!open.length)panel.appendChild(el('div','empty','无未完成任务'));open.forEach(function(t){panel.appendChild(taskRow(t));});}
   var f=el('button','fold');f.type='button';f.setAttribute('aria-expanded',String(!foldDone));
-  f.appendChild(el('span',null,'已完成 '+done.length));
+  f.appendChild(el('span',null,(filterScope==='today'?'今日已完成 ':'已完成 ')+done.length));
   f.appendChild(el('span',null,foldDone?'展开 ▾':'收起 ▸'));
   f.onclick=function(){foldDone=!foldDone;render();};
   panel.appendChild(f);
@@ -210,6 +214,11 @@ window.addEventListener('storage',function(e){if(['tasks','projects','daily_revi
 window.addEventListener('resize',function(){if(tab==='review')resizeReviewFields(app);});
 window.addEventListener('online',refreshStatus);
 window.addEventListener('offline',refreshStatus);
+var renderedDay=today();
+function refreshCalendarDay(){if(document.hidden||today()===renderedDay)return;if(document.querySelector('dialog[open]')||document.activeElement?.matches('input,textarea,select,[contenteditable=true]'))return;if(tab==='tasks'||tab==='projects')render();renderedDay=today();}
+document.addEventListener('visibilitychange',refreshCalendarDay);
+window.addEventListener('focus',refreshCalendarDay);
+setInterval(refreshCalendarDay,30000);
 render();
 window.MobileBootReady=true;
 })();
