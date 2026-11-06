@@ -1,0 +1,33 @@
+name: GLM single authorized verification
+on:
+  push:
+    branches: [fix/glm-timeout-diagnostics-20261106]
+    paths: ['.github/workflows/glm-single-verification.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Offline regression tests
+        run: node --test tests/codex-tools.test.mjs tests/glm-diagnostics.test.mjs
+      - name: One authorized GLM smoke request without sources or retries
+        if: github.run_attempt == 1
+        env:
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+        run: node scripts/codex/model-assist.mjs --provider glm --run
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: glm-verification-ledger
+          path: |
+            .codex-local/assist/ledger.json
+            .codex-local/assist/smoke-glm.json
+          include-hidden-files: true
