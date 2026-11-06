@@ -107,10 +107,19 @@ function renderTasks(){
   var open=all.filter(function(t){return t.status!=='已完成';});
   var done=(filterScope==='today'?groups.done:all.filter(function(t){return t.status==='已完成';})).sort(window.MobileTaskModel.compareCompleted);
   if(filterScope==='today'){
-    function group(name,rows,kind){var section=el('section','task-group '+kind);section.setAttribute('aria-label',name);section.appendChild(el('h2','task-group-title',name+' · '+rows.length));if(!rows.length)section.appendChild(el('div','empty',kind==='overdue-group'?'暂无超期任务':'今日暂无未完成任务'));rows.forEach(function(t){section.appendChild(taskRow(t));});panel.appendChild(section);}
-    groups.overdue.sort(function(a,b){return window.MobileTaskModel.dueDay(a).localeCompare(window.MobileTaskModel.dueDay(b))||window.MobileCompose.compareTasks(a,b);});
-    group('超期未完成',groups.overdue,'overdue-group');group('今日任务',groups.today,'today-group');
-  }else{if(!open.length)panel.appendChild(el('div','empty','无未完成任务'));open.forEach(function(t){panel.appendChild(taskRow(t));});}
+    var inactiveProjects=new Set(projects().filter(function(project){
+      return project.archived||project.deletedAt||project.deleted||project.closed||project.closedAt||
+        ['已关闭','关闭','已归档','归档','已完成','完成'].includes(project.status);
+    }).map(function(project){return project.id;}));
+    var overdue=groups.overdue.filter(function(task){return !inactiveProjects.has(pid(task));});
+    overdue.sort(function(a,b){
+      return window.MobileTaskModel.dueDay(a).localeCompare(window.MobileTaskModel.dueDay(b))||
+        window.MobileCompose.compareTasks(a,b);
+    });
+    open=groups.today.concat(overdue);
+  }
+  if(!open.length)panel.appendChild(el('div','empty',filterScope==='today'?'今日暂无未完成任务':'无未完成任务'));
+  open.forEach(function(task){panel.appendChild(taskRow(task));});
   var f=el('button','fold');f.type='button';f.setAttribute('aria-expanded',String(!foldDone));
   f.appendChild(el('span',null,(filterScope==='today'?'今日已完成 ':'已完成 ')+done.length));
   f.appendChild(el('span',null,foldDone?'展开 ▾':'收起 ▸'));
