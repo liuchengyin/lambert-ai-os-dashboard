@@ -42,24 +42,40 @@ export function buildRequest(provider,{task='smoke',prompt='',files=[]}={}){
 }
 export async function callAssist(provider,input,{env=process.env,fetcher=globalThis.fetch,directory=LOCAL}={}){
  const plan=buildRequest(provider,input),key=plan.config.keys.map(k=>env[k]?.trim()).find(Boolean);if(!key)throw Error('missing_'+provider+'_key');
- const record=await reserve(provider,plan.reservedTokens,{directory});let usage,reportedModel,metadata;
+ const record=await reserve(provider,plan.reservedTokens,{directory});let usage,reportedModel,metadata;let diagnostics={};
  const started=Date.now();
  try{
-  let response;try{response=await fetcher(plan.config.endpoint,{method:'POST',redirect:'error',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify(plan.body),signal:AbortSignal.timeout(60000)});}catch{throw Error('provider_connection_failed');}
-  if(!response.ok)throw Error('provider_http_'+response.status);
+  let response;try{response=await fetcher(plan.config.endpoint,{method:'POST',redirect:'error',headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify(plan.body),signal:AbortSignal.timeout(provider==='glm'?180000:60000)});}catch(error){
+   const timeout=error?.name==='TimeoutError'||error?.name==='AbortError';
+   const code=error?.cause?.code;diagnostics={failureType:timeout?'timeout':'connection',...(typeof code==='string'&&/^[A-Z_0-9]{1,60}$/.test(code)?{networkCode:code}:{})};
+   throw Error(timeout?'provider_timeout':'provider_connection_failed');
+  }
+  diagnostics={httpStatus:response.status};
+  if(!response.ok){
+   // Keep only bounded provider error fields; never persist headers or request data.
+   try{
+    const reader=response.body?.getReader();let text='',bytes=0;
+    if(reader){try{while(bytes<8192){const {done,value}=await reader.read();if(done)break;bytes+=value.byteLength;text+=new TextDecoder().decode(value);}}finally{await reader.cancel();}}
+    else if(response.text)text=(await response.text()).slice(0,8192);
+    const data=JSON.parse(text),error=data.error;
+    const redact=value=>String(value).split(key).join('[REDACTED]').replace(/Bearer\s+[^\s"]+/gi,'Bearer [REDACTED]').replace(/[\r\n\x00-\x1f]/g,' ').slice(0,600);
+    if(error&&typeof error==='object')for(const field of ['code','message','type'])if(['string','number'].includes(typeof error[field]))diagnostics['provider_'+field]=redact(error[field]);
+   }catch{}
+   throw Error('provider_http_'+response.status);
+  }
   let data;try{data=await response.json();}catch{throw Error('provider_response_invalid');}
   reportedModel=typeof data.model==='string'?data.model.slice(0,80):null;
   usage=checkedUsage(data.usage);if(reportedModel!==plan.config.model)throw Error('provider_model_mismatch');
   const choice=data.choices?.[0],output=choice?.message?.content;
   if(choice?.finish_reason!=='stop'||typeof output!=='string'||!output.trim())throw Error('provider_output_incomplete');
   if(plan.task==='smoke'&&output.trim()!=='OK')throw Error('provider_smoke_reply_invalid');
-  metadata={status:'success',provider,task:plan.task,requestedModel:plan.config.model,reportedModel,usage,elapsedMs:Date.now()-started,retries:0,providerCalls:1};
+  metadata={httpStatus:response.status,status:'success',provider,task:plan.task,requestedModel:plan.config.model,reportedModel,usage,elapsedMs:Date.now()-started,retries:0,providerCalls:1};
   await finish(record,metadata,directory);
   // Smoke metadata is safe to publish; review/draft output remains local and ignored by Git.
   const name=plan.task==='smoke'?'smoke-'+provider+'.json':record.id+'.json';const report=path.join(directory,name);
   await writeFile(report,JSON.stringify({...metadata,generatedAt:new Date().toISOString(),...(plan.task==='smoke'?{}:{output})},null,2)+'\n',{mode:0o600});
   return {...metadata,report};
- }catch(error){await finish(record,{status:'failed',error:safeCode(error),requestedModel:plan.config.model,reportedModel:reportedModel||null,...(usage?{usage}:{}),elapsedMs:Date.now()-started,retries:0},directory);throw Error(safeCode(error));}
+ }catch(error){await finish(record,{status:'failed',error:safeCode(error),...diagnostics,requestedModel:plan.config.model,reportedModel:reportedModel||null,...(usage?{usage}:{}),elapsedMs:Date.now()-started,retries:0},directory);const failure=Error(safeCode(error));failure.diagnostics=diagnostics;throw failure;}
 }
 export async function readSource(name,root=ROOT){
  if(!name||path.isAbsolute(name))throw Error('source_must_be_repo_relative');
@@ -78,4 +94,5 @@ export async function main(args=process.argv.slice(2)){
  if(!run){console.log(JSON.stringify({dryRun:true,provider,task,requestedModel:plan.config.model,maxOutputTokens:plan.body.max_tokens,inputBytes:Buffer.byteLength(JSON.stringify(plan.body.messages)),providerCalls:0,credentialPresent:plan.config.keys.some(k=>!!process.env[k]),files:files.map(f=>f.path)}));return;}
  const result=await callAssist(provider,input);console.log(JSON.stringify(result));
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)main().catch(error=>{console.error(safeCode(error));process.exitCode=1;});
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)main().catch(error=>{console.error(JSON.stringify({error:safeCode(error),...error.diagnostics}));process.exitCode=1;});
+
