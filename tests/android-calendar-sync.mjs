@@ -15,7 +15,7 @@ const context={
 window:{
 LambertCalendarSync:{postMessage:s=>sent.push(JSON.parse(s))},
 LambertData:{active:owner,syncInfo:()=>({pending,conflicts})},
-MobileStore:{date:()=> '2026-11-07',read:(name)=>name==='tasks'?tasks:[]},
+MobileStore:{date:(d)=>d?d.toISOString().slice(0,10):'2026-11-07',read:(name)=>name==='tasks'?tasks:[]},
 addEventListener:(name,fn)=>(listeners[name]??=[]).push(fn)
 },
 document:{createElement:()=>button,querySelector:()=>({appendChild:()=>{}}),addEventListener:()=>{},body:{appendChild:()=>{}}},
