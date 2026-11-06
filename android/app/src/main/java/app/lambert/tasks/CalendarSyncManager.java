@@ -158,11 +158,10 @@ final class CalendarSyncManager {
                     mapped.put(e.getKey().substring(PREFIX.length()),(Long)e.getValue());
             }
             int updated=0;
-            android.content.SharedPreferences.Editor changes=p.edit();
             // Do not remove an event unless the ID is still in our chosen calendar.
             for(Map.Entry<String,Long> row:mapped.entrySet()) {
                 String taskId=row.getKey();long eventId=row.getValue();
-                if(!eventExists(eventId,calendarId)){changes.remove(PREFIX+taskId);continue;}
+                if(!eventExists(eventId,calendarId)){p.edit().remove(PREFIX+taskId).apply();continue;}
                 if(!wanted.containsKey(taskId)){
                     activity.getContentResolver().delete(ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI,eventId),
                         CalendarContract.Events.CALENDAR_ID+"=?",new String[]{String.valueOf(calendarId)});
@@ -174,10 +173,9 @@ final class CalendarSyncManager {
             for(Task task:requested) {
                 if(mapped.containsKey(task.id)&&eventExists(mapped.get(task.id),calendarId))continue;
                 long eventId=createEvent(calendarId,task);
-                changes.putLong(PREFIX+task.id,eventId);
+                p.edit().putLong(PREFIX+task.id,eventId).apply();
                 updated++;
             }
-            changes.apply();
             if(updated>0) Toast.makeText(activity,"Lambert 日历已同步 "+updated+" 项",Toast.LENGTH_SHORT).show();
         } catch(Exception error) {
             Toast.makeText(activity,"日历同步未完成，请在 APP 中重试",Toast.LENGTH_LONG).show();
