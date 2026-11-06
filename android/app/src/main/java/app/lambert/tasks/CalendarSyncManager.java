@@ -63,8 +63,10 @@ final class CalendarSyncManager {
                 }
                 return;
             }
-            if ("enable".equals(action)) chooseCalendar(owner, tasks);
-            else applyIfEnabled(owner, tasks);
+            if ("enable".equals(action)) {
+                if(owner.equals(prefs().getString(OWNER,""))&&prefs().contains(CALENDAR)) reviewEnabled(owner,tasks);
+                else chooseCalendar(owner,tasks);
+            } else applyIfEnabled(owner, tasks);
         } catch (Exception error) {
             if (raw.contains("\"action\":\"enable\"")) Toast.makeText(activity, "日历数据检查失败，请重试", Toast.LENGTH_SHORT).show();
         }
@@ -142,6 +144,40 @@ final class CalendarSyncManager {
                     }).show();
             })
             .setNegativeButton("取消", (d,w)->{}).show();
+    }
+
+    private void reviewEnabled(String owner,JSONArray snapshot) {
+        new AlertDialog.Builder(activity).setTitle("Lambert 日历同步已开启")
+            .setMessage("同步会更新未来45天的待办日程。关闭同步时，只清理 Lambert 在所选日历中创建的日程。")
+            .setNeutralButton("关闭同步",(dialog,which)->confirmDisable(owner))
+            .setNegativeButton("取消",(dialog,which)->{})
+            .setPositiveButton("立即同步",(dialog,which)->applyIfEnabled(owner,snapshot))
+            .show();
+    }
+
+    private void confirmDisable(String owner) {
+        new AlertDialog.Builder(activity).setTitle("关闭日历同步")
+            .setMessage("确定删除 Lambert 创建的待办日程并停止后续同步？手机日历其他事件不会受到影响。")
+            .setNegativeButton("取消",(d,w)->{})
+            .setPositiveButton("关闭并清理",(d,w)->{
+                android.content.SharedPreferences p=prefs();
+                if(!owner.equals(p.getString(OWNER,""))||!authorized())return;
+                long calendarId=p.getLong(CALENDAR,-1);
+                try {
+                    for(Map.Entry<String,?> e:p.getAll().entrySet()) {
+                        if(!e.getKey().startsWith(PREFIX)||!(e.getValue() instanceof Long))continue;
+                        long id=(Long)e.getValue();
+                        if(eventExists(id,calendarId))activity.getContentResolver().delete(
+                            ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI,id),
+                            CalendarContract.Events.CALENDAR_ID+"=?",new String[]{String.valueOf(calendarId)});
+                        p.edit().remove(e.getKey()).apply();
+                    }
+                    p.edit().remove(OWNER).remove(CALENDAR).apply();
+                    Toast.makeText(activity,"已关闭 Lambert 日历同步",Toast.LENGTH_SHORT).show();
+                } catch(Exception error) {
+                    Toast.makeText(activity,"关闭未完成，请重新操作",Toast.LENGTH_LONG).show();
+                }
+            }).show();
     }
 
     private void applyIfEnabled(String owner,JSONArray snapshot) {
