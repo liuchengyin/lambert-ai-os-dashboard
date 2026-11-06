@@ -16,7 +16,7 @@
     const owner=localStorage.getItem(OWNER);
     if(!owner||!window.LambertData||window.LambertData.active!==owner)return null;
     const sync=window.LambertData.syncInfo();
-    if(sync.pending||sync.conflicts)return null;
+    if(sync.pending||sync.conflicts||document.getElementById('lambertCloudRefresh'))return null;
     const projects=window.MobileStore.read('projects',[]);
     const inactive=new Set(projects.filter(p=>p.archived||p.deletedAt||p.status==='已完成'||p.status==='已归档').map(p=>String(p.id)));
     const today=date();
@@ -50,7 +50,7 @@
   control.onclick=()=>{
     if(!lastSynced){alert('请先在「我的账户」完成云同步，再开启日历同步。');return;}
     const data=snapshot();
-    if(!data){alert('任务尚有待同步修改、冲突或数量超过150项，请先完成同步。');return;}
+    if(!data){alert('任务存在待同步修改、云端更新需刷新，或数量超过150项，请先处理。');return;}
     send('enable',true);
   };
   function requestSync(){
