@@ -201,7 +201,7 @@ final class CalendarSyncManager {
                 if(!wanted.containsKey(taskId)){
                     activity.getContentResolver().delete(ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI,eventId),
                         CalendarContract.Events.CALENDAR_ID+"=?",new String[]{String.valueOf(calendarId)});
-                    changes.remove(PREFIX+taskId);
+                    p.edit().remove(PREFIX+taskId).apply();
                 } else {
                     if(updateEvent(eventId,calendarId,wanted.get(taskId)))updated++;
                 }
