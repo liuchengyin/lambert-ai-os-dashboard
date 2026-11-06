@@ -1,0 +1,37 @@
+name: Android calendar V1 check
+on:
+  pull_request:
+    paths:
+      - 'android/**'
+      - 'mobile/calendar-sync.js'
+      - 'mobile/index.html'
+      - 'tests/android-calendar-sync.mjs'
+      - '.github/workflows/android-calendar-sync.yml'
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate calendar bridge logic
+        run: node tests/android-calendar-sync.mjs
+      - name: Prepare temporary trial signing key
+        run: |
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair -keystore "$HOME/.android/lambert-trial.keystore" -storepass android -keypass android -alias androiddebugkey -dname "CN=Lambert Test" -keyalg RSA -keysize 2048 -validity 1
+      - name: Bundle app and compile
+        run: |
+          python3 scripts/bundle-android.py
+          gradle -p android --no-daemon :app:assembleDebug :app:lintDebug
