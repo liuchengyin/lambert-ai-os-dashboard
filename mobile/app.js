@@ -95,21 +95,33 @@ function softDeleteTask(id){
 
 function renderTasks(){
   var targetIds=(reviews()[today()]||{}).taskIds||[];
-  var all=tasks().filter(function(t){return !filterProject||pid(t)===filterProject;}).sort(window.MobileCompose.compareTasks);
+  var inactiveProjects=new Set(projects().filter(function(p){
+    return p.archived||p.deletedAt||p.status==='已归档'||p.status==='已完成';
+  }).map(function(p){return p.id;}));
+  if(inactiveProjects.has(filterProject))filterProject=null;
+  var all=tasks().filter(function(t){
+    var id=pid(t);
+    return !inactiveProjects.has(id)&&(!filterProject||id===filterProject);
+  }).sort(window.MobileCompose.compareTasks);
   var groups=window.MobileTaskModel.todayGroups(all,today(),targetIds);
   var c=el('div','task-list');
   var scopes=el('div','task-scopes');scopes.setAttribute('role','group');scopes.setAttribute('aria-label','任务日期筛选');[['today','今日'],['all','全部']].forEach(function(item){var btn=el('button',filterScope===item[0]?'on':'',item[1]);btn.type='button';btn.setAttribute('aria-pressed',String(filterScope===item[0]));btn.onclick=function(){filterScope=item[0];render();};scopes.appendChild(btn);});c.appendChild(scopes);
   var panel=el('div','filter-panel');c.appendChild(panel);
-  var picker=el('button','task-project-picker',filterProject?projName(filterProject):'全部项目');picker.type='button';picker.setAttribute('aria-label','任务项目筛选');picker.setAttribute('aria-haspopup','dialog');picker.appendChild(el('span',null,'⌄'));picker.onclick=function(){window.MobilePolish.openProjectPicker({projects:projects(),currentId:filterProject||'',onSelect:function(id){filterProject=id;render();}});};panel.appendChild(picker);
+  var picker=el('button','task-project-picker',filterProject?projName(filterProject):'全部项目');picker.type='button';picker.setAttribute('aria-label','任务项目筛选');picker.setAttribute('aria-haspopup','dialog');picker.appendChild(el('span',null,'⌄'));picker.onclick=function(){window.MobilePolish.openProjectPicker({projects:projects().filter(function(p){return !inactiveProjects.has(p.id);}),currentId:filterProject||'',onSelect:function(id){filterProject=id;render();}});};panel.appendChild(picker);
   var add=el('button','task-fab','＋');add.type='button';add.setAttribute('aria-label','新增任务');
   add.onclick=function(){openTaskDialog(null);};
   app.appendChild(add);
   var open=all.filter(function(t){return t.status!=='已完成';});
   var done=(filterScope==='today'?groups.done:all.filter(function(t){return t.status==='已完成';})).sort(window.MobileTaskModel.compareCompleted);
   if(filterScope==='today'){
-    function group(name,rows,kind){var section=el('section','task-group '+kind);section.setAttribute('aria-label',name);section.appendChild(el('h2','task-group-title',name+' · '+rows.length));if(!rows.length)section.appendChild(el('div','empty',kind==='overdue-group'?'暂无超期任务':'今日暂无未完成任务'));rows.forEach(function(t){section.appendChild(taskRow(t));});panel.appendChild(section);}
     groups.overdue.sort(function(a,b){return window.MobileTaskModel.dueDay(a).localeCompare(window.MobileTaskModel.dueDay(b))||window.MobileCompose.compareTasks(a,b);});
-    group('超期未完成',groups.overdue,'overdue-group');group('今日任务',groups.today,'today-group');
+    var rows=groups.overdue.concat(groups.today);
+    var section=el('section','task-group today-group');
+    section.setAttribute('aria-label','今日任务');
+    section.appendChild(el('h2','task-group-title','今日任务 · '+rows.length));
+    if(!rows.length)section.appendChild(el('div','empty','今日暂无未完成任务'));
+    rows.forEach(function(t){section.appendChild(taskRow(t));});
+    panel.appendChild(section);
   }else{if(!open.length)panel.appendChild(el('div','empty','无未完成任务'));open.forEach(function(t){panel.appendChild(taskRow(t));});}
   var f=el('button','fold');f.type='button';f.setAttribute('aria-expanded',String(!foldDone));
   f.appendChild(el('span',null,(filterScope==='today'?'今日已完成 ':'已完成 ')+done.length));
