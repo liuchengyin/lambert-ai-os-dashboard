@@ -10,7 +10,7 @@ let tasks=[
 {id:'t3',title:'未来任务',due:'2026-11-08',status:'待开始'},
 {id:'t4',title:'旧任务',due:'2026-10-01',status:'待开始'}
 ];
-const button={type:'',id:'',className:'',textContent:'',onclick:null};
+const button={type:'',id:'',className:'',textContent:'',onclick:null,style:{}};
 const context={
 window:{
 LambertCalendarSync:{postMessage:s=>sent.push(JSON.parse(s))},
