@@ -6,6 +6,7 @@
   const OWNER='lambert_active_account_v1',MAX_DAYS=45,MAX_EVENTS=150;
   const control=document.createElement('button');
   control.type='button';control.id='calendarSyncEntry';control.className='app-version-entry';
+  control.style.flex='0 0 72px';control.style.width='72px';
   control.textContent='日历同步';control.title='将未来未完成任务同步到 vivo 系统日历';
   const holder=document.querySelector('.mobile-status-row');
   if(holder)holder.appendChild(control);else document.body.appendChild(control);
