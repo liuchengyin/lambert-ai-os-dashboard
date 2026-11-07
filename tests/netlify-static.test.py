@@ -25,7 +25,8 @@ class MirrorTests(unittest.TestCase):
             if file.is_file():
                 self.assertNotIn(file.suffix, {".pem", ".key", ".map"})
         self.assertIn("/api/* /api-unavailable.json 404", (output/"_redirects").read_text())
-        self.assertLess((output/"_redirects").read_text().index("/api/account-config "), (output/"_redirects").read_text().index("/api/* "))
+        self.assertLess((output/"_redirects").read_text().index("/api/account-config "), (output/"_redirects").read_text().index("/api/ai-analyze "))
+        self.assertLess((output/"_redirects").read_text().index("/api/ai-analyze "), (output/"_redirects").read_text().index("/api/* "))
         self.assertNotIn("/* /index.html", (output/"_redirects").read_text())
 
     def test_failure_on_missing_script_css_font_image(self):

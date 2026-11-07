@@ -33,7 +33,7 @@ jobs:
           node node_modules/playwright/cli.js install --with-deps chromium
       - name: Validate public config function
         run: |
-          node --test tests/netlify-account.test.mjs
+          node --test tests/netlify-account.test.mjs tests/netlify-ai.test.mjs
           node tests/netlify-function-bundle.mjs
       - name: Verify startup, protected config and two-origin data preservation
         env:
