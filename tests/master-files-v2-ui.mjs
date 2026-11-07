@@ -81,8 +81,10 @@ try{
  // Portable archive restore uses one transaction and never replaces active/trash IDs.
  const portableTest=await page.evaluate(async()=>{
   const api=window.LambertMasterLibrary;
+  const seed=(await api.list())[0];
+  const inTrash={...seed,id:'master-52345678-0000-4000-8000-123456789abc',title:'已有回收站文件',deletedAt:new Date().toISOString()};
+  await api.importMissingPortable({files:[],trash:[inTrash]});
   const before=await api.list(),trashed=await api.list(true);
-  const seed=before[0],inTrash=trashed[0];
   const missing={...seed,id:'master-12345678-0000-4000-8000-123456789abc',title:'安全恢复测试'};
   const missingTrash={...seed,id:'master-22345678-0000-4000-8000-123456789abc',title:'恢复回收站测试',deletedAt:new Date().toISOString()};
   const conflict={...seed,title:'备份冲突版本'};
