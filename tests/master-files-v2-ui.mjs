@@ -113,6 +113,7 @@ try{
  check('recovery preview reports missing-only counts',await page.locator('#mpRestoreMissing').isVisible()&&await page.locator('#mpRestoreMissing').isEnabled());
  await page.locator('#mpRestoreMissing').click();
  await page.waitForFunction(async()=>{const a=await window.LambertMasterLibrary.list();return a.some(f=>f.title==='JSON备份新增测试');});
+ await page.waitForFunction(()=>document.getElementById('mpNotice')?.textContent?.includes('安全恢复完成'));
  check('confirmed recovery inserts drawing without overwriting existing files',await page.locator('#mpNotice').textContent().then(t=>t.includes('安全恢复完成')&&t.includes('新增 1')));
  check('recovery requires reselecting archive for repeat operation',!await page.locator('#mpRestoreMissing').isVisible());
  check('no application script errors',errors.length===0);
