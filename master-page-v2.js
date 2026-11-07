@@ -7,7 +7,7 @@ if(!host||!lib||!draw||!bridgeApi)return;
 const $=id=>document.getElementById(id);
 const el=(tag,className,text)=>{const n=document.createElement(tag);if(className)n.className=className;if(text!==undefined)n.textContent=String(text);return n;};
 const store=()=>root.LambertPrivateStorage||localStorage;
-host.innerHTML='<div id="masterLibrary" class="mp-library"><div class="mp-heading"><div><small>LAMBERT OS · VISUAL STUDIO</small><h2>画Master</h2><p>我的图纸 · 使用 draw.io 绘图引擎。图纸保存在当前浏览器，随时重新打开。</p></div><div class="mp-heading-actions"><button id="mpNew" type="button" class="mp-primary">＋ 新建图纸</button><button id="mpImport" type="button">导入 .drawio</button><button id="mpFromLogistics" type="button">从物流知识库创建</button></div></div><div class="mp-filters"><label class="mp-search">⌕ <input id="mpSearch" placeholder="搜索我的图纸" type="search"></label><span id="mpCount"></span><button id="mpTrashToggle" type="button">回收站</button></div><div id="mpCards" class="mp-cards"></div><p class="mp-footnote">当前是本机文件库（IndexedDB），不是云同步。跨浏览器或更换电脑前请导出 .drawio 备份。旧版画Master文件会安全导入，原件保留。</p></div>'+
+host.innerHTML='<div id="masterLibrary" class="mp-library"><div class="mp-heading"><div><small>LAMBERT OS · VISUAL STUDIO</small><h2>画Master</h2><p>我的图纸 · 使用 draw.io 绘图引擎。图纸保存在当前浏览器，随时重新打开。</p></div><div class="mp-heading-actions"><button id="mpNew" type="button" class="mp-primary">＋ 新建图纸</button><button id="mpImport" type="button">导入 .drawio</button><button id="mpCloudSync" type="button">云端同步图纸</button><button id="mpFromLogistics" type="button">从物流知识库创建</button></div></div><div class="mp-filters"><label class="mp-search">⌕ <input id="mpSearch" placeholder="搜索我的图纸" type="search"></label><span id="mpCount"></span><button id="mpTrashToggle" type="button">回收站</button></div><div id="mpCards" class="mp-cards"></div><p class="mp-footnote">本机原件始终保留。登录后可点「云端同步图纸」备份并找回其他设备的图纸；同名冲突绝不覆盖，需手动处理。跨设备使用前请另存 .drawio 备份。</p></div>'+
 '<div id="masterEditor" class="mp-editor" hidden><div class="mp-editor-toolbar"><button id="mpBack" type="button">← 我的文件</button><span class="mp-editor-title" id="mpFileTitle"></span><span class="mp-save-status" id="mpSaveStatus">未保存</span><div class="mp-editor-actions"><button id="mpSave" type="button" class="mp-primary">保存</button><button id="mpDownload" type="button">导出 .drawio</button><button id="mpToggleToolbar" type="button">隐藏工具栏</button></div></div><button id="mpRestoreToolbar" class="mp-restore-toolbar" type="button" hidden>☰ 显示工具栏</button><iframe id="mpDrawFrame" title="画Master draw.io完整编辑器" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals" allow="clipboard-read;clipboard-write"></iframe></div>'+
 '<p id="mpNotice" role="status" class="mp-notice" aria-live="polite"></p><input type="file" id="mpFileInput" hidden accept=".drawio,.xml,application/xml,text/xml">';
 const notice=s=>{$('mpNotice').textContent=s;};
@@ -168,6 +168,19 @@ async function back(){
  $('mpDrawFrame').src='about:blank';
  await attempt(refresh);
 }
+$('mpCloudSync').onclick=async()=>{
+ const btn=$('mpCloudSync');if(btn.disabled)return;
+ if(!root.LambertAccount?.mediaContext)return notice('账号服务尚未就绪，请先登录');
+ if(!loaded)await init();if(!loaded)return;
+ btn.disabled=true;btn.textContent='同步中…';
+ try{
+  const {syncMasterCloud}=await import('./shared-sync/master-cloud.mjs');
+  const result=await syncMasterCloud({library:lib,mediaContext:()=>root.LambertAccount.mediaContext()});
+  await refresh();
+  notice('图纸同步：上传 '+result.uploaded+'，找回 '+result.imported+'；冲突 '+result.conflicts+'。'+(result.conflicts?'不同设备同 ID 图纸不一致，未覆盖任何版本，请先导出备份。':'原始图纸保持不变。'));
+ }catch(e){notice('云同步未完成：'+(e?.message||'服务不可用')+'。本机图纸仍保留。');}
+ finally{btn.disabled=false;btn.textContent='云端同步图纸';}
+};
 $('mpNew').onclick=()=>create();
 $('mpFromLogistics').onclick=()=>create('logistics');
 $('mpImport').onclick=()=>$('mpFileInput').click();

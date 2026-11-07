@@ -24,6 +24,7 @@ jobs:
           node --check logistics-knowledge-v1.js
           node --check master-page-v2.js
           node --check master-library-v2.js
+          node --test tests/master-cloud.test.mjs
           node --check logistics-drawio-bridge.js
           node --check logistics-drawio-model.js
           node --check reading-v2.js
