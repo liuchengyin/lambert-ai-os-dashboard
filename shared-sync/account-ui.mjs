@@ -103,7 +103,7 @@ async function prepareWorkspace(importLocal){
     body.replaceChildren();body.onsubmit=null;body.append(node('p','将新增 '+plan.create.length+' 条，相同 '+plan.unchanged.length+' 条，冲突 '+plan.conflicts.length+' 条。冲突保留云端内容，本地原始数据仍保留。'));
     retainWorkspaceBackup(localStorage,importJournal);
     body.append(node('p','已在本机另存导入前备份；原始数据也会保留。可额外下载备份到电脑。'));
-    const save=accountRow('下载完整备份','backup',backup);body.append(save);
+    const save=accountRow('下载工作区备份（不含图纸和PDF）','backup',backup);body.append(save);
     const label=node('label');const check=node('input');check.type='checkbox';label.append(check,node('span','确认将上述数据导入到 '+user.email));body.append(label);
     body.append(button('确认导入并启用同步',()=>{if(!check.checked){tell('请先核对导入数量并勾选确认。');return;}action(async()=>{
       // Recheck identity and remote state before committing a preview. A concurrent
@@ -132,7 +132,7 @@ function renderBody(){
     body.append(accountHero(user.email,status()));
     if(localStorage.getItem(ACTIVE_KEY)!==user.id){body.append(node('p','选择使用云端数据，或将本机任务、项目、复盘、阅读笔记和书签导入此账号。登录本身不会自动上传本机内容。'),accountRow('使用云端工作台','cloud',()=>prepareWorkspace(false)),accountRow('检查并导入本机数据','import',()=>prepareWorkspace(true)));}
     else {
-      body.append(accountRow('检查并导入本机数据','import',()=>prepareWorkspace(true)),accountRow('立即同步','sync',()=>action(async()=>{await flush();tell(status());})),accountRow('下载完整备份','backup',backup));
+      body.append(accountRow('检查并导入本机数据','import',()=>prepareWorkspace(true)),accountRow('立即同步','sync',()=>action(async()=>{await flush();tell(status());})),accountRow('下载工作区备份（不含图纸和PDF）','backup',backup));
       const conflicts=journal.conflicts();for(const op of conflicts){
         const latest=journal.batches().flatMap(b=>b.ops).filter(p=>p.kind===op.kind&&p.itemId===op.itemId).at(-1)||op;
         const card=conflictCard(op,latest,choice=>action(async()=>{const owner=user.id;journal.resolve(op.kind,op.itemId,choice);savePhase='';saveFailure=null;await flush();
