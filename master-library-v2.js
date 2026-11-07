@@ -77,6 +77,19 @@ async function save(file){
   };
  });
 }
+// Cloud recovery is insert-only: keep timestamps, original ID and XML intact.
+async function importCloud(file){
+ if(!validateRecord(file))throw Error('invalid_master_cloud_document');
+ return transaction(['files','trash'],'readwrite',tx=>{
+  const main=tx.objectStore('files'),trash=tx.objectStore('trash');
+  const local=main.get(file.id);
+  local.onsuccess=()=>{
+   if(local.result)return; // Never replace a local drawing.
+   const removed=trash.get(file.id);
+   removed.onsuccess=()=>{if(!removed.result)main.add({...file});};
+  };
+ });
+}
 async function rename(id,title){
  if(!validTitle(title))throw Error('invalid_master_title');
  return transaction(['files'],'readwrite',tx=>{
@@ -122,5 +135,5 @@ async function migrateOld(){
  // Original lambert_logistics_master_drawio_v1 is never overwritten or removed.
  return {migrated:true,exists:true};
 }
-root.LambertMasterLibrary=Object.freeze({DB,LEGACY_ID,validTitle,validateRecord,makeFile,list,get,save,rename,duplicate,trash,restore,migrateOld});
+root.LambertMasterLibrary=Object.freeze({DB,LEGACY_ID,validTitle,validateRecord,makeFile,list,get,save,importCloud,rename,duplicate,trash,restore,migrateOld});
 })(typeof window!=='undefined'?window:globalThis);
