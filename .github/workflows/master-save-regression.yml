@@ -1,0 +1,32 @@
+name: 画Master Save Regression
+on:
+  push:
+    branches: [fix/master-save-no-return-dialog-20261102]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript checks
+        run: |
+          node --check master-page-v2.js
+          node --check logistics-drawio-bridge.js
+          node tests/logistics-drawio-model.test.mjs
+      - name: Browser integration
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.0
+          npx playwright install --with-deps chromium
+          python3 -m http.server 8765 --bind 127.0.0.1 >/tmp/master-save-test.log 2>&1 &
+          sleep 2
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/master-save-regression.mjs
+          TEST_ORIGIN=http://127.0.0.1:8765 node tests/master-files-v2-ui.mjs

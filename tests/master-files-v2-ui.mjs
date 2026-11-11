@@ -50,6 +50,10 @@ try{
  await page.locator('#mpRestoreToolbar').click();
  check('toolbar restored',await page.locator('#masterEditor.mp-toolbar-hidden').count()===0);
  await page.locator('#mpBack').click();
+ await page.evaluate(xml=>{
+   const frame=document.getElementById('mpDrawFrame');
+   window.dispatchEvent(new MessageEvent('message',{origin:'https://embed.diagrams.net',source:frame.contentWindow,data:JSON.stringify({event:'export',xml})}));
+ },savedXml);
  await page.locator('.mp-file-card').first().waitFor();
  check('file grid shows multiple saved files',await page.locator('.mp-file-card').count()===2);
  check('legacy source document never changed',await page.evaluate(v=>localStorage.getItem('lambert_logistics_knowledge_v1')===v,original));
@@ -60,7 +64,16 @@ try{
  await page.locator('.mp-file-card').filter({hasText:'未命名图纸'}).locator('.mp-file-name').click();
  await page.waitForFunction(()=>document.body.classList.contains('master-editing')&&document.getElementById('mpDrawFrame')?.src.includes('embed.diagrams.net/'));
  check('saved file reopens in native drawio iframe',await page.locator('#mpDrawFrame').getAttribute('src').then(u=>u?.includes('embed.diagrams.net/')));
+ await page.evaluate(()=>{
+   const frame=document.getElementById('mpDrawFrame');
+   window.dispatchEvent(new MessageEvent('message',{origin:'https://embed.diagrams.net',source:frame.contentWindow,data:JSON.stringify({event:'load'})}));
+ });
  await page.locator('#mpBack').click();
+ await page.evaluate(xml=>{
+   const frame=document.getElementById('mpDrawFrame');
+   window.dispatchEvent(new MessageEvent('message',{origin:'https://embed.diagrams.net',source:frame.contentWindow,data:JSON.stringify({event:'export',xml})}));
+ },savedXml);
+ await page.waitForFunction(()=>document.getElementById('masterLibrary')?.hidden===false);
  const card=page.locator('.mp-file-card').filter({hasText:'未命名图纸'});
  await card.getByRole('button',{name:'重命名'}).click();
  await page.waitForFunction(()=>[...document.querySelectorAll('.mp-file-name')].some(e=>e.textContent==='物流研究总图'));
