@@ -1,0 +1,42 @@
+name: Vikunja native trial smoke
+on:
+  push:
+    branches: [feat/vikunja-native]
+    paths: ['integrations/vikunja-native/**', '.github/workflows/vikunja-native-smoke.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: integrations/vikunja-native
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Start isolated native stack
+        run: |
+          python3 setup.py
+          docker compose config --quiet
+          docker compose up -d
+          for i in $(seq 1 40); do
+            if curl -fsS http://localhost:8888/api/v2/info >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          exit 1
+      - name: Native task flow
+        run: python3 smoke.py
+      - name: Verify persistence after backend restart
+        run: |
+          docker compose restart vikunja
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8888/api/v2/info >/dev/null; then break; fi
+            sleep 2
+          done
+          python3 smoke.py --verify
+      - name: Stop trial containers
+        if: always()
+        run: docker compose stop

@@ -1,0 +1,29 @@
+services:
+  vikunja:
+    image: vikunja/vikunja:2.7.0
+    user: "${VIKUNJA_UID:-1000}:${VIKUNJA_GID:-1000}"
+    restart: unless-stopped
+    environment:
+      VIKUNJA_SERVICE_PUBLICURL: "http://localhost:8888/"
+      VIKUNJA_SERVICE_SECRET: "${VIKUNJA_SERVICE_SECRET:?Run python3 setup.py first}"
+      VIKUNJA_SERVICE_TIMEZONE: Asia/Shanghai
+      VIKUNJA_SERVICE_CUSTOMLOGOURL: /lambert/logo.svg
+      VIKUNJA_SERVICE_ALLOWICONCHANGES: "false"
+      VIKUNJA_SERVICE_MOTD: "Lambert Tasks · 独立试用，数据保存在本实例"
+      VIKUNJA_DATABASE_TYPE: sqlite
+      VIKUNJA_DATABASE_PATH: /db/vikunja.db
+      VIKUNJA_SENTRY_ENABLED: "false"
+      VIKUNJA_SENTRY_FRONTENDENABLED: "false"
+    volumes:
+      - ./data/db:/db
+      - ./data/files:/app/vikunja/files
+  web:
+    image: nginx:1.28.0-alpine
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8888:80"
+    depends_on:
+      - vikunja
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./overlay:/usr/share/nginx/html/lambert:ro

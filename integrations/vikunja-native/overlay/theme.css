@@ -1,0 +1,32 @@
+/* Lambert presentation layer, for upstream Vikunja 2.7.0. */
+:root {
+  --primary-h: 256deg;
+  --primary-s: 57%;
+  --primary-l: 57%;
+  --primary-hsl: var(--primary-h), var(--primary-s), var(--primary-l);
+  --primary: hsl(var(--primary-hsl));
+  font-size: 17px;
+}
+body { padding-bottom: 3.5rem; }
+.kanban-card__title-link { font-size: 1rem; line-height: 1.6; }
+.lambert-launcher {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 30;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: .6rem 1rem;
+  font: 14px/1.5 system-ui, "PingFang SC", sans-serif;
+  color: var(--text, #334155);
+  background: var(--scheme-main, #fff);
+  border-top: 1px solid var(--border, #dce3ed);
+}
+.lambert-launcher a { color: var(--primary); text-decoration: underline; }
+.lambert-launcher__name { font-weight: 600; }
+@media (max-width: 600px) {
+  :root { font-size: 16px; }
+  .lambert-launcher { font-size: 12px; gap: .5rem; }
+}
+@media print { .lambert-launcher { display: none; } body { padding-bottom: 0; } }
