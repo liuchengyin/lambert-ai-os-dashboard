@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark light"><meta name="theme-color" content="#0b0f14">
+  <meta name="description" content="Flow Atlas：一张可以逐层展开的网络连接地图。从全链路到模块内部，再到概念原理。">
+  <title>Flow Atlas · 网络是怎样连接的</title>
+  <link rel="icon" href="../brand/logo-mark.svg"><link rel="stylesheet" href="atlas.css">
+  <script src="data/network-data.js" defer></script><script src="atlas.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#route">跳到网络地图</a>
+<header class="masthead">
+  <a class="wordmark" href="./" aria-label="Flow Atlas 首页"><span class="brand-symbol" aria-hidden="true">F<span>↗</span></span><span>FLOW ATLAS<small>系统图谱 / NETWORK 001</small></span></a>
+  <div class="edition"><span class="status-dot"></span> 独立预览 <button id="theme-toggle" type="button" aria-pressed="false">☀ 白色背景</button> <span class="version">V0.4</span></div>
+</header>
+<main>
+  <section class="intro"><div><p class="eyebrow">把复杂系统，一层层看明白</p><h1>网络是怎样连接的<span>。</span></h1><p class="intro-copy">从输入一个网址，到页面出现在眼前。先看全貌，再展开它的内部。</p></div><div class="layer-key"><span><b>L1</b> 全链路</span><i>→</i><span><b>L2</b> 内部流程</span><i>→</i><span><b>L3</b> 概念原理</span></div></section>
+  <div class="workspace">
+    <section class="map-shell" aria-labelledby="map-title">
+      <div class="map-toolbar"><div><span class="eyebrow">L1 / THE BIG PICTURE</span><h2 id="map-title">一次网页访问的旅程</h2></div><div class="search-wrap"><label class="sr-only" for="concept-search">搜索图中的概念</label><input id="concept-search" type="search" autocomplete="off" placeholder="找一个概念：DNS、网关、ACK…" aria-controls="search-results"><div id="search-results" class="search-results" hidden></div></div></div>
+      <div class="scope-note"><span class="tiny-label">阅读范围</span>以 HTTP/1.1 + TCP 的新连接为主线。HTTPS 还需 TLS；缓存、连接复用会跳过部分准备步骤。</div>
+      <div class="map-canvas" id="map-canvas"><svg id="route-lines" aria-hidden="true"><defs><marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0L8 4L0 8" fill="#485665"/></marker></defs><g id="edges"></g><path id="travel-line" fill="none"/><circle id="packet" r="4.5" hidden/></svg><div id="route" aria-label="网络连接全链路，点击节点展开内部流程"></div></div>
+      <div class="playback" aria-label="流动演示控制"><div class="play-controls"><button id="play" class="primary" type="button">▷ 播放旅程</button><button id="step" type="button" title="前进一步">单步 →</button><button id="reset" class="icon-button" type="button" aria-label="从请求起点重新开始">↺</button><span class="control-separator"></span><button id="direction" type="button">请求去程 →</button><label class="speed-label">速度<select id="speed"><option value="0.6">0.6×</option><option value="1" selected>1×</option><option value="1.6">1.6×</option></select></label></div><div class="journey-status"><span id="phase-dot"></span><span id="journey-status">准备好了，从浏览器出发</span><span id="journey-count">01 / 10</span></div><div class="progress-track"><span id="journey-progress"></span></div></div>
+      <div class="map-legend"><span><i class="cyan"></i>请求去程</span><span><i class="amber"></i>响应回程</span><span><i class="purple"></i>正在阅读</span><button id="collapse" type="button">收起内部流程 ↑</button></div>
+      <p class="map-disclaimer">主图是理解系统的阅读路线，并非抓包时序。DNS 查询、握手本身也会经过下层网络；响应实际路由不一定原路返回。</p>
+    </section>
+    <aside class="concept-panel" id="concept-panel" aria-labelledby="concept-title"><div id="concept-content"></div></aside>
+  </div>
+  <section class="reading-guide"><div><span class="eyebrow">HOW TO EXPLORE</span><h2>不是再背一遍名词，而是看清它们怎么配合。</h2></div><ol><li><b>01</b><span>沿数字读全链路<small>知道请求经过哪些模块。</small></span></li><li><b>02</b><span>点击一个主节点<small>原地展开这个模块的小流程。</small></span></li><li><b>03</b><span>再点一个细步骤<small>右侧解释它是什么、为什么存在。</small></span></li></ol></section>
+</main>
+<footer><span>FLOW ATLAS <span class="footer-slash">/</span> 从整体到细节</span><span>学习示意 · 结合书籍资料持续校正 <a href="notes/README.md">版本说明 ↗</a></span></footer>
+<noscript><p class="noscript">请启用 JavaScript，以展开三层交互地图。</p></noscript>
+</body></html>
