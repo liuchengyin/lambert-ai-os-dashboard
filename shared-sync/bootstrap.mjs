@@ -3,7 +3,17 @@ const bridge=window.LambertData;
 const startup=window.LambertStartup;
 // Track nested legacy modules too: project-v4 loads dashboard/theme modules,
 // which in turn mount the current navigation and task center.
-const pending=new Set(),seen=new WeakSet();let assetFailed=false;
+const pending=new Set(),seen=new WeakSet();let assetFailed=false,opened=false;
+const linksEntry=new URLSearchParams(location.search).get('view')==='knowledge';
+function revealLinks(){
+  if(!startup||opened||!linksEntry)return;
+  // Keep the sidebar, current links and task navigation usable before revealing.
+  // Reading/drawing modules and their styles are not prerequisites for this view.
+  if(!document.getElementById('s1PrimaryNav')||!window.TaskCenter||!document.querySelector('#home .s1-head')||!document.getElementById('knowledgeGroups'))return;
+  const coreStyles=['knowledge-itab-v2.css','dashboard-v5.css','theme-linear.css','workspace-glass-v1.css'];
+  for(const name of coreStyles){const style=[...document.querySelectorAll('link[rel="stylesheet"]')].find(el=>new URL(el.href,location.href).pathname.endsWith('/'+name));if(!style?.sheet)return;}
+  opened=true;startup.ready();
+}
 function track(element){
   if(!startup||seen.has(element))return;
   const script=element.tagName==='SCRIPT'&&element.src;
@@ -13,7 +23,7 @@ function track(element){
   if(new URL(element.src||element.href,location.href).origin!==location.origin)return;
   seen.add(element);
   let finish;const promise=new Promise(resolve=>{finish=resolve;});pending.add(promise);
-  const done=failed=>{clearTimeout(timer);element.removeEventListener('load',loaded);element.removeEventListener('error',errored);if(failed){assetFailed=true;console.warn('工作台资源未加载：'+(element.src||element.href));}pending.delete(promise);finish();};
+  const done=failed=>{clearTimeout(timer);element.removeEventListener('load',loaded);element.removeEventListener('error',errored);if(failed){assetFailed=true;console.warn('工作台资源未加载：'+(element.src||element.href));}pending.delete(promise);finish();revealLinks();};
   const loaded=()=>done(false),errored=()=>done(true);
   const timer=setTimeout(errored,15000);
   element.addEventListener('load',loaded,{once:true});element.addEventListener('error',errored,{once:true});
@@ -26,13 +36,13 @@ try{
   const scripts=JSON.parse(document.getElementById('lambert-app-scripts').textContent);
   // Fetch in parallel while preserving the original execution order and globals.
   for(const src of scripts){const preload=document.createElement('link');preload.rel='preload';preload.as='script';preload.href=src;document.head.append(preload);}
-  for(const src of scripts)await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(Error('app_asset_failed'));document.body.appendChild(s);});
-  if(startup){
+  for(const src of scripts){await new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=src;s.onload=resolve;s.onerror=()=>reject(Error('app_asset_failed'));document.body.appendChild(s);});revealLinks();}
+  if(startup&&!opened){
     do{await Promise.all([...pending]);await new Promise(resolve=>setTimeout(resolve,0));}while(pending.size);
     if(assetFailed||!document.getElementById('s1PrimaryNav')||!window.TaskCenter||!document.querySelector('#home .s1-head'))throw Error('app_asset_failed');
     startup.ready();
   }
-}catch(error){startup?.error();console.warn('工作台加载未完成，现有数据仍保留在本机。');}
+}catch(error){if(!opened)startup?.error();console.warn('工作台加载未完成，现有数据仍保留在本机。');}
 finally{observer?.disconnect();}
 // Account network requests do not block opening the locally saved workspace.
 import('./account-ui.mjs').catch(()=>{console.warn('账户服务未加载；本地数据仍可使用');});
