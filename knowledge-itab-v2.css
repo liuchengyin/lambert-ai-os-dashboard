@@ -1,4 +1,16 @@
 /* Common links: search → recognized card → group. Scoped to this module. */
+/* A dedicated grip moves a bookmark by insertion; copying remains separate. */
+#knowledge .knowledge-link-move{position:absolute;top:8px;right:8px;z-index:4;display:grid;place-items:center;width:28px;height:28px;padding:0;border:1px solid #e8e4ef;border-radius:6px;background:#f8f6fc;color:#8875a8;cursor:grab;touch-action:none;user-select:none}
+#knowledge .knowledge-link-move:active{cursor:grabbing;background:#eee7fa}
+#knowledge .knowledge-link-move:focus-visible{outline:2px solid #7957d5;outline-offset:2px}
+body.knowledge-unlocked #knowledge .knowledge-copy-link{right:40px}
+body.knowledge-unlocked #knowledge .knowledge-copy-status{right:72px}
+body.knowledge-unlocked #knowledge .knowledge-link-card strong{padding-right:60px}
+#knowledge .knowledge-link-card.is-link-moving{opacity:.4;transform:none;outline:2px dashed #9271c2}
+#knowledge .knowledge-link-card.link-insert-before::before,#knowledge .knowledge-link-card.link-insert-after::before{content:'';position:absolute;top:0;bottom:0;width:4px;border-radius:4px;background:#7957d5;z-index:6;pointer-events:none}
+#knowledge .knowledge-link-card.link-insert-before::before{left:-8px}
+#knowledge .knowledge-link-card.link-insert-after::before{right:-8px}
+#knowledge .knowledge-group.link-insert-empty{outline:2px dashed #9271c2;outline-offset:-4px}
 #knowledge{position:relative;isolation:isolate;min-height:calc(100vh - 24px);border-radius:16px;overflow:hidden;background:var(--knowledge-wallpaper,#f4f4f6);background-size:cover;background-position:center}
 #knowledge .knowledge-page{max-width:1280px;margin:auto;padding:24px 24px 64px}
 #knowledge .knowledge-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
@@ -171,3 +183,4 @@ body.knowledge-unlocked #knowledge .knowledge-card-actions{top:auto;right:auto;j
 @media(hover:none){
   #knowledge .knowledge-link-card .knowledge-copy-link{opacity:1;pointer-events:auto}
 }
+
