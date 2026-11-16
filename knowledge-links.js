@@ -37,7 +37,7 @@
   section.innerHTML=`<div class="knowledge-page">
     <div class="knowledge-head"><div class="knowledge-head-actions"><button id="knowledgeRecoveryOpen" type="button" title="检查并恢复旧链接">恢复</button><button id="knowledgeTabSwitch" class="knowledge-tab-switch" type="button" aria-label="切换链接分类">切换</button><button id="knowledgeWallpaper" class="knowledge-wallpaper-btn" type="button">壁纸</button><button id="knowledgeLock" class="knowledge-lock"></button></div></div>
     <div class="knowledge-searchbar"><input id="knowledgeSearch" placeholder="搜索 / 粘贴网址，回车快速添加"><button id="knowledgeQuickAdd" type="button">添加链接</button><button id="knowledgeManualCreate" type="button" hidden>手动创建</button><span id="knowledgeSearchSpinner" class="knowledge-spinner" aria-label="识别中" hidden></span></div>
-    <div id="knowledgeEditBar" class="knowledge-editbar"><button id="knowledgeAddGroup" type="button">+ 添加分组</button><span>编辑模式：可改名、拖动分组、编辑链接</span></div>
+    <div id="knowledgeEditBar" class="knowledge-editbar"><button id="knowledgeAddGroup" type="button">+ 添加分组</button><span>编辑模式：按住卡片右上角移动标识调整位置，其他链接依次让位</span></div>
     <div class="knowledge-library-indicator"><span id="knowledgeLibraryTag" class="knowledge-library-tag" data-library="common">常用</span></div>
     <div id="knowledgeGroups"></div>
     <div id="knowledgeLinks" style="display:none"></div>
@@ -198,17 +198,90 @@
   }
   function renameGroup(g){const name=prompt('修改分组名称',g.name);if(name===null)return;const clean=name.trim();if(!clean)return;g.name=clean;persist();render()}
   function moveGroup(fromId,toId){if(!fromId||!toId||fromId===toId)return;const from=groups.findIndex(g=>g.id===fromId),to=groups.findIndex(g=>g.id===toId);if(from<0||to<0)return;const [item]=groups.splice(from,1);groups.splice(to,0,item);persist();render()}
+  // Insert a bookmark at a boundary, never exchange it with the target.
+  function insertLink(list,fromGroupId,linkId,toGroupId,beforeId){
+    const next=list.map(g=>({...g,links:g.links.slice()}));
+    const source=next.find(g=>g.id===fromGroupId),target=next.find(g=>g.id===toGroupId);
+    if(!source||!target)return null;
+    const from=source.links.findIndex(l=>l.id===linkId);
+    if(from<0||beforeId===linkId&&source===target)return null;
+    if(beforeId!==null&&!target.links.some(l=>l.id===beforeId))return null;
+    const [item]=source.links.splice(from,1);
+    const to=beforeId===null?target.links.length:target.links.findIndex(l=>l.id===beforeId);
+    target.links.splice(to,0,item);
+    if(source.id===target.id&&source.links.every((l,i)=>l.id===list.find(g=>g.id===source.id).links[i].id))return null;
+    return next;
+  }
+  function commitLinkMove(fromGroupId,linkId,toGroupId,beforeId){
+    const next=insertLink(groups,fromGroupId,linkId,toGroupId,beforeId);if(!next)return;
+    try{set(tabStorage(),next);groups=next;render();}
+    catch(error){alert('移动未保存，请检查账号同步或浏览器存储后重试。');render();}
+  }
+  let linkDrag=null;
+  function addMoveHandle(card,g,l){
+    card.dataset.linkId=l.id;
+    const handle=document.createElement('button');handle.type='button';handle.className='knowledge-link-move';
+    handle.title='按住拖动移动；方向键调整顺序';handle.setAttribute('aria-label','移动 '+(l.title||host(l.url)));
+    handle.innerHTML='<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="8" cy="5" r="1.7"/><circle cx="16" cy="5" r="1.7"/><circle cx="8" cy="12" r="1.7"/><circle cx="16" cy="12" r="1.7"/><circle cx="8" cy="19" r="1.7"/><circle cx="16" cy="19" r="1.7"/></svg>';
+    const clear=()=>{
+      root.querySelectorAll('.link-insert-before,.link-insert-after,.link-insert-empty').forEach(el=>el.classList.remove('link-insert-before','link-insert-after','link-insert-empty'));
+    };
+    function finish(cancel){
+      const drag=linkDrag;if(!drag)return;linkDrag=null;clear();card.classList.remove('is-link-moving');
+      document.removeEventListener('keydown',escape);if(handle.hasPointerCapture(drag.pointerId))handle.releasePointerCapture(drag.pointerId);
+      if(!cancel&&drag.moved&&drag.target)commitLinkMove(g.id,l.id,drag.target.group,drag.target.before);
+    }
+    function escape(e){if(e.key==='Escape'){e.preventDefault();finish(true);}}
+    handle.onpointerdown=e=>{
+      if(e.button!==0||locked||linkDrag)return;e.preventDefault();e.stopPropagation();
+      linkDrag={pointerId:e.pointerId,x:e.clientX,y:e.clientY,moved:false,target:null};
+      handle.setPointerCapture(e.pointerId);document.addEventListener('keydown',escape);
+    };
+    handle.onpointermove=e=>{
+      const drag=linkDrag;if(!drag||e.pointerId!==drag.pointerId)return;
+      if(!drag.moved&&Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<5)return;
+      drag.moved=true;card.classList.add('is-link-moving');clear();drag.target=null;
+      const hit=document.elementFromPoint(e.clientX,e.clientY),sec=hit?.closest('.knowledge-group');
+      if(!sec||!root.contains(sec))return;
+      const targetGroup=groups.find(group=>group.id===sec.dataset.groupId);if(!targetGroup)return;
+      const target=hit.closest('.knowledge-link-card');
+      if(target){
+        if(target===card)return;
+        const rect=target.getBoundingClientRect();
+        const after=e.clientY>rect.bottom-rect.height*.25||(e.clientY>=rect.top+rect.height*.25&&e.clientX>rect.left+rect.width/2);
+        const index=targetGroup.links.findIndex(link=>link.id===target.dataset.linkId);
+        if(index<0)return;
+        drag.target={group:targetGroup.id,before:after?(targetGroup.links[index+1]?.id||null):target.dataset.linkId};
+        target.classList.add(after?'link-insert-after':'link-insert-before');
+      }else if(hit.closest('.knowledge-grid')){
+        drag.target={group:targetGroup.id,before:null};sec.classList.add('link-insert-empty');
+      }
+      if(e.clientY<60)window.scrollBy(0,-25);else if(e.clientY>window.innerHeight-60)window.scrollBy(0,25);
+    };
+    handle.onpointerup=e=>{if(linkDrag?.pointerId===e.pointerId)finish(false);};
+    handle.onpointercancel=()=>finish(true);handle.onlostpointercapture=()=>finish(true);
+    handle.onclick=e=>{e.preventDefault();e.stopPropagation();};
+    handle.onkeydown=e=>{
+      const direction={ArrowLeft:-1,ArrowUp:-1,ArrowRight:1,ArrowDown:1}[e.key];if(!direction||linkDrag)return;
+      e.preventDefault();e.stopPropagation();const i=g.links.findIndex(link=>link.id===l.id),to=i+direction;
+      if(to<0||to>=g.links.length)return;
+      const before=direction<0?g.links[to].id:(g.links[to+1]?.id||null);
+      commitLinkMove(g.id,l.id,g.id,before);
+      root.querySelectorAll('.knowledge-link-card').forEach(el=>{if(el.dataset.linkId===l.id)el.querySelector('.knowledge-link-move')?.focus();});
+    };
+    card.append(handle);
+  }
   function addTile(grid,g){if(query.trim())return;const b=document.createElement('button');b.type='button';b.className='knowledge-add-tile';b.innerHTML='<div class="knowledge-add-icon">＋</div><span>添加链接</span>';b.onclick=()=>openLinkDlg(g.id);grid.appendChild(b)}
   function render(){
     root.innerHTML='';const q=query.trim().toLowerCase();
     groups.forEach(g=>{
       const links=g.links.filter(l=>!q||[l.title,l.url,l.desc].some(v=>String(v||'').toLowerCase().includes(q)));if(q&&!links.length)return;
-      const sec=document.createElement('section');sec.className='knowledge-group';sec.dataset.groupId=g.id;sec.draggable=!locked;
-      if(!locked){sec.addEventListener('dragstart',e=>{draggingGroupId=g.id;sec.classList.add('is-dragging');e.dataTransfer.effectAllowed='move'});sec.addEventListener('dragend',()=>{draggingGroupId=null;sec.classList.remove('is-dragging');document.querySelectorAll('.knowledge-group').forEach(x=>x.classList.remove('drag-over'))});sec.addEventListener('dragover',e=>{e.preventDefault();sec.classList.add('drag-over')});sec.addEventListener('dragleave',()=>sec.classList.remove('drag-over'));sec.addEventListener('drop',e=>{e.preventDefault();sec.classList.remove('drag-over');moveGroup(draggingGroupId,g.id)})}
-      const head=document.createElement('div');head.className='knowledge-group-head';head.innerHTML=`<div class="knowledge-group-title-wrap">${!locked?'<span class="knowledge-drag-handle" title="拖动分组">⋮⋮</span>':''}<h3>${esc(g.name)}</h3><span>${links.length}</span></div><div class="knowledge-group-actions"></div>`;
+      const sec=document.createElement('section');sec.className='knowledge-group';sec.dataset.groupId=g.id;sec.draggable=false;
+      if(!locked){sec.addEventListener('dragstart',e=>{if(!e.target.closest('.knowledge-drag-handle')){e.preventDefault();return;}draggingGroupId=g.id;sec.classList.add('is-dragging');e.dataTransfer.effectAllowed='move'});sec.addEventListener('dragend',()=>{draggingGroupId=null;sec.classList.remove('is-dragging');document.querySelectorAll('.knowledge-group').forEach(x=>x.classList.remove('drag-over'))});sec.addEventListener('dragover',e=>{e.preventDefault();sec.classList.add('drag-over')});sec.addEventListener('dragleave',()=>sec.classList.remove('drag-over'));sec.addEventListener('drop',e=>{e.preventDefault();sec.classList.remove('drag-over');moveGroup(draggingGroupId,g.id)})}
+      const head=document.createElement('div');head.className='knowledge-group-head';head.innerHTML=`<div class="knowledge-group-title-wrap">${!locked?'<span class="knowledge-drag-handle" draggable="true" title="拖动分组">⋮⋮</span>':''}<h3>${esc(g.name)}</h3><span>${links.length}</span></div><div class="knowledge-group-actions"></div>`;
       const actions=head.querySelector('.knowledge-group-actions');if(!locked){const r=document.createElement('button');r.textContent='改名';r.onclick=()=>renameGroup(g);const d=document.createElement('button');d.textContent='删除分组';d.className='danger-lite';d.onclick=()=>{if(g.links.length&&!confirm(`分组“${g.name}”还有 ${g.links.length} 个链接，仍要删除吗？`))return;if(confirm(`确认删除分组“${g.name}”吗？`)){groups=groups.filter(x=>x.id!==g.id);persist();render()}};actions.append(r,d)}
       sec.appendChild(head);const grid=document.createElement('div');grid.className='knowledge-grid';
-      links.forEach(l=>{const card=document.createElement('article');card.className='knowledge-link-card';card.innerHTML=`<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" data-tooltip="${esc(l.title||host(l.url))}" aria-label="${esc(l.title||host(l.url))}"><div class="knowledge-link-icon"></div><div><strong>${esc(l.title||host(l.url))}</strong><p>${esc(l.desc||host(l.url))}</p></div></a><div class="knowledge-card-actions"></div>`;if(safeUrl(l.url)){mountIcon(card.querySelector('.knowledge-link-icon'),l.url,l.icon,l.title);addCopyButton(card,l.url);}if(!locked){const a=card.querySelector('.knowledge-card-actions'),e=document.createElement('button'),d=document.createElement('button');e.textContent='编辑';e.onclick=()=>openLinkDlg(g.id,l);d.textContent='删除';d.onclick=()=>{if(confirm(`删除“${l.title||host(l.url)}”？`)){g.links=g.links.filter(x=>x.id!==l.id);persist();render()}};a.append(e,d)}grid.appendChild(card)});
+      links.forEach(l=>{const card=document.createElement('article');card.className='knowledge-link-card';card.innerHTML=`<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" data-tooltip="${esc(l.title||host(l.url))}" aria-label="${esc(l.title||host(l.url))}"><div class="knowledge-link-icon"></div><div><strong>${esc(l.title||host(l.url))}</strong><p>${esc(l.desc||host(l.url))}</p></div></a><div class="knowledge-card-actions"></div>`;if(safeUrl(l.url)){mountIcon(card.querySelector('.knowledge-link-icon'),l.url,l.icon,l.title);addCopyButton(card,l.url);}if(!locked){addMoveHandle(card,g,l);const a=card.querySelector('.knowledge-card-actions'),e=document.createElement('button'),d=document.createElement('button');e.textContent='编辑';e.onclick=()=>openLinkDlg(g.id,l);d.textContent='删除';d.onclick=()=>{if(confirm(`删除“${l.title||host(l.url)}”？`)){g.links=g.links.filter(x=>x.id!==l.id);persist();render()}};a.append(e,d)}grid.appendChild(card)});
       addTile(grid,g);sec.appendChild(grid);root.appendChild(sec)
     });
     if(!root.children.length)root.innerHTML='<div class="knowledge-empty-large">没有匹配结果。</div>'
@@ -342,3 +415,4 @@
   if(!document.querySelector('link[href="dashboard-v5.css"]')){const l=document.createElement('link');l.rel='stylesheet';l.href='dashboard-v5.css';document.head.appendChild(l)}
   if(!document.querySelector('script[src="dashboard-v5.js"]')){const s=document.createElement('script');s.src='dashboard-v5.js';s.defer=false;document.body.appendChild(s)}
 })();
+
