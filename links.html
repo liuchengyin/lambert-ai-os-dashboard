@@ -23,6 +23,20 @@ dialog{max-width:min(96vw,680px);border:1px solid #e4dfea;border-radius:14px;pad
 dialog::backdrop{background:#15101f77}
 button,input,textarea,select{font:inherit}
 @media(max-width:650px){.links-top{padding:0 15px}.links-brand{font-size:15px}#linksStatus{display:none}#knowledge{margin:0;min-height:calc(100vh - 62px)}}
+
+/* DeepSeek layout draft, reviewed against the shared grid selectors. */
+body[data-lambert-links-standalone="true"] .links-top{padding:0 24px}
+body[data-lambert-links-standalone="true"] #knowledge{max-width:none;width:100%;margin:16px 0}
+body[data-lambert-links-standalone="true"] #knowledge .knowledge-page{max-width:none;width:100%;margin:0;padding:24px 24px 64px}
+body[data-lambert-links-standalone="true"] #knowledge .knowledge-grid{grid-template-columns:repeat(auto-fill,minmax(190px,220px));gap:12px}
+body[data-lambert-links-standalone="true"] #knowledge .knowledge-grid>*{min-width:0}
+@media(max-width:650px){
+ body[data-lambert-links-standalone="true"] .links-top{padding:0 12px}
+ body[data-lambert-links-standalone="true"] #knowledge{margin:0}
+ body[data-lambert-links-standalone="true"] #knowledge .knowledge-page{padding:20px 12px 40px}
+}
+@media(max-width:480px){body[data-lambert-links-standalone="true"] #knowledge .knowledge-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:360px){body[data-lambert-links-standalone="true"] #knowledge .knowledge-grid{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body data-lambert-links-standalone="true">
