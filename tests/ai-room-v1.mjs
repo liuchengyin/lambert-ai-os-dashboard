@@ -30,8 +30,13 @@ try{
   assert.equal(r.code,200);
   r=await call({action:'speak',provider:'deepseek',stage:'summary',topic:'评审任务中心交互',context:[]},cookie);
   assert.equal(r.code,400);
-  assert.equal(providers.length,2);
+  r=await call({action:'speak',provider:'deepseek',stage:'review',topic:'评审任务中心交互',context:[{speaker:'glm',content:'技术建议'}]},cookie);
+  assert.equal(r.code,200);
+  r=await call({action:'speak',provider:'qwen',stage:'summary',topic:'评审任务中心交互',context:[{speaker:'deepseek',content:'风险建议'}]},cookie);
+  assert.equal(r.code,200);
+  assert.equal(providers.length,4);
   assert.ok(providers[0].includes('dashscope.aliyuncs.com'));
   assert.ok(providers[1].includes('open.bigmodel.cn'));
+  assert.ok(providers[2].includes('api.deepseek.com'));
   console.log('PASS: authentication, session and bounded multi-provider routing');
 }finally{globalThis.fetch=previous}
