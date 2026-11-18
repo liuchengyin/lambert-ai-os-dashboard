@@ -1,6 +1,9 @@
 [
   "account.html",
   "ai-chat.js",
+  "ai-room.css",
+  "ai-room.html",
+  "ai-room.js",
   "app.js",
   "archive-targets.css",
   "archive-targets.js",
