@@ -9,7 +9,7 @@ const PROVIDERS={
 };
 const respond=(res,status,data)=>res.status(status).json(data);
 const clean=(value,max)=>typeof value==='string'?value.replace(/[\u0000-\u001f]/g,' ').trim().slice(0,max):'';
-const ready=()=>['AI_ACCESS_PASSWORD','AI_SESSION_SECRET','UPSTASH_REDIS_REST_URL','UPSTASH_REDIS_REST_TOKEN'].every(k=>!!process.env[k])&&process.env.AI_SESSION_SECRET.length>=32;
+const ready=()=>process.env.AI_ENABLED==='true'&&['AI_ACCESS_PASSWORD','AI_SESSION_SECRET','UPSTASH_REDIS_REST_URL','UPSTASH_REDIS_REST_TOKEN'].every(k=>!!process.env[k])&&process.env.AI_SESSION_SECRET.length>=32;
 const sign=expiry=>crypto.createHmac('sha256',process.env.AI_SESSION_SECRET).update('room:'+expiry).digest('hex');
 const authorized=req=>{
   const cookie=String(req.headers.cookie||'').split(';').map(s=>s.trim()).find(s=>s.startsWith(COOKIE+'='))?.slice(COOKIE.length+1);
