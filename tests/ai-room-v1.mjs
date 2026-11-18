@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import handler from '../api/ai-room.js';
 Object.assign(process.env,{
-  AI_ACCESS_PASSWORD:'test-password',AI_SESSION_SECRET:'0123456789abcdef'.repeat(4),
+  AI_ENABLED:'true',AI_ACCESS_PASSWORD:'test-password',AI_SESSION_SECRET:'0123456789abcdef'.repeat(4),
   UPSTASH_REDIS_REST_URL:'https://example.upstash.io',UPSTASH_REDIS_REST_TOKEN:'test',
   QWEN_API_KEY:'test',ZHIPU_API_KEY:'test',DEEPSEEK_API_KEY:'test'
 });
