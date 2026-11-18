@@ -26,8 +26,7 @@ async function simulate(failedScript=''){
   };
   const sandbox={window,document:page,localStorage:{},MutationObserver:class {constructor(cb){observer=cb;}observe(){}disconnect(){}},
     performance:{mark(){}},console:{warn(){}},setTimeout,clearTimeout,Promise,queueMicrotask,location:{origin:'https://example.com',href:'https://example.com'}};
-  vm.runInNewContext(source,sandbox);
-  await new Promise(resolve=>setTimeout(resolve,100));
+  await vm.runInNewContext('(async()=>{'+source+'})()',sandbox);
   return {visibleAt,errors,loaded,styles};
 }
 const happy=await simulate();
