@@ -46,6 +46,13 @@
     title.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}});
     section.append(title,items);nav.appendChild(section);nodes[g.id]=items;
   });
+  // Independent AI meeting room: no heavy room scripts enter the workspace bootstrap.
+  const roomLink=document.createElement('a');
+  roomLink.href='ai-room.html';roomLink.className='s1-ai-room-link';
+  roomLink.textContent='✦ AI 会议室';roomLink.title='多模型产品评审';
+  roomLink.style.cssText='display:block;padding:11px 14px;margin:3px 0;border-radius:10px;text-decoration:none;color:inherit;font-size:14px;background:rgba(109,82,165,.09)';
+  nodes.tools.appendChild(roomLink);
+  roomLink.addEventListener('click',()=>{aside.classList.remove('s1-mobile-open')});
   const mobile=document.createElement('button');mobile.type='button';mobile.className='s1-mobile-nav-toggle';mobile.setAttribute('aria-expanded','false');mobile.textContent='☰ 菜单';
   aside.insertBefore(mobile,nav);
   mobile.onclick=()=>{const open=aside.classList.toggle('s1-mobile-open');mobile.setAttribute('aria-expanded',String(open));mobile.textContent=open?'× 收起菜单':'☰ 菜单'};
