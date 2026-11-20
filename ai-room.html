@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>AI 会议室 · Lambert OS</title>
+<link rel="stylesheet" href="ai-room.css">
+</head><body>
+<div class="room-shell">
+  <header class="room-header">
+    <div><a class="back-link" href="./">← 返回工作台</a><h1>AI 会议室</h1><p>产品评审 · 多模型圆桌 · 只读讨论</p></div>
+    <span class="room-version">V1 · 预览</span>
+  </header>
+  <div class="room-grid">
+    <aside class="room-sidebar">
+      <h2>会议记录</h2>
+      <button id="newMeeting" type="button" class="primary">+ 新会议</button>
+      <div id="meetingList" class="meeting-list" aria-label="历史会议"></div>
+      <div class="room-note">会议记录仅保存在当前浏览器的对应账户空间，不会同步到云端。清理浏览器数据可能丢失记录。</div>
+    </aside>
+    <main class="meeting-main">
+      <div class="meeting-top">
+        <div><h2 id="meetingTitle">新产品评审</h2><p id="meetingStatus" role="status" aria-live="polite">登录 AI 服务后可以开始。</p></div>
+        <button id="exportMeeting" type="button">导出纪要</button>
+      </div>
+      <div class="participants" aria-label="AI 参会成员">
+        <span id="agent-qwen"><b>千问</b> 产品经理</span>
+        <span id="agent-glm"><b>智谱 GLM</b> 技术评审</span>
+        <span id="agent-deepseek"><b>DeepSeek</b> 反方评审</span>
+      </div>
+      <section id="authPanel" class="auth-panel" aria-label="AI 服务身份验证">
+        <div><strong>连接 AI 会议室</strong><p>使用工作台原有的 AI 参谋访问密码。此处不是 Lambert 账号登录密码。</p></div>
+        <form id="loginForm"><input id="accessPassword" type="password" autocomplete="current-password" placeholder="AI 参谋访问密码" required><button type="submit" class="primary">解锁会议室</button></form>
+      </section>
+      <div id="conversation" class="conversation" role="log" aria-label="会议发言" aria-live="polite">
+        <div class="empty-meeting">输入一个产品需求，让千问、GLM、DeepSeek 独立提案并交叉评审。最终由千问整理纪要。</div>
+      </div>
+      <div class="composer">
+        <label for="topic">会议议题</label>
+        <textarea id="topic" rows="3" maxlength="2000" placeholder="例如：评审 Lambert OS 任务中心，归档项目下的任务是否应该从今日和全部列表隐藏？"></textarea>
+        <div class="composer-bottom">
+          <span>默认 2 轮讨论，每位 AI 最多发言两次，最后汇总结论。最多 7 次模型调用。</span>
+          <button id="startMeeting" type="button" class="primary">开始产品评审</button>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<script src="ai-room.js" defer></script>
+</body></html>

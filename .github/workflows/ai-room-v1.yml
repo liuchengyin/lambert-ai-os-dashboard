@@ -1,0 +1,27 @@
+name: AI room V1 safety and syntax
+on:
+  pull_request:
+    paths: ['ai-room.*','api/ai-room.js','tests/ai-room-v1.mjs','sprint1-navigation.js','.github/workflows/ai-room-v1.yml']
+permissions:
+  contents: read
+jobs:
+  ai-room:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax checks
+        run: |
+          node --check api/ai-room.js
+          node --check ai-room.js
+          node --check sprint1-navigation.js
+      - name: API safety tests
+        run: node tests/ai-room-v1.mjs
+      - name: Static resources
+        run: |
+          test -s ai-room.html && test -s ai-room.css && test -s ai-room.js
+          grep -q 'ai-room.html' sprint1-navigation.js
