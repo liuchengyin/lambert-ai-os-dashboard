@@ -77,6 +77,35 @@ async function save(file){
   };
  });
 }
+// Restore a verified portable archive as one IndexedDB transaction.
+// Two-store existence checks happen inside the same readwrite transaction, so
+// racing imports cannot overwrite active drawings or resurrect trashed IDs.
+async function importMissingPortable({files=[],trash=[]}={}){
+ if(!Array.isArray(files)||!Array.isArray(trash))throw Error('invalid_portable_restore_request');
+ const seen=new Set();
+ for(const record of [...files,...trash]){
+  if(!validateRecord(record)||seen.has(record.id))throw Error('invalid_portable_restore_file');
+  seen.add(record.id);
+ }
+ return transaction(['files','trash'],'readwrite',(tx,done)=>{
+  const live=tx.objectStore('files'),bin=tx.objectStore('trash');
+  let added=0,skipped=0,remaining=files.length+trash.length;
+  if(!remaining){done({added:0,skipped:0});return;}
+  for(const record of [...files.map(file=>({file,trashed:false})),...trash.map(file=>({file,trashed:true}))]){
+   const inLive=live.get(record.file.id);
+   inLive.onsuccess=()=>{
+    if(inLive.result){skipped++;finish();return;}
+    const inTrash=bin.get(record.file.id);
+    inTrash.onsuccess=()=>{
+     if(inTrash.result){skipped++;finish();return;}
+     (record.trashed?bin:live).add({...record.file});
+     added++;finish();
+    };
+   };
+  }
+  function finish(){if(--remaining===0)done({added,skipped});}
+ });
+}
 // Cloud recovery is insert-only: keep timestamps, original ID and XML intact.
 async function importCloud(file){
  if(!validateRecord(file))throw Error('invalid_master_cloud_document');
@@ -135,5 +164,5 @@ async function migrateOld(){
  // Original lambert_logistics_master_drawio_v1 is never overwritten or removed.
  return {migrated:true,exists:true};
 }
-root.LambertMasterLibrary=Object.freeze({DB,LEGACY_ID,validTitle,validateRecord,makeFile,list,get,save,importCloud,rename,duplicate,trash,restore,migrateOld});
+root.LambertMasterLibrary=Object.freeze({DB,LEGACY_ID,validTitle,validateRecord,makeFile,list,get,save,importCloud,importMissingPortable,rename,duplicate,trash,restore,migrateOld});
 })(typeof window!=='undefined'?window:globalThis);

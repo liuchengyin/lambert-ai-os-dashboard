@@ -7,11 +7,12 @@ if(!host||!lib||!draw||!bridgeApi)return;
 const $=id=>document.getElementById(id);
 const el=(tag,className,text)=>{const n=document.createElement(tag);if(className)n.className=className;if(text!==undefined)n.textContent=String(text);return n;};
 const store=()=>root.LambertPrivateStorage||localStorage;
-host.innerHTML='<div id="masterLibrary" class="mp-library"><div class="mp-heading"><div><small>LAMBERT OS · VISUAL STUDIO</small><h2>画Master</h2><p>我的图纸 · 使用 draw.io 绘图引擎。图纸保存在当前浏览器，随时重新打开。</p></div><div class="mp-heading-actions"><button id="mpNew" type="button" class="mp-primary">＋ 新建图纸</button><button id="mpImport" type="button">导入 .drawio</button><button id="mpCloudSync" type="button">云端同步图纸</button><button id="mpSafetyBackup" type="button">下载安全备份</button><button id="mpVerifyBackup" type="button">校验备份文件</button><button id="mpFromLogistics" type="button">从物流知识库创建</button></div></div><div class="mp-filters"><label class="mp-search">⌕ <input id="mpSearch" placeholder="搜索我的图纸" type="search"></label><span id="mpCount"></span><button id="mpTrashToggle" type="button">回收站</button></div><div id="mpCards" class="mp-cards"></div><p class="mp-footnote">本机原件始终保留。登录后可点「云端同步图纸」备份并找回其他设备的图纸；同名冲突绝不覆盖，需手动处理。跨设备使用前请另存 .drawio 备份。</p></div>'+
+host.innerHTML='<div id="masterLibrary" class="mp-library"><div class="mp-heading"><div><small>LAMBERT OS · VISUAL STUDIO</small><h2>画Master</h2><p>我的图纸 · 使用 draw.io 绘图引擎。图纸保存在当前浏览器，随时重新打开。</p></div><div class="mp-heading-actions"><button id="mpNew" type="button" class="mp-primary">＋ 新建图纸</button><button id="mpImport" type="button">导入 .drawio</button><button id="mpCloudSync" type="button">云端同步图纸</button><button id="mpSafetyBackup" type="button">下载安全备份</button><button id="mpVerifyBackup" type="button">校验备份文件</button><button id="mpRestoreMissing" type="button" hidden disabled>恢复缺失图纸</button><button id="mpFromLogistics" type="button">从物流知识库创建</button></div></div><div class="mp-filters"><label class="mp-search">⌕ <input id="mpSearch" placeholder="搜索我的图纸" type="search"></label><span id="mpCount"></span><button id="mpTrashToggle" type="button">回收站</button></div><div id="mpCards" class="mp-cards"></div><p class="mp-footnote">本机原件始终保留。登录后可点「云端同步图纸」备份并找回其他设备的图纸；同名冲突绝不覆盖，需手动处理。跨设备使用前请另存 .drawio 备份。</p></div>'+
 '<div id="masterEditor" class="mp-editor" hidden><div class="mp-editor-toolbar"><button id="mpBack" type="button">← 我的文件</button><span class="mp-editor-title" id="mpFileTitle"></span><span class="mp-save-status" id="mpSaveStatus">未保存</span><div class="mp-editor-actions"><button id="mpSave" type="button" class="mp-primary">保存</button><button id="mpDownload" type="button">导出 .drawio</button><button id="mpToggleToolbar" type="button">隐藏工具栏</button></div></div><button id="mpRestoreToolbar" class="mp-restore-toolbar" type="button" hidden>☰ 显示工具栏</button><iframe id="mpDrawFrame" title="画Master draw.io完整编辑器" referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads allow-modals" allow="clipboard-read;clipboard-write"></iframe></div>'+
 '<p id="mpNotice" role="status" class="mp-notice" aria-live="polite"></p><input type="file" id="mpFileInput" hidden accept=".drawio,.xml,application/xml,text/xml"><input type="file" id="mpBackupInput" hidden accept=".json,application/json">';
 const notice=s=>{$('mpNotice').textContent=s;};
 let loaded=false,loading=false,showTrash=false,all=[],current=null,bridge=null,pending=false,pendingExport=false,editorReady=false,dirty=false,pendingTimer=null;
+let portableCandidate=null,portablePreview=null;
 function safeXml(s){
  if(!draw.validXml(s))return false;
  try{const d=new DOMParser().parseFromString(s,'text/xml');return !d.querySelector('parsererror')&&['mxfile','mxGraphModel'].includes(d.documentElement?.localName);}
@@ -204,9 +205,14 @@ $('mpSafetyBackup').onclick=async()=>{
  }catch(e){notice('备份失败：'+(e?.message||'未知错误')+'。本机数据未修改。');}
  finally{btn.disabled=false;btn.textContent='下载安全备份';}
 };
+function resetPortableCandidate(){
+ portableCandidate=null;portablePreview=null;
+ $('mpRestoreMissing').hidden=true;$('mpRestoreMissing').disabled=true;
+}
 $('mpVerifyBackup').onclick=()=>$('mpBackupInput').click();
 $('mpBackupInput').onchange=async event=>{
  const file=event.target.files?.[0];event.target.value='';
+ resetPortableCandidate();
  if(!file)return;
  if(file.size>25*1024*1024)return notice('备份文件超过25MB，本版校验器未读取；原文件不受影响。');
  try{
@@ -214,14 +220,49 @@ $('mpBackupInput').onchange=async event=>{
   const ownerContext=root.LambertPrivateStorage;
   ownerContext?.assertOwner?.();
   const {inspectPortableSafetyArchive}=await import('./shared-sync/portable-verify.mjs');
+  const {planMissingMasterRecovery}=await import('./shared-sync/portable-recover.mjs');
   const data=JSON.parse(await file.text());
   ownerContext?.assertOwner?.();
   const result=inspectPortableSafetyArchive(data,{
    expectedOwner:ownerContext?.owner||'',
    validateDrawing:file=>lib.validateRecord(file)
   });
-  notice('备份校验通过：图纸 '+result.masterFiles+' 份，回收站 '+result.masterTrash+' 份，工作区原始键 '+(result.accountRows+result.guestRows)+' 个。只读预览，未恢复或更改任何数据。');
- }catch(e){notice('备份未通过校验：'+(e?.message||'未知原因')+'。本机数据未修改。');}
+  const localFiles=await lib.list(false),localTrash=await lib.list(true);
+  ownerContext?.assertOwner?.();
+  const plan=planMissingMasterRecovery(data,{localFiles,localTrash,validateDrawing:file=>lib.validateRecord(file)});
+  portableCandidate=data;
+  portablePreview={owner:ownerContext?.owner||'',localSignature:JSON.stringify([localFiles,localTrash]),plan};
+  $('mpRestoreMissing').hidden=false;$('mpRestoreMissing').disabled=plan.toAdd===0;
+  notice('备份校验通过：缺失图纸 '+plan.missingFiles.length+'，缺失回收站 '+plan.missingTrash.length+'，已存在 '+plan.unchanged+'，冲突 '+plan.conflicts+'。'+
+   (plan.toAdd?'可选择恢复缺失项；本机已有图纸不覆盖。':'没有需要恢复的图纸。')+'任务、项目、笔记不受影响。');
+ }catch(e){resetPortableCandidate();notice('备份未通过校验：'+(e?.message||'未知原因')+'。本机数据未修改。');}
+};
+$('mpRestoreMissing').onclick=async()=>{
+ const btn=$('mpRestoreMissing');
+ if(btn.disabled||!portableCandidate||!portablePreview)return;
+ btn.disabled=true;
+ try{
+  const ownerContext=root.LambertPrivateStorage;
+  ownerContext?.assertOwner?.();
+  const {inspectPortableSafetyArchive}=await import('./shared-sync/portable-verify.mjs');
+  const {planMissingMasterRecovery}=await import('./shared-sync/portable-recover.mjs');
+  inspectPortableSafetyArchive(portableCandidate,{
+   expectedOwner:ownerContext?.owner||'',validateDrawing:file=>lib.validateRecord(file)
+  });
+  if((ownerContext?.owner||'')!==portablePreview.owner)throw Error('账号已变化，请重新选择备份');
+  const localFiles=await lib.list(false),localTrash=await lib.list(true);
+  ownerContext?.assertOwner?.();
+  if(JSON.stringify([localFiles,localTrash])!==portablePreview.localSignature)throw Error('图纸库已经变化，请重新校验备份');
+  const plan=planMissingMasterRecovery(portableCandidate,{localFiles,localTrash,validateDrawing:file=>lib.validateRecord(file)});
+  if(plan.toAdd!==portablePreview.plan.toAdd)throw Error('恢复预览已失效，请重新校验备份');
+  if(!plan.toAdd){resetPortableCandidate();return notice('没有需要恢复的图纸。');}
+  if(!confirm('仅新增 '+plan.missingFiles.length+' 份缺失图纸和 '+plan.missingTrash.length+' 份缺失回收站文件？本机已有 ID 均不覆盖，任务和笔记不恢复。'))return;
+  ownerContext?.assertOwner?.();
+  const result=await lib.importMissingPortable({files:plan.missingFiles,trash:plan.missingTrash});
+  await refresh();resetPortableCandidate();
+  notice('安全恢复完成：新增 '+result.added+' 份，已存在而跳过 '+result.skipped+' 份。原图纸、任务、项目、笔记均未覆盖。');
+ }catch(e){resetPortableCandidate();notice('安全恢复未完成：'+(e?.message||'未知原因')+'。请检查结果后重新校验。');}
+ finally{btn.disabled=!portableCandidate||portablePreview?.plan.toAdd===0;}
 };
 $('mpNew').onclick=()=>create();
 $('mpFromLogistics').onclick=()=>create('logistics');

@@ -78,6 +78,44 @@ try{
  await page.locator('#mpTrashToggle').click();
  await page.waitForFunction(()=>document.querySelectorAll('.mp-file-card').length===3);
  check('restored file visible in library',await page.locator('.mp-file-card').count()===3);
+ // Portable archive restore uses one transaction and never replaces active/trash IDs.
+ const portableTest=await page.evaluate(async()=>{
+  const api=window.LambertMasterLibrary;
+  const seed=(await api.list())[0];
+  const inTrash={...seed,id:'master-52345678-0000-4000-8000-123456789abc',title:'已有回收站文件',deletedAt:new Date().toISOString()};
+  await api.importMissingPortable({files:[],trash:[inTrash]});
+  const before=await api.list(),trashed=await api.list(true);
+  const missing={...seed,id:'master-12345678-0000-4000-8000-123456789abc',title:'安全恢复测试'};
+  const missingTrash={...seed,id:'master-22345678-0000-4000-8000-123456789abc',title:'恢复回收站测试',deletedAt:new Date().toISOString()};
+  const conflict={...seed,title:'备份冲突版本'};
+  const once=await api.importMissingPortable({files:[missing,conflict,inTrash],trash:[missingTrash]});
+  const twice=await api.importMissingPortable({files:[missing,conflict,inTrash],trash:[missingTrash]});
+  const after=await api.list(),bin=await api.list(true);
+  return {once,twice,
+   conflictPreserved:(await api.get(seed.id))?.title===seed.title,
+   noResurrection:!after.some(f=>f.id===inTrash.id),
+   sourceUnchanged:before.every(f=>after.some(x=>x.id===f.id&&x.xml===f.xml)),
+   activeAdded:after.some(f=>f.id===missing.id),
+   trashAdded:bin.some(f=>f.id===missingTrash.id)};
+ });
+ check('portable restore creates only missing active and trashed drawings',portableTest.once.added===2&&portableTest.once.skipped===2);
+ check('repeat recovery is idempotent',portableTest.twice.added===0&&portableTest.twice.skipped===4);
+ check('local edits and trash remain intact after recovery',portableTest.conflictPreserved&&portableTest.noResurrection&&portableTest.sourceUnchanged&&portableTest.activeAdded&&portableTest.trashAdded);
+ const archive=await page.evaluate(async()=>{
+  const files=await window.LambertMasterLibrary.list();
+  const copied={...files[0],id:'master-42345678-0000-4000-8000-123456789abc',title:'JSON备份新增测试'};
+  return {format:'lambert-portable-safety-v1',createdAt:new Date().toISOString(),owner:null,
+   workspace:{format:'lambert-local-backup-v2',raw:{tasks:null},account:null},
+   master:{files:[copied],trash:[]},counts:{masterFiles:1,masterTrash:0}};
+ });
+ await page.locator('#mpBackupInput').setInputFiles({name:'safe-test.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(archive))});
+ await page.waitForFunction(()=>document.getElementById('mpNotice')?.textContent?.includes('缺失图纸 1'));
+ check('recovery preview reports missing-only counts',await page.locator('#mpRestoreMissing').isVisible()&&await page.locator('#mpRestoreMissing').isEnabled());
+ await page.locator('#mpRestoreMissing').click();
+ await page.waitForFunction(async()=>{const a=await window.LambertMasterLibrary.list();return a.some(f=>f.title==='JSON备份新增测试');});
+ await page.waitForFunction(()=>document.getElementById('mpNotice')?.textContent?.includes('安全恢复完成'));
+ check('confirmed recovery inserts drawing without overwriting existing files',await page.locator('#mpNotice').textContent().then(t=>t.includes('安全恢复完成')&&t.includes('新增 1')));
+ check('recovery requires reselecting archive for repeat operation',!await page.locator('#mpRestoreMissing').isVisible());
  check('no application script errors',errors.length===0);
  console.log('Master file-library end-to-end checks passed.');
 }finally{await browser.close();}
