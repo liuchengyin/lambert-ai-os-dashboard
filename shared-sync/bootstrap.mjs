@@ -56,7 +56,7 @@ try{
       const script=document.createElement('script');
       script.src=src;
       script.onload=resolve;
-      script.onerror=()=>reject(Error('app_asset_failed'));
+      script.onerror=()=>reject(Error('app_asset_failed: '+src));
       document.body.appendChild(script);
     });
     if(src.startsWith('sprint1-navigation.js'))primaryReady=true;
@@ -70,7 +70,7 @@ try{
 }catch(error){
   // An optional enhancement failure after first paint must never re-hide the workspace.
   if(!shown)startup?.error();
-  console.warn('工作台加载未完成，现有数据仍保留在本机。');
+  console.error('工作台加载未完成，现有数据仍保留在本机。',error);
 }finally{observer?.disconnect();}
 // Account network requests do not block opening the locally saved workspace.
 import('./account-ui.mjs').catch(()=>{console.warn('账户服务未加载；本地数据仍可使用');});
