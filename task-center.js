@@ -327,12 +327,17 @@ function board(rows){
   }
   function editTask(id) {const task=state.tasks.find(t=>t.id===id);if(task)openEditor(task);}
   function newTask(status='待开始') {creatingStatus=statuses.includes(status)?status:statuses[0];openView('tasks');openEditor();}
+  function newTaskId() {
+    const bytes=new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return 'task_'+Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+  }
   function saveEditor(event) {
     event.preventDefault();const title=$('tcTitle').value.trim();if(!title){$('tcEditorError').textContent='请填写任务名称';return;}
     const start=$('tcStart').value,due=$('tcDue').value,error=validDates(start,due);if(error){$('tcEditorError').textContent=error;return;}
     const old=editId?state.tasks.find(t=>t.id===editId):null;if(editId&&!old){$('tcEditorError').textContent='这条任务已不存在，请关闭后重新选择';return;}
     const labels=[...$('tcLabels').querySelectorAll('input:checked')].map(cb=>cb.value);
-    const task={...old,id:old?.id||`task_${crypto.randomUUID()}`,title,status:$('tcStatus').value,priority:old?.priority||'P2',matrix:$('tcMatrix').value,start,due,note:$('tcNote').value.trim(),labels,createdAt:old?.createdAt||new Date().toISOString()};
+    const task={...old,id:old?.id||newTaskId(),title,status:$('tcStatus').value,priority:old?.priority||'P2',matrix:$('tcMatrix').value,start,due,note:$('tcNote').value.trim(),labels,createdAt:old?.createdAt||new Date().toISOString()};
     assign(task,$('tcTaskProject').value);
     if(old)state.tasks[state.tasks.indexOf(old)]=task;else state.tasks.unshift(task);
     if(save())$('tcEditor').close();
