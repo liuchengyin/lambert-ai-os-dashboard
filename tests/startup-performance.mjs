@@ -8,7 +8,7 @@ const source=raw.replace(/^import \{WorkspaceJournal,ACTIVE_KEY\} from '\.\/jour
 
 async function simulate(failedScript=''){
   let observer,visibleAt=-1,errors=0,loaded=[],styles=0;
-  const list=['lib/task-center-model.js','app.js','project-v4.js','sprint1-navigation.js?v=1','optional-one.js','optional-two.js'];
+  const list=['lib/task-center-model.js','app.js','task-center.js?v=20261124-startup1','project-v4.js','sprint1-navigation.js?v=1','optional-one.js','optional-two.js'];
   const window={TaskCenter:null,LambertData:{active:null},LambertStartup:{
     ready(){visibleAt=loaded.length;},error(){errors++;}},addEventListener(){}};
   const page={
@@ -20,20 +20,20 @@ async function simulate(failedScript=''){
       observer?.([{addedNodes:[{nodeType:1,tagName:'DIV',querySelectorAll:()=>[]}]}]);
       queueMicrotask(()=>{
         if(script.src===failedScript)script.onerror?.();
-        else {loaded.push(script.src);if(script.src.startsWith('sprint1-navigation.js'))window.TaskCenter={};script.onload?.();}
+        else {loaded.push(script.src);if(script.src.startsWith('task-center.js'))window.TaskCenter={};script.onload?.();}
       });
     }}
   };
   const sandbox={window,document:page,localStorage:{},MutationObserver:class {constructor(cb){observer=cb;}observe(){}disconnect(){}},
-    performance:{mark(){}},console:{warn(){}},setTimeout,clearTimeout,Promise,queueMicrotask,location:{origin:'https://example.com',href:'https://example.com'}};
+    performance:{mark(){}},console:{warn(){},error(){}},setTimeout,clearTimeout,Promise,queueMicrotask,location:{origin:'https://example.com',href:'https://example.com'}};
   await vm.runInNewContext('(async()=>{'+source+'})()',sandbox);
   return {visibleAt,errors,loaded,styles};
 }
 const happy=await simulate();
 assert.equal(happy.errors,0);
-assert.equal(happy.visibleAt,4,'core becomes visible before optional modules complete');
-assert.equal(happy.loaded.length,6,'optional modules still execute in original sequence');
-assert.equal(happy.styles,6,'preloads remain for every script');
+assert.equal(happy.visibleAt,5,'core becomes visible after navigation and task center initialize');
+assert.equal(happy.loaded.length,7,'optional modules still execute in original sequence');
+assert.equal(happy.styles,7,'preloads remain for every script');
 const failed=await simulate('app.js');
 assert.equal(failed.errors,1,'core asset failure displays recoverable error');
 assert.equal(failed.visibleAt,-1,'failed core cannot reveal incomplete workspace');
