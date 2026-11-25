@@ -8,7 +8,7 @@ const source=raw.replace(/^import \{WorkspaceJournal,ACTIVE_KEY\} from '\.\/jour
 
 async function simulate(failedScript=''){
   let observer,visibleAt=-1,errors=0,loaded=[],styles=0;
-  const list=['lib/task-center-model.js','app.js','task-center.js?v=20261124-startup1','project-v4.js','sprint1-navigation.js?v=1','optional-one.js','optional-two.js'];
+  const list=['lib/task-center-model.js','app.js','task-center.js?v=20261125-id1','project-v4.js','sprint1-navigation.js?v=1','optional-one.js','optional-two.js'];
   const window={TaskCenter:null,LambertData:{active:null},LambertStartup:{
     ready(){visibleAt=loaded.length;},error(){errors++;}},addEventListener(){}};
   const page={

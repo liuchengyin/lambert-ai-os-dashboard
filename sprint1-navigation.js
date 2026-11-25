@@ -85,7 +85,8 @@
   const KEY='s1_last_view_v1';
   const read=()=>{try{return (window.LambertPrivateStorage||localStorage).getItem(KEY)}catch{return null}};
   const save=id=>{try{(window.LambertPrivateStorage||localStorage).setItem(KEY,id)}catch{}};
-  const fromUrl=()=>new URL(location.href).searchParams.get('view');
+  const normalize=id=>typeof id==='string'?id.trim():id;
+  const fromUrl=()=>normalize(new URL(location.href).searchParams.get('view'));
   const valid=id=>allowed.has(id);
   let current=null,pending=null,observer=null;
   const writeUrl=(id,push)=>{try{const url=new URL(location.href);url.searchParams.set('view',id);if(push&&url.href!==location.href)history.pushState(history.state,'',url);else if(!push)history.replaceState(history.state,'',url)}catch{}};
@@ -103,12 +104,13 @@
     }
   }
   window.openView=function(id){
-    if(!valid(id))return original(id);
+    id=normalize(id);
+    if(!valid(id))id='home';
     pending=null;stop();
     if(!ready(id)){writeUrl(id,true);restore(id);return;}
     original(id);save(id);if(current!==id||fromUrl()!==id)writeUrl(id,true);current=id;
   };
   window.addEventListener('popstate',()=>{const id=fromUrl();restore(valid(id)?id:'home')});
-  const requested=fromUrl(),stored=read(),initial=valid(requested)?requested:valid(stored)?stored:'home';
+  const requested=fromUrl(),stored=normalize(read()),initial=requested!==null?(valid(requested)?requested:'home'):(valid(stored)?stored:'home');
   writeUrl(initial,false);restore(initial);
 })();
