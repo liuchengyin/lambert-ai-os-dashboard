@@ -1,0 +1,4 @@
+{
+  "files": ["tests/studio-smoke-fixture.mjs"],
+  "tests": {"fixture": ["node", "--test", "tests/studio-smoke-fixture.mjs"]}
+}

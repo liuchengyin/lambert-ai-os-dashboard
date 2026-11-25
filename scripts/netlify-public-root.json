@@ -91,5 +91,8 @@
   "workspace-glass-v1.css",
   "workspace-v4.css",
   "writing-history-link.css",
-  "writing-history-link.js"
+  "writing-history-link.js",
+  "ai-studio.html",
+  "ai-studio.css",
+  "ai-studio.js"
 ]
