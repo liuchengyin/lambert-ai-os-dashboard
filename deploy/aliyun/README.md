@@ -5,7 +5,7 @@
 ## 首次准备
 
 1. 在阿里云安全组放行 TCP 80、443；SSH 22 仅保留必要来源。不要关闭 TLS 或主机身份检查。
-2. 将源码放入 `/home/admin/lambert-deploy/releases/<版本>`，保留旧版本。
+2. 将源码放入 `/home/admin/lambert-deploy/releases/<版本>`，保留旧版本。迁移到其他公网地址时，运行脚本前设置 `LAMBERT_PUBLIC_HOST`，并为该地址签发对应证书；当前默认地址为 `139.196.254.121`。
 3. 建立 `/home/admin/lambert-deploy/config`（700），将 `runtime.env.example` 复制为其中的 `runtime.env`（600）。填入**原 Supabase 项目**的 URL、publishable key 与实际 HTTPS 站点地址。不可填 service_role、数据库密码或用户凭据。当前 `LAMBERT_PUBLIC_SITE_URL=https://139.196.254.121`。配置只放服务器，不提交仓库。
 4. 无域名时，用支持 IP 证书的 Certbot 申请免费短期证书：
 
