@@ -48,8 +48,8 @@
   });
   // Independent AI meeting room: no heavy room scripts enter the workspace bootstrap.
   const roomLink=document.createElement('a');
-  roomLink.href='ai-room.html';roomLink.className='s1-ai-room-link';
-  roomLink.textContent='✦ AI 会议室';roomLink.title='多模型产品评审';
+  roomLink.href='ai-studio.html';roomLink.className='s1-ai-room-link';
+  roomLink.textContent='✦ AI 接班工作室';roomLink.title='持久任务与模型接班';
   roomLink.style.cssText='display:block;padding:11px 14px;margin:3px 0;border-radius:10px;text-decoration:none;color:inherit;font-size:14px;background:rgba(109,82,165,.09)';
   nodes.tools.appendChild(roomLink);
   roomLink.addEventListener('click',()=>{aside.classList.remove('s1-mobile-open')});

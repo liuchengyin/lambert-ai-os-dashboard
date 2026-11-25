@@ -1,0 +1,24 @@
+[Unit]
+Description=Lambert isolated development studio
+After=network-online.target
+[Service]
+Type=simple
+User=lambert-studio
+Group=lambert-studio
+WorkingDirectory=/opt/lambert-studio-app
+EnvironmentFile=/etc/lambert-studio/runtime.env
+ExecStart=/usr/bin/node /opt/lambert-studio-app/studio/server.mjs
+Restart=on-failure
+RestartSec=5
+StateDirectory=lambert-studio
+UMask=0077
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/lambert-studio /opt/lambert-studio-repo
+TimeoutStopSec=90
+MemoryMax=384M
+TasksMax=64
+[Install]
+WantedBy=multi-user.target
