@@ -55,7 +55,6 @@
   roomLink.addEventListener('click',()=>{aside.classList.remove('s1-mobile-open')});
   // Static pages already hosted on the Aliyun site.
   const extraLinks=[
-    {href:'links.html',label:'↗ 常用链接 · 独立页',title:'在阿里云打开的常用链接页面'},
     {href:'role-menu-finder.html',label:'🔎 角色菜单查询',title:'权限查询离线快照'}
   ];
   extraLinks.forEach(({href,label,title})=>{

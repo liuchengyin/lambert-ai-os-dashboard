@@ -12,10 +12,11 @@
 
 ## 与工作台的集成
 
-`sprint1-navigation.js` 的“工具区”新增两个入口：
+`sprint1-navigation.js` 的“工具区”新增一个入口：
 
-- `↗ 常用链接 · 独立页` → `/links.html`
 - `🔎 角色菜单查询` → `/role-menu-finder.html`
+
+“常用链接”不再跳转到独立页，而是使用工作台原有的 `knowledge` 内嵌视图；该视图由 `links-gate.js` 加口令门，口令经 `/api/links-unlock` 与 `LINKS_VIEW_PASSWORD_HASH` 比对。工作台本身无需登录。
 
 原有“AI 接班工作室”和所有视图内按钮保持不变。
 
