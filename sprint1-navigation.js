@@ -53,6 +53,18 @@
   roomLink.style.cssText='display:block;padding:11px 14px;margin:3px 0;border-radius:10px;text-decoration:none;color:inherit;font-size:14px;background:rgba(109,82,165,.09)';
   nodes.tools.appendChild(roomLink);
   roomLink.addEventListener('click',()=>{aside.classList.remove('s1-mobile-open')});
+  // Static pages already hosted on the Aliyun site.
+  const extraLinks=[
+    {href:'links.html',label:'↗ 常用链接 · 独立页',title:'在阿里云打开的常用链接页面'},
+    {href:'role-menu-finder.html',label:'🔎 角色菜单查询',title:'权限查询离线快照'}
+  ];
+  extraLinks.forEach(({href,label,title})=>{
+    const a=document.createElement('a');
+    a.href=href;a.className='s1-ai-room-link';a.textContent=label;a.title=title;
+    a.style.cssText=roomLink.style.cssText;
+    nodes.tools.appendChild(a);
+    a.addEventListener('click',()=>{aside.classList.remove('s1-mobile-open')});
+  });
   const mobile=document.createElement('button');mobile.type='button';mobile.className='s1-mobile-nav-toggle';mobile.setAttribute('aria-expanded','false');mobile.textContent='☰ 菜单';
   aside.insertBefore(mobile,nav);
   mobile.onclick=()=>{const open=aside.classList.toggle('s1-mobile-open');mobile.setAttribute('aria-expanded',String(open));mobile.textContent=open?'× 收起菜单':'☰ 菜单'};
