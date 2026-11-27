@@ -23,9 +23,17 @@ Lambert OS 的“常用链接”内嵌视图、口令门等属于个人工作台
 
 `role-menu-finder.html` 左侧的「常用链接」已改为页内按钮，不再跳转到 `/links.html`：
 
-- 点击后在当前页面内嵌入 `links.html`（通过 iframe，界面与独立页一致）。
-- 进入前弹出口令框，口令与数据管理相同；公开查询页本身无需登录。
+- 点击后在当前页面内嵌入 `links.html`（通过 iframe，界面与独立页一致），**进入不需要口令**。
+- 只有点击「修改链接」或嵌入页里的 🔒 解锁编辑时才弹出口令框，口令与数据管理相同；公开查询页本身无需登录。
 - 校验走独立后端路由 `/api/ops-links-unlock` 与独立配置 `OPS_LINKS_PASSWORD_HASH`，不复用、不修改 Lambert OS 的 `LINKS_VIEW_PASSWORD_HASH` 与 `links-gate.js`。
+
+## 本地数据管理页
+
+顶栏「数据管理」已由原站 `chatgpt.site/admin` 改为阿里云本地 `/role-menu-admin.html`，国内不需要 VPN：
+
+- 登录使用同一独立管理口令，校验 `/api/ops-links-unlock`。
+- 登录后直接读写 `/var/www/lambert/role-menu-data.json`，保存走 `/api/ops-data-save`，仍要求口令。
+- 后端路径可用 `OPS_ROLE_DATA_FILE` 覆盖，默认 `/var/www/lambert/role-menu-data.json`。
 
 原有“AI 接班工作室”和 Lambert OS 视图内按钮保持不变。
 

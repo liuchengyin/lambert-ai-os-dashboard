@@ -4,7 +4,7 @@ import {pathToFileURL} from 'node:url';
 const names = [
   'account-config', 'ai-analyze', 'ai-room', 'feishu-daily',
   'feishu-health', 'feishu-review', 'feishu-targets', 'link-metadata',
-  'ops-links-unlock'
+  'ops-links-unlock', 'ops-data-save'
 ];
 const handlers = new Map();
 for (const name of names) {
