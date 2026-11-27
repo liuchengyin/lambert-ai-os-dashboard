@@ -27,9 +27,10 @@
 工作室 API 用 Supabase 会话 token 校验用户 UUID 是否在白名单。让用户在其已登录的工作台会话里读取自己的 UUID（例如浏览器控制台 `JSON.parse(localStorage[...]).user.id`，或 Supabase Dashboard → Authentication → Users），然后：
 
 ```bash
-sudo sh -c 'sed -i "s|^STUDIO_ALLOWED_USER_IDS=.*|STUDIO_ALLOWED_USER_IDS=uuid1,uuid2|" /etc/lambert-studio/runtime.env'
-sudo systemctl restart lambert-studio.service
+bash allow-users.sh uuid1 uuid2
 ```
+
+脚本会校验 UUID 格式、只改白名单那一行、保持配置权限并重启服务。不要手写 sed 到配置里，避免误伤其他键。
 
 UUID 不是登录凭据，可以安全传递；密钥、token 永远不要发进聊天或日志。未放行时所有 `/api/studio/*` 返回 403，这是预期行为。
 
