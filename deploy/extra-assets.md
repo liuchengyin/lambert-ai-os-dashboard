@@ -10,13 +10,14 @@
 - https://139.196.254.121/role-menu-finder.html
 - https://139.196.254.121/role-menu-data.json
 
-## 与工作台的集成
+## 与工作台的关系
 
-`sprint1-navigation.js` 的“工具区”新增一个入口：
+这两个静态页面只保留独立 URL，不再从 Lambert OS 首页导航加入口：
 
-- `🔎 角色菜单查询` → `/role-menu-finder.html`
+- https://139.196.254.121/role-menu-finder.html
+- https://139.196.254.121/links.html
 
-“常用链接”不再跳转到独立页，而是使用工作台原有的 `knowledge` 内嵌视图；该视图由 `links-gate.js` 加口令门，口令经 `/api/links-unlock` 与 `LINKS_VIEW_PASSWORD_HASH` 比对。工作台本身无需登录。
+Lambert OS 的“常用链接”内嵌视图、口令门等属于个人工作台自身配置，不在本文档范围。
 
 原有“AI 接班工作室”和所有视图内按钮保持不变。
 
